@@ -2,9 +2,17 @@ cmake_minimum_required(VERSION 3.15)
 
 project(redis VERSION 1.0 LANGUAGES CXX)
 
-aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR} SOURCES)
 
-add_executable(redis ${SOURCES})
+add_definitions("-std=c++20")
 
-target_include_directories(redis PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+set(WARNINGS -Wall -Wextra -Wpedantic)
 
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/client CLIENT_SOURCES)
+add_executable(redis_client ${CLIENT_SOURCES})
+target_include_directories(redis_client PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/client)
+target_compile_options(redis_client PRIVATE ${WARNINGS})
+
+aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/server SERVER_SOURCES)
+add_executable(redis_server ${SERVER_SOURCES})
+target_include_directories(redis_server PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/server)
+target_compile_options(redis_server PRIVATE ${WARNINGS})
