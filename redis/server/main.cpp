@@ -21,14 +21,18 @@ int main() {
 
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     int val{1};
-    setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+    int rv = setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &val, sizeof(val));
+    if (rv) {
+        cerr << "Failed to configure socket" << endl;
+    }
 
-    struct sockaddr_in addr;
+    struct sockaddr_in addr{};
     addr.sin_family = AF_INET;
-    addr.sin_port = ntohs(1234);
+    addr.sin_port = ntohs(8000);
     addr.sin_addr.s_addr = ntohl(0);
 
-    int rv = bind(fd, reinterpret_cast<const sockaddr *>(&addr), sizeof(addr));
+    socklen_t sock_len = sizeof(addr);
+    rv = bind(fd, reinterpret_cast<const sockaddr *>(&addr), sock_len);
     if (rv) {
         cerr << "Failed to bind socket" << endl;
     }
@@ -39,7 +43,7 @@ int main() {
     }
 
     while (true) {
-        struct sockaddr_in client_addr;
+        struct sockaddr_in client_addr{};
         socklen_t socklen = sizeof(client_addr);
         int connfd = accept(fd, reinterpret_cast<sockaddr *>(&client_addr), &socklen);
 
@@ -47,7 +51,7 @@ int main() {
             continue;
         }
 
-        process(fd);
+        process(connfd);
         close(connfd);
     }
 }

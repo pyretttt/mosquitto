@@ -1,0 +1,23 @@
+{
+    "version": "1.0.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Launch Server",
+            "program": "${workspaceRoot}/build/redis_server",
+            "MIMode": "lldb",
+            "preLaunchTask": "cmake_build_root",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Launch Client",
+            "program": "${workspaceRoot}/build/redis_client",
+            "MIMode": "lldb",
+            "preLaunchTask": "cmake_build_root",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

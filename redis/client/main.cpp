@@ -12,16 +12,16 @@ int main() {
         cerr << "Failed to create socket" << endl;
     }
 
-    struct sockaddr_in addr;
+    struct sockaddr_in addr = {};
     addr.sin_family = AF_INET;
-    addr.sin_port = ntohs(1234);
+    addr.sin_port = ntohs(8000);
     addr.sin_addr.s_addr = ntohl(INADDR_LOOPBACK);
     int rv = connect(fd, reinterpret_cast<const sockaddr *>(&addr), sizeof(addr));
     if (rv) {
-        cerr << "Failed to bind socket" << endl;
+        cerr << "Failed to connect to socket" << endl;
     }
 
-    string msg = "Hey, there!";
+    string const msg = "Hey, there!";
     write(fd, msg.data(), msg.size());
 
     char buff[64] = {0};
