@@ -2,6 +2,9 @@
 #include <unistd.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <assert.h>
+
+constexpr size_t k_max_msg = 4096;
 
 static void process(int fd) {
     char buff[64] = {0};
@@ -14,6 +17,36 @@ static void process(int fd) {
     std::cout << "Client send: " << buff << std::endl;
 
     write(fd, buff, n);
+}
+
+static int32_t read_full(int fd, char *buff, size_t n) {
+    while (n > 0) {
+        ssize_t rv = read(fd, buff, n);
+        if (rv <= 0) {
+            return -1;
+        }
+        assert((size_t) rv <= n);
+        n -= (size_t) rv;
+        buff += rv;
+    }
+    return 0;
+}
+
+static int32_t write_all(int fd, const char *buff, size_t n) {
+    while (n > 0) {
+        ssize_t rv = write(fd, buff, n);
+        if (rv <= 0) {
+            return -1;
+        }
+        assert((size_t) rv <= n);
+        n -= (size_t) rv;
+        buff += rv;
+    }
+    return 0;
+}
+
+int one_request(int fd) {
+    
 }
 
 int main() {
@@ -51,7 +84,12 @@ int main() {
             continue;
         }
 
-        process(connfd);
+        while (true) {
+            int32_t err = one_request(connfd);
+            if (err) {
+                break;
+            }
+        }
         close(connfd);
     }
 }
