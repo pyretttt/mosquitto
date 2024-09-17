@@ -4,7 +4,8 @@
 #include <arpa/inet.h>
 #include <assert.h>
 
-constexpr size_t k_max_msg = 4096;
+#include "consts.h"
+#include "utils.h"
 
 static void process(int fd) {
     char buff[64] = {0};
@@ -19,34 +20,40 @@ static void process(int fd) {
     write(fd, buff, n);
 }
 
-static int32_t read_full(int fd, char *buff, size_t n) {
-    while (n > 0) {
-        ssize_t rv = read(fd, buff, n);
-        if (rv <= 0) {
-            return -1;
+static int32_t one_request(int fd) {
+    char rbuf[4 + k_max_msg + 1];
+    errno = 0;
+    int32_t err = read_full(fd, rbuf, 4);
+    if (err) {
+        if (errno == 0) {
+            std::cerr << "EOF" << std::endl;
+        } else {
+            std::cerr << "read() error" << std::endl;
         }
-        assert((size_t) rv <= n);
-        n -= (size_t) rv;
-        buff += rv;
+        return err;
     }
-    return 0;
-}
 
-static int32_t write_all(int fd, const char *buff, size_t n) {
-    while (n > 0) {
-        ssize_t rv = write(fd, buff, n);
-        if (rv <= 0) {
-            return -1;
-        }
-        assert((size_t) rv <= n);
-        n -= (size_t) rv;
-        buff += rv;
+    uint32_t len = 0;
+    memcpy(&len, rbuf, 4);
+
+    if (len > k_max_msg) {
+        std::cerr << "too long message" << std::endl;
+        return -1;
     }
-    return 0;
-}
 
-int one_request(int fd) {
-    
+    err = read_full(fd, rbuf + 4, len);
+    if (err) {
+        std::cerr << "read() error" << std::endl;
+    }
+    rbuf[4 + len] = 0;
+    std::cout << "Client says: " << rbuf + 4 << std::endl;
+
+    std::string reply = "Gotcha";
+    len = static_cast<uint32_t>(reply.size());
+    char wbuf[4 + len];
+    memcpy(wbuf, &len, 4);
+    memcpy(wbuf + 4, reply.data(), len);
+    return write_all(fd, wbuf, 4 + len);
 }
 
 int main() {
