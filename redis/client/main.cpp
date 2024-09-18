@@ -13,7 +13,7 @@ static int32_t query(int fd, const char *text) {
         return -1;
     }
 
-    char wbuf[4 + len];
+    char wbuf[4 + k_max_msg];
     memcpy(wbuf, &len, 4);
     memcpy(wbuf + 4, text, len);
 
@@ -68,14 +68,28 @@ int main() {
     }
 
     string const msg = "Hey, there!";
-    write(fd, msg.data(), msg.size());
-
-    char buff[64] = {0};
-    int n = read(fd, buff, sizeof(buff) - 1);
-    if (n < 0) {
-        cerr << "Failed to read socket" << endl;
+    int err = query(fd, msg.data());
+    if (err) {
+        cerr << "Error message 1" << endl;
     }
+    string const msg2 = "Hey, there2!";
+    err = query(fd, msg2.data());
+    if (err) {
+        cerr << "Error message 2" << endl;
+    }
+    string const msg3 = "Hey, there3!";
+    err = query(fd, msg3.data());
+    if (err) {
+        cerr << "Error message 3" << endl;
+    }
+    // write(fd, msg.data(), msg.size());
 
-    cout << buff << endl;
+    // char buff[64] = {0};
+    // int n = read(fd, buff, sizeof(buff) - 1);
+    // if (n < 0) {
+    //     cerr << "Failed to read socket" << endl;
+    // }
+
+    // cout << buff << endl;
     close(fd);
 }
