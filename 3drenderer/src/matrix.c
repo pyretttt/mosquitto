@@ -68,13 +68,13 @@ mat4_t make_rotation_matrix_x(float r) {
 }
 
 // aspect_ratio is w/h
-mat4_t make_projection_matrix(float fov, float aspect_ratio, float znear, float zfar) {
+mat4_t make_perspective_matrix(float fov, float aspect_ratio, float znear, float zfar) {
     mat4_t mat = {0};
     float tangent = tanf(fov / 2);
-    mat.m[0][0] =  1 / aspect_ratio * tangent;
+    mat.m[0][0] =  1 / (aspect_ratio * tangent);
     mat.m[1][1] =  1 / tangent;
     mat.m[2][2] =  zfar / (zfar - znear);
-    mat.m[2][3] =  - (zfar * znear) / (zfar - znear);
+    mat.m[2][3] =  -(zfar * znear) / (zfar - znear);
     mat.m[3][2] =  1.0f;
 
     return mat;

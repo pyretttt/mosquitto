@@ -20,6 +20,8 @@ vec3_t camera_position = {.x = 0, .y = 0, .z = 0};
 float fov_factor = 640.f;
 float rotation = 0.01;
 
+mat4_t proj_mat;
+
 void setup(void) {
     render_method = RENDER_WIRE;
     cull_mode = CULL_BACKFACE;
@@ -33,7 +35,12 @@ void setup(void) {
         window_width,
         window_height
     );
-
+    proj_mat = make_perspective_matrix(
+        M_PI / 3.0f,
+        (float) window_width/ window_height,
+        0.1,
+        10
+    );
     // load_obj_file_data("assets/cube.obj");
     load_cube_mesh_data();
 }
@@ -68,16 +75,6 @@ void process_input(void) {
     }
 }
 
-vec2_t project(vec3_t point)  
-{
-    vec2_t projected_point = {
-        .x = fov_factor * point.x / point.z,
-        .y = fov_factor * point.y / point.z
-    };
-    return projected_point;
-}
-
-
 void update() {
     int time_to_delay = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
     if (time_to_delay > 0 && time_to_delay <= FRAME_TARGET_TIME)
@@ -90,11 +87,11 @@ void update() {
     mesh.rotation.z += rotation;
     mesh.rotation.x += rotation;
 
-    mesh.scale.x += 0.002;
-    mesh.scale.y += 0.002;
+    // mesh.scale.x += 0.002;
+    // mesh.scale.y += 0.002;
 
-    mesh.translation.x += 0.01;
-    mesh.translation.y += 0.01;
+    // mesh.translation.x += 0.01;
+    // mesh.translation.y += 0.01;
     mesh.translation.z = 5;
 
     mat4_t scale_matrix = make_scale_matrix(mesh.scale.x, mesh.scale.y, mesh.scale.z);
@@ -147,17 +144,25 @@ void update() {
                 continue;
         }
 
-        vec2_t projected_points[3];
+        vec4_t projected_points[3];
         for (uint j = 0; j < (sizeof(face_vertices) / sizeof(vec3_t)); ++j) {
-            projected_points[j] = project(vec3_from_vec4(transformed_vertices[j]));
+            vec4_t perspective_projected_vertex = mat4_mul_vec4_project(proj_mat, transformed_vertices[j]);
+            projected_points[j] = perspective_projected_vertex;
 
-            projected_points[j].x += (window_width / 2);
-            projected_points[j].y += (window_height / 2);
+            projected_points[j].x *= (window_width / 2.0f);
+            projected_points[j].y *= (window_height / 2.0f);
+
+            projected_points[j].x += (window_width / 2.0f);
+            projected_points[j].y += (window_height / 2.0f);
         }
         float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
 
         triangle_t projected_triangle = {
-            .points = {projected_points[0], projected_points[1], projected_points[2]},
+            .points = {
+                {projected_points[0].x, projected_points[0].y},
+                {projected_points[1].x, projected_points[1].y},
+                {projected_points[2].x, projected_points[2].y},
+            },
             .color = face.color,
             .avg_depth = avg_depth
         };
