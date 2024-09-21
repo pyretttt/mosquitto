@@ -67,6 +67,31 @@ mat4_t make_rotation_matrix_x(float r) {
     return res;
 }
 
+// aspect_ratio is w/h
+mat4_t make_projection_matrix(float fov, float aspect_ratio, float znear, float zfar) {
+    mat4_t mat = {0};
+    float tangent = tanf(fov / 2);
+    mat.m[0][0] =  1 / aspect_ratio * tangent;
+    mat.m[1][1] =  1 / tangent;
+    mat.m[2][2] =  zfar / (zfar - znear);
+    mat.m[2][3] =  - (zfar * znear) / (zfar - znear);
+    mat.m[3][2] =  1.0f;
+
+    return mat;
+}
+
+vec4_t mat4_mul_vec4_project(mat4_t mat_proj, vec4_t v) {
+    vec4_t res = mul_vec4(mat_proj, v);
+
+    if (res.w != 0.0) {
+        res.x /= res.w;
+        res.y /= res.w;
+        res.z /= res.w;
+    }
+
+    return res;
+}
+
 vec4_t mul_vec4(mat4_t m, vec4_t v) {
     vec4_t result;
     result.x = m.m[0][0] * v.x + m.m[0][1] * v.y + m.m[0][2] * v.z + m.m[0][3] * v.w;
