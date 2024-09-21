@@ -18,6 +18,7 @@ int previous_frame_time = 0;
 vec3_t camera_position = {.x = 0, .y = 0, .z = 0};
 
 float fov_factor = 640.f;
+float rotation = 0.01;
 
 void setup(void) {
     render_method = RENDER_WIRE;
@@ -36,8 +37,6 @@ void setup(void) {
     // load_obj_file_data("assets/cube.obj");
     load_cube_mesh_data();
 }
-
-float rotation = 0.01;
 
 void process_input(void) {
     SDL_Event event;
@@ -130,11 +129,6 @@ void update() {
             world_matrix = mat4_mul(translation_matrix, world_matrix);
 
             transformed_vertex = mul_vec4(world_matrix, transformed_vertex);
-
-            // vec3_t transform_vertex = vec3_rotate_x(face_vertices[j], mesh.rotation.x);
-            // transform_vertex = vec3_rotate_y(transform_vertex, mesh.rotation.y);
-            // transform_vertex = vec3_rotate_z(transform_vertex, mesh.rotation.z);
-
             transformed_vertices[j] = transformed_vertex;
         }
 
@@ -254,6 +248,3 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
-
-// Reasons:
-// 1. Backface culling
