@@ -84,8 +84,8 @@ void update() {
     triangles_to_render = NULL;
 
     previous_frame_time = SDL_GetTicks();
-    mesh.rotation.y += rotation;
-    mesh.rotation.z += rotation;
+    // mesh.rotation.y += rotation;
+    // mesh.rotation.z += rotation;
     mesh.rotation.x += rotation;
 
     // mesh.scale.x += 0.002;
@@ -151,7 +151,7 @@ void update() {
             projected_points[j] = perspective_projected_vertex;
 
             projected_points[j].x *= (window_width / 2.0f);
-            projected_points[j].y *= (window_height / 2.0f);
+            projected_points[j].y *= -(window_height / 2.0f);
 
             projected_points[j].x += (window_width / 2.0f);
             projected_points[j].y += (window_height / 2.0f);
