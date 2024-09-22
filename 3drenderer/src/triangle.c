@@ -58,7 +58,7 @@ void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32
     //         \_   \
     //           \_  \
     //              \_\
-    //               v2
+    //                v2
 
     if (y0 > y1) {
         swap(&y0, &y1);
@@ -87,6 +87,10 @@ void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32
     }
 }
 
+static draw_texel(int x, int y) {
+
+}
+
 void draw_textured_triangle(
     int x0, int y0, float u0, float v0,
     int x1, int y1, float u1, float v1,
@@ -103,7 +107,7 @@ void draw_textured_triangle(
     //         \_   \
     //           \_  \
     //              \_\
-    //               v2
+    //                v2
     if (y1 < y0) {
         swap(&y0, &y1);
         swap(&x0, &x1);
