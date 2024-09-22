@@ -9,6 +9,7 @@
 #include "triangle.h"
 #include "array.h"
 #include "matrix.h"
+#include "light.h"
 
 triangle_t* triangles_to_render = NULL;
 
@@ -39,10 +40,10 @@ void setup(void) {
         M_PI / 3.0f,
         (float) window_width/ window_height,
         0.1,
-        10
+        10.0
     );
-    // load_obj_file_data("assets/cube.obj");
-    load_cube_mesh_data();
+    load_obj_file_data("assets/f22.obj");
+    // load_cube_mesh_data();
 }
 
 void process_input(void) {
@@ -90,8 +91,8 @@ void update() {
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.002;
 
-    // mesh.translation.x += 0.01;
-    // mesh.translation.y += 0.01;
+    mesh.translation.x += 0.001;
+    mesh.translation.y += 0.001;
     mesh.translation.z = 5;
 
     mat4_t scale_matrix = make_scale_matrix(mesh.scale.x, mesh.scale.y, mesh.scale.z);
@@ -129,13 +130,13 @@ void update() {
             transformed_vertices[j] = transformed_vertex;
         }
 
+        vec3_t normal = cross_product(
+            vec3_sub(vec3_from_vec4(transformed_vertices[1]), vec3_from_vec4(transformed_vertices[0])),
+            vec3_sub(vec3_from_vec4(transformed_vertices[2]), vec3_from_vec4(transformed_vertices[0]))
+        );
+        vec3_normalize(&normal);
         // Backface culling
         if (cull_mode == CULL_BACKFACE) {
-            vec3_t normal = cross_product(
-                vec3_sub(vec3_from_vec4(transformed_vertices[1]), vec3_from_vec4(transformed_vertices[0])),
-                vec3_sub(vec3_from_vec4(transformed_vertices[2]), vec3_from_vec4(transformed_vertices[0]))
-            );
-            vec3_normalize(&normal);
             
             vec3_t camera_ray = vec3_sub(camera_position, vec3_from_vec4(transformed_vertices[0]));
             float dot_product = vec3_dot_product(normal, camera_ray);
@@ -157,13 +158,18 @@ void update() {
         }
         float avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3.0;
 
+        uint32_t face_color = light_apply_intensity(
+            face.color, 
+            fmax(0.1, vec3_dot_product(normal, vec3_mul(light.direction, -1)))
+        );
+
         triangle_t projected_triangle = {
             .points = {
                 {projected_points[0].x, projected_points[0].y},
                 {projected_points[1].x, projected_points[1].y},
                 {projected_points[2].x, projected_points[2].y},
             },
-            .color = face.color,
+            .color = face_color,
             .avg_depth = avg_depth
         };
 

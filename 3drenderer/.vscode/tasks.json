@@ -6,8 +6,8 @@
             "command": "cmake",
             "args": [
                 "--build",
-                "./cmake_build",
-                "--parallel",
+                "./build",
+                "-j",
                 "4"
             ],
             "options": {

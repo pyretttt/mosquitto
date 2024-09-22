@@ -25,23 +25,23 @@ vec3_t cube_vertices[N_CUBE_VERTICES] = {
 
 face_t cube_faces[N_CUBE_FACES] = {
     // front
-    { .a = 1, .b = 2, .c = 3, .color = 0xFFFF0BC0 },
-    { .a = 1, .b = 3, .c = 4, .color = 0xFFFF0AB0 },
+    { .a = 1, .b = 2, .c = 3, .color = 0xFFFFFFFF },
+    { .a = 1, .b = 3, .c = 4, .color = 0xFFFFFFFF },
     // right
-    { .a = 4, .b = 3, .c = 5, .color = 0xFFFF00CC },
-    { .a = 4, .b = 5, .c = 6, .color = 0xFFFF00BB },
+    { .a = 4, .b = 3, .c = 5, .color = 0xFFFFFFFF },
+    { .a = 4, .b = 5, .c = 6, .color = 0xFFFFFFFF },
     // back
-    { .a = 6, .b = 5, .c = 7, .color = 0xFFFFAA00 },
-    { .a = 6, .b = 7, .c = 8, .color = 0xFFFFFF00 },
+    { .a = 6, .b = 5, .c = 7, .color = 0xFFFFFFFF },
+    { .a = 6, .b = 7, .c = 8, .color = 0xFFFFFFFF },
     // left
-    { .a = 8, .b = 7, .c = 2, .color = 0xFFFF0100 },
-    { .a = 8, .b = 2, .c = 1, .color = 0xFFBF0000 },
+    { .a = 8, .b = 7, .c = 2, .color = 0xFFFFFFFF },
+    { .a = 8, .b = 2, .c = 1, .color = 0xFFFFFFFF },
     // top
-    { .a = 2, .b = 7, .c = 5, .color = 0xFFFA0000 },
-    { .a = 2, .b = 5, .c = 3, .color = 0xFFF40000 },
+    { .a = 2, .b = 7, .c = 5, .color = 0xFFFFFFFF },
+    { .a = 2, .b = 5, .c = 3, .color = 0xFFFFFFFF },
     // bottom
-    { .a = 6, .b = 8, .c = 1, .color = 0xFF1F0000 },
-    { .a = 6, .b = 1, .c = 4, .color = 0xFF2F0000 }
+    { .a = 6, .b = 8, .c = 1, .color = 0xFFFFFFFF },
+    { .a = 6, .b = 1, .c = 4, .color = 0xFFFFFFFF }
 };
 
 void load_cube_mesh_data(void) {
@@ -71,6 +71,7 @@ void load_obj_file_data(char *filename) {
         }
 
         face_t face;
+        face.color = 0xFFFFFFFF;
         if (sscanf(line, "f %i/%*i/%*i %i/%*i/%*i %i/%*i/%*i", &face.a, &face.b, &face.c) == 3)
         {
             array_push(mesh.faces, face);

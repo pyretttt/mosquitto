@@ -7,6 +7,7 @@
         "vector.h": "c",
         "triangle.h": "c",
         "stdlib.h": "c",
-        "quick_sort.h": "c"
+        "quick_sort.h": "c",
+        "light.h": "c"
     }
 }

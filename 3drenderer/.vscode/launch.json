@@ -8,7 +8,7 @@
             "name": "3drenderer debug",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/cmake_build/3drenderer",
+            "program": "${workspaceFolder}/build/3drenderer",
             "cwd": "${workspaceFolder}",
             "MIMode": "lldb",
             "preLaunchTask": "cmake_build"
