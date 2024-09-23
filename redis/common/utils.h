@@ -1,3 +1,6 @@
+#ifndef UTILS_H
+#define UTILS_H
+
 #include <stdlib.h>
 #include <unistd.h>
 #include <assert.h>
@@ -30,7 +33,7 @@ inline int32_t write_all(int fd, const char *buff, size_t n) {
     return 0;
 }
 
-inline void fd_to_nb(int fd) {
+inline void fd_set_nb(int fd) {
     errno = 0;
     int flags = fcntl(fd, F_GETFL, 0);
     if (errno) {
@@ -46,3 +49,6 @@ inline void fd_to_nb(int fd) {
         std::cerr << "Failed to set fd flags" << std::endl;
     }
 }
+
+
+#endif
