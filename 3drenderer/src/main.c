@@ -39,7 +39,7 @@ void setup(void) {
         M_PI / 3.0f,
         (float) window_width/ window_height,
         0.1,
-        10.0
+        100.0
     );
     
     mesh_texture = (uint32_t *)REDBRICK_TEXTURE;
@@ -92,8 +92,8 @@ void update() {
     triangles_to_render = NULL;
 
     previous_frame_time = SDL_GetTicks();
-    // mesh.rotation.y += rotation;
-    // mesh.rotation.z += rotation;
+    mesh.rotation.y += rotation;
+    mesh.rotation.z += rotation;
     mesh.rotation.x += rotation;
 
     // mesh.scale.x += 0.002;
@@ -235,7 +235,7 @@ void render(void) {
                 triangle.points[2].y,
                 triangle.tex_coords[2].u,
                 triangle.tex_coords[2].v,
-                triangle.color
+                mesh_texture
             );
         }
 
