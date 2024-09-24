@@ -92,16 +92,13 @@ void update() {
     triangles_to_render = NULL;
 
     previous_frame_time = SDL_GetTicks();
-    mesh.rotation.y += rotation;
-    mesh.rotation.z += rotation;
-    mesh.rotation.x += rotation;
-
-    // mesh.scale.x += 0.002;
-    // mesh.scale.y += 0.002;
-
+    // mesh.rotation.y += rotation;
+    // mesh.rotation.z += rotation;
+    // mesh.rotation.x += rotation;
+ 
     mesh.translation.x += 0.001;
     mesh.translation.y += 0.001;
-    mesh.translation.z = 5;
+    mesh.translation.z = 8;
 
     mat4_t scale_matrix = make_scale_matrix(mesh.scale.x, mesh.scale.y, mesh.scale.z);
     mat4_t translation_matrix = make_translation_matrix(
@@ -173,9 +170,9 @@ void update() {
 
         triangle_t projected_triangle = {
             .points = {
-                {projected_points[0].x, projected_points[0].y},
-                {projected_points[1].x, projected_points[1].y},
-                {projected_points[2].x, projected_points[2].y},
+                {projected_points[0].x, projected_points[0].y, projected_points[0].z, projected_points[0].w},
+                {projected_points[1].x, projected_points[1].y, projected_points[1].z, projected_points[1].w},
+                {projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w},
             },
             .tex_coords = {
                 {face.a_uv.u, face.a_uv.v},
@@ -225,14 +222,20 @@ void render(void) {
             draw_textured_triangle(
                 triangle.points[0].x,
                 triangle.points[0].y,
+                triangle.points[0].z,
+                triangle.points[0].w,
                 triangle.tex_coords[0].u,
                 triangle.tex_coords[0].v,
                 triangle.points[1].x,
                 triangle.points[1].y,
+                triangle.points[1].z,
+                triangle.points[1].w,
                 triangle.tex_coords[1].u,
                 triangle.tex_coords[1].v,
                 triangle.points[2].x,
                 triangle.points[2].y,
+                triangle.points[2].z,
+                triangle.points[2].w,
                 triangle.tex_coords[2].u,
                 triangle.tex_coords[2].v,
                 mesh_texture

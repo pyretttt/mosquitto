@@ -120,3 +120,7 @@ vec3_t vec3_from_vec4(vec4_t v) {
         .z = v.z
     };
 }
+
+vec2_t vec2_from_vec4(vec4_t v) {
+    return (vec2_t){v.x, v.y};
+}
