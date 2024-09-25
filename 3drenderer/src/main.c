@@ -1,7 +1,9 @@
 #include <stdio.h>
 #include <stdint.h>
-#include <SDL.h>
 #include <stdbool.h>
+
+#include "SDL.h"
+#include "upng.h"
 
 #include "display.h"
 #include "vector.h"
@@ -30,7 +32,7 @@ void setup(void) {
         * window_width);
     color_buffer_texture = SDL_CreateTexture(
         renderer,
-        SDL_PIXELFORMAT_ARGB8888,
+        SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_STREAMING,
         window_width,
         window_height
@@ -42,12 +44,10 @@ void setup(void) {
         100.0
     );
     
-    mesh_texture = (uint32_t *)REDBRICK_TEXTURE;
-    texture_width = 64;
-    texture_height = 64;
-
     // load_obj_file_data("assets/f22.obj");
     load_cube_mesh_data();
+
+    load_png_texture_data("assets/cube.png");
 }
 
 void process_input(void) {
@@ -92,9 +92,9 @@ void update() {
     triangles_to_render = NULL;
 
     previous_frame_time = SDL_GetTicks();
-    // mesh.rotation.y += rotation;
-    // mesh.rotation.z += rotation;
-    // mesh.rotation.x += rotation;
+    mesh.rotation.y += rotation;
+    mesh.rotation.z += rotation;
+    mesh.rotation.x += rotation;
  
     mesh.translation.x += 0.001;
     mesh.translation.y += 0.001;
@@ -217,8 +217,7 @@ void render(void) {
             );
         }
 
-        if (render_method == RENDER_TEXTURED || render_method == RENDER_FILL_TRIANGLE_WIRE) {
-            // TODO
+        if (render_method == RENDER_TEXTURED || render_method == RENDER_TEXTURED_WIRE) {
             draw_textured_triangle(
                 triangle.points[0].x,
                 triangle.points[0].y,
