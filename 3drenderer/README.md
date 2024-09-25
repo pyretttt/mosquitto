@@ -1,4 +1,8 @@
-## List
-- Check 800x600 resolution with SDL fullscreen mode
+## 3d_party
 
-- Check wether it's possible to interpolate x, y instead of reciprocal of w.
+must contain `SDL` and `upng` libraries
+
+```
+(cd 3rd_party && git clone https://github.com/elanthis/upng.git upng)
+(cd 3rd_party && git clone https://github.com/libsdl-org/SDL.git SDL)
+```
