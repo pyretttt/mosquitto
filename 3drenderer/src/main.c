@@ -44,8 +44,8 @@ void setup(void) {
         100.0
     );
     
-    // load_obj_file_data("assets/f22.obj");
-    load_cube_mesh_data();
+    load_obj_file_data("assets/cube.obj");
+    // load_cube_mesh_data();
 
     load_png_texture_data("assets/cube.png");
 }
@@ -274,6 +274,7 @@ void render(void) {
 
 void free_resources(void) {
     free(color_buffer);
+    free(png_texture);
     array_free(mesh.vertices);
     array_free(mesh.faces);
 }
