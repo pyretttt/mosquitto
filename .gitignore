@@ -1,5 +1,7 @@
 .DS_Store
 */build/
 
+*/__pycache__/
+
 3drenderer/3rd_party/
 3drenderer/3drenderer
