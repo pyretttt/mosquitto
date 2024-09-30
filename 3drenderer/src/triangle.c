@@ -126,12 +126,9 @@ static void draw_texel(
     u /= w_recip;
     v /= w_recip;
 
-    int tex_x = abs((int)(u * texture_width));
-    int tex_y = abs((int)(v * texture_height));
-
-    int idx = fmin(texture_height * texture_width - 1, tex_y * texture_width + tex_x);
-
-    uint32_t texel = texture[idx];
+    int tex_x = abs((int)(u * texture_width)) % texture_width;
+    int tex_y = abs((int)(v * texture_height)) % texture_height;
+    uint32_t texel = texture[(texture_width * tex_y + tex_x)];
 
     draw_pixel(x, y, texel);
 }
@@ -177,6 +174,9 @@ void draw_textured_triangle(
         fswap(&z0, &z1);
         fswap(&w0, &w1);
     }
+    v0 = 1 - v0;
+    v1 = 1 - v1;
+    v2 = 1 - v2;
 
     vec4_t point_a = { x0, y0, z0, w0 };
     vec4_t point_b = { x1, y1, z1, w1 };
@@ -184,7 +184,6 @@ void draw_textured_triangle(
     tex2_t a_uv = {u0, v0};
     tex2_t b_uv = {u1, v1};
     tex2_t c_uv = {u2, v2};
-
 
     float inv_slop_1 = y1 != y0
         ? (float)(x1 - x0) / abs(y1 - y0)

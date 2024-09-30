@@ -44,10 +44,10 @@ void setup(void) {
         100.0
     );
     
-    load_obj_file_data("assets/cube.obj");
+    load_obj_file_data("assets/drone.obj");
     // load_cube_mesh_data();
 
-    load_png_texture_data("assets/cube.png");
+    load_png_texture_data("assets/drone.png");
 }
 
 void process_input(void) {
@@ -114,9 +114,9 @@ void update() {
     {
         face_t face = mesh.faces[i];
         vec3_t face_vertices[3] = {
-            mesh.vertices[face.a - 1],
-            mesh.vertices[face.b - 1],
-            mesh.vertices[face.c - 1]
+            mesh.vertices[face.a],
+            mesh.vertices[face.b],
+            mesh.vertices[face.c]
         };
 
         vec4_t transformed_vertices[3];
