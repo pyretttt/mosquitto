@@ -13,7 +13,6 @@ typedef struct {
 extern uint32_t *mesh_texture;
 extern int texture_width;
 extern int texture_height;
-extern const uint8_t REDBRICK_TEXTURE[];
 
 extern upng_t *png_texture;
 

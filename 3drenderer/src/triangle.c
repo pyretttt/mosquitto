@@ -105,7 +105,6 @@ static vec3_t compute_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
 static void draw_texel(
     int x, int y, uint32_t* texture,
     vec4_t point_a, vec4_t point_b, vec4_t point_c,
-    // float u0, float v0, float u1, float v1, float u2, float v2
     tex2_t a_uv, tex2_t b_uv, tex2_t c_uv
 ) {
     vec2_t a = vec2_from_vec4(point_a);
@@ -121,12 +120,11 @@ static void draw_texel(
     float beta = weights.y;
     float gamma = weights.z;
 
-    float reciprocal_w = alpha * (1 / point_a.w) + beta * (1 / point_b.w) + gamma * (1 / point_c.w);
-    float u = (a_uv.u / point_a.w) * alpha + (b_uv.u / point_b.w) * beta + (c_uv.u / point_c.w) * gamma;
-    float v = (a_uv.v / point_a.w) * alpha + (b_uv.v / point_b.w) * beta + (c_uv.v / point_c.w) * gamma;
-
-    u /= reciprocal_w;
-    v /= reciprocal_w;
+    float w_recip = alpha * (1 / point_a.w) + beta * (1 / point_b.w) + gamma * (1 / point_c.w);
+    float u = alpha * (a_uv.u / point_a.w) + beta * (b_uv.u / point_b.w) + gamma * (c_uv.u / point_c.w);
+    float v = alpha * (a_uv.v / point_a.w) + beta * (b_uv.v / point_b.w) + gamma * (c_uv.v / point_c.w);
+    u /= w_recip;
+    v /= w_recip;
 
     int tex_x = abs((int)(u * texture_width));
     int tex_y = abs((int)(v * texture_height));
