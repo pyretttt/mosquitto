@@ -10,6 +10,7 @@
         "quick_sort.h": "c",
         "light.h": "c",
         "sdl.h": "c",
-        "matrix.h": "c"
+        "matrix.h": "c",
+        "camera.h": "c"
     }
 }

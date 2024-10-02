@@ -5,6 +5,7 @@
 #include "SDL.h"
 #include "upng.h"
 
+#include "camera.h"
 #include "display.h"
 #include "vector.h"
 #include "mesh.h"
@@ -21,8 +22,8 @@ int num_triangles_to_render = 0;
 bool is_running = false;
 int previous_frame_time = 0;
 
-vec3_t camera_position = {.x = 0, .y = 0, .z = 0};
 mat4_t proj_mat;
+mat4_t view_matrix;
 float fov_factor = 640.f;
 float rotation = 0.01;
 
@@ -81,7 +82,7 @@ void process_input(void) {
             if (event.key.keysym.sym == SDLK_4)
                 render_method = RENDER_FILL_TRIANGLE_WIRE;  
             if (event.key.keysym.sym == SDLK_5)
-                render_method = RENDER_TEXTURED;  
+                render_method = RENDER_TEXTURED;
             if (event.key.keysym.sym == SDLK_6)
                 render_method = RENDER_TEXTURED_WIRE;  
             if (event.key.keysym.sym == SDLK_c)
@@ -104,9 +105,16 @@ void update() {
     mesh.rotation.z += rotation;
     mesh.rotation.x += rotation;
  
-    mesh.translation.x += 0.001;
-    mesh.translation.y += 0.001;
-    mesh.translation.z = 8;
+    // mesh.translation.x += 0.001;
+    // mesh.translation.y += 0.001;
+    mesh.translation.z = 4;
+
+    camera.position.x += 0.008;
+    camera.position.y += 0.008;
+
+    vec3_t target = {0, 0, 4};
+    vec3_t up_direction = { 0, 1, 0};
+    view_matrix = mat4_look_at(camera.position, target, up_direction);
 
     mat4_t scale_matrix = make_scale_matrix(mesh.scale.x, mesh.scale.y, mesh.scale.z);
     mat4_t translation_matrix = make_translation_matrix(
@@ -140,6 +148,8 @@ void update() {
             world_matrix = mat4_mul(translation_matrix, world_matrix);
 
             transformed_vertex = mul_vec4(world_matrix, transformed_vertex);
+
+            transformed_vertex = mul_vec4(view_matrix, transformed_vertex);
             transformed_vertices[j] = transformed_vertex;
         }
 
@@ -151,7 +161,8 @@ void update() {
         // Backface culling
         if (cull_mode == CULL_BACKFACE) {
             
-            vec3_t camera_ray = vec3_sub(camera_position, vec3_from_vec4(transformed_vertices[0]));
+            vec3_t origin = {0, 0, 0};
+            vec3_t camera_ray = vec3_sub(origin, vec3_from_vec4(transformed_vertices[0]));
             float dot_product = vec3_dot_product(normal, camera_ray);
 
             if (dot_product < 0)
