@@ -15,78 +15,6 @@ static void fswap(float *a, float *b)
     *b = temp;
 }
 
-void fill_flat_bottom_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color)
-{
-    float inv_slope_left = (float)(x1 - x0) / (y1 - y0);
-    float inv_slope_right = (float)(x2 - x0) / (y2 - y0);
-
-    float x_start = x0;
-    float x_end = x0;
-    for (int y = y0; y <= y2; ++y)
-    {
-        draw_line(x_start, y, x_end, y, color);
-        x_start += inv_slope_left;
-        x_end += inv_slope_right;
-    }
-}
-
-void fill_flat_top_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color)
-{
-    float inv_left_slope = (float)(x2 - x0) / (y2 - y0);
-    float inv_right_slope = (float)(x1 - x2) / (y1 - y2);
-
-    float x_start = x2;
-    float x_end = x2;
-
-    for (int y = y2; y >= y0; --y)
-    {
-        draw_line(x_start, y, x_end, y, color);
-        x_start -= inv_left_slope;
-        x_end -= inv_right_slope;
-    }
-}
-
-void draw_filled_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t color)
-{
-    //     v0
-    //   /    \
-    //  /      \
-    // v1 ----  \
-    //   \_      \
-    //     \_     \
-    //       \_    \
-    //         \_   \
-    //           \_  \
-    //              \_\
-    //                v2
-
-    if (y0 > y1) {
-        swap(&y0, &y1);
-        swap(&x0, &x1);
-    }
-    if (y1 > y2) {
-        swap(&y1, &y2);
-        swap(&x1, &x2);
-    }
-    if (y0 > y1) {
-        swap(&y0, &y1);
-        swap(&x0, &x1);
-    }
-
-    // Avoids zero division exception
-    if (y1 == y2) {
-        fill_flat_bottom_triangle(x0, y0, x1, y1, x2, y2, color);
-    } else if (y0 == y1) {
-        fill_flat_top_triangle(x0, y0, x1, y1, x2, y2, color);
-    } else {
-        int m_y = y1;
-        int m_x = x0 + ((float)(x2 - x0) * (m_y - y0)) / (float)(y2 - y0);
-
-        fill_flat_bottom_triangle(x0, y0, x1, y1, m_x, m_y, color);
-        fill_flat_top_triangle(x1, y1, m_x, m_y, x2, y2, color);
-    }
-}
-
 static vec3_t compute_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
     vec2_t ac = vec2_sub(c, a);
     vec2_t ab = vec2_sub(b, a);
@@ -100,6 +28,129 @@ static vec3_t compute_weights(vec2_t a, vec2_t b, vec2_t c, vec2_t p) {
     float gamma = 1 - alpha - beta;
 
     return (vec3_t){ alpha, beta, gamma };
+}
+
+static void draw_triangle_pixel(
+    int x, int y,
+    uint32_t color, 
+    vec4_t point_a, vec4_t point_b, vec4_t point_c
+) {
+    vec2_t a = vec2_from_vec4(point_a);
+    vec2_t b = vec2_from_vec4(point_b);
+    vec2_t c = vec2_from_vec4(point_c);
+    vec3_t weights = compute_weights(
+        a,
+        b,
+        c,
+        (vec2_t){x, y}
+    );
+    float alpha = weights.x;
+    float beta = weights.y;
+    float gamma = weights.z;
+
+    float w_recip = alpha * (1 / point_a.w) + beta * (1 / point_b.w) + gamma * (1 / point_c.w);
+    if (z_buffer[x + y * window_width] < w_recip) {
+        draw_pixel(x, y, color);
+        z_buffer[x + y * window_width] = w_recip;
+    }
+}
+
+void draw_filled_triangle(
+    int x0, int y0, float z0, float w0,
+    int x1, int y1, float z1, float w1,
+    int x2, int y2, float z2, float w2,
+    uint32_t color
+) {
+    //     v0
+    //   /    \
+    //  /      \
+    // v1 ----  \
+    //   \_      \
+    //     \_     \
+    //       \_    \
+    //         \_   \
+    //           \_  \
+    //              \_\
+    //                v2
+
+    if (y1 < y0) {
+        swap(&y0, &y1);
+        swap(&x0, &x1);
+        fswap(&z0, &z1);
+        fswap(&w0, &w1);
+    }
+    if (y2 < y1) {
+        swap(&y2, &y1);
+        swap(&x2, &x1);
+        fswap(&z2, &z1);
+        fswap(&w2, &w1);
+    }
+    if (y1 < y0) {
+        swap(&y0, &y1);
+        swap(&x0, &x1);
+        fswap(&z0, &z1);
+        fswap(&w0, &w1);
+    }
+
+
+    vec4_t point_a = { x0, y0, z0, w0 };
+    vec4_t point_b = { x1, y1, z1, w1 };
+    vec4_t point_c = { x2, y2, z2, w2 };
+
+    float inv_slop_1 = y1 != y0
+        ? (float)(x1 - x0) / abs(y1 - y0)
+        : 0;
+    float inv_slop_2 = y2 != y0
+        ? (float)(x2 - x0) / abs(y2 - y0)
+        : 0;
+
+    // If non flat top triangle, fill flat bottom part
+    if (y1 != y0) {
+        for (int y = y0; y < y1; y++) {
+            // (y - y1) start at -y1 comes to 0
+            // inv_slop_1 is either negative or positive
+            // so x_start starts at x0
+            int x_start = x1 + (y - y1) * inv_slop_1;
+            // (y - y0) always positive and starts at y0 and goes to y_1
+            // inv_slop2 is either positive or negative
+            // x_end starts at x0 too
+            int x_end = x0 + (y - y0) * inv_slop_2;
+
+            if (x_end < x_start) {
+                swap(&x_end, &x_start);
+            }
+
+            for (int x = x_start; x < x_end; x++) {
+                draw_triangle_pixel(x, y, color, point_a, point_b, point_c);
+            }
+        }
+    }
+
+    inv_slop_1 = y1 != y2
+        ? (float) (x2 - x1) / abs(y2 - y1)
+        : 0;
+    inv_slop_2 = y2 != y0
+        ? (float) (x2 - x0) / abs(y2 - y0)
+        : 0;
+    // if not flat bottom, fill flat top part
+    if (y2 != y1) {
+        for (int y = y1; y <= y2; ++y) {
+            // (y - y1) starts at 0 raise to (y2 - y1)
+            // x_start starts at x1
+            int x_start = x1 + (y - y1) * inv_slop_1;
+            // (y - y0) starts at m_y raise to y2
+            // x_end starts at x_m and goes to x2
+            int x_end = x0 + (y - y0) * inv_slop_2;
+
+            if (x_end < x_start) {
+                swap(&x_end, &x_start);
+            }
+
+            for (int x = x_start; x < x_end; x++) {
+                draw_triangle_pixel(x, y, color, point_a, point_b, point_c);
+            }
+        }
+    }
 }
 
 static void draw_texel(
@@ -130,7 +181,10 @@ static void draw_texel(
     int tex_y = abs((int)(v * texture_height)) % texture_height;
     uint32_t texel = texture[(texture_width * tex_y + tex_x)];
 
-    draw_pixel(x, y, texel);
+    if (z_buffer[x + y * window_height] < w_recip) {
+        z_buffer[x + y * window_height] = w_recip;
+        draw_pixel(x, y, texel);
+    }
 }
 
 void draw_textured_triangle(

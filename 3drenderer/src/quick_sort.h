@@ -3,6 +3,6 @@
 
 #include "triangle.h"
 
-void quickSort(triangle_t arr[], int low, int high);
+// void quickSort(triangle_t arr[], int low, int high);
 
 #endif
