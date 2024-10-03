@@ -3,6 +3,21 @@
 
 using namespace std;
 
+template<typename T>
+void printAll(T &&arg) {
+    cout << arg << endl;
+}
+
+template<typename T>
+T check(T &&arg) {
+    return arg;
+}
+
+template<typename... T>
+void printAll(T&&... args) {
+    printAll(std::forward<T&&...>(check(args)...));
+}
+
 vector<vector<int>> fill_spiral(int n) {
     vector<vector<int>> res = vector<vector<int>>(
         n,
@@ -50,6 +65,7 @@ int main()
         cout << endl;
     }
     
+    printAll(1, 2.0f, 3.0, "");
     
     return 0;
 }

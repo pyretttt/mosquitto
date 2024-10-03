@@ -1,4 +1,5 @@
 import socket as sock
+import struct
 
 def main():
     fd = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
@@ -11,10 +12,12 @@ def main():
         process_request(connection_sock)
         
 def process_request(connection_sock):
-    buffer = bytearray()
+    buffer = bytearray(4096)
     connection_sock.recv_into(buffer, 4)
     
-    print('message len: ', int.from_bytes(buffer[:4]))
+    message_len = struct.unpack('!I', buffer[:4])
+    
+    print('message len: ', message_len)
 
 if __name__ == '__main__':
     main()
