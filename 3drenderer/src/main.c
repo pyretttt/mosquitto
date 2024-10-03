@@ -26,7 +26,7 @@ mat4_t proj_mat;
 mat4_t view_matrix;
 float fov_factor = 640.f;
 float rotation = 0.01;
-
+float delta_time = 0;
 
 void setup(void) {
     render_method = RENDER_WIRE;
@@ -87,8 +87,24 @@ void process_input(void) {
                 render_method = RENDER_TEXTURED_WIRE;  
             if (event.key.keysym.sym == SDLK_c)
                 cull_mode = CULL_BACKFACE;
-            if (event.key.keysym.sym == SDLK_d)
+            if (event.key.keysym.sym == SDLK_x)
                 cull_mode = CULL_NONE;
+            if (event.key.keysym.sym == SDLK_w) {
+                camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+                camera.position = vec3_add(camera.position, camera.forward_velocity);
+            }
+            if (event.key.keysym.sym == SDLK_s) {
+                camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+                camera.position = vec3_sub(camera.position, camera.forward_velocity);
+            }
+            if (event.key.keysym.sym == SDLK_d)
+                camera.yaw_angle -= 1.0 * delta_time;
+            if (event.key.keysym.sym == SDLK_a)
+                camera.yaw_angle += 1.0 * delta_time;
+            if (event.key.keysym.sym == SDLK_UP)
+                camera.position.y += 3 * delta_time;
+            if (event.key.keysym.sym == SDLK_DOWN)
+                camera.position.y -= 3 * delta_time;
             break;
     }
 }
@@ -98,22 +114,24 @@ void update() {
     if (time_to_delay > 0 && time_to_delay <= FRAME_TARGET_TIME)
         SDL_Delay(time_to_delay);
 
+    delta_time = (SDL_GetTicks() - previous_frame_time) / 1000.0f;
+
     previous_frame_time = SDL_GetTicks();
     num_triangles_to_render = 0;
 
-    mesh.rotation.y += rotation;
-    mesh.rotation.z += rotation;
-    mesh.rotation.x += rotation;
- 
-    // mesh.translation.x += 0.001;
-    // mesh.translation.y += 0.001;
-    mesh.translation.z = 4;
+    mesh.rotation.y += rotation * delta_time;
+    mesh.rotation.z += rotation * delta_time;
+    mesh.rotation.x += rotation * delta_time;
+    mesh.translation.z = 5;
 
-    camera.position.x += 0.008;
-    camera.position.y += 0.008;
+    vec3_t up_direction = {0, 1, 0};
+    vec3_t target = {0, 0, 1};
+    mat4_t camera_yaw_rotation = make_rotation_matrix_y(camera.yaw_angle);
+    camera.direction = vec3_from_vec4(
+        mul_vec4(camera_yaw_rotation, vec4_from_vec3(target))
+    );
+    target = vec3_add(camera.position, camera.direction);
 
-    vec3_t target = {0, 0, 4};
-    vec3_t up_direction = { 0, 1, 0};
     view_matrix = mat4_look_at(camera.position, target, up_direction);
 
     mat4_t scale_matrix = make_scale_matrix(mesh.scale.x, mesh.scale.y, mesh.scale.z);
