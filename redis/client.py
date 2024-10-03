@@ -4,7 +4,7 @@ import struct
 
 def main():
     fd = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
-    fd.connect((sock.INADDR_LOOPBACK, 8000))
+    fd.connect((str(sock.INADDR_LOOPBACK), 8000))
     
     buffer = bytearray()
     message = "hey there"
