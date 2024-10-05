@@ -14,6 +14,7 @@
 #include "matrix.h"
 #include "light.h"
 #include "texture.h"
+#include "clipping.h"
 
 #define MAX_TRIANGLES_PER_MESH 10000
 triangle_t triangles_to_render[MAX_TRIANGLES_PER_MESH];
@@ -46,12 +47,18 @@ void setup(void) {
         window_width,
         window_height
     );
+    float aspect_ratio = (float) window_width/ window_height;
+    float fov = M_PI / 3.0f;
+    float z_near = 0.1f;
+    float z_far = 100.0f;
     proj_mat = make_perspective_matrix(
-        M_PI / 3.0f,
-        (float) window_width/ window_height,
-        0.1,
-        100.0
+        fov,
+        aspect_ratio,
+        z_near,
+        z_far
     );
+    init_frustum_planes(fov, z_near, z_far);
+
     
     load_obj_file_data("assets/crab.obj");
     // load_cube_mesh_data();
