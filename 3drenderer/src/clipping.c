@@ -62,8 +62,8 @@ static inline vec3_t intersection_point(vec3_t v0, vec3_t v1, plane_t plane) {
     float v1_dist = distance_from_plane(v1, plane);
 
     float t = v0_dist / (v0_dist - v1_dist);
-    vec3_t delta = vec3_mul(vec3_sub(v0, v1), t);
-    return vec3_add(v1, delta);
+    vec3_t delta = vec3_mul(vec3_sub(v1, v0), t);
+    return vec3_add(v0, delta);
 }
 
 static void clip_polygon_against_plane(polygon_t *polygon, int frustum_plane) {
@@ -105,4 +105,17 @@ void clip_polygon(polygon_t *polygon) {
     clip_polygon_against_plane(polygon, DOWN_FRUSTUM_PLANE);
     clip_polygon_against_plane(polygon, NEAR_FRUSTUM_PLANE);
     clip_polygon_against_plane(polygon, FAR_FRUSTUM_PLANE);
+}
+
+void triangles_from_polygon(polygon_t *polygon, triangle_t *triangles, int *num_triangles) {
+    *num_triangles = polygon->num_vertices - 2;
+
+    for (int i = 0; i < (polygon->num_vertices - 2); i++) {
+		int i1 = i + 1;
+		int i2 = i + 2;
+		
+		triangles[i].points[0] = vec4_from_vec3(polygon->vertices[0]);
+		triangles[i].points[1] = vec4_from_vec3(polygon->vertices[i1]);
+		triangles[i].points[2] = vec4_from_vec3(polygon->vertices[i2]);
+	}
 }

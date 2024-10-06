@@ -11,6 +11,8 @@
         "light.h": "c",
         "sdl.h": "c",
         "matrix.h": "c",
-        "camera.h": "c"
+        "camera.h": "c",
+        "__split_buffer": "c",
+        "vector": "c"
     }
 }
