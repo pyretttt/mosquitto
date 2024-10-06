@@ -60,10 +60,10 @@ void setup(void) {
     init_frustum_planes(fov, z_near, z_far);
 
     
-    load_obj_file_data("assets/crab.obj");
+    load_obj_file_data("assets/cube.obj");
     // load_cube_mesh_data();
 
-    load_png_texture_data("assets/crab.png");
+    load_png_texture_data("assets/cube.png");
 }
 
 void process_input(void) {
@@ -153,6 +153,8 @@ void update() {
     int num_faces = array_length(mesh.faces);
     for (int i = 0; i < num_faces; ++i)
     {
+        if (i != 4) continue;
+
         face_t face = mesh.faces[i];
         vec3_t face_vertices[3] = {
             mesh.vertices[face.a],
@@ -195,6 +197,15 @@ void update() {
         }
 
         vec4_t projected_points[3];
+
+        // Clipping before perspective projection
+        polygon_t polygon = create_polygon_from_triangles(
+            vec3_from_vec4(transformed_vertices[0]),
+            vec3_from_vec4(transformed_vertices[1]),
+            vec3_from_vec4(transformed_vertices[2])
+        );
+        clip_polygon(&polygon);
+
         for (uint j = 0; j < (sizeof(face_vertices) / sizeof(vec3_t)); ++j) {
             vec4_t perspective_projected_vertex = mat4_mul_vec4_project(proj_mat, transformed_vertices[j]);
             projected_points[j] = perspective_projected_vertex;
