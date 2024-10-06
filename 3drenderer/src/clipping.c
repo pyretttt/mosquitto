@@ -4,29 +4,33 @@
 
 plane_t frustum_planes[NUM_PLANES];
 
-void init_frustum_planes(float fov, float z_near, float z_far) {
-    float cos_half_fov = cos(fov / 2);
-    float sin_half_fov = sin(fov / 2);
+void init_frustum_planes(float fov, float z_near, float z_far, float aspect_ratio) {
+    float cos_half_fov_y = cos(fov / 2);
+    float sin_half_fov_y = sin(fov / 2);
+
+    float omega = atan(aspect_ratio * tan(fov / 2));
+    float cos_half_fov_x = cos(omega);
+    float sin_half_fov_x = sin(omega);
 
     vec3_t origin = {0, 0, 0};
     frustum_planes[UP_FRUSTUM_PLANE].point = origin;
     frustum_planes[UP_FRUSTUM_PLANE].normal = (vec3_t){
-        0, -cos_half_fov, sin_half_fov
+        0, -cos_half_fov_y, sin_half_fov_y
     };
 
     frustum_planes[DOWN_FRUSTUM_PLANE].point = origin;
     frustum_planes[DOWN_FRUSTUM_PLANE].normal = (vec3_t){
-        0, cos_half_fov, sin_half_fov
+        0, cos_half_fov_y, sin_half_fov_y
     };
 
     frustum_planes[LEFT_FRUSTUM_PLANE].point = origin;
     frustum_planes[LEFT_FRUSTUM_PLANE].normal = (vec3_t){
-        cos_half_fov, 0, sin_half_fov
+        cos_half_fov_x, 0, sin_half_fov_x
     };
 
     frustum_planes[RIGHT_FRUSTUM_PLANE].point = origin;
     frustum_planes[RIGHT_FRUSTUM_PLANE].normal = (vec3_t){
-        -cos_half_fov, 0, sin_half_fov
+        -cos_half_fov_x, 0, sin_half_fov_x
     };
 
     frustum_planes[NEAR_FRUSTUM_PLANE].point = (vec3_t){0, 0, z_near};

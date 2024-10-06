@@ -57,7 +57,7 @@ void setup(void) {
         z_near,
         z_far
     );
-    init_frustum_planes(fov, z_near, z_far);
+    init_frustum_planes(fov, z_near, z_far, aspect_ratio);
 
     
     load_obj_file_data("assets/cube.obj");
@@ -153,8 +153,6 @@ void update() {
     int num_faces = array_length(mesh.faces);
     for (int i = 0; i < num_faces; ++i)
     {
-        if (i != 4) continue;
-
         face_t face = mesh.faces[i];
         vec3_t face_vertices[3] = {
             mesh.vertices[face.a],

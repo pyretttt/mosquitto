@@ -36,7 +36,7 @@ polygon_t create_polygon_from_triangles(
 extern plane_t frustum_planes[NUM_PLANES];
 
 void clip_polygon(polygon_t *polygon);
-void init_frustum_planes(float fov, float z_near, float z_far);
+void init_frustum_planes(float fov, float z_near, float z_far, float aspect_ratioc);
 void triangles_from_polygon(polygon_t *polygon, triangle_t *triangles, int *num_triangles);
 
 #endif
