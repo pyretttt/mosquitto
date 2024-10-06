@@ -24,13 +24,17 @@ typedef struct {
 
 typedef struct {
     vec3_t vertices[MAX_NUM_POLY_VERTICES];
+    tex2_t texcoords[MAX_NUM_POLY_VERTICES];
     int num_vertices;
 } polygon_t;
 
 polygon_t create_polygon_from_triangles(
     vec3_t v0,
     vec3_t v1,
-    vec3_t v2
+    vec3_t v2,
+    tex2_t t0,
+    tex2_t t1,
+    tex2_t t2
 );
 
 extern plane_t frustum_planes[NUM_PLANES];

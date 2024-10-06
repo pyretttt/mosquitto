@@ -60,10 +60,10 @@ void setup(void) {
     init_frustum_planes(fov, z_near, z_far, aspect_ratio);
 
     
-    load_obj_file_data("assets/cube.obj");
+    load_obj_file_data("assets/f22.obj");
     // load_cube_mesh_data();
 
-    load_png_texture_data("assets/cube.png");
+    load_png_texture_data("assets/f22.png");
 }
 
 void process_input(void) {
@@ -198,7 +198,10 @@ void update() {
         polygon_t polygon = create_polygon_from_triangles(
             vec3_from_vec4(transformed_vertices[0]),
             vec3_from_vec4(transformed_vertices[1]),
-            vec3_from_vec4(transformed_vertices[2])
+            vec3_from_vec4(transformed_vertices[2]),
+            face.a_uv,
+            face.b_uv,
+            face.c_uv
         );
         clip_polygon(&polygon);
         triangle_t triangles_after_clipping[MAX_NUM_POLY_TRIANGLES];
@@ -232,9 +235,9 @@ void update() {
                     {projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w},
                 },
                 .tex_coords = {
-                    {face.a_uv.u, face.a_uv.v},
-                    {face.b_uv.u, face.b_uv.v},
-                    {face.c_uv.u, face.c_uv.v},
+                    {triangle_after_clipping.tex_coords[0].u, triangle_after_clipping.tex_coords[0].v},
+                    {triangle_after_clipping.tex_coords[1].u, triangle_after_clipping.tex_coords[1].v},
+                    {triangle_after_clipping.tex_coords[2].u, triangle_after_clipping.tex_coords[2].v},
                 },
                 .color = face_color
             };

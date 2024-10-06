@@ -47,11 +47,15 @@ void init_frustum_planes(float fov, float z_near, float z_far, float aspect_rati
 polygon_t create_polygon_from_triangles(
     vec3_t v0,
     vec3_t v1,
-    vec3_t v2
+    vec3_t v2,
+    tex2_t t0,
+    tex2_t t1,
+    tex2_t t2
 ) {
     polygon_t p = {
         .num_vertices = 3,
-        .vertices = {v0, v1, v2}
+        .texcoords = {t0, t1, t2},
+        .vertices = {v0, v1, v2},
     };
     return p;
 }
@@ -70,12 +74,26 @@ static inline vec3_t intersection_point(vec3_t v0, vec3_t v1, plane_t plane) {
     return vec3_add(v0, delta);
 }
 
+static inline tex2_t interpolate_uv(vec3_t v0, vec3_t v1, tex2_t t0, tex2_t t1, plane_t plane) {
+    float v0_dist = distance_from_plane(v0, plane);
+    float v1_dist = distance_from_plane(v1, plane);
+
+    float t = v0_dist / (v0_dist - v1_dist);
+
+    float new_u = t0.u + t * (t1.u - t0.u);
+    float new_v = t0.v + t * (t1.v - t0.v);
+    return (tex2_t){.u = new_u, .v = new_v};
+}
+
 static void clip_polygon_against_plane(polygon_t *polygon, int frustum_plane) {
     plane_t plane = frustum_planes[frustum_plane];
     vec3_t inside[MAX_NUM_POLY_VERTICES];
+    tex2_t inside_texcoords[MAX_NUM_POLY_VERTICES];
     int insideCount = 0;
     vec3_t *current_vertex = &polygon->vertices[0];
+    tex2_t *current_textcoord = &polygon->texcoords[0];
     vec3_t *previous_vertex = &polygon->vertices[polygon->num_vertices - 1];
+    tex2_t *previous_textcoord = &polygon->texcoords[polygon->num_vertices - 1];
 
     float previous_distance = distance_from_plane(*previous_vertex, plane);
 
@@ -84,20 +102,36 @@ static void clip_polygon_against_plane(polygon_t *polygon, int frustum_plane) {
         // if moving from inside to outside or vice versa, add intersection point
         if (current_distance * previous_distance < 0) {
             vec3_t intersection = intersection_point(*current_vertex, *previous_vertex, plane);
-            inside[insideCount++] = intersection;
+
+            tex2_t interpolated_coord = interpolate_uv(
+                *current_vertex, 
+                *previous_vertex, 
+                *current_textcoord, 
+                *previous_textcoord, 
+                plane
+            );
+
+            inside[insideCount] = intersection;
+            inside_texcoords[insideCount] = interpolated_coord;
+            insideCount++;
         }
         // also check wether current point inside
         if (current_distance > 0) {
-            inside[insideCount++] = *current_vertex;
+            inside[insideCount] = *current_vertex;
+            inside_texcoords[insideCount] = *current_textcoord;
+            insideCount++;
         }
 
         previous_distance = current_distance;
         previous_vertex = current_vertex;
+        previous_textcoord = current_textcoord;
         current_vertex++;
+        current_textcoord++;
     }
     
     for (int i = 0; i < insideCount; ++i) {
         polygon->vertices[i] = inside[i];
+        polygon->texcoords[i] = inside_texcoords[i];
     }
     polygon->num_vertices = insideCount;
 }
@@ -119,7 +153,10 @@ void triangles_from_polygon(polygon_t *polygon, triangle_t *triangles, int *num_
 		int i2 = i + 2;
 		
 		triangles[i].points[0] = vec4_from_vec3(polygon->vertices[0]);
+		triangles[i].tex_coords[0] = polygon->texcoords[0];
 		triangles[i].points[1] = vec4_from_vec3(polygon->vertices[i1]);
+		triangles[i].tex_coords[1] = polygon->texcoords[i1];
 		triangles[i].points[2] = vec4_from_vec3(polygon->vertices[i2]);
+		triangles[i].tex_coords[2] = polygon->texcoords[i2];
 	}
 }
