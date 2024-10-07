@@ -49,6 +49,8 @@ static void draw_triangle_pixel(
     float gamma = weights.z;
 
     float w_recip = alpha * (1 / point_a.w) + beta * (1 / point_b.w) + gamma * (1 / point_c.w);
+    float *z_buffer = get_z_buffer();
+    int window_width= get_window_width();
     if (z_buffer[x + y * window_width] < w_recip) {
         draw_pixel(x, y, color);
         z_buffer[x + y * window_width] = w_recip;
@@ -181,8 +183,10 @@ static void draw_texel(
     int tex_y = abs((int)(v * texture_height)) % texture_height;
     uint32_t texel = texture[(texture_width * tex_y + tex_x)];
 
-    if (z_buffer[x + y * window_height] < w_recip) {
-        z_buffer[x + y * window_height] = w_recip;
+    float *z_buffer = get_z_buffer();
+    int window_width = get_window_width();
+    if (z_buffer[x + y * window_width] < w_recip) {
+        z_buffer[x + y * window_width] = w_recip;
         draw_pixel(x, y, texel);
     }
 }

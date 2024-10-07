@@ -12,7 +12,7 @@
 enum cull_mode {
     CULL_NONE,
     CULL_BACKFACE
-} cull_mode;
+};
 
 enum rendering_method {
     RENDER_WIRE,
@@ -21,15 +21,17 @@ enum rendering_method {
     RENDER_FILL_TRIANGLE_WIRE,
     RENDER_TEXTURED,
     RENDER_TEXTURED_WIRE,
-} render_method;
+};
 
-extern SDL_Window* window;
-extern SDL_Renderer* renderer;
-extern uint32_t* color_buffer;
-extern float* z_buffer;
-extern SDL_Texture* color_buffer_texture;
-extern int window_width;
-extern int window_height;
+int get_window_width(void);
+int get_window_height(void);
+void set_render_method(int);
+int get_render_method(void);
+void set_cull_method(int);
+int get_cull_method(void);
+SDL_Renderer* get_renderer(void);
+uint32_t* get_color_buffer();
+float* get_z_buffer();
 
 bool initialize_window(void); 
 void draw_grid(void);

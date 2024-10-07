@@ -30,24 +30,10 @@ float rotation = 0.01;
 float delta_time = 0;
 
 void setup(void) {
-    render_method = RENDER_WIRE;
-    cull_mode = CULL_BACKFACE;
-    color_buffer = (uint32_t *) malloc(sizeof(uint32_t) 
-        * window_height
-        * window_width);
-    z_buffer = (float *) malloc(
-        sizeof(float) 
-        * window_height
-        * window_width
-    );
-    color_buffer_texture = SDL_CreateTexture(
-        renderer,
-        SDL_PIXELFORMAT_RGBA32,
-        SDL_TEXTUREACCESS_STREAMING,
-        window_width,
-        window_height
-    );
-    float aspect_ratio = (float) window_width/ window_height;
+    set_render_method(RENDER_WIRE);
+    set_cull_method(CULL_BACKFACE);
+
+    float aspect_ratio = (float) get_window_width() / get_window_height();
     float fov = M_PI / 3.0f;
     float z_near = 0.1f;
     float z_far = 100.0f;
@@ -58,61 +44,59 @@ void setup(void) {
         z_far
     );
     init_frustum_planes(fov, z_near, z_far, aspect_ratio);
-
-    
-    load_obj_file_data("assets/f22.obj");
+    load_obj_file_data("assets/crab.obj");
     // load_cube_mesh_data();
-
-    load_png_texture_data("assets/f22.png");
+    load_png_texture_data("assets/crab.png");
 }
 
 void process_input(void) {
     SDL_Event event;
-    SDL_PollEvent(&event);
-
-    switch (event.type)
-    {
-        case SDL_QUIT:
-            is_running = false;
-            break;
-        case SDL_KEYDOWN:
-            if (event.key.keysym.sym == SDLK_ESCAPE)
+    // SDL_PollEvent(&event);
+    while (SDL_PollEvent(&event)) {
+        switch (event.type)
+        {
+            case SDL_QUIT:
                 is_running = false;
-            if (event.key.keysym.sym == SDLK_SPACE)
-                rotation = rotation > 0 ? 0 : 0.01;
-            if (event.key.keysym.sym == SDLK_1)
-                render_method = RENDER_WIRE_VERTEX;
-            if (event.key.keysym.sym == SDLK_2)
-                render_method = RENDER_WIRE;
-            if (event.key.keysym.sym == SDLK_3)
-                render_method = RENDER_FILL_TRIANGLE;
-            if (event.key.keysym.sym == SDLK_4)
-                render_method = RENDER_FILL_TRIANGLE_WIRE;  
-            if (event.key.keysym.sym == SDLK_5)
-                render_method = RENDER_TEXTURED;
-            if (event.key.keysym.sym == SDLK_6)
-                render_method = RENDER_TEXTURED_WIRE;  
-            if (event.key.keysym.sym == SDLK_c)
-                cull_mode = CULL_BACKFACE;
-            if (event.key.keysym.sym == SDLK_x)
-                cull_mode = CULL_NONE;
-            if (event.key.keysym.sym == SDLK_w) {
-                camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
-                camera.position = vec3_add(camera.position, camera.forward_velocity);
-            }
-            if (event.key.keysym.sym == SDLK_s) {
-                camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
-                camera.position = vec3_sub(camera.position, camera.forward_velocity);
-            }
-            if (event.key.keysym.sym == SDLK_d)
-                camera.yaw_angle -= 1.0 * delta_time;
-            if (event.key.keysym.sym == SDLK_a)
-                camera.yaw_angle += 1.0 * delta_time;
-            if (event.key.keysym.sym == SDLK_UP)
-                camera.position.y += 3 * delta_time;
-            if (event.key.keysym.sym == SDLK_DOWN)
-                camera.position.y -= 3 * delta_time;
-            break;
+                break;
+            case SDL_KEYDOWN:
+                if (event.key.keysym.sym == SDLK_ESCAPE)
+                    is_running = false;
+                if (event.key.keysym.sym == SDLK_SPACE)
+                    rotation = rotation > 0 ? 0 : 0.01;
+                if (event.key.keysym.sym == SDLK_1)
+                    set_render_method(RENDER_WIRE_VERTEX);
+                if (event.key.keysym.sym == SDLK_2)
+                    set_render_method(RENDER_WIRE);
+                if (event.key.keysym.sym == SDLK_3)
+                    set_render_method(RENDER_FILL_TRIANGLE);
+                if (event.key.keysym.sym == SDLK_4)
+                    set_render_method(RENDER_FILL_TRIANGLE_WIRE);  
+                if (event.key.keysym.sym == SDLK_5)
+                    set_render_method(RENDER_TEXTURED);
+                if (event.key.keysym.sym == SDLK_6)
+                    set_render_method(RENDER_TEXTURED_WIRE);  
+                if (event.key.keysym.sym == SDLK_c)
+                    set_cull_method(CULL_BACKFACE);
+                if (event.key.keysym.sym == SDLK_x)
+                    set_cull_method(CULL_NONE);
+                if (event.key.keysym.sym == SDLK_w) {
+                    camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+                    camera.position = vec3_add(camera.position, camera.forward_velocity);
+                }
+                if (event.key.keysym.sym == SDLK_s) {
+                    camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
+                    camera.position = vec3_sub(camera.position, camera.forward_velocity);
+                }
+                if (event.key.keysym.sym == SDLK_d)
+                    camera.yaw_angle -= 1.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_a)
+                    camera.yaw_angle += 1.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_UP)
+                    camera.position.y += 3 * delta_time;
+                if (event.key.keysym.sym == SDLK_DOWN)
+                    camera.position.y -= 3 * delta_time;
+                break;
+        }
     }
 }
 
@@ -184,7 +168,7 @@ void update() {
         );
         vec3_normalize(&normal);
         // Backface culling
-        if (cull_mode == CULL_BACKFACE) {
+        if (get_cull_method() == CULL_BACKFACE) {
             
             vec3_t origin = {0, 0, 0};
             vec3_t camera_ray = vec3_sub(origin, vec3_from_vec4(transformed_vertices[0]));
@@ -216,11 +200,11 @@ void update() {
                 vec4_t perspective_projected_vertex = mat4_mul_vec4_project(proj_mat, triangle_after_clipping.points[j]);
                 projected_points[j] = perspective_projected_vertex;
 
-                projected_points[j].x *= (window_width / 2.0f);
-                projected_points[j].y *= -(window_height / 2.0f);
+                projected_points[j].x *= (get_window_width() / 2.0f);
+                projected_points[j].y *= -(get_window_height() / 2.0f);
 
-                projected_points[j].x += (window_width / 2.0f);
-                projected_points[j].y += (window_height / 2.0f);
+                projected_points[j].x += (get_window_width() / 2.0f);
+                projected_points[j].y += (get_window_height() / 2.0f);
             }
 
             uint32_t face_color = light_apply_intensity(
@@ -253,7 +237,8 @@ void render(void) {
     int n_triangles = num_triangles_to_render;
     for (int i = 0; i < n_triangles; ++i) {
         triangle_t triangle = triangles_to_render[i];
-
+        
+        int render_method = get_render_method();
         if (render_method == RENDER_FILL_TRIANGLE 
             || render_method == RENDER_FILL_TRIANGLE_WIRE) {
             draw_filled_triangle(
@@ -324,12 +309,12 @@ void render(void) {
     clear_color_buffer(0xFF000000);
     clear_z_buffer();
     
-    SDL_RenderPresent(renderer);
+    SDL_RenderPresent(get_renderer());
 }
 
 void free_resources(void) {
-    free(color_buffer);
-    free(z_buffer);
+    free(get_z_buffer());
+    free(get_color_buffer());
     free(png_texture);
     array_free(mesh.vertices);
     array_free(mesh.faces);
