@@ -55,6 +55,8 @@ bool initialize_window(void) {
     // Set width and height of the SDL window with the max screen resolution
     SDL_DisplayMode display_mode;
     SDL_GetCurrentDisplayMode(0, &display_mode);
+    int fullscreen_width = display_mode.w;
+    int fullscreen_height = display_mode.h;
 
     // Create a SDL Window
     window = SDL_CreateWindow(

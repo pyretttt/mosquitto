@@ -26,12 +26,13 @@ int previous_frame_time = 0;
 mat4_t proj_mat;
 mat4_t view_matrix;
 float fov_factor = 640.f;
-float rotation = 0.01;
+float rotation = 0.1;
 float delta_time = 0;
 
 void setup(void) {
     set_render_method(RENDER_WIRE);
     set_cull_method(CULL_BACKFACE);
+    init_light((vec3_t){0, 0, 1});
 
     float aspect_ratio = (float) get_window_width() / get_window_height();
     float fov = M_PI / 3.0f;
@@ -44,14 +45,13 @@ void setup(void) {
         z_far
     );
     init_frustum_planes(fov, z_near, z_far, aspect_ratio);
-    load_obj_file_data("assets/crab.obj");
+    load_obj_file_data("assets/cube.obj");
     // load_cube_mesh_data();
-    load_png_texture_data("assets/crab.png");
+    load_png_texture_data("assets/cube.png");
 }
 
 void process_input(void) {
     SDL_Event event;
-    // SDL_PollEvent(&event);
     while (SDL_PollEvent(&event)) {
         switch (event.type)
         {
@@ -62,7 +62,7 @@ void process_input(void) {
                 if (event.key.keysym.sym == SDLK_ESCAPE)
                     is_running = false;
                 if (event.key.keysym.sym == SDLK_SPACE)
-                    rotation = rotation > 0 ? 0 : 0.01;
+                    rotation = rotation > 0 ? 0 : 0.1;
                 if (event.key.keysym.sym == SDLK_1)
                     set_render_method(RENDER_WIRE_VERTEX);
                 if (event.key.keysym.sym == SDLK_2)
@@ -80,21 +80,23 @@ void process_input(void) {
                 if (event.key.keysym.sym == SDLK_x)
                     set_cull_method(CULL_NONE);
                 if (event.key.keysym.sym == SDLK_w) {
+                    camera.pitch += 3.0 * delta_time;
+                }
+                if (event.key.keysym.sym == SDLK_s) {
+                    camera.pitch += -3.0 * delta_time;
+                }
+                if (event.key.keysym.sym == SDLK_RIGHT)
+                    camera.yaw_angle += 1.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_LEFT)
+                    camera.yaw_angle -= 1.0 * delta_time;
+                if (event.key.keysym.sym == SDLK_UP) {
                     camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
                     camera.position = vec3_add(camera.position, camera.forward_velocity);
                 }
-                if (event.key.keysym.sym == SDLK_s) {
+                if (event.key.keysym.sym == SDLK_DOWN) {
                     camera.forward_velocity = vec3_mul(camera.direction, 5.0 * delta_time);
                     camera.position = vec3_sub(camera.position, camera.forward_velocity);
                 }
-                if (event.key.keysym.sym == SDLK_d)
-                    camera.yaw_angle -= 1.0 * delta_time;
-                if (event.key.keysym.sym == SDLK_a)
-                    camera.yaw_angle += 1.0 * delta_time;
-                if (event.key.keysym.sym == SDLK_UP)
-                    camera.position.y += 3 * delta_time;
-                if (event.key.keysym.sym == SDLK_DOWN)
-                    camera.position.y -= 3 * delta_time;
                 break;
         }
     }
@@ -116,13 +118,7 @@ void update() {
     mesh.translation.z = 5;
 
     vec3_t up_direction = {0, 1, 0};
-    vec3_t target = {0, 0, 1};
-    mat4_t camera_yaw_rotation = make_rotation_matrix_y(camera.yaw_angle);
-    camera.direction = vec3_from_vec4(
-        mul_vec4(camera_yaw_rotation, vec4_from_vec3(target))
-    );
-    target = vec3_add(camera.position, camera.direction);
-
+    vec3_t target = get_camera_look_at_target();
     view_matrix = mat4_look_at(camera.position, target, up_direction);
 
     mat4_t scale_matrix = make_scale_matrix(mesh.scale.x, mesh.scale.y, mesh.scale.z);
@@ -209,7 +205,7 @@ void update() {
 
             uint32_t face_color = light_apply_intensity(
                 face.color, 
-                fmax(0.1, vec3_dot_product(normal, vec3_mul(light.direction, -1)))
+                fmax(0.1, vec3_dot_product(normal, vec3_mul(get_light().direction, -1)))
             );
 
             triangle_t triangle_to_render = {
