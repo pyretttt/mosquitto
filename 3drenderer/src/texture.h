@@ -10,12 +10,4 @@ typedef struct {
     float v;
 } tex2_t;
 
-extern uint32_t *mesh_texture;
-extern int texture_width;
-extern int texture_height;
-
-extern upng_t *png_texture;
-
-void load_png_texture_data(char const *filename);
-
 #endif
