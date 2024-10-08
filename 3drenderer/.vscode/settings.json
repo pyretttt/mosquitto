@@ -13,6 +13,7 @@
         "matrix.h": "c",
         "camera.h": "c",
         "__split_buffer": "c",
-        "vector": "c"
+        "vector": "c",
+        "complex": "c"
     }
 }

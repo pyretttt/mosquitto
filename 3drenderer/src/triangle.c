@@ -156,7 +156,7 @@ void draw_filled_triangle(
 }
 
 static void draw_texel(
-    int x, int y, uint32_t* texture,
+    int x, int y, upng_t *texture,
     vec4_t point_a, vec4_t point_b, vec4_t point_c,
     tex2_t a_uv, tex2_t b_uv, tex2_t c_uv
 ) {
@@ -179,9 +179,13 @@ static void draw_texel(
     u /= w_recip;
     v /= w_recip;
 
-    int tex_x = abs((int)(u * texture_width)) % texture_width;
-    int tex_y = abs((int)(v * texture_height)) % texture_height;
-    uint32_t texel = texture[(texture_width * tex_y + tex_x)];
+    int tex_width = upng_get_width(texture);
+    int tex_height = upng_get_height(texture);
+    uint32_t *tex_buffer = (uint32_t *)upng_get_buffer(texture);
+
+    int tex_x = abs((int)(u * tex_width)) % tex_width;
+    int tex_y = abs((int)(v * tex_height)) % tex_height;
+    uint32_t texel = tex_buffer[(tex_width * tex_y + tex_x)];
 
     float *z_buffer = get_z_buffer();
     int window_width = get_window_width();
@@ -195,7 +199,7 @@ void draw_textured_triangle(
     int x0, int y0, float z0, float w0, float u0, float v0, 
     int x1, int y1, float z1, float w1, float u1, float v1,
     int x2, int y2, float z2, float w2, float u2, float v2, 
-    uint32_t *texture
+    upng_t *texture
 ) {
     //     v0
     //   /    \
