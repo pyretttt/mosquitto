@@ -16,5 +16,5 @@ For example from hugging face via `git clone git@hf.co:google/gemma-2-9b-it && g
 
 ## Build llama.cpp
 - Init project `cmake -S submodules/llama.cpp -B submodules/llama.cpp/build`
-- Build `cmake --build submodules/llama.cpp/build --config Release`
+- Build `cmake --build submodules/llama.cpp/build --config Release -j 8`
 
