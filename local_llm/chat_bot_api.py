@@ -1,7 +1,12 @@
 from llama_cpp import Llama
+from openai import OpenAI, ChatCompletion
 
 from pprint import pprint
 
+client = OpenAI(
+    base_url="http://localhost:8080/",
+    api_key="local-no-key-required"
+)
 
 llm = Llama(
     model_path="no_index//Phi-3.5-mini-instruct-q5_k_m.gguf",
