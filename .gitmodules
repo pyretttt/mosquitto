@@ -1,0 +1,6 @@
+[submodule "local_llm/submodules/llama.cpp"]
+	path = local_llm/submodules/llama.cpp
+	url = git@github.com:ggerganov/llama.cpp.git
+[submodule "local_llm/submodules/llama-cpp-python"]
+	path = local_llm/submodules/llama-cpp-python
+	url = git@github.com:abetlen/llama-cpp-python.git
