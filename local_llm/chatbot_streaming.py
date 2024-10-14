@@ -23,6 +23,14 @@ def add_user_message(message: str):
         }
     )
 
+def add_assistant_message(message: str):
+    messages_history.append(
+        {
+            "role": "assistant",
+            "content": message
+        }
+    )
+
 def print_message_history():
     print("=======================")
     for message in messages_history:
@@ -45,11 +53,31 @@ if __name__ == "__main__":
         add_user_message(user_input)
         llm_output = client.chat.completions.create(
             model="no_index/Phi-3.5-mini-instruct-q5_k_m.gguf",
-            messages_history=messages_history
+            messages=messages_history,
+            stream=True,
+            stream_options={"include_usage": True}
         )
-        messages_history.append(
-            get_message_from_response(llm_output)
-        )
+        full_response = ""
+        request_usage = None
+        finish_reason = None
+        for chunk in llm_output:
+            if chunk.usage:
+                request_usage = chunk.usage
+            if len(chunk.choices) < 1:
+                continue
+            if chunk.choices[0].finish_reason:
+                finish_reason = chunk.choices[0].finish_reason
+            latest_chunk_str = chunk.choices[0].delta.content
+            if latest_chunk_str is None:
+                continue
+            full_response += latest_chunk_str
+            print(latest_chunk_str, end='', flush=True)
 
+        print()
+
+        print("Stop reason: ", finish_reason)
+        print("Usage: ", request_usage)
+
+        add_assistant_message(full_response)
         print_message_history()
 print("Goodbye!")
