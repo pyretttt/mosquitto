@@ -11,7 +11,7 @@ client = OpenAI(
 messages_history=[
     {
         "role": "system",
-        "content": "You are a rural worker"
+        "content": "You are a good math teacher"
     },
 ]
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
         
         add_user_message(user_input)
         llm_output = client.chat.completions.create(
-            model="no_index/Phi-3.5-mini-instruct-q5_k_m.gguf",
+            model="no_index/Qwen2.5-7B-Instruct-q5_k_m.gguf",
             messages=messages_history,
             stream=True,
             stream_options={"include_usage": True}
