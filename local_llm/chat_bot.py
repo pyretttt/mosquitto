@@ -4,7 +4,7 @@ from pprint import pprint
 
 
 llm = Llama(
-    model_path="no_index//Phi-3.5-mini-instruct-q5_k_m.gguf",
+    model_path="no_index/Phi-3.5-mini-instruct-q5_k_m.gguf",
     chat_template="chat_template.default"
 )
 messages_history=[
