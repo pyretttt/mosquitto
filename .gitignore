@@ -1,9 +1,13 @@
+# OS specifi
 .DS_Store
-*/build/
 
+# build artifacts and another no index things
+*/build/
+*/no_index/
+
+# Python specific
 */__pycache__/
+*/env/
 
 3drenderer/3rd_party/
 3drenderer/3drenderer
-
-*/no_index/

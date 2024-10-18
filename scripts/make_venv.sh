@@ -13,7 +13,7 @@ if [ -f ${1} ]; then
 fi
 
 if [ ! -d ${1} ]; then
-    echo "$DIRECTORY does exist. Creating..."
+    echo "Directory ${1} does not exist. Creating..."
     mkdir ${1}
 fi
 echo "Creating venv"
