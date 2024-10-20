@@ -76,6 +76,7 @@
         "stack": "cpp",
         "typeindex": "cpp",
         "unordered_set": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "internal.h": "c"
     }
 }
