@@ -77,6 +77,8 @@
         "typeindex": "cpp",
         "unordered_set": "cpp",
         "valarray": "cpp",
-        "internal.h": "c"
+        "internal.h": "c",
+        "memory": "cpp",
+        "semaphore": "cpp"
     }
 }
