@@ -9,7 +9,12 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/glfw/glfw.git
     GIT_TAG 7b6aead9fb88b3623e3b3725ebb42670cbe4c579
 )
-FetchContent_MakeAvailable(glfw)
+FetchContent_Declare(
+    concurrencpp
+    GIT_REPOSITORY https://github.com/David-Haim/concurrencpp.git
+    GIT_TAG 7a88f5401e15e1b64acae70077e40df1a5a9f6bf
+)
+FetchContent_MakeAvailable(glfw concurrencpp)
 
 # find_package(OpenGL REQUIRED)
 
