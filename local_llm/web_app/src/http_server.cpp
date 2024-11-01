@@ -2,6 +2,9 @@
 #include <functional>
 #include <optional>
 #include <utility>
+#include <unordered_map>
+#include <string_view>
+#include <sstream>
 
 #include <sys/socket.h>
 #include <arpa/inet.h> // This contains inet_addr
@@ -19,11 +22,29 @@ using socket_t = int;
 // Utilities
 template<typename T>
 using Modify = std::function<T(T&&)>;
+using Headers = std::unordered_multimap<std::string, std::string>;
 
 using SetSockOptions = std::function<void(socket_t)>;
 
 // Types
-struct Request {};
+enum class Errors {
+    failed_to_connect,
+    socket_send_failure
+};
+
+class Schema {
+    constexpr static inline std::string_view http = "http";
+    constexpr static inline std::string_view https = "https";
+};
+
+
+
+struct Request {
+    Headers headers;
+    std::string path;
+    std::string method;
+};
+
 struct Response {};
 using ResponseCallback = std::function<void(Response)>;
 
@@ -34,7 +55,6 @@ struct HttpClient {
     // void virtual Patch(Request request) const = 0;
     virtual ~HttpClient() {};
 };
-
 
 struct HttpConfig {
     std::string client_cert_path;
@@ -61,6 +81,8 @@ struct HttpConfig {
     std::string proxy_basic_auth_username;
     std::string proxy_basic_auth_pass;
     std::string proxy_bearer_token_auth_token;
+
+    Headers default_headers;
 };
 
 struct Socket {
@@ -161,6 +183,32 @@ struct Socket {
 
         return Socket{sock, ai};
     }
+
+    inline size_t raw_socket_send_all(char const *data, size_t size, int flags) const {
+        int all_sent = 0;
+        while (all_sent < size) {
+            auto sent = send(sock, reinterpret_cast<const void *>(data[all_sent]), size - all_sent, flags);
+            if (sent < 0) {
+                throw Errors::socket_send_failure;
+            }
+            all_sent += sent;
+        }
+    }
+
+    void write_socket(
+        Request &req
+    ) const {
+        std::ostringstream strm;
+        strm << req.method << " " << req.path << " HTTP/1.1\r\n";
+        for (auto const &header : req.headers) {
+            strm << header.first << " : " << header.second << "\r\n";
+        }
+        strm << "\r\n";
+        char const *http_header = strm.str().c_str();
+        raw_socket_send_all(http_header, strlen(http_header), 0);
+
+    }
+
 };
 
 struct HttpClientImpl: public virtual HttpClient {
@@ -186,6 +234,7 @@ struct HttpClientImpl: public virtual HttpClient {
         sock = Socket::create_client_socket(host, "", port, config, socket_flags, nullptr);
         auto ret = sock.try_connect();
         std::cout << "Socket connection status " << ret << std::endl;
+        return ret;
     }
 
     ~HttpClientImpl() {
@@ -195,6 +244,31 @@ struct HttpClientImpl: public virtual HttpClient {
     HttpConfig config;
     Socket sock;
 private:
+    void send(Request req, ResponseCallback &&completion) {
+        if (sock.is_valid()) {
+            for (const auto &header : config.default_headers) {
+                if (req.headers.find(header.first) == req.headers.end()) {
+                    req.headers.insert(header);
+                }
+            }
+            req.path = schema + "://" + host + ":" + std::to_string(port) + req.path;
+
+
+
+        } else {
+            auto ret = create_and_connect_socket();
+            if (ret) {
+                throw Errors::failed_to_connect;
+            }
+            send(req, std::move(completion));
+        }
+
+
+    }
+
+
+
+
     std::string schema;
     std::string host;
     int port;
