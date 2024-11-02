@@ -43,6 +43,7 @@ struct Request {
     Headers headers;
     std::string path;
     std::string method;
+    std::string str_body;
 };
 
 struct Response {};
@@ -206,7 +207,7 @@ struct Socket {
         strm << "\r\n";
         char const *http_header = strm.str().c_str();
         raw_socket_send_all(http_header, strlen(http_header), 0);
-
+        
     }
 
 };
