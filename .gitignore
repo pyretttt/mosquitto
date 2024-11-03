@@ -11,3 +11,7 @@
 
 3drenderer/3rd_party/
 3drenderer/3drenderer
+
+# Godot specific
+**/.godot/
+godot_playground/**/android/
