@@ -71,7 +71,7 @@ struct Socket {
                 hints.ai_family = AF_UNSPEC;
                 hints.ai_flags = AI_NUMERICHOST;
             }
-        }, host_or_ip);
+        }, host_or_ip, host_or_ip);
 
         auto service = std::to_string(port);
         if (getaddrinfo(node, service.c_str(), &hints, &result)) {
