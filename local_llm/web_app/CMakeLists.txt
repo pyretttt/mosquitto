@@ -9,5 +9,6 @@ aux_source_directory(src SRC_SOURCES)
 
 add_executable(${PROJECT_NAME} ${SRC_SOURCES})
 
-target_include_directories(${PROJECT_NAME} PRIVATE src)
+target_compile_features(${PROJECT_NAME} PRIVATE  cxx_std_20)
+target_include_directories(${PROJECT_NAME} PRIVATE ${SRC_SOURCES})
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -save-temps=obj)
