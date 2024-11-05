@@ -5,6 +5,7 @@
 #include <variant>
 #include <sstream>
 #include <functional>
+#include <regex>
 
 #include <sys/socket.h>
 #include <arpa/inet.h> // This contains inet_addr
@@ -24,7 +25,8 @@ T modify(T&& arg, std::function<void (T&)> mutation) {
 }
 
 enum class Errors {
-    socket_send_failure
+    socket_send_failure,
+    http_response_failed_to_parse
 };
 
 struct Request {
@@ -34,7 +36,10 @@ struct Request {
 };
 
 struct Response {
-
+    std::string version;
+    int status;
+    std::string reason;
+    Headers headers;
 };
 
 namespace NodeEnum {
@@ -42,6 +47,12 @@ namespace NodeEnum {
     struct Ip { std::string ip; };
     using E = std::variant<Host, Ip>;
 };
+
+bool ends_with_crlf(std::string const &str) {
+    if (str.size() < 2) return false;
+    auto end = str.data() + str.size();
+    return end[-1] == '\n' && end[-2] == '\r';
+} 
 
 struct Socket {
     Socket() = default;
@@ -55,7 +66,7 @@ struct Socket {
     }
 
     int try_connect() const {
-        return connect(this->sock, addrinfo_.ai_addr, static_cast<socklen_t>(addrinfo_.ai_addrlen));
+        return connect(sock, addrinfo_.ai_addr, static_cast<socklen_t>(addrinfo_.ai_addrlen));
     }
 
     auto inline static create_raw_socket(
@@ -142,6 +153,64 @@ struct Socket {
         std::string str{strm.str()};
         char const *http_header = str.c_str();
         raw_socket_send_all(http_header, strlen(http_header), 0);
+    }
 
+    std::string read_line() const {
+        std::array<char, 2048> fix_size_buffer;
+        std::string flex_buffer;
+        size_t used{0};
+        while (;;) {
+            char byte;
+            auto n = read(sock, &byte, 1);
+            if (n == 1) {
+                if (used < fix_size_buffer.max_size()) {
+                    fix_size_buffer[used++] = byte;
+                } else {
+                    flex_buffer.append(byte);
+                    used++;
+                }
+            } else {
+                break;
+            }
+            if (byte == '\n') {
+                break;
+            }
+        }
+        
+        if (flex_buffer.empty()) {
+            flex_buffer.assign(fix_size_buffer, used);
+        }
+        return flex_buffer;
+    }
+
+    void read_response(
+        Response &res
+    ) const {
+        auto const response_line = read_line();
+        if (response_line.empty() || !ends_with_crlf(response_line)) {
+            throw Errors::http_response_failed_to_parse;
+        }
+
+        const static std::regex re("(HTTP/1\\.[01]) (\\d{3})(?: (.*?))?\r\n");
+        std::cmatch m;
+        if (!std::regex_match(response_line, m, re)) {
+            throw Errors::http_response_failed_to_parse;
+        }
+
+        res.version = std::string(m[1]);
+        res.status = std::stoi(std::string(m[2]));
+        res.reason = std::string(m[3]);
+
+        for (;;) {
+            auto const line = read_line();
+            if (ends_with_crlf(line)) {
+                if (line.size() == 2) {
+                    break
+                } else {
+                    line.
+                    res.headers.insert(make_pair())
+                }
+            }
+        }
     }
 };
