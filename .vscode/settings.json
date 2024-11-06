@@ -81,6 +81,7 @@
         "memory": "cpp",
         "semaphore": "cpp",
         "functional": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "random": "cpp"
     }
 }
