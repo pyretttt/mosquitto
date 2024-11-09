@@ -21,8 +21,8 @@ find_package(OpenGL REQUIRED)
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src SRC_SOURCES)
 add_executable(opengl_playground ${SRC_SOURCES})
 target_compile_features(opengl_playground PRIVATE cxx_std_23)
-target_link_libraries(opengl_playground PRIVATE glfw)
-target_include_directories(opengl_playground PRIVATE ${GLFW_SOURCE_DIR}/deps) # to include glad for opengl
+target_link_libraries(opengl_playground PRIVATE glfw ${OPENGL_gl_LIBRARY})
+target_include_directories(opengl_playground PRIVATE ${GLFW_SOURCE_DIR}/deps ${OPENGL_INCLUDE_DIR}) # to include glad for opengl
 
 target_link_libraries(opengl_playground PRIVATE "-framework Cocoa")
 target_link_libraries(opengl_playground PRIVATE "-framework OpenGL")
