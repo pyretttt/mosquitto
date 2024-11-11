@@ -1,71 +1,67 @@
 #include <iostream>
 #include <vector>
+#include <cassert>
+#include <list>
+#include <limits>
 
-using namespace std;
+// Queue
+// LinkedList
+// Vector
+// Map
+// 
 
-template<typename T>
-void printAll(T &&arg) {
-    cout << arg << endl;
-}
-
-template<typename T>
-T check(T &&arg) {
-    return arg;
-}
-
-template<typename... T>
-void printAll(T&&... args) {
-    printAll(std::forward<T&&...>(check(args)...));
-}
-
-vector<vector<int>> fill_spiral(int n) {
-    vector<vector<int>> res = vector<vector<int>>(
-        n,
-        vector<int>(n, -1)
-    );
-    
-    vector<pair<int, int>> directions = {
-        {1, 0},
-        {0, 1}, 
-        {-1, 0},
-        {0, -1}
-    };
-    
-    int dir = 0;
-    int x{0}, y{0};
-    int idx = 1;
-    
-    while (true) {
-        if (idx > n * n) { return res; }
-        if (n > y && y >= 0
-            && n > x && x >= 0
-            && res[y][x] == -1) {
-            res[y][x] = idx++;
-            x += directions[dir % 4].first;
-            y += directions[dir % 4].second;
-        } else {
-            x -= directions[dir % 4].first;
-            y -= directions[dir % 4].second;
-            dir++;
-            x += directions[dir % 4].first;
-            y += directions[dir % 4].second;
+struct MaxStack {
+    int pop() {
+        auto val = objects.front();
+        if (val == max_)
+        {
+            max_map[val].second--;
+            auto [next_max, counts] = max_map[val];
+            if (counts <= 0)
+            {
+                max_map.erase(val);
+                max_ = next_max;
+            }
         }
+        objects.front();
+        return val;
     }
-    
-    return res;
-}
 
-int main()
-{
-    auto res = fill_spiral(1);
-    for (auto &row : res) {
-        for (auto &e : row) {
-            cout << e;
+    void push(int value) noexcept {
+        if (value >= max_) {
+            max_map[value].second++;
+            if (value != max_) {
+                max_map[value].first = max_;
+            }
+            max_ = value;
         }
-        cout << endl;
+        objects.push_front(value);
     }
-    
-    printAll(1, 2.0f, 3.0, "");
-    
+
+    int max() {
+        return max_;
+    }
+
+    std::list<int> objects;
+    int max_ = std::numeric_limits<int>::lowest();
+    std::unordered_map<int, std::pair<int, int>> max_map;
+};
+
+
+int main() {
+    MaxStack stack;
+
+    stack.push(2);
+    std::cout << "max " << stack.max_ << std::endl;
+    stack.push(1);
+    std::cout << "max " << stack.max_ << std::endl;
+    stack.push(3);
+    std::cout << "max " << stack.max_ << std::endl;
+    stack.push(3);
+    std::cout << "max " << stack.max_ << std::endl;
+    stack.pop(); // 3
+    std::cout << "max " << stack.max_ << std::endl;
+    stack.pop(); // 3
+    std::cout << "max " << stack.max_ << std::endl;
     return 0;
 }
