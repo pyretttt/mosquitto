@@ -1,0 +1,10 @@
+[gd_scene load_steps=3 format=3 uid="uid://bxidlfroi48fk"]
+
+[ext_resource type="PackedScene" uid="uid://dmx85p0t2kqr8" path="res://assets/5v5_game_map/scene.gltf" id="1_vdi78"]
+[ext_resource type="Script" path="res://game_map.gd" id="2_7efsv"]
+
+[node name="Sketchfab_Scene" instance=ExtResource("1_vdi78")]
+
+[node name="������_1_4" parent="Sketchfab_model/010d97cb67494fd58a0a3a89ed104433_fbx/RootNode" index="6"]
+visible = false
+script = ExtResource("2_7efsv")
