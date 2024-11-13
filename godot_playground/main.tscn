@@ -1,9 +1,21 @@
-[gd_scene load_steps=2 format=3 uid="uid://iq35gkf582qc"]
+[gd_scene load_steps=3 format=3 uid="uid://iq35gkf582qc"]
 
 [ext_resource type="PackedScene" uid="uid://bxidlfroi48fk" path="res://game_map.tscn" id="1_3ghbh"]
+[ext_resource type="PackedScene" uid="uid://bqcjylgvilwoc" path="res://flight_camera.tscn" id="2_6uo1f"]
 
-[node name="Root" type="Node3D"]
+[node name="Main" type="Node3D"]
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("1_3ghbh")]
 transform = Transform3D(0.003, 0, 0, 0, 0.003, 0, 0, 0, 0.003, 0, 0, 0)
 metadata/_edit_lock_ = true
+
+[node name="FlightCamera" parent="." instance=ExtResource("2_6uo1f")]
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 2.08033, 12.3821, 15.4257)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.671263, -0.597869, 0.438131, 0.457747, 0.799283, 0.389376, -0.582987, -0.0608203, 0.810202, 42.8253, 23.3508, 41.9971)
+light_energy = 4.0
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.835222, 0.549912, 0, -0.549912, 0.835222, 3.4431, 12.4658, 13.4601)
+current = true
