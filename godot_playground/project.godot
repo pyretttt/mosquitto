@@ -16,7 +16,10 @@ config/icon="res://icon.svg"
 
 [display]
 
-window/stretch/mode="canvas_items"
+window/size/viewport_width=874
+window/size/viewport_height=402
+window/stretch/mode="viewport"
+window/handheld/orientation=1
 
 [input]
 

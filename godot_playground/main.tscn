@@ -6,16 +6,18 @@
 [node name="Main" type="Node3D"]
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("1_3ghbh")]
-transform = Transform3D(0.003, 0, 0, 0, 0.003, 0, 0, 0, 0.003, 0, 0, 0)
+transform = Transform3D(0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01, 0, 0, 0)
 metadata/_edit_lock_ = true
 
 [node name="FlightCamera" parent="." instance=ExtResource("2_6uo1f")]
 transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 2.08033, 12.3821, 15.4257)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.671263, -0.597869, 0.438131, 0.457747, 0.799283, 0.389376, -0.582987, -0.0608203, 0.810202, 42.8253, 23.3508, 41.9971)
+transform = Transform3D(0.949914, -0.179438, -0.255862, 0.299667, 0.290701, 0.908676, -0.088672, -0.939838, 0.329913, 1000, 587.122, -2000)
 light_energy = 4.0
+directional_shadow_max_distance = 400.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.84135, 0.54049, 0, -0.54049, 0.84135, 2.56585, 9.23269, 15.845)
+transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 100, 400, 306.658)
 current = true
+near = 0.001
