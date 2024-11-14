@@ -17,5 +17,5 @@ transform = Transform3D(0.671263, -0.597869, 0.438131, 0.457747, 0.799283, 0.389
 light_energy = 4.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.835222, 0.549912, 0, -0.549912, 0.835222, 3.4431, 12.4658, 13.4601)
+transform = Transform3D(1, 0, 0, 0, 0.84135, 0.54049, 0, -0.54049, 0.84135, 2.56585, 9.23269, 15.845)
 current = true
