@@ -13,8 +13,10 @@ metadata/_edit_lock_ = true
 transform = Transform3D(1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5, 2.08033, 12.3821, 15.4257)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.949914, -0.179438, -0.255862, 0.299667, 0.290701, 0.908676, -0.088672, -0.939838, 0.329913, 1000, 587.122, -2000)
-light_energy = 4.0
+transform = Transform3D(0.173295, -0.971491, 0.161786, -0.3802, 0.0855474, 0.920939, -0.908524, -0.221106, -0.354536, 102.153, 95.1335, -197.798)
+light_energy = 5.0
+light_indirect_energy = 0.5
+shadow_enabled = true
 directional_shadow_max_distance = 400.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
