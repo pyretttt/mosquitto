@@ -11,8 +11,9 @@ var pivot_camera_vec: Vector3:
 	get:
 		return CAMERA_BEGIN_POS - $RotationPoint.position
 
+# State
 var progress: float = 0.0
-
+var cameraMovingDirection := 0
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
@@ -20,10 +21,8 @@ func _ready():
 
 
 func _process(delta):
-	if (Input.is_key_pressed(KEY_W) or Input.is_key_pressed(KEY_S)):
-		var delta_progress = delta * CAMERA_INTEROP_PROGRESS_PER_SE
-		if Input.is_key_pressed(KEY_S):
-			delta_progress *= -1
+	if (cameraMovingDirection != 0):
+		var delta_progress = cameraMovingDirection * delta * CAMERA_INTEROP_PROGRESS_PER_SE
 		progress += delta_progress
 		progress = clampf(progress, 0.0, 1.0)
 		var interpolated_quat = camera_begin_quat.slerp(camera_end_quat, progress)
@@ -33,7 +32,8 @@ func _process(delta):
 			* pivot_camera_vec.length()
 		
 		$FlightCamera.position = new_position
-		$FlightCamera.look_at(CAMERA_LOOK_AT + $FlightCamera.position)
+		$FlightCamera.look_at(CAMERA_LOOK_AT + new_position)
+	
 
 func setup_camera():
 	# TODO: to config
@@ -46,3 +46,13 @@ func setup_camera():
 	camera_begin_quat = Quaternion(pivot_camera_vec.x, pivot_camera_vec.y, pivot_camera_vec.z, 0).normalized()
 	var q = Quaternion(ROTATION_AXIS, PI / 2 - 1e-7)
 	camera_end_quat = q * camera_begin_quat * q.inverse()
+	
+func _input(event):
+	print(event)
+	if event is InputEventKey and event.pressed and (event.keycode == KEY_W or event.keycode == KEY_S):
+		cameraMovingDirection = 1 if event.keycode == KEY_W else -1
+	elif event is InputEventMagnifyGesture:
+		print(event)
+		cameraMovingDirection = event.factor - 1
+	else:
+		cameraMovingDirection = 0

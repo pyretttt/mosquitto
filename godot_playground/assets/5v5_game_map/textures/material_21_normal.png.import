@@ -4,15 +4,16 @@ importer="texture"
 type="CompressedTexture2D"
 uid="uid://deujqwwj2ocwt"
 path.s3tc="res://.godot/imported/material_21_normal.png-aa776d52a30f252e8e1bb439aa2b4cce.s3tc.ctex"
+path.etc2="res://.godot/imported/material_21_normal.png-aa776d52a30f252e8e1bb439aa2b4cce.etc2.ctex"
 metadata={
-"imported_formats": ["s3tc_bptc"],
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
 "vram_texture": true
 }
 
 [deps]
 
 source_file="res://assets/5v5_game_map/textures/material_21_normal.png"
-dest_files=["res://.godot/imported/material_21_normal.png-aa776d52a30f252e8e1bb439aa2b4cce.s3tc.ctex"]
+dest_files=["res://.godot/imported/material_21_normal.png-aa776d52a30f252e8e1bb439aa2b4cce.s3tc.ctex", "res://.godot/imported/material_21_normal.png-aa776d52a30f252e8e1bb439aa2b4cce.etc2.ctex"]
 
 [params]
 
