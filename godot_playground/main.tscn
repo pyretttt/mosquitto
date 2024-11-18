@@ -13,7 +13,7 @@ metadata/_edit_lock_ = true
 
 [node name="FlightCamera" parent="." instance=ExtResource("2_6uo1f")]
 transform = Transform3D(0.874436, -0.448063, 0.186013, 0, 0.38342, 0.923574, -0.485141, -0.807606, 0.335276, 20, 43, 15)
-metadata/_edit_lock_ = true
+current = true
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.898017, -0.418319, 0.136288, 0, 0.309773, 0.95081, -0.439961, -0.853844, 0.278181, 42.574, 159.971, 61.8239)
@@ -25,11 +25,8 @@ shadow_blur = 4.0
 directional_shadow_max_distance = 400.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.667514, 0.0966012, -0.738305, 0, 0.991549, 0.129736, 0.744597, -0.0866007, 0.661872, -2.66425, 37.9719, 23.1603)
-current = true
+transform = Transform3D(0.667514, 0.0966011, -0.738304, 0, 0.991549, 0.129736, 0.744597, -0.0866007, 0.661873, -2.66425, 37.9719, 23.1603)
+visible = false
 
 [node name="RotationPoint" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 37, 5)
-
-[node name="Node3D" type="Node3D" parent="."]
-transform = Transform3D(0.711725, -0.0800761, -0.697879, 0, 0.993481, -0.113994, 0.702458, 0.0811325, 0.707086, 5.85855, 4.00926, 10.5503)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 35.418, 5)

@@ -1,39 +1,50 @@
 extends Node3D
 
-const CAMERA_POS = Vector3(21, 43, 15)
-const CAMERA_ROTATION = Vector3(-67.5, 29, 0)
-
-var rotation_axis: Vector3 = Vector3(7, 0, -7).normalized()
-var new_camera_position: Quaternion
+# Camera
+var CAMERA_BEGIN_POS: Vector3
+var CAMERA_LOOK_AT: Vector3
+var ROTATION_AXIS: Vector3 = Vector3(7, 0, -7).normalized() # PI / 4 rads
 
 var progress: float = 0.0
-var p: Quaternion
+var camera_begin_quat: Quaternion
+var camera_end_quat: Quaternion
+
+var pivot_camera_vec: Vector3:
+	get:
+		return CAMERA_BEGIN_POS - $RotationPoint.position
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
-	$FlightCamera.set_identity()
-	# TODO: to config
-	$FlightCamera.position = CAMERA_POS
-	$FlightCamera.rotation_degrees = CAMERA_ROTATION
-	$FlightCamera/Camera3D.make_current()
-	# camera
-	var pivot_pos = $RotationPoint.position
-	var camera_position: Vector3 = CAMERA_POS - pivot_pos
-	var rotation_vector = camera_position.normalized()
-	p = Quaternion(rotation_vector.x, rotation_vector.y, rotation_vector.z, 0)
-	var q = Quaternion(rotation_axis, PI / 2)
-	var q_inv = q.inverse()
-	var rotated_vector = q * p * q_inv
-	
-	#var new_camera_position = camera_position.length() * Vector3(rotated_vector.x, rotated_vector.y, rotated_vector.z)
-	new_camera_position = rotated_vector
+	setup_camera()
+
 
 func _process(delta):
-	pass
 	progress = clampf(progress + delta / 5, 0, 1)
-	var interpolated = p.slerp(new_camera_position, progress)
-	var pivot_pos = $RotationPoint.position
-	var camera_position: Vector3 = CAMERA_POS - pivot_pos
-	print("Camera position: ", camera_position)
-	var pos = pivot_pos + camera_position.length() * Vector3(interpolated.x, interpolated.y, interpolated.z)
-	$FlightCamera.position = pos
+	var interpolated = camera_begin_quat.slerp(camera_end_quat, progress)
+	var new_position = $RotationPoint.position \
+		+ Vector3(interpolated.x, interpolated.y, interpolated.z) \
+		* pivot_camera_vec.length()
+	#var pivot_pos = $RotationPoint.position
+	#var camera_position: Vector3 = CAMERA_POS - pivot_pos
+	#print("Camera position: ", camera_position)
+	#var pos = pivot_pos + camera_position.length() * Vector3(interpolated.x, interpolated.y, interpolated.z)
+	#$FlightCamera.position = pos
+	#print($FlightCamera.transform)
+	# Rotate the transform around the X axis by 0.1 radians.
+	#Basis(axis, rotation_amount)
+	$FlightCamera.look_at_from_position(new_position, CAMERA_LOOK_AT, )
+	$FlightCamera.position = new_position
+	print($FlightCamera.transform.basis)
+	print(CAMERA_LOOK_AT)
+
+func setup_camera():
+	# TODO: to config
+	CAMERA_LOOK_AT = $FlightCamera/Camera3D.transform.basis.z
+	CAMERA_BEGIN_POS = $FlightCamera.position
+	$FlightCamera/Camera3D.make_current()
+	
+	# Computer camera end position
+	var pivot_camera_direction = pivot_camera_vec.normalized()
+	camera_begin_quat = Quaternion(pivot_camera_direction.x, pivot_camera_direction.y, pivot_camera_direction.z, 0)
+	var q = Quaternion(ROTATION_AXIS, PI / 2)
+	camera_end_quat = q * camera_begin_quat * q.inverse()
