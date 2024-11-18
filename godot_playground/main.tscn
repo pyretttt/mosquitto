@@ -17,7 +17,8 @@ script = ExtResource("1_ex88s")
 transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -12, 0, -5)
 
 [node name="FlightCamera" parent="." instance=ExtResource("2_6uo1f")]
-transform = Transform3D(1, 0, 0, 0, 0.422618, 0.906308, 0, -0.906307, 0.422618, 0, 40, 20)
+transform = Transform3D(1, 0, 0, 0, 0.999999, 0, 0, 0, 1, 3.5, 40, 20)
+current = true
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.898017, -0.418319, 0.136288, 0, 0.309773, 0.95081, -0.439961, -0.853844, 0.278181, 42.574, 159.971, 61.8239)
@@ -27,10 +28,6 @@ shadow_enabled = true
 shadow_opacity = 0.8
 shadow_blur = 4.0
 directional_shadow_max_distance = 400.0
-
-[node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 0.422618, 0.906308, 0, -0.906308, 0.422618, 0, 40, 20)
-current = true
 
 [node name="RotationPoint" type="Marker3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 10)
