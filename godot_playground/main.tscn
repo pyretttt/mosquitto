@@ -1,19 +1,23 @@
-[gd_scene load_steps=4 format=3 uid="uid://iq35gkf582qc"]
+[gd_scene load_steps=6 format=3 uid="uid://iq35gkf582qc"]
 
 [ext_resource type="PackedScene" uid="uid://bxidlfroi48fk" path="res://game_map.tscn" id="1_3ghbh"]
 [ext_resource type="Script" path="res://main.gd" id="1_ex88s"]
 [ext_resource type="PackedScene" uid="uid://bqcjylgvilwoc" path="res://flight_camera.tscn" id="2_6uo1f"]
 
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vv0yd"]
+albedo_color = Color(0.454902, 0.0941176, 0.792157, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3farh"]
+material = SubResource("StandardMaterial3D_vv0yd")
+
 [node name="Main" type="Node3D"]
 script = ExtResource("1_ex88s")
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("1_3ghbh")]
-transform = Transform3D(0.01, 0, 0, 0, 0.01, 0, 0, 0, 0.01, 0, 0, 0)
-metadata/_edit_lock_ = true
+transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -12, 0, -5)
 
 [node name="FlightCamera" parent="." instance=ExtResource("2_6uo1f")]
-transform = Transform3D(0.874436, -0.448063, 0.186013, 0, 0.38342, 0.923574, -0.485141, -0.807606, 0.335276, 20, 43, 15)
-current = true
+transform = Transform3D(1, 0, 0, 0, 0.422618, 0.906308, 0, -0.906307, 0.422618, 0, 40, 20)
 
 [node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
 transform = Transform3D(0.898017, -0.418319, 0.136288, 0, 0.309773, 0.95081, -0.439961, -0.853844, 0.278181, 42.574, 159.971, 61.8239)
@@ -25,8 +29,12 @@ shadow_blur = 4.0
 directional_shadow_max_distance = 400.0
 
 [node name="Camera3D" type="Camera3D" parent="."]
-transform = Transform3D(0.667514, 0.0966011, -0.738304, 0, 0.991549, 0.129736, 0.744597, -0.0866007, 0.661873, -2.66425, 37.9719, 23.1603)
-visible = false
+transform = Transform3D(1, 0, 0, 0, 0.422618, 0.906308, 0, -0.906308, 0.422618, 0, 40, 20)
+current = true
 
 [node name="RotationPoint" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 16, 35.418, 5)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 30, 10)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.56, 52.9, 14.654)
+mesh = SubResource("BoxMesh_3farh")

@@ -3,7 +3,7 @@ extends Node3D
 # Camera
 var CAMERA_BEGIN_POS: Vector3
 var CAMERA_LOOK_AT: Vector3
-var ROTATION_AXIS: Vector3 = Vector3(7, 0, -7).normalized() # PI / 4 rads
+var ROTATION_AXIS: Vector3 = Vector3(1, 0, 0).normalized()
 
 var progress: float = 0.0
 var camera_begin_quat: Quaternion
@@ -24,24 +24,17 @@ func _process(delta):
 	var new_position = $RotationPoint.position \
 		+ Vector3(interpolated.x, interpolated.y, interpolated.z) \
 		* pivot_camera_vec.length()
-	#var pivot_pos = $RotationPoint.position
-	#var camera_position: Vector3 = CAMERA_POS - pivot_pos
-	#print("Camera position: ", camera_position)
-	#var pos = pivot_pos + camera_position.length() * Vector3(interpolated.x, interpolated.y, interpolated.z)
-	#$FlightCamera.position = pos
-	#print($FlightCamera.transform)
-	# Rotate the transform around the X axis by 0.1 radians.
-	#Basis(axis, rotation_amount)
-	$FlightCamera.look_at_from_position(new_position, CAMERA_LOOK_AT, )
-	$FlightCamera.position = new_position
-	print($FlightCamera.transform.basis)
-	print(CAMERA_LOOK_AT)
+	var up = (-CAMERA_LOOK_AT).cross($FlightCamera.transform.basis.x).normalized()
+	$FlightCamera.look_at_from_position(new_position, -CAMERA_LOOK_AT, up)
+	
+	
+	print($FlightCamera.transform)
 
 func setup_camera():
 	# TODO: to config
-	CAMERA_LOOK_AT = $FlightCamera/Camera3D.transform.basis.z
+	CAMERA_LOOK_AT = -$FlightCamera/Camera3D.transform.basis.z
 	CAMERA_BEGIN_POS = $FlightCamera.position
-	$FlightCamera/Camera3D.make_current()
+	#$FlightCamera/Camera3D.make_current()
 	
 	# Computer camera end position
 	var pivot_camera_direction = pivot_camera_vec.normalized()
