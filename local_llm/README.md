@@ -49,3 +49,12 @@ For example
 ```
 submodules/llama.cpp/build/bin/llama-simple -m no_index/Meta-Llama-3-8B-Instruct-q5_k_m.gguf -n 20 -p "What is the capital of Australia?"
 ```
+
+## Run local server
+For example 
+```
+submodules/llama.cpp/build/bin/llama-server -c 2048 -m no_index/Qwen2.5-7B-Instruct-q5_k_m.gguf
+```
+where -c is max context size
+
+Then use `chatbot_streaming.py` to chat with it
