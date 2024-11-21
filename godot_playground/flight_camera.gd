@@ -1,11 +1,13 @@
 extends MeshInstance3D
 
-@export 
+@onready 
+var camera := $Camera3D
+
 var current: bool:
 	get:
-		return Camera3D.current
+		return camera.current
 	set(value):
-		$Camera3D.current = true
+		camera.current = true
 
 # Called when the node enters the scene tree for the first time.
 func _ready():
