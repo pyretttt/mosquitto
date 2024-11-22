@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.23)
 set(PROJ_NAME RAY)
 project(${PROJ_NAME} VERSION 1.0 LANGUAGES CXX)
 
-aux_source_directory(src SRC_DIR)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC_DIR)
 add_executable(${PROJ_NAME} ${SRC_DIR})
 
 include(FetchContent)
@@ -16,3 +16,4 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(sdl2)
 
 target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2)
+target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers)

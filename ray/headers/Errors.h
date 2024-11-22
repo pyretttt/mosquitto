@@ -1,0 +1,4 @@
+
+enum class Errors {
+    WindowInitFailed
+};
