@@ -32,10 +32,23 @@ func _process(delta):
 		var camera_look_at = CAMERA_LOOK_AT
 		camera_look_at.x += camera_pos.x / 2
 		$FlightCamera.look_at(camera_look_at)
-	
+		
+		# Light ray rotation
+		$DirectionalLight3D.rotate(Vector3.UP, delta_angle)
+
+
+func _input(event):
+	if event is InputEventKey and (event.keycode == KEY_A or event.keycode == KEY_D):
+		if event.is_pressed():
+			cameraMovingDirection = 1 if event.keycode == KEY_A else -1
+		else:
+			cameraMovingDirection = 0
+	elif event is InputEventMagnifyGesture:
+		print(event)
+		cameraMovingDirection = event.factor - 1
+
 
 func setup_camera():
-	# TODO: to config
 	CAMERA_ANGLE_BEGIN = atan(
 		($FlightCamera.transform.origin.z / $FlightCamera.transform.origin.x)
 		* (CAMERA_ELLIPSE_AB.x / CAMERA_ELLIPSE_AB.y)
@@ -43,17 +56,6 @@ func setup_camera():
 	CAMERA_BEGIN_POS = $FlightCamera.transform.origin
 	camera_current_angle = CAMERA_ANGLE_BEGIN
 	$FlightCamera.look_at(CAMERA_LOOK_AT)
-
-	
-func _input(event):
-	if event is InputEventKey and (event.keycode == KEY_A or event.keycode == KEY_D):
-		if event.is_pressed():
-			cameraMovingDirection = 1 if event.keycode == KEY_D else -1
-		else:
-			cameraMovingDirection = 0
-	elif event is InputEventMagnifyGesture:
-		print(event)
-		cameraMovingDirection = event.factor - 1
 
 
 func camera_point(angle, a, b):
