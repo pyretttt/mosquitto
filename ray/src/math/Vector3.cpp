@@ -4,6 +4,14 @@
 
 Vector3::Vector3(float x, float y, float z) : x(x), y(y), z(z) {}
 
+Vector3::Vector3(Vector3 const &other) : x(other.x), y(other.y), z(other.z) {}
+
+void Vector3::operator=(Vector3 const &rhs) {
+    x = rhs.x;
+    y = rhs.y;
+    z = rhs.z;
+}
+
 float Vector3::norm() const noexcept {
     return sqrt(x * x + y * y + z * z);
 }
@@ -31,10 +39,27 @@ Vector3 Vector3::crossProduct(Vector3 const &other) const noexcept {
     };
 }
 
-Vector3 Vector3::scaled(float s) const noexcept {
-    return {
-        x * s,
-        y * s,
-        z * s
-    };
+Vector3 Vector3::projection(Vector3 const &rhs) const noexcept {
+    auto norm_ = rhs.norm();
+    return rhs * (dotProduct(rhs) / norm_ * norm_);
+}
+
+Vector3 Vector3::rejection(Vector3 const &rhs) const noexcept {
+    return *this - projection(rhs);
+}
+
+Vector3 Vector3::operator-() const noexcept {
+    return {-x, -y, -z};
+}
+
+Vector3 Vector3::operator+(Vector3 const &rhs) const noexcept {
+    return { x + rhs.x, y + rhs.y, z + rhs.z };
+}
+
+Vector3 Vector3::operator-(Vector3 const &rhs) const noexcept {
+    return this->operator+(-rhs);
+}
+
+Vector3 Vector3::operator*(float s) const noexcept {
+    return {x * s, y * s, z * s};
 }
