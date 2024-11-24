@@ -4,4 +4,8 @@
 
 struct SDLRenderer : public Renderer {
     SDLRenderer() = default;
+    void update();
+    void render();
+
+    ~SDLRenderer();
 };

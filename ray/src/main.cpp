@@ -3,8 +3,9 @@
 #include "SDL.h"
 
 #include "WindowController.h"
+#include "math/Vector3.h"
 
-WindowController windowController;
+WindowController windowController{{800, 600}};
 
 int main() {
     if (!SDL_Init(SDL_INIT_EVERYTHING)) {
@@ -12,7 +13,6 @@ int main() {
         return -1;
     }
 
-    windowController = WindowController(std::make_pair(800, 600));
     windowController.showWindow();
     return 0;
 }

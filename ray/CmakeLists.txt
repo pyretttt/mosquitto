@@ -4,7 +4,8 @@ set(PROJ_NAME RAY)
 project(${PROJ_NAME} VERSION 1.0 LANGUAGES CXX)
 
 aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC_DIR)
-add_executable(${PROJ_NAME} ${SRC_DIR})
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/ath MATH_DIR)
+add_executable(${PROJ_NAME} ${SRC_DIR} ${MATH_DIR})
 
 include(FetchContent)
 
@@ -15,5 +16,6 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(sdl2)
 
+target_compile_features(${PROJ_NAME} PRIVATE cxx_std_23)
 target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2)
 target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers)
