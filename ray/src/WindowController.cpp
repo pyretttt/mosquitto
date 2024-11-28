@@ -16,11 +16,14 @@ WindowController::WindowController(std::pair<int, int> size) {
     };
 }
 
+WindowController::~WindowController() {
+    SDL_DestroyWindow(window);
+}
+
 void WindowController::showWindow() const {
     windowInit();
     if (window == nullptr) {
         throw Errors::WindowInitFailed;
     }
-    
 }
 
