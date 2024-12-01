@@ -7,12 +7,12 @@ SDLRenderer::SDLRenderer(SDL_Window *window)
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
     windowSize = std::make_pair(w, h);
-    decltype(this->allocator) &allocator = allocator; 
-    colorBuffer = {allocator.allocate(w * h), [&allocator, w, h](uint32_t * p) {
-        allocator.deallocate(p, w * h);
+    decltype(this->allocator) &allocator_ = allocator; 
+    colorBuffer = {allocator.allocate(w * h), [&allocator_, w, h](uint32_t * p) {
+        allocator_.deallocate(p, w * h);
     }};
-    zBuffer = {allocator.allocate(w * h), [&allocator, w, h](uint32_t *p) {
-        allocator.deallocate(p, w * h);
+    zBuffer = {allocator.allocate(w * h), [&allocator_, w, h](uint32_t *p) {
+        allocator_.deallocate(p, w * h);
     }};
     renderTarget = SDL_CreateTexture(
         renderer,

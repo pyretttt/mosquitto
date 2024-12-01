@@ -4,28 +4,9 @@
 #include "SDL.h"
 #include "Eigen/Dense"
 
+#include "GameLoop.h"
 #include "WindowController.h"
 #include "MathUtils.h"
-
-class GameLoop {
-public:
-    GameLoop(GameLoop const &other) = delete;
-    GameLoop &operator=(GameLoop const &other) = delete;
-   
-    static GameLoop &instance() {
-        static GameLoop loop;
-        return loop;
-    }
-
-    void start() {
-        windowController.showWindow();
-        // while (!shouldClose) {}
-    }
-private:
-    GameLoop() : windowController(WindowController({800, 600})) {}
-
-    WindowController windowController;
-};
 
 int main() {
     Eigen::Vector2f v(2.0, 3.0);
