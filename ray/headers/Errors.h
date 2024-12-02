@@ -1,4 +1,2 @@
 
-enum class Errors {
-    WindowInitFailed
-};
+enum class Errors { WindowInitFailed };

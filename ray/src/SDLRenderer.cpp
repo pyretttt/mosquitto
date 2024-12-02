@@ -1,19 +1,20 @@
 #include "SDLRenderer.h"
 #include "memory"
 
-SDLRenderer::SDLRenderer(SDL_Window *window) 
-    : renderer(SDL_CreateRenderer(window, -1, 0)), 
-    allocator(std::allocator<uint32_t>{}) {
+SDLRenderer::SDLRenderer(SDL_Window *window)
+    : renderer(SDL_CreateRenderer(window, -1, 0)), allocator(std::allocator<uint32_t>{}) {
     int w, h;
     SDL_GetWindowSize(window, &w, &h);
     windowSize = std::make_pair(w, h);
-    decltype(this->allocator) &allocator_ = allocator; 
-    colorBuffer = {allocator.allocate(w * h), [&allocator_, w, h](uint32_t * p) {
-        allocator_.deallocate(p, w * h);
-    }};
-    zBuffer = {allocator.allocate(w * h), [&allocator_, w, h](uint32_t *p) {
-        allocator_.deallocate(p, w * h);
-    }};
+    decltype(this->allocator) &allocator_ = allocator;
+    colorBuffer = {
+        allocator.allocate(w * h),
+        [&allocator_, w, h](uint32_t *p) { allocator_.deallocate(p, w * h); }
+    };
+    zBuffer = {
+        allocator.allocate(w * h),
+        [&allocator_, w, h](uint32_t *p) { allocator_.deallocate(p, w * h); }
+    };
     renderTarget = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA32,
@@ -23,9 +24,7 @@ SDLRenderer::SDLRenderer(SDL_Window *window)
     );
 }
 
-void SDLRenderer::update() const {
-
-}
+void SDLRenderer::update() const {}
 
 void SDLRenderer::render() const {
     auto const &[w, h] = windowSize;
@@ -34,6 +33,4 @@ void SDLRenderer::render() const {
     memset(colorBuffer.get(), 0xFF000000, w * h);
 }
 
-SDLRenderer::~SDLRenderer() {
-    
-}
+SDLRenderer::~SDLRenderer() {}

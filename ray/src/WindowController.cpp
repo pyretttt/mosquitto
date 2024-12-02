@@ -22,8 +22,7 @@ WindowController::~WindowController() {
 
 void WindowController::showWindow() const {
     windowInit();
-    if (window == nullptr) {
+    if (!window) {
         throw Errors::WindowInitFailed;
     }
 }
-
