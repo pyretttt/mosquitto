@@ -3,18 +3,20 @@
 #include <functional>
 #include <utility>
 
-#include "Renderer.h"
+#include "SDL.h"
 
-struct SDL_Window;
+#include "Renderer.h"
 
 
 struct SDLController {
-    SDLController(std::pair<int, int> size);
+    SDLController(RendererType renderType, std::pair<int, int> windowSize);
     ~SDLController();
 
-    void showWindow() const;
+    void showWindow();
+
+    std::shared_ptr<Renderer> renderer;
 private:
     std::function<void()> windowInit;
     SDL_Window *window;
-    std::shared_ptr<Renderer> renderer;
+    RendererType rendererType;
 };

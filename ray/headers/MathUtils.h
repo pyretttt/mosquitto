@@ -18,3 +18,12 @@ inline constexpr std::decay<Vector>::type rejection(
 ) {
     return (a - projection(a, on)).eval();
 }
+
+Eigen::Vector4f inline asVec4(Eigen::Vector3f v, float fillValue = 0.f) {
+    return {
+        v.x(),
+        v.y(),
+        v.z(),
+        fillValue
+    };
+}

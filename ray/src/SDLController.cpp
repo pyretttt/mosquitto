@@ -1,16 +1,23 @@
-#include "SDLController.h"
-#include "Errors.h"
+#include <memory>
 
 #include "SDL.h"
 
-SDLController::SDLController(std::pair<int, int> size) {
-    windowInit = [size, this]() {
+#include "Errors.h"
+#include "RendererFactory.h"
+#include "SDLController.h"
+#include "SDLRenderer.h"
+#include "Utility.h"
+
+SDLController::SDLController(RendererType rendererType, std::pair<int, int> windowSize)
+    : rendererType(rendererType) {
+    windowInit = [windowSize, rendererType, this]() {
+        auto winSize{windowSize};
         this->window = SDL_CreateWindow(
             nullptr,
             SDL_WINDOWPOS_CENTERED,
             SDL_WINDOWPOS_CENTERED,
-            size.first,
-            size.second,
+            winSize.first,
+            winSize.second,
             SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
         );
     };
@@ -18,9 +25,18 @@ SDLController::SDLController(std::pair<int, int> size) {
 
 SDLController::~SDLController() { SDL_DestroyWindow(window); }
 
-void SDLController::showWindow() const {
+void SDLController::showWindow() {
     windowInit();
     if (!window) {
         throw Errors::WindowInitFailed;
     }
+    renderer = makeRenderer(
+        rendererType,
+        modified<RenderFactoryParams>({}, [this](auto &params) {
+            params.window = this->window;
+            int w, h;
+            SDL_GetWindowSize(this->window, &w, &h);
+            params.resolution = {w, h};
+        })
+    );
 }

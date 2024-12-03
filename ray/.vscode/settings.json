@@ -58,6 +58,9 @@
         "unordered_set": "cpp",
         "variant": "cpp",
         "vector": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "hash_map": "cpp",
+        "functional": "cpp",
+        "nnls": "cpp"
     }
 }

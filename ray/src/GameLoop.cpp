@@ -1,11 +1,11 @@
 #pragma once
 
-#include "SDL.h"
 #include "Eigen/Dense"
+#include "SDL.h"
 
+#include "Renderer.h"
 #include "SDLController.h"
 #include "SDLRenderer.h"
-#include "Renderer.h"
 
 class GameLoop {
 public:
@@ -19,24 +19,32 @@ public:
 
     void start() {
         sdlController.showWindow();
+
+        SDLRenderer::MeshData meshData = {
+            Mesh(
+                {
+                    Eigen::Vector3f(100, 300, 1),
+                    Eigen::Vector3f(300, 300, 1),
+                    Eigen::Vector3f(200, 100, 1),
+                },
+                {
+                    Face{0, 1, 2, {}}
+                }
+            )
+        };
         while (!shouldClose) {
             processInput();
 
-            Eigen::Vector2f a, b;
-            a(0, 0) = 100;
-            a(1, 0) = 100;
-            b(0, 0) = 300;
-            b(1, 0) = 300;
-
-
+            sdlController.renderer->update(meshData);
+            sdlController.renderer->render();
+            std::cout << "Loop iteration" << std::endl;
         }
 
         sdlController.~SDLController();
     }
 
 private:
-    GameLoop() : sdlController(SDLController({800, 600})) {
-        // renderer = std::make_unique(SDLRenderer(sdlController));
+    GameLoop() : sdlController(SDLController(RendererType::CPU, {800, 600})) {
     }
 
     inline void processInput() {

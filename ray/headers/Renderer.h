@@ -1,14 +1,19 @@
 #pragma once
 
 #include <utility>
+#include <memory>
 
-struct RendererInitConfig {
-    std::pair<int, int> resolution;
+#include "Mesh.h"
+
+enum class RendererType {
+    CPU,
+    OpenGL
 };
 
 class Renderer {
 public:
-    virtual void update() const = 0;
+    using MeshData = std::vector<Mesh>;
+    virtual void update(MeshData const &data) = 0;
     virtual void render() const = 0;
     virtual ~Renderer() = 0;
 };
