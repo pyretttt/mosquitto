@@ -1,9 +1,9 @@
-#include "WindowController.h"
+#include "SDLController.h"
 #include "Errors.h"
 
 #include "SDL.h"
 
-WindowController::WindowController(std::pair<int, int> size) {
+SDLController::SDLController(std::pair<int, int> size) {
     windowInit = [size, this]() {
         this->window = SDL_CreateWindow(
             nullptr,
@@ -16,11 +16,9 @@ WindowController::WindowController(std::pair<int, int> size) {
     };
 }
 
-WindowController::~WindowController() {
-    SDL_DestroyWindow(window);
-}
+SDLController::~SDLController() { SDL_DestroyWindow(window); }
 
-void WindowController::showWindow() const {
+void SDLController::showWindow() const {
     windowInit();
     if (!window) {
         throw Errors::WindowInitFailed;

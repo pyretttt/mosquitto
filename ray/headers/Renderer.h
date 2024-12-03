@@ -1,3 +1,10 @@
+#pragma once
+
+#include <utility>
+
+struct RendererInitConfig {
+    std::pair<int, int> resolution;
+};
 
 class Renderer {
 public:
@@ -5,5 +12,3 @@ public:
     virtual void render() const = 0;
     virtual ~Renderer() = 0;
 };
-
-Renderer::~Renderer() {};

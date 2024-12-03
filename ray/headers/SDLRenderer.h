@@ -1,5 +1,7 @@
-#include <utility>
+#pragma once
+
 #include <functional>
+#include <utility>
 
 #include "SDL.h"
 
@@ -11,6 +13,7 @@ struct SDLRenderer : public Renderer {
     void render() const override;
 
     ~SDLRenderer();
+
 private:
     std::pair<int, int> windowSize;
     std::allocator<uint32_t> allocator;

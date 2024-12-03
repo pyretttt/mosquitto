@@ -1,11 +1,14 @@
 #pragma once
 
 #include "SDL.h"
+#include "Eigen/Dense"
 
-#include "WindowController.h"
+#include "SDLController.h"
+#include "SDLRenderer.h"
+#include "Renderer.h"
 
 class GameLoop {
-  public:
+public:
     GameLoop(GameLoop const &other) = delete;
     GameLoop &operator=(GameLoop const &other) = delete;
 
@@ -15,15 +18,26 @@ class GameLoop {
     }
 
     void start() {
-        windowController.showWindow();
+        sdlController.showWindow();
         while (!shouldClose) {
             processInput();
+
+            Eigen::Vector2f a, b;
+            a(0, 0) = 100;
+            a(1, 0) = 100;
+            b(0, 0) = 300;
+            b(1, 0) = 300;
+
+
         }
-        windowController.~WindowController();
+
+        sdlController.~SDLController();
     }
 
-  private:
-    GameLoop() : windowController(WindowController({800, 600})) {}
+private:
+    GameLoop() : sdlController(SDLController({800, 600})) {
+        // renderer = std::make_unique(SDLRenderer(sdlController));
+    }
 
     inline void processInput() {
         SDL_Event event;
@@ -47,6 +61,7 @@ class GameLoop {
         }
     }
 
-    WindowController windowController;
+    std::unique_ptr<Renderer> renderer;
+    SDLController sdlController;
     bool shouldClose = false;
 };
