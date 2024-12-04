@@ -3,6 +3,7 @@
 
 #include "MathUtils.h"
 #include "SDLRenderer.h"
+#include "Utility.h"
 
 SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<int, int> resolution)
     : renderer(SDL_CreateRenderer(window, -1, 0)),
@@ -34,9 +35,23 @@ void SDLRenderer::update(MeshData const &data, float dt) {
                  asVec4(mesh.vertices[face.c], 0)},
                 face.uv // std::move() ?
             };
-            for (auto const vertex : tri.vertices) {
-                drawPoint(0xFFF11FFF, {vertex.x(), vertex.y()}, 2);
-            }
+
+            // Add switch over render type
+            drawLine(
+                Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
+                Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
+                0xFF11FFFF
+            );
+            drawLine(
+                Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
+                Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
+                0xFF11FFFF
+            );
+            drawLine(
+                Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
+                Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
+                0xFF11FFFF
+            );
         }
     }
 }
@@ -63,6 +78,14 @@ void SDLRenderer::drawPoint(uint32_t color, Eigen::Vector2i position, size_t thi
     }
 }
 
+static constexpr float fpart(float num) {
+    return num - static_cast<int>(num);
+}
+
+static constexpr float oneComplement(float num) {
+    return 1 - fpart(num);
+}
+
 void SDLRenderer::drawLine(Eigen::Vector2i from, Eigen::Vector2i to, uint32_t color) noexcept {
     int x0{from.x()},
         y0{from.y()},
@@ -78,9 +101,10 @@ void SDLRenderer::drawLine(Eigen::Vector2i from, Eigen::Vector2i to, uint32_t co
         std::swap(y0, y1);
     }
     int dx{x1 - x0}, dy{y1 - y0};
-    float slope = dx == 0 ? 1.f : dy / dx;
-    float interY = y0;
-    
+    float slope = dx == 0
+                      ? dy / std::abs(dy)
+                      : static_cast<float>(dy) / dx;
+
     std::function<void(size_t x, size_t y, uint32_t value)> assign = [p = colorBuffer.get(), isSteep, res = resolution](size_t x, size_t y, uint32_t value) {
         if (isSteep) {
             std::swap(x, y);
@@ -88,13 +112,13 @@ void SDLRenderer::drawLine(Eigen::Vector2i from, Eigen::Vector2i to, uint32_t co
         p[x + y * res.first] = value;
     };
 
-    
-}
-
-static constexpr float fpart(float num) {
-    return num - static_cast<int>(num);
-}
-
-static constexpr float oneComplement(float num) {
-    return 1 - fpart(num);
+    int x = x0;
+    float y = y0;
+    while (x <= x1) {
+        int y_ = y;
+        assign(x, y_, interpolateColorIntensity(color, oneComplement(std::abs(y))));
+        assign(x, y_ + 1, interpolateColorIntensity(color, fpart(std::abs(y))));
+        x++;
+        y += slope;
+    }
 }

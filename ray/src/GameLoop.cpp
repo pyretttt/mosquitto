@@ -25,7 +25,7 @@ public:
                 {
                     Eigen::Vector3f(100, 300, 1),
                     Eigen::Vector3f(300, 300, 1),
-                    Eigen::Vector3f(200, 100, 1),
+                    Eigen::Vector3f(200, 25, 1),
                 },
                 {
                     Face{0, 1, 2, {}}
