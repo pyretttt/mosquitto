@@ -18,6 +18,7 @@ struct SDLRenderer : public Renderer {
 private:
     void drawPoint(uint32_t color, Eigen::Vector2i position, size_t thickness = 0) noexcept;
     void drawLine(Eigen::Vector2i from, Eigen::Vector2i to, uint32_t color) noexcept;
+    void fillTriangle(Triangle t) noexcept;
 
     std::pair<int, int> resolution;
     SDL_Renderer *renderer;

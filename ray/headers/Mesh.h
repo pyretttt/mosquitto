@@ -17,6 +17,13 @@ struct Mesh {
     // TODO: Add texture
 };
 
+struct Attributes {
+    struct Color { uint32_t color; };
+    struct Texture { Eigen::Vector2f uv; };
+    
+    using Cases = std::variant<Color, Texture>;
+};
+
 struct Triangle {
     Triangle(
         std::array<Eigen::Vector4f, 3> vertices,
