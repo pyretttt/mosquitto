@@ -1,4 +1,5 @@
-#include "memory"
+#include <iostream>
+#include <memory>
 #include <iostream>
 
 #include "MathUtils.h"
@@ -34,9 +35,8 @@ void SDLRenderer::update(MeshData const &data) {
                  asVec4(mesh.vertices[face.c], 0)},
                 face.uv // std::move() ?
             };
-
             for (auto const vertex : tri.vertices) {
-                drawPoint(0xFFFFFFFF, {vertex.x(), vertex.y()}, 2);
+                drawPoint(0xFFF11FFF, {vertex.x(), vertex.y()}, 2);
             }
         }
     }
@@ -51,14 +51,15 @@ void SDLRenderer::render() const {
         w * sizeof(uint32_t)
     );
     SDL_RenderCopy(renderer, renderTarget, nullptr, nullptr);
-    memset(colorBuffer.get(), 0xFF000000, w * h);
+    memset(colorBuffer.get(), (uint32_t) 0xFF000000, w * h * sizeof(uint32_t));
+    SDL_RenderPresent(renderer);
 }
 
 void SDLRenderer::drawPoint(uint32_t color, Eigen::Vector2i position, size_t thickness) noexcept {
-    for (int i = -thickness; i < thickness; i++) {
-        for (int j = -thickness; j < thickness; j++) {
-            colorBuffer[position.x() + i
-                + (position.y() + j) * resolution.first] = color;
+    int thick = thickness;
+    for (int i = -thick; i < thick; i++) {
+        for (int j = -thick; j < thick; j++) {
+            colorBuffer[position.x() + i + (position.y() + j) * resolution.first] = color;
         }
     }
 }

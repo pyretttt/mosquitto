@@ -33,14 +33,17 @@ public:
             )
         };
         while (!shouldClose) {
-            processInput();
+            auto dt = SDL_GetTicks() - previousFrameTicks;
+            if (dt < frameTime) {
+                SDL_Delay(frameTime - dt);
+                dt = SDL_GetTicks() - previousFrameTicks;
+            }
 
+            processInput();
             sdlController.renderer->update(meshData);
             sdlController.renderer->render();
-            std::cout << "Loop iteration" << std::endl;
+            previousFrameTicks = SDL_GetTicks();
         }
-
-        sdlController.~SDLController();
     }
 
 private:
@@ -57,6 +60,10 @@ private:
                     break;
                 case SDLK_DOWN:
                     break;
+                case SDLK_ESCAPE:
+                    shouldClose = true;
+                    SDL_Quit();
+                    break;
                 }
                 break;
             case SDL_QUIT:
@@ -69,7 +76,9 @@ private:
         }
     }
 
-    std::unique_ptr<Renderer> renderer;
     SDLController sdlController;
     bool shouldClose = false;
+    int previousFrameTicks = 0;
+    const int frameRate = 60;
+    const int frameTime = 1000 / frameRate;
 };
