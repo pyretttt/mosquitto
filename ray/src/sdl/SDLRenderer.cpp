@@ -2,8 +2,8 @@
 #include <memory>
 
 #include "MathUtils.h"
-#include "SDLRenderer.h"
 #include "Utility.h"
+#include "sdl/SDLRenderer.h"
 
 SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<int, int> resolution)
     : renderer(SDL_CreateRenderer(window, -1, 0)),
@@ -37,21 +37,22 @@ void SDLRenderer::update(MeshData const &data, float dt) {
             };
 
             // Add switch over render type
-            drawLine(
-                Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
-                Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
-                0xFF11FFFF
-            );
-            drawLine(
-                Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
-                Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
-                0xFF11FFFF
-            );
-            drawLine(
-                Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
-                Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
-                0xFF11FFFF
-            );
+            // drawLine(
+            //     Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
+            //     Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
+            //     0xFF11FFFF
+            // );
+            // drawLine(
+            //     Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
+            //     Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
+            //     0xFF11FFFF
+            // );
+            // drawLine(
+            //     Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
+            //     Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
+            //     0xFF11FFFF
+            // );
+            fillTriangle(tri);
         }
     }
 }
@@ -70,6 +71,11 @@ void SDLRenderer::render() const {
 }
 
 void SDLRenderer::drawPoint(uint32_t color, Eigen::Vector2i position, size_t thickness) noexcept {
+    if (thickness == 0) {
+        colorBuffer[position.x() + position.y()* resolution.first] = color;
+        return;
+    }
+
     int thick = thickness;
     for (int i = -thick; i < thick; i++) {
         for (int j = -thick; j < thick; j++) {
@@ -116,9 +122,58 @@ void SDLRenderer::drawLine(Eigen::Vector2i from, Eigen::Vector2i to, uint32_t co
     float y = y0;
     while (x <= x1) {
         int y_ = y;
+        std::cout << "oneComplement(std::abs(y))" << oneComplement(std::abs(y)) << " fpart(std::abs(y))) " << fpart(std::abs(y)) << std::endl;
         assign(x, y_, interpolateColorIntensity(color, oneComplement(std::abs(y))));
         assign(x, y_ + 1, interpolateColorIntensity(color, fpart(std::abs(y))));
         x++;
         y += slope;
+    }
+}
+
+void SDLRenderer::fillTriangle(Triangle tri) noexcept {
+    uint32_t color = 0xFFFFFFFF; // Constant color for a while
+
+    auto &t0 = tri.vertices[0];
+    auto &t1 = tri.vertices[1];
+    auto &t2 = tri.vertices[2];
+    if (t0.y() > t1.y()) {
+        swap(t0, t1);
+    }
+    if (t1.y() > t2.y()) {
+        swap(t1, t2);
+    }
+    if (t0.y() > t1.y()) {
+        swap(t0, t1);
+    }
+
+    if (t0.y() != t1.y()) {
+        float inv_slope0 = static_cast<float>(t1.x() - t0.x()) / (t1.y() - t0.y());
+        float inv_slope1 = static_cast<float>(t2.x() - t0.x()) / (t2.y() - t0.y());
+        float x0{t0.x()}, x1{t0.x()};
+        for (size_t y = t0.y(); y <= t1.y(); y++) {
+            int begin = std::min(x0, x1);
+            int end = std::max(x0, x1);
+            while (begin != end) {
+                colorBuffer[begin + y * resolution.first] = color;
+                begin++;
+            }
+            x0 += inv_slope0;
+            x1 += inv_slope1;
+        }
+    }
+    if (t1.y() != t2.y()) {
+        float inv_slope0 = static_cast<float>(t0.x() - t2.x()) / (t2.y() - t0.y());
+        float inv_slope1 = static_cast<float>(t1.x() - t2.x()) / (t2.y() - t1.y());
+        float x0{t2.x()}, x1{t2.x()};
+        for (int y = t2.y(); y > t1.y(); y--) {
+            int begin = std::min(x0, x1);
+            int end = std::max(x0, x1);
+            while (begin != end) {
+                colorBuffer[begin + y * resolution.first] = color;
+                begin++;
+            }
+            x0 += inv_slope0;
+            x1 += inv_slope1;
+        }
     }
 }

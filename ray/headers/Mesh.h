@@ -22,13 +22,12 @@ struct Face {
     Attributes::Cases attributes;
 };
 
-struct Mesh {
-    Mesh(std::vector<Eigen::Vector3f> vertices, std::vector<Face> faces);
+struct MeshBuffer {
+    MeshBuffer(std::vector<Eigen::Vector3f> vertices, std::vector<Face> faces);
     std::vector<Eigen::Vector3f> vertices;
     std::vector<Face> faces;
     // TODO: Add texture
 };
-
 
 struct Triangle {
     Triangle(

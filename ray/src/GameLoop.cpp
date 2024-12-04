@@ -1,11 +1,8 @@
-#pragma once
-
 #include "Eigen/Dense"
 #include "SDL.h"
 
 #include "Renderer.h"
 #include "SDLController.h"
-#include "SDLRenderer.h"
 
 class GameLoop {
 public:
@@ -20,15 +17,14 @@ public:
     void start() {
         sdlController.showWindow();
 
-        SDLRenderer::MeshData meshData = {
-            Mesh(
+        Renderer::MeshData meshData = {
+            MeshBuffer(
                 {
-                    Eigen::Vector3f(100, 300, 1),
-                    Eigen::Vector3f(300, 300, 1),
+                    Eigen::Vector3f(100, 240, 1),
+                    Eigen::Vector3f(150, 350, 1),
                     Eigen::Vector3f(200, 25, 1),
                 },
-                {
-                    Face{0, 1, 2, {}}
+                {Face{0, 1, 2, {}}
                 }
             )
         };

@@ -3,7 +3,7 @@
 #include "SDL.h"
 
 #include "Renderer.h"
-#include "SDLRenderer.h"
+#include "sdl/SDLRenderer.h"
 
 
 struct RenderFactoryParams {

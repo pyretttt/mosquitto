@@ -6,7 +6,7 @@ Face::Face(int a, int b, int c, Attributes::Cases attributes)
       c(c),
       attributes(attributes) {}
 
-Mesh::Mesh(std::vector<Eigen::Vector3f> vertices, std::vector<Face> faces)
+MeshBuffer::MeshBuffer(std::vector<Eigen::Vector3f> vertices, std::vector<Face> faces)
     : vertices(vertices),
       faces(faces) {}
 

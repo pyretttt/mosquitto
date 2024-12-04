@@ -1,14 +1,10 @@
 #include <iostream>
 #include <memory>
 
-#include "Eigen/Dense"
 #include "SDL.h"
 
 #include "GameLoop.cpp"
-#include "MathUtils.h"
-#include "Renderer.h"
 #include "SDLController.h"
-#include "Utility.h"
 
 int main() {
     if (SDL_Init(SDL_INIT_EVERYTHING)) {
