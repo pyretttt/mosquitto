@@ -40,7 +40,7 @@ public:
             }
 
             processInput();
-            sdlController.renderer->update(meshData);
+            sdlController.renderer->update(meshData, dt);
             sdlController.renderer->render();
             previousFrameTicks = SDL_GetTicks();
         }
