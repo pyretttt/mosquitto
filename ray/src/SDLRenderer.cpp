@@ -33,7 +33,7 @@ void SDLRenderer::update(MeshData const &data, float dt) {
                 {asVec4(mesh.vertices[face.a], 0),
                  asVec4(mesh.vertices[face.b], 0),
                  asVec4(mesh.vertices[face.c], 0)},
-                face.uv // std::move() ?
+                face.attributes // std::move() ?
             };
 
             // Add switch over render type

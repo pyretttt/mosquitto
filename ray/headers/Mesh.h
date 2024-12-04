@@ -1,13 +1,25 @@
 #pragma once
 
 #include <array>
+#include <variant>
 
 #include "Eigen/Dense"
 
+struct Attributes {
+    struct Color {
+        std::array<uint32_t, 3> color;
+    };
+    struct Texture {
+        std::array<Eigen::Vector2f, 3> uv;
+    };
+
+    using Cases = std::variant<Color, Texture>;
+};
+
 struct Face {
-    Face(int a, int b, int c, std::array<Eigen::Vector2f, 3> uv);
+    Face(int a, int b, int c, Attributes::Cases attributes);
     int a, b, c;
-    std::array<Eigen::Vector2f, 3> uv;
+    Attributes::Cases attributes;
 };
 
 struct Mesh {
@@ -17,18 +29,12 @@ struct Mesh {
     // TODO: Add texture
 };
 
-struct Attributes {
-    struct Color { uint32_t color; };
-    struct Texture { Eigen::Vector2f uv; };
-    
-    using Cases = std::variant<Color, Texture>;
-};
 
 struct Triangle {
     Triangle(
         std::array<Eigen::Vector4f, 3> vertices,
-        std::array<Eigen::Vector2f, 3> uv
+        Attributes::Cases attributes
     );
     std::array<Eigen::Vector4f, 3> vertices;
-    std::array<Eigen::Vector2f, 3> uv;
+    Attributes::Cases attributes;
 };
