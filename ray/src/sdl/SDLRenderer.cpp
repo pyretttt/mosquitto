@@ -58,22 +58,6 @@ void SDLRenderer::update(MeshData const &data, float dt) {
                 face.attributes
             };
 
-            // Add switch over render type
-            // drawLine(
-            //     Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
-            //     Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
-            //     0xFF11FFFF
-            // );
-            // drawLine(
-            //     Eigen::Vector2i(tri.vertices[1].x(), tri.vertices[1].y()),
-            //     Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
-            //     0xFF11FFFF
-            // );
-            // drawLine(
-            //     Eigen::Vector2i(tri.vertices[2].x(), tri.vertices[2].y()),
-            //     Eigen::Vector2i(tri.vertices[0].x(), tri.vertices[0].y()),
-            //     0xFF11FFFF
-            // );
             fillTriangle(tri);
         }
     }
@@ -92,7 +76,7 @@ void SDLRenderer::render() const {
     SDL_RenderPresent(renderer);
 }
 
-void SDLRenderer::drawPoint(uint32_t color, Eigen::Vector2i position, size_t thickness) noexcept {
+void SDLRenderer::drawPoint(uint32_t color, Vector2i position, size_t thickness) noexcept {
     if (thickness == 0) {
         colorBuffer[position.x() + position.y() * resolution.first] = color;
         return;
@@ -114,7 +98,7 @@ static constexpr float oneComplement(float num) {
     return 1 - fpart(num);
 }
 
-void SDLRenderer::drawLine(Eigen::Vector2i from, Eigen::Vector2i to, uint32_t color) noexcept {
+void SDLRenderer::drawLine(Vector2i from, Vector2i to, uint32_t color) noexcept {
     int x0{from.x()},
         y0{from.y()},
         x1{to.x()},

@@ -23,9 +23,9 @@ public:
         Renderer::MeshData meshData = {
             MeshBuffer(
                 {
-                    Eigen::Vector3f(-40, 25, 50),
-                    Eigen::Vector3f(25, 25, 50),
-                    Eigen::Vector3f(0, -25, 100),
+                    Vector3f(-40, 25, 50),
+                    Vector3f(25, 25, 50),
+                    Vector3f(0, -25, 100),
                 },
                 {
                     Face{0, 1, 2, {}},
