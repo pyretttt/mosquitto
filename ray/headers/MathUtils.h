@@ -28,14 +28,14 @@ Eigen::Vector4f inline asVec4(Eigen::Vector3f v, float fillValue = 0.f) {
     };
 }
 
-Eigen::Matrix4xf inline projectionMatrix(
+Eigen::Matrix4f inline projectionMatrix(
     float fov,
     float aspectRatio,
     bool keepHeight,
     float far,
     float near
 ) {
-    Eigen::Matrix4xf mat = Eigen::Matrix4xf::Zeros();
+    Eigen::Matrix4f mat = Eigen::Matrix4f::Zero();
 
     auto angleMeasure = tanf(fov / 2);
     mat(0, 0) = 1.f / (aspectRatio * angleMeasure);
@@ -46,11 +46,11 @@ Eigen::Matrix4xf inline projectionMatrix(
     return mat;
 }
 
-Eigen::Matrix4xf inline screenSpaceProjection(
+Eigen::Matrix4f inline screenSpaceProjection(
     size_t width,
     size_t height
 ) {
-    Eigen::Matrix4xf mat = Eigen::Matrix4xf::Zeros();
+    Eigen::Matrix4f mat = Eigen::Matrix4f::Zero();
     mat(0, 0) = width / 2.f;
     mat(1, 1) = height / 2.f;
     mat(2, 2) = 1.f;

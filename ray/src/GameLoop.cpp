@@ -1,5 +1,8 @@
+#include <iostream>
+
 #include "Eigen/Dense"
 #include "SDL.h"
+#include "rpp/rpp.hpp"
 
 #include "Renderer.h"
 #include "SDLController.h"
@@ -43,7 +46,16 @@ public:
     }
 
 private:
-    GameLoop() : sdlController(SDLController(RendererType::CPU, {800, 600})) {
+    GameLoop() : windowSize({800, 600}), sdlController(SDLController(RendererType::CPU, windowSize.get_value())) {
+        // sdlController = SDLController(RendererType::CPU, windowSize.get_value());
+        windowSize.get_observable()
+            .subscribe(
+                [](std::pair<int, int> screenSize) {
+                    std::cout << "New screen size " << screenSize.first << " x " << screenSize.second << std::endl;
+                },
+                [](std::exception_ptr err) {},
+                []() {}
+            );
     }
 
     inline void processInput() {
@@ -66,12 +78,19 @@ private:
             case SDL_WINDOWEVENT_CLOSE:
                 shouldClose = true;
                 break;
+            case SDL_WINDOWEVENT:
+                switch (event.window.event) {
+                case SDL_WINDOWEVENT_RESIZED:
+                    windowSize.get_observer().on_next({event.window.data1, event.window.data2});
+                }
+                break;
             default:
                 break;
             }
         }
     }
 
+    rpp::subjects::behavior_subject<std::pair<int, int>> windowSize;
     SDLController sdlController;
     bool shouldClose = false;
     int previousFrameTicks = 0;
