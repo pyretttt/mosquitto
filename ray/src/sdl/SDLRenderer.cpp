@@ -5,13 +5,21 @@
 #include "Utility.h"
 #include "sdl/SDLRenderer.h"
 
-SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<int, int> resolution)
+SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolution)
     : renderer(SDL_CreateRenderer(window, -1, 0)),
       resolution(resolution) {
 
     auto resolutionSize = resolution.first * resolution.second;
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
     zBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
+    perspectiveProjectionMatrix_ = perspectiveProjectionMatrix(
+        1.3962634016,
+        static_cast<float>(resolution.first) / resolution.second,
+        true,
+        0.1,
+        1000
+    );
+    screenSpaceProjection_ = screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA32,
@@ -29,11 +37,25 @@ void SDLRenderer::update(MeshData const &data, float dt) {
     for (auto const &mesh : data) {
         for (size_t i = 0; i < mesh.faces.size(); i++) {
             auto const &face = mesh.faces[i];
+            // perspective projection
             Triangle tri = Triangle{
-                {asVec4(mesh.vertices[face.a], 0),
-                 asVec4(mesh.vertices[face.b], 0),
-                 asVec4(mesh.vertices[face.c], 0)},
+                {perspectiveProjectionMatrix_ * asVec4(mesh.vertices[face.a], 1),
+                 perspectiveProjectionMatrix_ * asVec4(mesh.vertices[face.b], 1),
+                 perspectiveProjectionMatrix_ * asVec4(mesh.vertices[face.c], 1)},
                 face.attributes // std::move() ?
+            };
+
+            tri.vertices[0] /= tri.vertices[0](3, 0);
+            tri.vertices[1] /= tri.vertices[1](3, 0);
+            tri.vertices[2] /= tri.vertices[2](3, 0);
+
+            // screen space projection
+            tri = Triangle{
+                {screenSpaceProjection_ * tri.vertices[0],
+                 screenSpaceProjection_ * tri.vertices[1],
+                 screenSpaceProjection_ * tri.vertices[2]
+                },
+                face.attributes
             };
 
             // Add switch over render type
@@ -72,7 +94,7 @@ void SDLRenderer::render() const {
 
 void SDLRenderer::drawPoint(uint32_t color, Eigen::Vector2i position, size_t thickness) noexcept {
     if (thickness == 0) {
-        colorBuffer[position.x() + position.y()* resolution.first] = color;
+        colorBuffer[position.x() + position.y() * resolution.first] = color;
         return;
     }
 

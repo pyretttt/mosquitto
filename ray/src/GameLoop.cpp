@@ -23,11 +23,12 @@ public:
         Renderer::MeshData meshData = {
             MeshBuffer(
                 {
-                    Eigen::Vector3f(100, 240, 1),
-                    Eigen::Vector3f(150, 350, 1),
-                    Eigen::Vector3f(200, 25, 1),
+                    Eigen::Vector3f(-40, 25, 50),
+                    Eigen::Vector3f(25, 25, 50),
+                    Eigen::Vector3f(0, -25, 100),
                 },
-                {Face{0, 1, 2, {}}
+                {
+                    Face{0, 1, 2, {}},
                 }
             )
         };
@@ -47,7 +48,6 @@ public:
 
 private:
     GameLoop() : windowSize({800, 600}), sdlController(SDLController(RendererType::CPU, windowSize.get_value())) {
-        // sdlController = SDLController(RendererType::CPU, windowSize.get_value());
         windowSize.get_observable()
             .subscribe(
                 [](std::pair<int, int> screenSize) {

@@ -28,7 +28,7 @@ Eigen::Vector4f inline asVec4(Eigen::Vector3f v, float fillValue = 0.f) {
     };
 }
 
-Eigen::Matrix4f inline projectionMatrix(
+Eigen::Matrix4f inline perspectiveProjectionMatrix(
     float fov,
     float aspectRatio,
     bool keepHeight,
@@ -47,16 +47,16 @@ Eigen::Matrix4f inline projectionMatrix(
 }
 
 Eigen::Matrix4f inline screenSpaceProjection(
-    size_t width,
-    size_t height
+    int width,
+    int height
 ) {
     Eigen::Matrix4f mat = Eigen::Matrix4f::Zero();
     mat(0, 0) = width / 2.f;
-    mat(1, 1) = height / 2.f;
+    mat(1, 1) = -height / 2.f;
     mat(2, 2) = 1.f;
     mat(3, 3) = 1.f;
-    mat(1, 3) = width / 2.f;
-    mat(2, 3) = height / 2.f;
+    mat(0, 3) = width / 2.f;
+    mat(1, 3) = height / 2.f;
 
     return mat;
 }
