@@ -45,7 +45,8 @@ void SDLRenderer::update(MeshData const &data, float dt) {
                 face.attributes // std::move() ?
             };
 
-            tri.vertices[0] /= tri.vertices[0](3, 0);
+            // TODO: finish
+            tri.vertices[0] = scale(tri.vertices[0], vertices[0](3, 0));
             tri.vertices[1] /= tri.vertices[1](3, 0);
             tri.vertices[2] /= tri.vertices[2](3, 0);
 

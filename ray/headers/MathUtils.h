@@ -69,3 +69,9 @@ Matrix4f inline screenSpaceProjection(
 
     return mat;
 }
+
+template <typename Mat>
+Mat inline scale(Mat &&matrix, float scalar) {
+    mat *= scalar;
+    return mat;
+}
