@@ -90,7 +90,7 @@ Mat inline zeros() noexcept {
     return Mat::Zero();
 }
 
-template <typename Mat>
-Mat inline eye() noexcept {
-    return Mat::Ones().eval().diagonal().eval();
+template <size_t size>
+decltype(auto) inline eye() noexcept {
+    return Eigen::Matrix<float, size, 1>::Ones().asDiagonal();
 }
