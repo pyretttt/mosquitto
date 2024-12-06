@@ -10,6 +10,15 @@ MeshBuffer::MeshBuffer(std::vector<Vector3f> vertices, std::vector<Face> faces)
     : vertices(vertices),
       faces(faces) {}
 
+MeshNode::MeshNode(MeshBuffer meshBuffer) : meshBuffer(meshBuffer) {}
+
+Matrix4f MeshNode::getTransform() const noexcept {
+  if (auto par = parent.lock()) {
+      return matMul(par->getTransform(), transform);
+  }
+  return transform;
+}
+
 Triangle::Triangle(
     std::array<Vector4f, 3> vertices,
     Attributes::Cases attributes

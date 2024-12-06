@@ -61,6 +61,7 @@
         "algorithm": "cpp",
         "hash_map": "cpp",
         "functional": "cpp",
-        "nnls": "cpp"
+        "nnls": "cpp",
+        "fft": "cpp"
     }
 }

@@ -39,23 +39,22 @@ void SDLRenderer::update(MeshData const &data, float dt) {
             auto const &face = mesh.faces[i];
             // perspective projection
             Triangle tri = Triangle{
-                {perspectiveProjectionMatrix_ * asVec4(mesh.vertices[face.a], 1),
-                 perspectiveProjectionMatrix_ * asVec4(mesh.vertices[face.b], 1),
-                 perspectiveProjectionMatrix_ * asVec4(mesh.vertices[face.c], 1)},
+                {matMul(perspectiveProjectionMatrix_, asVec4(mesh.vertices[face.a], 1)),
+                 matMul(perspectiveProjectionMatrix_, asVec4(mesh.vertices[face.b], 1)),
+                 matMul(perspectiveProjectionMatrix_, asVec4(mesh.vertices[face.c], 1))},
                 face.attributes // std::move() ?
             };
 
             // TODO: finish
-            tri.vertices[0] = scale(tri.vertices[0], vertices[0](3, 0));
-            tri.vertices[1] /= tri.vertices[1](3, 0);
-            tri.vertices[2] /= tri.vertices[2](3, 0);
+            tri.vertices[0] = matrixScale(tri.vertices[0], tri.vertices[0](3, 0));
+            tri.vertices[1] = matrixScale(tri.vertices[1], tri.vertices[1](3, 0));
+            tri.vertices[2] = matrixScale(tri.vertices[2], tri.vertices[2](3, 0));
 
             // screen space projection
             tri = Triangle{
-                {screenSpaceProjection_ * tri.vertices[0],
-                 screenSpaceProjection_ * tri.vertices[1],
-                 screenSpaceProjection_ * tri.vertices[2]
-                },
+                {matMul(screenSpaceProjection_, tri.vertices[0]),
+                 matMul(screenSpaceProjection_, tri.vertices[1]),
+                 matMul(screenSpaceProjection_, tri.vertices[2])},
                 face.attributes
             };
 

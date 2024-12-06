@@ -29,6 +29,17 @@ struct MeshBuffer {
     // TODO: Add texture
 };
 
+struct MeshNode {
+    MeshNode() = default;
+    MeshNode(MeshBuffer meshBuffer);
+    MeshBuffer meshBuffer;
+    Matrix4f transform;
+    std::weak_ptr<MeshNode> parent;
+    std::vector<MeshNode> children;
+
+    Matrix4f getTransform() const noexcept;
+};
+
 struct Triangle {
     Triangle(
         std::array<Vector4f, 3> vertices,

@@ -13,7 +13,6 @@ using Vector2i = Eigen::Vector2i;
 using Matrix4f = Eigen::Matrix4f;
 using Matrix3f = Eigen::Matrix3f;
 
-
 template <typename Vector>
 inline constexpr std::decay<Vector>::type projection(
     Vector &&a, Vector &&on
@@ -71,7 +70,12 @@ Matrix4f inline screenSpaceProjection(
 }
 
 template <typename Mat>
-Mat inline scale(Mat &&matrix, float scalar) {
-    mat *= scalar;
-    return mat;
+Mat inline matrixScale(Mat &&matrix, float scalar) {
+    matrix *= scalar;
+    return matrix;
+}
+
+template <typename M1, typename M2>
+decltype(auto) inline matMul(M1 &&lhs, M2 &&rhs) {
+    return (lhs * rhs).eval();
 }
