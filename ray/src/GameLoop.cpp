@@ -39,6 +39,7 @@ public:
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
             
+            
 
             processInput();
             sdlController.renderer->update(node, dt);

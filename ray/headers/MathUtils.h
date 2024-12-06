@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>
+
 #include <type_traits>
 
 #include "Eigen/Dense"
@@ -80,7 +82,7 @@ decltype(auto) inline matMul(M1 &&lhs, M2 &&rhs) noexcept {
     return (lhs * rhs).eval();
 }
 
-template<typename Mat>
+template <typename Mat>
 Mat inline ones() noexcept {
     return Mat::Ones().eval();
 }
@@ -93,4 +95,28 @@ Mat inline zeros() noexcept {
 template <size_t size>
 decltype(auto) inline eye() noexcept {
     return Eigen::Matrix<float, size, 1>::Ones().asDiagonal();
+}
+
+decltype(auto) inline rodriguezRotationMatrix(
+    Vector3f axis,
+    float angle
+) noexcept {
+    auto rotationMatrix = Metrix3f::Zero();
+    auto cosValue = cosf(angle);
+    auto sinValue = sinf(angle);
+    rotationMatrix(0, 0) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(1, 0) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(2, 0) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(0, 1) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(1, 1) = cosValue + powf(axis(1, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(2, 1) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(0, 2) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(1, 2) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
+    rotationMatrix(2, 2) = cosValue + powf(axis(2, 0), 2.f) * (1 - cosValue);
+    Eigen::Rotation3D
+}
+
+decltype(auto) rotateAround(Matrix3f matrix, Vector3f axis, float angle) {
+    auto rotationMatrix = Metrix3f::Zero();
+    rotationMatrix
 }
