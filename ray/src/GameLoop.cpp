@@ -19,8 +19,7 @@ public:
 
     void start() {
         sdlController.showWindow();
-
-        Renderer::MeshData meshData = {
+        Renderer::MeshData node{
             MeshBuffer(
                 {
                     Vector3f(-40, 25, 50),
@@ -33,14 +32,16 @@ public:
             )
         };
         while (!shouldClose) {
-            auto dt = SDL_GetTicks() - previousFrameTicks;
+            auto currentTicks = SDL_GetTicks();
+            auto dt = currentTicks - previousFrameTicks;
             if (dt < frameTime) {
                 SDL_Delay(frameTime - dt);
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
+            
 
             processInput();
-            sdlController.renderer->update(meshData, dt);
+            sdlController.renderer->update(node, dt);
             sdlController.renderer->render();
             previousFrameTicks = SDL_GetTicks();
         }

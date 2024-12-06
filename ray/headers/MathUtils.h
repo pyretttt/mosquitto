@@ -16,7 +16,7 @@ using Matrix3f = Eigen::Matrix3f;
 template <typename Vector>
 inline constexpr std::decay<Vector>::type projection(
     Vector &&a, Vector &&on
-) {
+) noexcept {
     auto const onNorm = on.normalized();
     return (onNorm * a.dot(onNorm)).eval();
 }
@@ -24,11 +24,11 @@ inline constexpr std::decay<Vector>::type projection(
 template <typename Vector>
 inline constexpr std::decay<Vector>::type rejection(
     Vector &&a, Vector &&on
-) {
+) noexcept {
     return (a - projection(a, on)).eval();
 }
 
-Vector4f inline asVec4(Vector3f v, float fillValue = 0.f) {
+Vector4f inline asVec4(Vector3f v, float fillValue = 0.f) noexcept {
     return {
         v.x(),
         v.y(),
@@ -43,7 +43,7 @@ Matrix4f inline perspectiveProjectionMatrix(
     bool keepHeight,
     float far,
     float near
-) {
+) noexcept {
     Matrix4f mat = Matrix4f::Zero();
     auto angleMeasure = tanf(fov / 2);
     mat(0, 0) = 1.f / (aspectRatio * angleMeasure);
@@ -57,7 +57,7 @@ Matrix4f inline perspectiveProjectionMatrix(
 Matrix4f inline screenSpaceProjection(
     int width,
     int height
-) {
+) noexcept {
     Matrix4f mat = Matrix4f::Zero();
     mat(0, 0) = width / 2.f;
     mat(1, 1) = -height / 2.f;
@@ -70,12 +70,27 @@ Matrix4f inline screenSpaceProjection(
 }
 
 template <typename Mat>
-Mat inline matrixScale(Mat &&matrix, float scalar) {
+Mat inline matrixScale(Mat &&matrix, float scalar) noexcept {
     matrix *= scalar;
     return matrix;
 }
 
 template <typename M1, typename M2>
-decltype(auto) inline matMul(M1 &&lhs, M2 &&rhs) {
+decltype(auto) inline matMul(M1 &&lhs, M2 &&rhs) noexcept {
     return (lhs * rhs).eval();
+}
+
+template<typename Mat>
+Mat inline ones() noexcept {
+    return Mat::Ones().eval();
+}
+
+template <typename Mat>
+Mat inline zeros() noexcept {
+    return Mat::Zero();
+}
+
+template <typename Mat>
+Mat inline eye() noexcept {
+    return Mat::Ones().eval().diagonal().eval();
 }

@@ -34,7 +34,8 @@ SDLRenderer::~SDLRenderer() {
 }
 
 void SDLRenderer::update(MeshData const &data, float dt) {
-    for (auto const &mesh : data) {
+    for (auto const &node : data) {
+        auto const &mesh = node.meshBuffer;
         for (size_t i = 0; i < mesh.faces.size(); i++) {
             auto const &face = mesh.faces[i];
             // perspective projection

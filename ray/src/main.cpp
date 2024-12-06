@@ -11,6 +11,7 @@ int main() {
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return -1;
     }
+    std::cout << eye<Matrix3f>() << std::endl;
     GameLoop::instance().start();
     return 0;
 }

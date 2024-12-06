@@ -62,6 +62,9 @@
         "hash_map": "cpp",
         "functional": "cpp",
         "nnls": "cpp",
-        "fft": "cpp"
+        "fft": "cpp",
+        "future": "cpp",
+        "regex": "cpp",
+        "span": "cpp"
     }
 }

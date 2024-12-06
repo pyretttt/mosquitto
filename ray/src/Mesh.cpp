@@ -12,11 +12,11 @@ MeshBuffer::MeshBuffer(std::vector<Vector3f> vertices, std::vector<Face> faces)
 
 MeshNode::MeshNode(MeshBuffer meshBuffer) : meshBuffer(meshBuffer) {}
 
-Matrix4f MeshNode::getTransform() const noexcept {
-  if (auto par = parent.lock()) {
-      return matMul(par->getTransform(), transform);
-  }
-  return transform;
+Matrix3f MeshNode::getTransform() const noexcept {
+    if (auto par = parent.lock()) {
+        return matMul(par->getTransform(), transform);
+    }
+    return transform;
 }
 
 Triangle::Triangle(

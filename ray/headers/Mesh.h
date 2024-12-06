@@ -30,14 +30,14 @@ struct MeshBuffer {
 };
 
 struct MeshNode {
-    MeshNode() = default;
+    MeshNode() = delete;
     MeshNode(MeshBuffer meshBuffer);
     MeshBuffer meshBuffer;
-    Matrix4f transform;
+    Matrix3f transform = ones<Matrix3f>();
     std::weak_ptr<MeshNode> parent;
     std::vector<MeshNode> children;
 
-    Matrix4f getTransform() const noexcept;
+    Matrix3f getTransform() const noexcept;
 };
 
 struct Triangle {
