@@ -33,7 +33,7 @@ struct MeshNode {
     MeshNode() = delete;
     MeshNode(MeshBuffer meshBuffer);
     MeshBuffer meshBuffer;
-    Matrix3f transform = ones<Matrix3f>();
+    Matrix3f transform = eye<3>();
     std::weak_ptr<MeshNode> parent;
     std::vector<MeshNode> children;
 

@@ -36,20 +36,25 @@ SDLRenderer::~SDLRenderer() {
 void SDLRenderer::update(MeshData const &data, float dt) {
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
+        auto const transformMatrix = node.getTransform();
         for (size_t i = 0; i < mesh.faces.size(); i++) {
             auto const &face = mesh.faces[i];
+
+            auto vertexA = matMul(transformMatrix, mesh.vertices[face.a]);
+            auto vertexB = matMul(transformMatrix, mesh.vertices[face.b]);
+            auto vertexC = matMul(transformMatrix, mesh.vertices[face.c]);
             // perspective projection
             Triangle tri = Triangle{
-                {matMul(perspectiveProjectionMatrix_, asVec4(mesh.vertices[face.a], 1)),
-                 matMul(perspectiveProjectionMatrix_, asVec4(mesh.vertices[face.b], 1)),
-                 matMul(perspectiveProjectionMatrix_, asVec4(mesh.vertices[face.c], 1))},
+                {matMul(perspectiveProjectionMatrix_, asVec4(vertexA, 1)),
+                 matMul(perspectiveProjectionMatrix_, asVec4(vertexB, 1)),
+                 matMul(perspectiveProjectionMatrix_, asVec4(vertexC, 1))},
                 face.attributes // std::move() ?
             };
 
             // TODO: finish
-            tri.vertices[0] = matrixScale(tri.vertices[0], tri.vertices[0](3, 0));
-            tri.vertices[1] = matrixScale(tri.vertices[1], tri.vertices[1](3, 0));
-            tri.vertices[2] = matrixScale(tri.vertices[2], tri.vertices[2](3, 0));
+            tri.vertices[0] = matrixScale(tri.vertices[0], 1 / tri.vertices[0](3, 0));
+            tri.vertices[1] = matrixScale(tri.vertices[1], 1 / tri.vertices[1](3, 0));
+            tri.vertices[2] = matrixScale(tri.vertices[2], 1 / tri.vertices[2](3, 0));
 
             // screen space projection
             tri = Triangle{
@@ -129,7 +134,6 @@ void SDLRenderer::drawLine(Vector2i from, Vector2i to, uint32_t color) noexcept 
     float y = y0;
     while (x <= x1) {
         int y_ = y;
-        std::cout << "oneComplement(std::abs(y))" << oneComplement(std::abs(y)) << " fpart(std::abs(y))) " << fpart(std::abs(y)) << std::endl;
         assign(x, y_, interpolateColorIntensity(color, oneComplement(std::abs(y))));
         assign(x, y_ + 1, interpolateColorIntensity(color, fpart(std::abs(y))));
         x++;
@@ -157,12 +161,15 @@ void SDLRenderer::fillTriangle(Triangle tri) noexcept {
         float inv_slope0 = static_cast<float>(t1.x() - t0.x()) / (t1.y() - t0.y());
         float inv_slope1 = static_cast<float>(t2.x() - t0.x()) / (t2.y() - t0.y());
         float x0{t0.x()}, x1{t0.x()};
+        if (x0 > x1) {
+            std::swap(x0, x1);
+        }
         for (size_t y = t0.y(); y <= t1.y(); y++) {
-            int begin = std::min(x0, x1);
-            int end = std::max(x0, x1);
-            while (begin != end) {
-                colorBuffer[begin + y * resolution.first] = color;
-                begin++;
+            if (x0 > x1) {
+                std::swap(x0, x1);
+            }
+            for (int i = x0; i <= x1; i++) {
+                colorBuffer[i + y * resolution.first] = color;
             }
             x0 += inv_slope0;
             x1 += inv_slope1;
@@ -173,11 +180,11 @@ void SDLRenderer::fillTriangle(Triangle tri) noexcept {
         float inv_slope1 = static_cast<float>(t1.x() - t2.x()) / (t2.y() - t1.y());
         float x0{t2.x()}, x1{t2.x()};
         for (int y = t2.y(); y > t1.y(); y--) {
-            int begin = std::min(x0, x1);
-            int end = std::max(x0, x1);
-            while (begin != end) {
-                colorBuffer[begin + y * resolution.first] = color;
-                begin++;
+            if (x0 > x1) {
+                std::swap(x0, x1);
+            }
+            for (int i = x0; i <= x1; i++) {
+                colorBuffer[i + y * resolution.first] = color;
             }
             x0 += inv_slope0;
             x1 += inv_slope1;

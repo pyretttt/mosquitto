@@ -101,22 +101,20 @@ decltype(auto) inline rodriguezRotationMatrix(
     Vector3f axis,
     float angle
 ) noexcept {
-    auto rotationMatrix = Metrix3f::Zero();
+    Matrix3f rotationMatrix = Matrix3f::Zero();
     auto cosValue = cosf(angle);
     auto sinValue = sinf(angle);
-    rotationMatrix(0, 0) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(1, 0) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(2, 0) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(0, 1) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(1, 1) = cosValue + powf(axis(1, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(2, 1) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(0, 2) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(1, 2) = cosValue + powf(axis(0, 0), 2.f) * (1 - cosValue);
-    rotationMatrix(2, 2) = cosValue + powf(axis(2, 0), 2.f) * (1 - cosValue);
-    Eigen::Rotation3D
-}
+    rotationMatrix(0, 0) = cosValue + axis(0, 0) * axis(0, 0) * (1 - cosValue);
+    rotationMatrix(1, 0) = sinValue * axis(2, 0) + axis(0, 0) * axis(1, 0) * (1 - cosValue);
+    rotationMatrix(2, 0) = -sinValue * axis(1, 0) + axis(0, 0) * axis(2, 0) * (1 - cosValue);
 
-decltype(auto) rotateAround(Matrix3f matrix, Vector3f axis, float angle) {
-    auto rotationMatrix = Metrix3f::Zero();
-    rotationMatrix
+    rotationMatrix(0, 1) = axis(0, 0) * axis(1, 0) * (1 - cosValue) - axis(2, 0) * sinValue;
+    rotationMatrix(1, 1) = cosValue + axis(1, 0) * axis(1, 0) * (1 - cosValue);
+    rotationMatrix(2, 1) = axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
+
+    rotationMatrix(0, 2) = axis(1, 0) * sinValue + axis(0, 0) * axis(2, 0) * (1 - cosValue);
+    rotationMatrix(1, 2) = -axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
+    rotationMatrix(2, 2) = cosValue + axis(2, 0) * axis(2, 0) * (1 - cosValue);
+
+    return rotationMatrix;
 }

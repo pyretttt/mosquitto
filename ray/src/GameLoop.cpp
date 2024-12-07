@@ -4,6 +4,7 @@
 #include "SDL.h"
 #include "rpp/rpp.hpp"
 
+#include "MathUtils.h"
 #include "Renderer.h"
 #include "SDLController.h"
 
@@ -38,8 +39,9 @@ public:
                 SDL_Delay(frameTime - dt);
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
-            
-            
+
+            auto rotationMatrix = rodriguezRotationMatrix({0, 0, 1}, static_cast<float>(dt) / 10000);
+            node[0].transform = matMul(rotationMatrix, node[0].transform);
 
             processInput();
             sdlController.renderer->update(node, dt);
