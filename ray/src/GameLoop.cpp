@@ -23,8 +23,8 @@ public:
         Renderer::MeshData node{
             MeshBuffer(
                 {
-                    Vector3f(-40, 25, 50),
-                    Vector3f(25, 25, 50),
+                    Vector3f(-40, 25, 100),
+                    Vector3f(25, 25, 100),
                     Vector3f(0, -25, 100),
                 },
                 {

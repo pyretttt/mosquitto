@@ -44,23 +44,30 @@ void SDLRenderer::update(MeshData const &data, float dt) {
             auto vertexB = matMul(transformMatrix, mesh.vertices[face.b]);
             auto vertexC = matMul(transformMatrix, mesh.vertices[face.c]);
             // perspective projection
-            Triangle tri = Triangle{
-                {matMul(perspectiveProjectionMatrix_, asVec4(vertexA, 1)),
-                 matMul(perspectiveProjectionMatrix_, asVec4(vertexB, 1)),
-                 matMul(perspectiveProjectionMatrix_, asVec4(vertexC, 1))},
-                face.attributes // std::move() ?
+            Vector4f projectedPoints[] = {
+                matMul(perspectiveProjectionMatrix_, asVec4(vertexA, 1)),
+                matMul(perspectiveProjectionMatrix_, asVec4(vertexB, 1)),
+                matMul(perspectiveProjectionMatrix_, asVec4(vertexC, 1))
             };
 
             // TODO: finish
-            tri.vertices[0] = matrixScale(tri.vertices[0], 1 / tri.vertices[0](3, 0));
-            tri.vertices[1] = matrixScale(tri.vertices[1], 1 / tri.vertices[1](3, 0));
-            tri.vertices[2] = matrixScale(tri.vertices[2], 1 / tri.vertices[2](3, 0));
+            projectedPoints[0] = matrixScale(projectedPoints[0], 1 / projectedPoints[0](3, 0));
+            projectedPoints[1] = matrixScale(projectedPoints[1], 1 / projectedPoints[1](3, 0));
+            projectedPoints[2] = matrixScale(projectedPoints[2], 1 / projectedPoints[2](3, 0));
 
             // screen space projection
-            tri = Triangle{
-                {matMul(screenSpaceProjection_, tri.vertices[0]),
-                 matMul(screenSpaceProjection_, tri.vertices[1]),
-                 matMul(screenSpaceProjection_, tri.vertices[2])},
+            Vector4f screenProjectedPoints[] = {
+                matMul(screenSpaceProjection_, projectedPoints[0]),
+                matMul(screenSpaceProjection_, projectedPoints[1]),
+                matMul(screenSpaceProjection_, projectedPoints[2])
+            };
+
+            Triangle tri = {
+                {
+                    screenProjectedPoints[0], 
+                    screenProjectedPoints[1], 
+                    screenProjectedPoints[2]
+                },
                 face.attributes
             };
 
@@ -157,89 +164,34 @@ void SDLRenderer::fillTriangle(Triangle tri) noexcept {
         swap(t0, t1);
     }
 
-    // if (t0.y() != t1.y()) {
-    //     float inv_slope0 = static_cast<float>(t1.x() - t0.x()) / (t1.y() - t0.y());
-    //     float inv_slope1 = static_cast<float>(t2.x() - t0.x()) / (t2.y() - t0.y());
-    //     float x0{t0.x()}, x1{t0.x()};
-    //     // if (x0 > x1) {
-    //     //     std::swap(x0, x1);
-    //     // }
-    //     for (size_t y = t0.y(); y <= t1.y(); y++) {
-    //         // if (x0 > x1) {
-    //         //     std::swap(x0, x1);
-    //         // }
-    //         for (int i = x0; i <= x1; i++) {
-    //             colorBuffer[i + y * resolution.first] = color;
-    //         }
-    //         x0 += inv_slope0;
-    //         x1 += inv_slope1;
-    //     }
-    // }
-    // if (t1.y() != t2.y()) {
-    //     float inv_slope0 = static_cast<float>(t0.x() - t2.x()) / (t2.y() - t0.y());
-    //     float inv_slope1 = static_cast<float>(t1.x() - t2.x()) / (t2.y() - t1.y());
-    //     float x0{t2.x()}, x1{t2.x()};
-    //     for (int y = t2.y(); y > t1.y(); y--) {
-    //         // if (x0 > x1) {
-    //         //     std::swap(x0, x1);
-    //         // }
-    //         for (int i = x0; i <= x1; i++) {
-    //             colorBuffer[i + y * resolution.first] = color;
-    //         }
-    //         x0 += inv_slope0;
-    //         x1 += inv_slope1;
-    //     }
-    // }
-    float inv_slop_1 = t1.y() != t0.y()
-                           ? (float)(t1.x() - t0.x()) / abs(t1.y() - t0.y())
-                           : 0;
-    float inv_slop_2 = t2.y() != t0.y()
-                           ? (float)(t2.x() - t0.x()) / abs(t2.y() - t0.y())
-                           : 0;
+    int x0 = t0.x(), y0 = t0.y();
+    int x1 = t1.x(), y1 = t1.y();
+    int x2 = t2.x(), y2 = t2.y();
 
-    // If non flat top triangle, fill flat bottom part
-    if (y1 != y0) {
-        for (int y = t0.y(); y < t1.y(); y++) {
-            // (y - y1) start at -y1 comes to 0
-            // inv_slop_1 is either negative or positive
-            // so x_start starts at x0
-            int x_start = t1.x() + (y - t1.y()) * inv_slop_1;
-            // (y - y0) always positive and starts at y0 and goes to y_1
-            // inv_slop2 is either positive or negative
-            // x_end starts at x0 too
-            int x_end = t0.x() + (y - t0.y()) * inv_slop_2;
-
-            if (x_end < x_start) {
-                std::swap(x_end, x_start);
+    if (y0 != y1) {
+        float inv_slope0 = static_cast<float>(x1 - x0) / (y1 - y0);
+        float inv_slope1 = static_cast<float>(x2 - x0) / (y2 - y0);
+        for (int y = y0; y <= y1; y++) {
+            int xBegin = x0 + (y - y0) * inv_slope0;
+            int xEnd = x0 + (y - y0) * inv_slope1;
+            if (xBegin > xEnd) {
+                std::swap(xBegin, xEnd);
             }
-
-            for (int x = x_start; x < x_end; x++) {
+            for (int x = xBegin; x <= xEnd; x++) {
                 colorBuffer[x + y * resolution.first] = color;
             }
         }
     }
-
-    inv_slop_1 = t1.y() != t2.y()
-                     ? (float)(t2.x() - t1.x()) / abs(t2.y() - t1.y())
-                     : 0;
-    inv_slop_2 = t2.y() != t0.y()
-                     ? (float)(t2.x() - t0.x()) / abs(t2.y() - t0.y())
-                     : 0;
-    // if not flat bottom, fill flat top part
-    if (t2.y() != t1.y()) {
-        for (int y = t1.y(); y <= t2.y(); ++y) {
-            // (y - y1) starts at 0 raise to (y2 - y1)
-            // x_start starts at x1
-            int x_start = t1.x() + (y - t1.y()) * inv_slop_1;
-            // (y - y0) starts at m_y raise to y2
-            // x_end starts at x_m and goes to x2
-            int x_end = t0.x() + (y - t0.y()) * inv_slop_2;
-
-            if (x_end < x_start) {
-                std::swap(x_end, x_start);
+    if (y1 != y2) {
+        float inv_slope0 = static_cast<float>(x0 - x2) / (y2 - y0);
+        float inv_slope1 = static_cast<float>(x1 - x2) / (y2 - y1);
+        for (int y = y2; y > y1; y--) {
+            int xBegin = x2 + (y2 - y) * inv_slope0;
+            int xEnd = x2 + (y2 - y) * inv_slope1;
+            if (xBegin > xEnd) {
+                std::swap(xBegin, xEnd);
             }
-
-            for (int x = x_start; x < x_end; x++) {
+            for (int x = xBegin; x <= xEnd; x++) {
                 colorBuffer[x + y * resolution.first] = color;
             }
         }
