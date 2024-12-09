@@ -16,8 +16,8 @@ struct SDLRenderer : public Renderer {
 
     ~SDLRenderer();
 private:
-    void drawPoint(uint32_t color, Vector2i position, size_t thickness = 0) noexcept;
-    void drawLine(Vector2i from, Vector2i to, uint32_t color) noexcept;
+    void drawPoint(uint32_t color, ml::Vector2i position, size_t thickness = 0) noexcept;
+    void drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept;
     void fillTriangle(Triangle t) noexcept;
 
     std::pair<int, int> resolution;
@@ -25,6 +25,6 @@ private:
     std::unique_ptr<uint32_t []> colorBuffer;
     std::unique_ptr<uint32_t []> zBuffer;
     SDL_Texture *renderTarget;
-    Matrix4f perspectiveProjectionMatrix_;
-    Matrix4f screenSpaceProjection_;
+    ml::Matrix4f perspectiveProjectionMatrix_;
+    ml::Matrix4f screenSpaceProjection_;
 };

@@ -6,6 +6,8 @@
 
 #include "Eigen/Dense"
 
+namespace ml {
+
 using Vector4f = Eigen::Vector4f;
 using Vector3f = Eigen::Vector3f;
 using Vector2f = Eigen::Vector2f;
@@ -30,7 +32,7 @@ inline constexpr std::decay<Vector>::type rejection(
     return (a - projection(a, on)).eval();
 }
 
-Vector4f inline asVec4(Vector3f v, float fillValue = 0.f) noexcept {
+Vector4f inline asVec4(Vector3f v, float fillValue = 1.f) noexcept {
     return {
         v.x(),
         v.y(),
@@ -92,16 +94,16 @@ Mat inline zeros() noexcept {
     return Mat::Zero();
 }
 
-template <size_t size>
-decltype(auto) inline eye() noexcept {
-    return Eigen::Matrix<float, size, 1>::Ones().asDiagonal();
+template<size_t size>
+Eigen::Matrix<float, size, size> inline eye() noexcept {
+    return Eigen::Matrix<float, size, size>::Identity();
 }
 
 decltype(auto) inline rodriguezRotationMatrix(
     Vector3f axis,
     float angle
 ) noexcept {
-    Matrix3f rotationMatrix = Matrix3f::Zero();
+    Matrix4f rotationMatrix = Matrix4f::Zero();
     auto cosValue = cosf(angle);
     auto sinValue = sinf(angle);
     rotationMatrix(0, 0) = cosValue + axis(0, 0) * axis(0, 0) * (1 - cosValue);
@@ -115,6 +117,21 @@ decltype(auto) inline rodriguezRotationMatrix(
     rotationMatrix(0, 2) = axis(1, 0) * sinValue + axis(0, 0) * axis(2, 0) * (1 - cosValue);
     rotationMatrix(1, 2) = -axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
     rotationMatrix(2, 2) = cosValue + axis(2, 0) * axis(2, 0) * (1 - cosValue);
-
+    
+    rotationMatrix(3, 3) = 1;
     return rotationMatrix;
+}
+
+Matrix4f inline scaleMatrix(float x, float y, float z = 1, float w = 1) {
+    Vector4f m({x, y, z, w});
+    return m.asDiagonal();
+}
+
+decltype(auto) inline translationMatrix(float tx, float ty, float tz) {
+    Matrix4f res = Matrix4f::Identity();
+    res(0, 3) = tx;
+    res(1, 3) = ty;
+    res(2, 3) = tz;
+    return res;
+}
 }

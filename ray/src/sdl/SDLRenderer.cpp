@@ -12,14 +12,14 @@ SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolutio
     auto resolutionSize = resolution.first * resolution.second;
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
     zBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
-    perspectiveProjectionMatrix_ = perspectiveProjectionMatrix(
+    perspectiveProjectionMatrix_ = ml::perspectiveProjectionMatrix(
         1.3962634016,
         static_cast<float>(resolution.first) / resolution.second,
         true,
         0.1,
         1000
     );
-    screenSpaceProjection_ = screenSpaceProjection(resolution.first, resolution.second);
+    screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA32,
@@ -40,26 +40,26 @@ void SDLRenderer::update(MeshData const &data, float dt) {
         for (size_t i = 0; i < mesh.faces.size(); i++) {
             auto const &face = mesh.faces[i];
 
-            auto vertexA = matMul(transformMatrix, mesh.vertices[face.a]);
-            auto vertexB = matMul(transformMatrix, mesh.vertices[face.b]);
-            auto vertexC = matMul(transformMatrix, mesh.vertices[face.c]);
+            auto vertexA = ml::matMul(transformMatrix, ml::asVec4(mesh.vertices[face.a]));
+            auto vertexB = ml::matMul(transformMatrix, ml::asVec4(mesh.vertices[face.b]));
+            auto vertexC = ml::matMul(transformMatrix, ml::asVec4(mesh.vertices[face.c]));
             // perspective projection
-            Vector4f projectedPoints[] = {
-                matMul(perspectiveProjectionMatrix_, asVec4(vertexA, 1)),
-                matMul(perspectiveProjectionMatrix_, asVec4(vertexB, 1)),
-                matMul(perspectiveProjectionMatrix_, asVec4(vertexC, 1))
+            ml::Vector4f projectedPoints[] = {
+                ml::matMul(perspectiveProjectionMatrix_, vertexA),
+                ml::matMul(perspectiveProjectionMatrix_, vertexB),
+                ml::matMul(perspectiveProjectionMatrix_, vertexC)
             };
 
             // TODO: finish
-            projectedPoints[0] = matrixScale(projectedPoints[0], 1 / projectedPoints[0](3, 0));
-            projectedPoints[1] = matrixScale(projectedPoints[1], 1 / projectedPoints[1](3, 0));
-            projectedPoints[2] = matrixScale(projectedPoints[2], 1 / projectedPoints[2](3, 0));
+            projectedPoints[0] = ml::matrixScale(projectedPoints[0], 1 / projectedPoints[0](3, 0));
+            projectedPoints[1] = ml::matrixScale(projectedPoints[1], 1 / projectedPoints[1](3, 0));
+            projectedPoints[2] = ml::matrixScale(projectedPoints[2], 1 / projectedPoints[2](3, 0));
 
             // screen space projection
-            Vector4f screenProjectedPoints[] = {
-                matMul(screenSpaceProjection_, projectedPoints[0]),
-                matMul(screenSpaceProjection_, projectedPoints[1]),
-                matMul(screenSpaceProjection_, projectedPoints[2])
+            ml::Vector4f screenProjectedPoints[] = {
+                ml::matMul(screenSpaceProjection_, projectedPoints[0]),
+                ml::matMul(screenSpaceProjection_, projectedPoints[1]),
+                ml::matMul(screenSpaceProjection_, projectedPoints[2])
             };
 
             Triangle tri = {
@@ -107,7 +107,7 @@ void SDLRenderer::render() const {
     SDL_RenderPresent(renderer);
 }
 
-void SDLRenderer::drawPoint(uint32_t color, Vector2i position, size_t thickness) noexcept {
+void SDLRenderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thickness) noexcept {
     if (thickness == 0) {
         colorBuffer[position.x() + position.y() * resolution.first] = color;
         return;
@@ -129,7 +129,7 @@ static constexpr float oneComplement(float num) {
     return 1 - fpart(num);
 }
 
-void SDLRenderer::drawLine(Vector2i from, Vector2i to, uint32_t color) noexcept {
+void SDLRenderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept {
     int x0{from.x()},
         y0{from.y()},
         x1{to.x()},

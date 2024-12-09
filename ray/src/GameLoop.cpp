@@ -21,16 +21,16 @@ public:
     void start() {
         sdlController.showWindow();
         Renderer::MeshData node{
-            MeshBuffer {
+            MeshBuffer{
                 {
-                    Vector3f(-10, -10, 100), // 0. left - bottom - far
-                    Vector3f(-10, 10, 100),  // 1. left - top - far
-                    Vector3f(10, -10, 100),  // 2. right - bottom - far
-                    Vector3f(10, 10, 100),   // 3. right - top - far
-                    Vector3f(-10, -10, 50),  // 4. left - bottom - near
-                    Vector3f(-10, 10, 50),   // 5. left - top - near
-                    Vector3f(10, -10, 50),   // 6. right - bottom - near
-                    Vector3f(10, 10, 50),    // 7. right - top - near
+                    ml::Vector3f(-0.5, -0.5, 0.5),   // 0. left - bottom - far
+                    ml::Vector3f(-0.5, 0.5, 0.5),    // 1. left - top - far
+                    ml::Vector3f(0.5, -0.5, 0.5),    // 2. right - bottom - far
+                    ml::Vector3f(0.5, 0.5, 0.5),     // 3. right - top - far
+                    ml::Vector3f(-0.5, -0.5, -0.5), // 4. left - bottom - near
+                    ml::Vector3f(-0.5, 0.5, -0.5),  // 5. left - top - near
+                    ml::Vector3f(0.5, -0.5, -0.5),  // 6. right - bottom - near
+                    ml::Vector3f(0.5, 0.5, -0.5),   // 7. right - top - near
                 },
                 {
                     Face{4, 6, 5, {}}, // near front
@@ -61,8 +61,13 @@ public:
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
 
-            auto rotationMatrix = rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(dt) / 10000);
-            node[0].transform = matMul(rotationMatrix, node[0].transform);
+            auto transformationMatrix = ml::scaleMatrix(20, 20, 20);
+            transformationMatrix = ml::matMul(
+                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 10000),
+                transformationMatrix
+            );
+            transformationMatrix = ml::matMul(ml::translationMatrix(0, 0, 50), transformationMatrix);
+            node[0].transform = transformationMatrix;
 
             processInput();
             sdlController.renderer->update(node, dt);
