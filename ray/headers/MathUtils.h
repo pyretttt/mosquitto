@@ -94,7 +94,7 @@ Mat inline zeros() noexcept {
     return Mat::Zero();
 }
 
-template<size_t size>
+template <size_t size>
 Eigen::Matrix<float, size, size> inline eye() noexcept {
     return Eigen::Matrix<float, size, size>::Identity();
 }
@@ -103,6 +103,7 @@ decltype(auto) inline rodriguezRotationMatrix(
     Vector3f axis,
     float angle
 ) noexcept {
+    axis.normalize();
     Matrix4f rotationMatrix = Matrix4f::Zero();
     auto cosValue = cosf(angle);
     auto sinValue = sinf(angle);
@@ -112,12 +113,12 @@ decltype(auto) inline rodriguezRotationMatrix(
 
     rotationMatrix(0, 1) = axis(0, 0) * axis(1, 0) * (1 - cosValue) - axis(2, 0) * sinValue;
     rotationMatrix(1, 1) = cosValue + axis(1, 0) * axis(1, 0) * (1 - cosValue);
-    rotationMatrix(2, 1) = axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
+    rotationMatrix(2, 2) = axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
 
     rotationMatrix(0, 2) = axis(1, 0) * sinValue + axis(0, 0) * axis(2, 0) * (1 - cosValue);
     rotationMatrix(1, 2) = -axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
     rotationMatrix(2, 2) = cosValue + axis(2, 0) * axis(2, 0) * (1 - cosValue);
-    
+
     rotationMatrix(3, 3) = 1;
     return rotationMatrix;
 }
@@ -140,13 +141,13 @@ Matrix4f inline rotateAroundPoint(Vector3f supportPoint, Vector3f rotationAxis, 
     translation(0, 3) = -supportPoint(0, 0);
     translation(1, 3) = -supportPoint(1, 0);
     translation(2, 3) = -supportPoint(2, 0);
-
-    Matrix4f result = rodriguezRotationMatrix(rotationAxis, angle) * translation;
+    Matrix4f rotation = rodriguezRotationMatrix(rotationAxis, angle);
     Matrix4f reverseTranslation = Matrix4f::Identity();
-    translation(0, 3) = supportPoint(0, 0);
-    translation(1, 3) = supportPoint(1, 0);
-    translation(2, 3) = supportPoint(2, 0);
-    result = reverseTranslation * result;
+    reverseTranslation(0, 3) = supportPoint(0, 0);
+    reverseTranslation(1, 3) = supportPoint(1, 0);
+    reverseTranslation(2, 3) = supportPoint(2, 0);
+
+    Matrix4f result = reverseTranslation * (rotation * translation);
     return result;
 }
-}
+} // namespace ml

@@ -61,13 +61,14 @@ public:
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
 
-            auto transformationMatrix = ml::scaleMatrix(10, 10, 10);
-            // transformationMatrix = ml::matMul(
-            //     ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 10000),
-            //     transformationMatrix
-            // );
+            ml::Matrix4f transformationMatrix = ml::scaleMatrix(10, 10, 10);
+            transformationMatrix = ml::matMul(
+                ml::rodriguezRotationMatrix({1, 1, 0}, static_cast<float>(currentTicks) / 1000),
+                transformationMatrix
+            );
             transformationMatrix = ml::matMul(ml::translationMatrix(0, 0, -50), transformationMatrix);
-            transformationMatrix = ml::matMul(ml::rotateAroundPoint({0, 0, -70}, {0, 1, 0}, static_cast<float>(currentTicks) / 100000), transformationMatrix);
+
+            transformationMatrix = ml::matMul(ml::rotateAroundPoint({0, 0, -70}, {0, 1, 0}, static_cast<float>(currentTicks) / 1000), transformationMatrix);
             node[0].transform = transformationMatrix;
 
             processInput();
