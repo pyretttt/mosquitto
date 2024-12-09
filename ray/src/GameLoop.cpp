@@ -23,14 +23,14 @@ public:
         Renderer::MeshData node{
             MeshBuffer{
                 {
-                    ml::Vector3f(-0.5, -0.5, 0.5),   // 0. left - bottom - far
-                    ml::Vector3f(-0.5, 0.5, 0.5),    // 1. left - top - far
-                    ml::Vector3f(0.5, -0.5, 0.5),    // 2. right - bottom - far
-                    ml::Vector3f(0.5, 0.5, 0.5),     // 3. right - top - far
-                    ml::Vector3f(-0.5, -0.5, -0.5), // 4. left - bottom - near
-                    ml::Vector3f(-0.5, 0.5, -0.5),  // 5. left - top - near
-                    ml::Vector3f(0.5, -0.5, -0.5),  // 6. right - bottom - near
-                    ml::Vector3f(0.5, 0.5, -0.5),   // 7. right - top - near
+                    ml::Vector3f(-0.5, -0.5, -0.5),   // 0. left - bottom - far
+                    ml::Vector3f(-0.5, 0.5, -0.5),    // 1. left - top - far
+                    ml::Vector3f(0.5, -0.5, -0.5),    // 2. right - bottom - far
+                    ml::Vector3f(0.5, 0.5, -0.5),     // 3. right - top - far
+                    ml::Vector3f(-0.5, -0.5, 0.5), // 4. left - bottom - near
+                    ml::Vector3f(-0.5, 0.5, 0.5),  // 5. left - top - near
+                    ml::Vector3f(0.5, -0.5, 0.5),  // 6. right - bottom - near
+                    ml::Vector3f(0.5, 0.5, 0.5),   // 7. right - top - near
                 },
                 {
                     Face{4, 6, 5, {}}, // near front
@@ -61,12 +61,13 @@ public:
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
 
-            auto transformationMatrix = ml::scaleMatrix(20, 20, 20);
-            transformationMatrix = ml::matMul(
-                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 10000),
-                transformationMatrix
-            );
-            transformationMatrix = ml::matMul(ml::translationMatrix(0, 0, 50), transformationMatrix);
+            auto transformationMatrix = ml::scaleMatrix(10, 10, 10);
+            // transformationMatrix = ml::matMul(
+            //     ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 10000),
+            //     transformationMatrix
+            // );
+            transformationMatrix = ml::matMul(ml::translationMatrix(0, 0, -50), transformationMatrix);
+            transformationMatrix = ml::matMul(ml::rotateAroundPoint({0, 0, -70}, {0, 1, 0}, static_cast<float>(currentTicks) / 100000), transformationMatrix);
             node[0].transform = transformationMatrix;
 
             processInput();

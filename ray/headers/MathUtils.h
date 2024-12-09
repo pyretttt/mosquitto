@@ -134,4 +134,19 @@ decltype(auto) inline translationMatrix(float tx, float ty, float tz) {
     res(2, 3) = tz;
     return res;
 }
+
+Matrix4f inline rotateAroundPoint(Vector3f supportPoint, Vector3f rotationAxis, float angle) {
+    Matrix4f translation = Matrix4f::Identity();
+    translation(0, 3) = -supportPoint(0, 0);
+    translation(1, 3) = -supportPoint(1, 0);
+    translation(2, 3) = -supportPoint(2, 0);
+
+    Matrix4f result = rodriguezRotationMatrix(rotationAxis, angle) * translation;
+    Matrix4f reverseTranslation = Matrix4f::Identity();
+    translation(0, 3) = supportPoint(0, 0);
+    translation(1, 3) = supportPoint(1, 0);
+    translation(2, 3) = supportPoint(2, 0);
+    result = reverseTranslation * result;
+    return result;
+}
 }
