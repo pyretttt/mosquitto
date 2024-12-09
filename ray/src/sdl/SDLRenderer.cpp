@@ -63,15 +63,33 @@ void SDLRenderer::update(MeshData const &data, float dt) {
             };
 
             Triangle tri = {
-                {
-                    screenProjectedPoints[0], 
-                    screenProjectedPoints[1], 
-                    screenProjectedPoints[2]
+                {screenProjectedPoints[0],
+                 screenProjectedPoints[1],
+                 screenProjectedPoints[2]
                 },
                 face.attributes
             };
 
-            fillTriangle(tri);
+            auto const renderMethod = RenderMethod::wireframe;
+            uint32_t color = 0xFFFFFFFF;
+            switch (renderMethod) {
+            case RenderMethod::vertices:
+                for (size_t i = 0; i < 3; i++) {
+                    drawPoint(color, {tri.vertices[i](0, 0), tri.vertices[i](1, 0)}, 3);
+                }
+                break;
+            case RenderMethod::wireframe:
+                drawLine({tri.vertices[0](0, 0), tri.vertices[0](1, 0)}, {tri.vertices[1](0, 0), tri.vertices[1](1, 0)}, color);
+                drawLine({tri.vertices[1](0, 0), tri.vertices[1](1, 0)}, {tri.vertices[2](0, 0), tri.vertices[2](1, 0)}, color);
+                drawLine({tri.vertices[2](0, 0), tri.vertices[2](1, 0)}, {tri.vertices[0](0, 0), tri.vertices[0](1, 0)}, color);
+                for (size_t i = 0; i < 3; i++) {
+                    drawPoint(color, {tri.vertices[i](0, 0), tri.vertices[i](1, 0)}, 3);
+                }
+                break;
+            case RenderMethod::fill:
+                fillTriangle(tri);
+                break;
+            }
         }
     }
 }

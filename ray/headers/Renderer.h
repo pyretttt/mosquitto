@@ -10,6 +10,12 @@ enum class RendererType {
     OpenGL
 };
 
+enum class RenderMethod {
+    vertices,
+    wireframe,
+    fill
+};
+
 class Renderer {
 public:
     using MeshData = std::vector<MeshNode>;
