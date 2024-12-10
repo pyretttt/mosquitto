@@ -84,6 +84,16 @@
         "splines": "cpp",
         "forward_list": "cpp",
         "print": "cpp",
-        "stack": "cpp"
+        "stack": "cpp",
+        "matrixfunctions": "cpp",
+        "filesystem": "cpp",
+        "iterator": "cpp",
+        "random": "cpp",
+        "memory_resource": "cpp",
+        "utility": "cpp",
+        "geometry": "cpp",
+        "qtalignedmalloc": "cpp",
+        "concepts": "cpp",
+        "type_traits": "cpp"
     }
 }

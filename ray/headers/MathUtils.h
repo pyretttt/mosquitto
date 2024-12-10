@@ -32,15 +32,6 @@ inline constexpr std::decay<Vector>::type rejection(
     return (a - projection(a, on)).eval();
 }
 
-Vector4f inline asVec4(Vector3f v, float fillValue = 1.f) noexcept {
-    return {
-        v.x(),
-        v.y(),
-        v.z(),
-        fillValue
-    };
-}
-
 Matrix4f inline perspectiveProjectionMatrix(
     float fov,
     float aspectRatio,
@@ -149,5 +140,34 @@ Matrix4f inline rotateAroundPoint(Vector3f supportPoint, Vector3f rotationAxis, 
 
     Matrix4f result = reverseTranslation * (rotation * translation);
     return result;
+}
+
+Vector3f inline crossProduct(Vector3f const &u, Vector3f const &v) {
+    return u.cross(v).eval();
+}
+
+template <typename Vector>
+float inline dotProduct(Vector const &u, Vector const &v) {
+    return u.dot(v);
+}
+
+template <typename Vector>
+float inline cosineSimilarity(Vector const &u, Vector const &v) {
+    float uNorm = u.template lpNorm<2>();
+    float vNorm = v.template lpNorm<2>();
+    return u.dot(v) / (uNorm * vNorm);
+}
+
+template <size_t to, size_t from, typename Scalar>
+Eigen::Matrix<Scalar, to, 1> inline as(Eigen::Matrix<Scalar, from, 1> vector, float fillValue = 0) {
+    Eigen::Matrix<Scalar, to, 1> res = Eigen::Matrix<Scalar, to, 1>::Constant(fillValue);
+    auto vecSize = vector.size();
+    if (to < vecSize) {
+        vecSize = to;
+    }
+    for (int i = 0; i < vecSize; i++) {
+        res(i, 0) = vector(i, 0);
+    }
+    return res;
 }
 } // namespace ml

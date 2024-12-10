@@ -5,9 +5,11 @@
 #include "Utility.h"
 #include "sdl/SDLRenderer.h"
 
-SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolution)
+sdl::SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolution)
     : renderer(SDL_CreateRenderer(window, -1, 0)),
       resolution(resolution) {
+
+    light = {sdl::light::DirectionalLight{{0, 0, -1}}};
 
     auto resolutionSize = resolution.first * resolution.second;
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
@@ -29,20 +31,21 @@ SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolutio
     );
 }
 
-SDLRenderer::~SDLRenderer() {
+sdl::SDLRenderer::~SDLRenderer() {
+
     SDL_DestroyRenderer(renderer);
 }
 
-void SDLRenderer::update(MeshData const &data, float dt) {
+void sdl::SDLRenderer::update(MeshData const &data, float dt) {
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
         auto const transformMatrix = node.getTransform();
         for (size_t i = 0; i < mesh.faces.size(); i++) {
             auto const &face = mesh.faces[i];
 
-            auto vertexA = ml::matMul(transformMatrix, ml::asVec4(mesh.vertices[face.a]));
-            auto vertexB = ml::matMul(transformMatrix, ml::asVec4(mesh.vertices[face.b]));
-            auto vertexC = ml::matMul(transformMatrix, ml::asVec4(mesh.vertices[face.c]));
+            auto vertexA = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.a], 1.f));
+            auto vertexB = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.b], 1.f));
+            auto vertexC = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.c], 1.f));
             // perspective projection
             ml::Vector4f projectedPoints[] = {
                 ml::matMul(perspectiveProjectionMatrix_, vertexA),
@@ -69,9 +72,17 @@ void SDLRenderer::update(MeshData const &data, float dt) {
                 },
                 face.attributes
             };
+            ml::Vector3f faceNormal = ml::crossProduct(
+                (ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA)).eval(),
+                (ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)).eval()
+            );
+            faceNormal.normalize();
 
-            auto const renderMethod = RenderMethod::wireframe;
-            uint32_t color = 0xFFFFFFFF;
+            auto const renderMethod = RenderMethod::fill;
+            uint32_t color = interpolateColorIntensity(
+                0xFFFFFFFF,
+                ml::cosineSimilarity(faceNormal, ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f)) / 2 + 0.5f
+            );
             switch (renderMethod) {
             case RenderMethod::vertices:
                 for (size_t i = 0; i < 3; i++) {
@@ -87,14 +98,14 @@ void SDLRenderer::update(MeshData const &data, float dt) {
                 }
                 break;
             case RenderMethod::fill:
-                fillTriangle(tri);
+                fillTriangle(tri, color);
                 break;
             }
         }
     }
 }
 
-void SDLRenderer::render() const {
+void sdl::SDLRenderer::render() const {
     auto const &[w, h] = resolution;
     SDL_UpdateTexture(
         renderTarget,
@@ -107,7 +118,7 @@ void SDLRenderer::render() const {
     SDL_RenderPresent(renderer);
 }
 
-void SDLRenderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thickness) noexcept {
+void sdl::SDLRenderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thickness) noexcept {
     if (thickness == 0) {
         colorBuffer[position.x() + position.y() * resolution.first] = color;
         return;
@@ -129,7 +140,7 @@ static constexpr float oneComplement(float num) {
     return 1 - fpart(num);
 }
 
-void SDLRenderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept {
+void sdl::SDLRenderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept {
     int x0{from.x()},
         y0{from.y()},
         x1{to.x()},
@@ -166,9 +177,7 @@ void SDLRenderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) n
     }
 }
 
-void SDLRenderer::fillTriangle(Triangle tri) noexcept {
-    uint32_t color = 0xFFFFFFFF; // Constant color for a while
-
+void sdl::SDLRenderer::fillTriangle(Triangle tri, uint32_t color) noexcept {
     auto &t0 = tri.vertices[0];
     auto &t1 = tri.vertices[1];
     auto &t2 = tri.vertices[2];

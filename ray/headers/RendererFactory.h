@@ -14,7 +14,7 @@ struct RenderFactoryParams {
 std::shared_ptr<Renderer> inline makeRenderer(RendererType type, RenderFactoryParams params) {
     switch (type) {
     case RendererType::CPU:
-        return std::make_shared<SDLRenderer>(params.window, params.resolution);
+        return std::make_shared<sdl::SDLRenderer>(params.window, params.resolution);
     case RendererType::OpenGL:
         std::exit(1);
     }
