@@ -55,7 +55,7 @@ Matrix4f inline screenSpaceProjection(
 ) noexcept {
     Matrix4f mat = Matrix4f::Zero();
     mat(0, 0) = width / 2.f;
-    mat(1, 1) = -height / 2.f;
+    mat(1, 1) = height / 2.f;
     mat(2, 2) = 1.f;
     mat(3, 3) = 1.f;
     mat(0, 3) = width / 2.f;
@@ -65,7 +65,7 @@ Matrix4f inline screenSpaceProjection(
 }
 
 template <typename Mat>
-Mat inline matrixScale(Mat &&matrix, float scalar) noexcept {
+Mat inline matrixScale(Mat matrix, float scalar) noexcept {
     matrix *= scalar;
     return matrix;
 }

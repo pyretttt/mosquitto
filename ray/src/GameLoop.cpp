@@ -23,21 +23,21 @@ public:
         Renderer::MeshData node{
             MeshBuffer{
                 {
-                    ml::Vector3f(-0.5, -0.5, -0.5), // 0. left - bottom - far
-                     ml::Vector3f(-0.5, 0.5, -0.5),  // 1. left - top - far
-                     ml::Vector3f(0.5, -0.5, -0.5),  // 2. right - bottom - far
-                     ml::Vector3f(0.5, 0.5, -0.5),   // 3. right - top - far
-                     ml::Vector3f(-0.5, -0.5, 0.5),  // 4. left - bottom - near
-                     ml::Vector3f(-0.5, 0.5, 0.5),   // 5. left - top - near
-                     ml::Vector3f(0.5, -0.5, 0.5),   // 6. right - bottom - near
-                     ml::Vector3f(0.5, 0.5, 0.5),    // 7. right - top - near
+                    ml::Vector3f(-0.5, 0.5, 0.5), // 0. left - top - near
+                    ml::Vector3f(-0.5, -0.5, 0.5),  // 1. left - bottom - near
+                    ml::Vector3f(0.5, 0.5, 0.5),  // 2. right - top - near
+                    ml::Vector3f(0.5, -0.5, 0.5),   // 3. right - bottom - near
+                    // ml::Vector3f(-0.5, -0.5, 0.5),  // 4. left - top - near
+                    // ml::Vector3f(-0.5, 0.5, 0.5),   // 5. left - bottom - near
+                    // ml::Vector3f(0.5, -0.5, 0.5),   // 6. right - top - near
+                    // ml::Vector3f(0.5, 0.5, 0.5),    // 7. right - bottom - near
                 },
                 {
-                    // Face{4, 6, 5, {}}, // near front
-                    // Face{7, 5, 6, {}},
-
-                    Face{0, 1, 2, {}}, // far front
+                    Face{1, 2, 0, {}}, // near front
                     Face{3, 2, 1, {}},
+
+                    // Face{0, 1, 2, {}}, // far front
+                    // Face{3, 2, 1, {}},
 
                     // Face{5, 7, 1, {}}, // top
                     // Face{3, 1, 7, {}},
@@ -63,7 +63,7 @@ public:
 
             ml::Matrix4f transformationMatrix = ml::scaleMatrix(10, 10, 10);
             transformationMatrix = ml::matMul(
-                ml::rodriguezRotationMatrix({1, 1, 0}, static_cast<float>(currentTicks) / 10000),
+                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 1000),
                 transformationMatrix
             );
             transformationMatrix = ml::matMul(ml::translationMatrix(0, 0, -50), transformationMatrix);

@@ -79,9 +79,11 @@ void sdl::SDLRenderer::update(MeshData const &data, float dt) {
             faceNormal.normalize();
 
             auto const renderMethod = RenderMethod::fill;
+            auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
+            auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection) / 2.f + 0.5f;
             uint32_t color = interpolateColorIntensity(
                 0xFFFFFFFF,
-                ml::cosineSimilarity(faceNormal, ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f)) / 2 + 0.5f
+                lightIntensity
             );
             switch (renderMethod) {
             case RenderMethod::vertices:
