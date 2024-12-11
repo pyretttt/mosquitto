@@ -72,9 +72,9 @@ void sdl::SDLRenderer::update(MeshData const &data, float dt) {
                 },
                 face.attributes
             };
-            ml::Vector3f faceNormal = ml::crossProduct(
-                (ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA)).eval(),
-                (ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)).eval()
+            ml::Vector3f faceNormal = ml::crossProduct( // Reverse order as soon as y-axis growth dawnwords
+                (ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)).eval(),
+                (ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA)).eval()
             );
             faceNormal.normalize();
 
