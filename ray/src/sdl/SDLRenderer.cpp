@@ -21,6 +21,7 @@ sdl::SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> reso
         0.1,
         1000
     );
+
     screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
         renderer,
@@ -53,7 +54,6 @@ void sdl::SDLRenderer::update(MeshData const &data, float dt) {
                 ml::matMul(perspectiveProjectionMatrix_, vertexC)
             };
 
-            // TODO: finish
             projectedPoints[0] = ml::matrixScale(projectedPoints[0], 1 / projectedPoints[0](3, 0));
             projectedPoints[1] = ml::matrixScale(projectedPoints[1], 1 / projectedPoints[1](3, 0));
             projectedPoints[2] = ml::matrixScale(projectedPoints[2], 1 / projectedPoints[2](3, 0));
@@ -72,19 +72,20 @@ void sdl::SDLRenderer::update(MeshData const &data, float dt) {
                 },
                 face.attributes
             };
-            ml::Vector3f faceNormal = ml::crossProduct( // Reverse order as soon as y-axis growth dawnwords
-                (ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)).eval(),
-                (ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA)).eval()
+            ml::Vector3f faceNormal = ml::crossProduct(
+                (ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA)).eval(),
+                (ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)).eval()
             );
             faceNormal.normalize();
 
-            auto const renderMethod = RenderMethod::fill;
             auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
-            auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection) / 2.f + 0.5f;
+            auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
             uint32_t color = interpolateColorIntensity(
                 0xFFFFFFFF,
                 lightIntensity
             );
+
+            auto const renderMethod = RenderMethod::fill;
             switch (renderMethod) {
             case RenderMethod::vertices:
                 for (size_t i = 0; i < 3; i++) {

@@ -45,7 +45,7 @@ Matrix4f inline perspectiveProjectionMatrix(
     mat(1, 1) = 1.f / angleMeasure;
     mat(2, 2) = far / (far - near);
     mat(2, 3) = -far * near / (far - near);
-    mat(3, 2) = 1.f;
+    mat(3, 2) = -1.f;
     return mat;
 }
 
@@ -55,7 +55,7 @@ Matrix4f inline screenSpaceProjection(
 ) noexcept {
     Matrix4f mat = Matrix4f::Zero();
     mat(0, 0) = width / 2.f;
-    mat(1, 1) = height / 2.f;
+    mat(1, 1) = -height / 2.f;
     mat(2, 2) = 1.f;
     mat(3, 3) = 1.f;
     mat(0, 3) = width / 2.f;
@@ -90,27 +90,30 @@ Eigen::Matrix<float, size, size> inline eye() noexcept {
     return Eigen::Matrix<float, size, size>::Identity();
 }
 
-decltype(auto) inline rodriguezRotationMatrix(
-    Vector3f axis,
-    float angle
-) noexcept {
+decltype(auto) inline rodriguezRotationMatrix(Vector3f axis, float angle) noexcept {
     axis.normalize();
     Matrix4f rotationMatrix = Matrix4f::Zero();
     auto cosValue = cosf(angle);
     auto sinValue = sinf(angle);
-    rotationMatrix(0, 0) = cosValue + axis(0, 0) * axis(0, 0) * (1 - cosValue);
-    rotationMatrix(1, 0) = sinValue * axis(2, 0) + axis(0, 0) * axis(1, 0) * (1 - cosValue);
-    rotationMatrix(2, 0) = -sinValue * axis(1, 0) + axis(0, 0) * axis(2, 0) * (1 - cosValue);
 
-    rotationMatrix(0, 1) = axis(0, 0) * axis(1, 0) * (1 - cosValue) - axis(2, 0) * sinValue;
-    rotationMatrix(1, 1) = cosValue + axis(1, 0) * axis(1, 0) * (1 - cosValue);
-    rotationMatrix(2, 2) = axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
+    float x = axis(0, 0);
+    float y = axis(1, 0);
+    float z = axis(2, 0);
 
-    rotationMatrix(0, 2) = axis(1, 0) * sinValue + axis(0, 0) * axis(2, 0) * (1 - cosValue);
-    rotationMatrix(1, 2) = -axis(0, 0) * sinValue + axis(1, 0) * axis(2, 0) * (1 - cosValue);
-    rotationMatrix(2, 2) = cosValue + axis(2, 0) * axis(2, 0) * (1 - cosValue);
+    rotationMatrix(0, 0) = cosValue + x * x * (1 - cosValue);
+    rotationMatrix(0, 1) = x * y * (1 - cosValue) - z * sinValue;
+    rotationMatrix(0, 2) = x * z * (1 - cosValue) + y * sinValue;
 
-    rotationMatrix(3, 3) = 1;
+    rotationMatrix(1, 0) = y * x * (1 - cosValue) + z * sinValue;
+    rotationMatrix(1, 1) = cosValue + y * y * (1 - cosValue);
+    rotationMatrix(1, 2) = y * z * (1 - cosValue) - x * sinValue;
+
+    rotationMatrix(2, 0) = z * x * (1 - cosValue) - y * sinValue;
+    rotationMatrix(2, 1) = z * y * (1 - cosValue) + x * sinValue;
+    rotationMatrix(2, 2) = cosValue + z * z * (1 - cosValue);
+
+    rotationMatrix(3, 3) = 1.0f;
+
     return rotationMatrix;
 }
 
@@ -155,7 +158,8 @@ template <typename Vector>
 float inline cosineSimilarity(Vector const &u, Vector const &v) {
     float uNorm = u.template lpNorm<2>();
     float vNorm = v.template lpNorm<2>();
-    return u.dot(v) / (uNorm * vNorm);
+    float res = u.dot(v) / (uNorm * vNorm);
+    return res;
 }
 
 template <size_t to, size_t from, typename Scalar>

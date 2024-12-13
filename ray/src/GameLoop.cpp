@@ -23,21 +23,21 @@ public:
         Renderer::MeshData node{
             MeshBuffer{
                 {
-                    ml::Vector3f(-0.5, 0.5, 0.5), // 0. left - bottom - near
-                    ml::Vector3f(-0.5, -0.5, 0.5),  // 1. left - top - near
-                    ml::Vector3f(0.5, 0.5, 0.5),  // 2. right - bottom - near
-                    ml::Vector3f(0.5, -0.5, 0.5),   // 3. right - top - near
-                    // ml::Vector3f(-0.5, -0.5, 0.5),  // 4. left - top - near
-                    // ml::Vector3f(-0.5, 0.5, 0.5),   // 5. left - bottom - near
-                    // ml::Vector3f(0.5, -0.5, 0.5),   // 6. right - top - near
-                    // ml::Vector3f(0.5, 0.5, 0.5),    // 7. right - bottom - near
+                    ml::Vector3f(-0.5, 0.5, 0.5),   // 0. left - top - near
+                    ml::Vector3f(-0.5, -0.5, 0.5),  // 1. left - bottom - near
+                    ml::Vector3f(0.5, 0.5, 0.5),    // 2. right - top - near
+                    ml::Vector3f(0.5, -0.5, 0.5),   // 3. right - bottom - near
+                    ml::Vector3f(-0.5, 0.5, -0.5),  // 4. left - top - far
+                    ml::Vector3f(-0.5, -0.5, -0.5), // 5. left - bottom - far
+                    ml::Vector3f(0.5, 0.5, -0.5),   // 6. right - top - far
+                    ml::Vector3f(0.5, -0.5, -0.5),   // 7. right - bottom - far
                 },
                 {
-                    Face{0, 3, 1, {}}, // near front
-                    Face{2, 3, 0, {}},
+                    Face{7, 5, 6, {}}, // far front
+                    Face{4, 6, 5, {}},
 
-                    // Face{0, 1, 2, {}}, // far front
-                    // Face{3, 2, 1, {}},
+                    Face{1, 2, 0, {}}, // near front
+                    Face{1, 3, 2, {}},
 
                     // Face{5, 7, 1, {}}, // top
                     // Face{3, 1, 7, {}},
@@ -53,6 +53,7 @@ public:
                 }
             }
         };
+
         while (!shouldClose) {
             auto currentTicks = SDL_GetTicks();
             auto dt = currentTicks - previousFrameTicks;
@@ -63,10 +64,10 @@ public:
 
             ml::Matrix4f transformationMatrix = ml::scaleMatrix(10, 10, 10);
             transformationMatrix = ml::matMul(
-                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 10000),
+                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 1000),
                 transformationMatrix
             );
-            transformationMatrix = ml::matMul(ml::translationMatrix(0, 0, -50), transformationMatrix);
+            transformationMatrix = ml::matMul(ml::translationMatrix(0, -10, -50), transformationMatrix);
             node[0].transform = transformationMatrix;
 
             processInput();
