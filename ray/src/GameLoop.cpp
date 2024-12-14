@@ -33,23 +33,23 @@ public:
                     ml::Vector3f(0.5, -0.5, -0.5),   // 7. right - bottom - far
                 },
                 {
-                    // Face{7, 5, 6, {}}, // far front
-                    // Face{4, 6, 5, {}},
+                    Face{5, 6, 7, {}}, // far front
+                    Face{5, 4, 6, {}}, 
 
-                    // Face{1, 2, 0, {}}, // near front
-                    // Face{1, 3, 2, {}},
+                    Face{1, 2, 0, {}}, // near front
+                    Face{1, 3, 2, {}},
 
-                    Face{0, 2, 6, {}}, // top
-                    Face{0, 6, 4, {}},
+                    Face{0, 6, 4, {}}, // top
+                    Face{0, 2, 6, {}},
 
-                    // Face{3, 1, 7, {}}, // bottom
-                    // Face{7, 5, 3, {}},
+                    Face{1, 7, 3, {}},  // bottom
+                    Face{1, 5, 7, {}},
 
-                    // Face{5, 1, 4, {}}, // left
-                    // Face{0, 4, 1, {}},
+                    Face{1, 4, 5, {}},  // left
+                    Face{1, 0, 4, {}},
 
-                    // Face{3, 7, 2, {}}, // right
-                    // Face{6, 2, 7, {}},
+                    Face{3, 6, 2, {}}, // right
+                    Face{3, 7, 6, {}},
                 }
             }
         };
