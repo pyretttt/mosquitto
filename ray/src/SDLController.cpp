@@ -6,7 +6,7 @@
 #include "Errors.h"
 #include "RendererFactory.h"
 #include "SDLController.h"
-#include "sdl/SDLRenderer.h"
+#include "sdl/Renderer.h"
 #include "Utility.h"
 
 SDLController::SDLController(RendererType rendererType, std::pair<int, int> windowSize)

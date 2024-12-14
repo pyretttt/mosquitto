@@ -2,9 +2,8 @@
 
 #include "SDL.h"
 
-#include "Renderer.h"
-#include "sdl/SDLRenderer.h"
-
+#include "RendererBase.h"
+#include "sdl/Renderer.h"
 
 struct RenderFactoryParams {
     SDL_Window *window = nullptr;
@@ -14,7 +13,7 @@ struct RenderFactoryParams {
 std::shared_ptr<Renderer> inline makeRenderer(RendererType type, RenderFactoryParams params) {
     switch (type) {
     case RendererType::CPU:
-        return std::make_shared<sdl::SDLRenderer>(params.window, params.resolution);
+        return std::make_shared<sdl::Renderer>(params.window, params.resolution);
     case RendererType::OpenGL:
         std::exit(1);
     }

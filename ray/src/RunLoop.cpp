@@ -5,16 +5,16 @@
 #include "rpp/rpp.hpp"
 
 #include "MathUtils.h"
-#include "Renderer.h"
+#include "RendererBase.h"
 #include "SDLController.h"
 
-class GameLoop {
+class RunLoop {
 public:
-    GameLoop(GameLoop const &other) = delete;
-    GameLoop &operator=(GameLoop const &other) = delete;
+    RunLoop(RunLoop const &other) = delete;
+    RunLoop &operator=(RunLoop const &other) = delete;
 
-    inline static GameLoop &instance() {
-        static GameLoop loop;
+    inline static RunLoop &instance() {
+        static RunLoop loop;
         return loop;
     }
 
@@ -78,7 +78,7 @@ public:
     }
 
 private:
-    GameLoop() : windowSize({800, 600}), sdlController(SDLController(RendererType::CPU, windowSize.get_value())) {
+    RunLoop() : windowSize({800, 600}), sdlController(SDLController(RendererType::CPU, windowSize.get_value())) {
         windowSize.get_observable()
             .subscribe(
                 [](std::pair<int, int> screenSize) {

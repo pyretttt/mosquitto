@@ -3,7 +3,7 @@
 
 #include "SDL.h"
 
-#include "GameLoop.cpp"
+#include "RunLoop.cpp"
 #include "SDLController.h"
 
 int main() {
@@ -12,6 +12,6 @@ int main() {
         return -1;
     }
     std::cout << ml::eye<4>() << std::endl;
-    GameLoop::instance().start();
+    RunLoop::instance().start();
     return 0;
 }

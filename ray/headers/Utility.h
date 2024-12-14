@@ -9,7 +9,7 @@ constexpr inline T &&modified(T &&object, std::function<void(T &)> modification)
     return object;
 }
 
-inline constexpr uint32_t interpolateColorIntensity(uint32_t argb, float intensity, float minValue = 0.1f) {
+inline constexpr uint32_t interpolateColorIntensity(uint32_t argb, float intensity, float minValue = 0.0f) {
     auto i = std::min(std::max(minValue, intensity), 1.f);
     uint32_t a = argb & 0xFF000000;
     uint32_t r = (argb & 0x00FF0000) * i;

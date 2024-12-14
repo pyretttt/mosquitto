@@ -3,9 +3,9 @@
 
 #include "MathUtils.h"
 #include "Utility.h"
-#include "sdl/SDLRenderer.h"
+#include "sdl/Renderer.h"
 
-sdl::SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolution)
+sdl::Renderer::Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution)
     : renderer(SDL_CreateRenderer(window, -1, 0)),
       resolution(resolution) {
 
@@ -15,7 +15,7 @@ sdl::SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> reso
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
     zBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
     perspectiveProjectionMatrix_ = ml::perspectiveProjectionMatrix(
-        1.3962634016,
+        1.3962634016, // 80 degrees
         static_cast<float>(resolution.first) / resolution.second,
         true,
         0.1,
@@ -32,12 +32,11 @@ sdl::SDLRenderer::SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> reso
     );
 }
 
-sdl::SDLRenderer::~SDLRenderer() {
-
+sdl::Renderer::~Renderer() {
     SDL_DestroyRenderer(renderer);
 }
 
-void sdl::SDLRenderer::update(MeshData const &data, float dt) {
+void sdl::Renderer::update(MeshData const &data, float dt) {
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
         auto const transformMatrix = node.getTransform();
@@ -82,7 +81,8 @@ void sdl::SDLRenderer::update(MeshData const &data, float dt) {
             auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
             uint32_t color = interpolateColorIntensity(
                 0xFFFFFFFF,
-                lightIntensity
+                lightIntensity,
+                0.1f
             );
 
             auto const renderMethod = RenderMethod::fill;
@@ -108,7 +108,7 @@ void sdl::SDLRenderer::update(MeshData const &data, float dt) {
     }
 }
 
-void sdl::SDLRenderer::render() const {
+void sdl::Renderer::render() const {
     auto const &[w, h] = resolution;
     SDL_UpdateTexture(
         renderTarget,
@@ -121,7 +121,7 @@ void sdl::SDLRenderer::render() const {
     SDL_RenderPresent(renderer);
 }
 
-void sdl::SDLRenderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thickness) noexcept {
+void sdl::Renderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thickness) noexcept {
     if (thickness == 0) {
         colorBuffer[position.x() + position.y() * resolution.first] = color;
         return;
@@ -143,7 +143,7 @@ static constexpr float oneComplement(float num) {
     return 1 - fpart(num);
 }
 
-void sdl::SDLRenderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept {
+void sdl::Renderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept {
     int x0{from.x()},
         y0{from.y()},
         x1{to.x()},
@@ -180,7 +180,7 @@ void sdl::SDLRenderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t col
     }
 }
 
-void sdl::SDLRenderer::fillTriangle(Triangle tri, uint32_t color) noexcept {
+void sdl::Renderer::fillTriangle(Triangle tri, uint32_t color) noexcept {
     auto &t0 = tri.vertices[0];
     auto &t1 = tri.vertices[1];
     auto &t2 = tri.vertices[2];

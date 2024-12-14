@@ -7,16 +7,16 @@
 
 #include "MathUtils.h"
 #include "Mesh.h"
-#include "Renderer.h"
+#include "RendererBase.h"
 #include "sdl/Light.h"
 
 namespace sdl {
-struct SDLRenderer : public Renderer {
-    SDLRenderer(SDL_Window *window, std::pair<size_t, size_t> resolution);
+struct Renderer : public ::Renderer {
+    Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution);
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
-    ~SDLRenderer();
+    ~Renderer();
 
 private:
     void drawPoint(uint32_t color, ml::Vector2i position, size_t thickness = 0) noexcept;
