@@ -178,7 +178,7 @@ Eigen::Matrix<Scalar, to, 1> inline as(Eigen::Matrix<Scalar, from, 1> vector, fl
 std::tuple<float, float, float> inline barycentricWeights(
     Vector2i u, 
     Vector2i v, 
-    Vector2i w, 
+    Vector2i w,
     Vector2i point
 ) {
     Vector3f uu = {u.x(), u.y(), 0};
