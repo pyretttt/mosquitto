@@ -5,8 +5,13 @@
 #include "Utility.h"
 #include "sdl/Renderer.h"
 
-sdl::Renderer::Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution)
+sdl::Renderer::Renderer(
+    SDL_Window *window,
+    std::pair<size_t, size_t> resolution,
+    std::shared_ptr<Camera> camera
+)
     : renderer(SDL_CreateRenderer(window, -1, 0)),
+      camera(camera),
       resolution(resolution) {
 
     light = {sdl::light::DirectionalLight{{0, 0, -1}}};

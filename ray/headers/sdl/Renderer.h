@@ -11,8 +11,11 @@
 #include "sdl/Light.h"
 
 namespace sdl {
+
+class Camera;
+
 struct Renderer : public ::Renderer {
-    Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution);
+    Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution, std::shared_ptr<Camera>);
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
@@ -24,6 +27,7 @@ private:
     void fillTriangle(Triangle t, uint32_t color) noexcept;
 
     std::pair<int, int> resolution;
+    std::shared_ptr<Camera> camera;
     SDL_Renderer *renderer;
     std::unique_ptr<uint32_t[]> colorBuffer;
     std::unique_ptr<uint32_t[]> zBuffer;

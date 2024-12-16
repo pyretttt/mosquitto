@@ -16,6 +16,7 @@ public:
 
 private:
     ml::Matrix4f transformation;
+    ml::Matrix4f perspectiveProjectionMatrix;
     float fov;
     float aspectRatio;
 };
