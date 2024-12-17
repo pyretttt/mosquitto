@@ -33,7 +33,6 @@ private:
     std::unique_ptr<uint32_t[]> colorBuffer;
     std::unique_ptr<uint32_t[]> zBuffer;
     SDL_Texture *renderTarget;
-    ml::Matrix4f perspectiveProjectionMatrix_;
     ml::Matrix4f screenSpaceProjection_;
     light::Cases light;
 };

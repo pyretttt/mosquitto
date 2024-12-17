@@ -66,7 +66,7 @@ public:
     using ObservableObject<T>::operator=;
     using ObservableObject<T>::value;
 
-    void value(T &&val) noexcept {
-        this->sig->operator()(val);
+    void value(T &&val) {
+        ObservableObject<T>::sig->operator()(val);
     }
 };

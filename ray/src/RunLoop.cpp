@@ -79,13 +79,7 @@ public:
     }
 
 private:
-    RunLoop() : globalConfig(rendererType, windowSize, fov), sdlController(SDLController(globalConfig)) {
-        disposePool.push_back(windowSize.addObserver(
-            [](std::pair<size_t, size_t> screenSize) {
-                std::cout << "New screen size " << screenSize.first << " x " << screenSize.second << std::endl;
-            }
-        ));
-    }
+    RunLoop() : globalConfig(rendererType, windowSize, fov), sdlController(SDLController(globalConfig)) {}
 
     inline void processInput() {
         SDL_Event event;
@@ -111,6 +105,8 @@ private:
                 switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
                     windowSize.value({event.window.data1, event.window.data2});
+                    std::cout << "after resize" << std::endl;
+                    break;
                 }
                 break;
             default:
@@ -121,7 +117,7 @@ private:
 
     ObservableProperty<RendererType> rendererType{RendererType::CPU};
     ObservableProperty<std::pair<size_t, size_t>> windowSize{{800, 600}};
-    ObservableProperty<float> fov{1.3962634016};
+    ObservableProperty<float> fov{1.3962634016}; // 80 degrees
 
     GlobalConfig globalConfig;
     SDLController sdlController;

@@ -3,6 +3,7 @@
 
 #include "MathUtils.h"
 #include "Utility.h"
+#include "sdl/Camera.h"
 #include "sdl/Renderer.h"
 
 sdl::Renderer::Renderer(
@@ -19,13 +20,6 @@ sdl::Renderer::Renderer(
     auto resolutionSize = resolution.first * resolution.second;
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
     zBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
-    perspectiveProjectionMatrix_ = ml::perspectiveProjectionMatrix(
-        1.3962634016, // 80 degrees
-        static_cast<float>(resolution.first) / resolution.second,
-        true,
-        0.1,
-        1000
-    );
 
     screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
@@ -42,6 +36,8 @@ sdl::Renderer::~Renderer() {
 }
 
 void sdl::Renderer::update(MeshData const &data, float dt) {
+    ml::Matrix4f const &perspectiveProjectionMatrix = camera()->getScenePerspectiveProjectionMatrix();
+    // ml::Matrix4f perspectiveProjectionMatrix = ml::eye<4>();
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
         auto const transformMatrix = node.getTransform();
@@ -53,9 +49,9 @@ void sdl::Renderer::update(MeshData const &data, float dt) {
             auto vertexC = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.c], 1.f));
             // perspective projection
             ml::Vector4f projectedPoints[] = {
-                ml::matMul(perspectiveProjectionMatrix_, vertexA),
-                ml::matMul(perspectiveProjectionMatrix_, vertexB),
-                ml::matMul(perspectiveProjectionMatrix_, vertexC)
+                ml::matMul(perspectiveProjectionMatrix, vertexA),
+                ml::matMul(perspectiveProjectionMatrix, vertexB),
+                ml::matMul(perspectiveProjectionMatrix, vertexC)
             };
 
             projectedPoints[0] = ml::matrixScale(projectedPoints[0], 1 / projectedPoints[0](3, 0));

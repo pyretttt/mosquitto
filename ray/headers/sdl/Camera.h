@@ -13,8 +13,8 @@ public:
         ObservableObject<float> fov,
         ObservableObject<std::pair<size_t, size_t>> windowSize
     );
-    ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const;
-    ml::Matrix4f const &getCameraTransformation() const;
+    ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const noexcept;
+    ml::Matrix4f const &getCameraTransformation() const noexcept;
 
 private:
     ml::Matrix4f transformation;
