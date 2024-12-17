@@ -2,9 +2,10 @@
 
 #include "Eigen/Dense"
 #include "SDL.h"
-#include "rpp/rpp.hpp"
 
+#include "GlobalConfig.h"
 #include "MathUtils.h"
+#include "ReactivePrimitives.h"
 #include "RendererBase.h"
 #include "SDLController.h"
 
@@ -30,11 +31,11 @@ public:
                     ml::Vector3f(-0.5, 0.5, -0.5),  // 4. left - top - far
                     ml::Vector3f(-0.5, -0.5, -0.5), // 5. left - bottom - far
                     ml::Vector3f(0.5, 0.5, -0.5),   // 6. right - top - far
-                    ml::Vector3f(0.5, -0.5, -0.5),   // 7. right - bottom - far
+                    ml::Vector3f(0.5, -0.5, -0.5),  // 7. right - bottom - far
                 },
                 {
                     Face{5, 6, 7, {}}, // far front
-                    Face{5, 4, 6, {}}, 
+                    Face{5, 4, 6, {}},
 
                     Face{1, 2, 0, {}}, // near front
                     Face{1, 3, 2, {}},
@@ -42,10 +43,10 @@ public:
                     Face{0, 6, 4, {}}, // top
                     Face{0, 2, 6, {}},
 
-                    Face{1, 7, 3, {}},  // bottom
+                    Face{1, 7, 3, {}}, // bottom
                     Face{1, 5, 7, {}},
 
-                    Face{1, 4, 5, {}},  // left
+                    Face{1, 4, 5, {}}, // left
                     Face{1, 0, 4, {}},
 
                     Face{3, 6, 2, {}}, // right
@@ -78,15 +79,12 @@ public:
     }
 
 private:
-    RunLoop() : windowSize({800, 600}), sdlController(SDLController(RendererType::CPU, windowSize.get_value())) {
-        windowSize.get_observable()
-            .subscribe(
-                [](std::pair<int, int> screenSize) {
-                    std::cout << "New screen size " << screenSize.first << " x " << screenSize.second << std::endl;
-                },
-                [](std::exception_ptr err) {},
-                []() {}
-            );
+    RunLoop() : globalConfig(rendererType, windowSize, fov), sdlController(SDLController(globalConfig)) {
+        disposePool.push_back(windowSize.addObserver(
+            [](std::pair<size_t, size_t> screenSize) {
+                std::cout << "New screen size " << screenSize.first << " x " << screenSize.second << std::endl;
+            }
+        ));
     }
 
     inline void processInput() {
@@ -112,7 +110,7 @@ private:
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
-                    windowSize.get_observer().on_next({event.window.data1, event.window.data2});
+                    windowSize.value({event.window.data1, event.window.data2});
                 }
                 break;
             default:
@@ -121,10 +119,17 @@ private:
         }
     }
 
-    rpp::subjects::behavior_subject<std::pair<int, int>> windowSize;
+    ObservableProperty<RendererType> rendererType{RendererType::CPU};
+    ObservableProperty<std::pair<size_t, size_t>> windowSize{{800, 600}};
+    ObservableProperty<float> fov{1.3962634016};
+
+    GlobalConfig globalConfig;
     SDLController sdlController;
+
     bool shouldClose = false;
-    int previousFrameTicks = 0;
+    unsigned long long previousFrameTicks = 0;
     const int frameRate = 60;
     const int frameTime = 1000 / frameRate;
+
+    DisposePool disposePool;
 };

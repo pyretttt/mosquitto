@@ -27,7 +27,7 @@ private:
     void drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept;
     void fillTriangle(Triangle t, uint32_t color) noexcept;
 
-    std::pair<int, int> resolution;
+    std::pair<size_t, size_t> resolution;
     Lazy<Camera> camera;
     SDL_Renderer *renderer;
     std::unique_ptr<uint32_t[]> colorBuffer;

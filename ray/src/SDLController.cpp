@@ -3,15 +3,17 @@
 #include "SDL.h"
 
 #include "Errors.h"
+#include "ReactivePrimitives.h"
 #include "RendererFactory.h"
 #include "SDLController.h"
-#include "sdl/Renderer.h"
 #include "Utility.h"
+#include "sdl/Renderer.h"
 
-SDLController::SDLController(RendererType rendererType, std::pair<int, int> windowSize)
-    : rendererType(rendererType) {
-    windowInit = [windowSize, rendererType, this]() {
-        auto winSize{windowSize};
+SDLController::SDLController(
+    GlobalConfig config
+) : config(config) {
+    windowInit = [config, this]() {
+        auto winSize{config.windowSize.value()};
         this->window = SDL_CreateWindow(
             nullptr,
             SDL_WINDOWPOS_CENTERED,
@@ -31,12 +33,8 @@ void SDLController::showWindow() {
         throw Errors::WindowInitFailed;
     }
     renderer = makeRenderer(
-        rendererType,
-        modified<RenderFactoryParams>({}, [this](auto &params) {
+        modified<RenderFactoryParams>({config}, [this](RenderFactoryParams &params) {
             params.window = this->window;
-            int w, h;
-            SDL_GetWindowSize(this->window, &w, &h);
-            params.resolution = {w, h};
         })
     );
 }

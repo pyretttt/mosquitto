@@ -6,10 +6,12 @@
 #include "SDL.h"
 
 #include "RendererBase.h"
-
+#include "GlobalConfig.h"
 
 struct SDLController {
-    SDLController(RendererType renderType, std::pair<int, int> windowSize);
+    SDLController(
+        GlobalConfig config
+    );
     ~SDLController();
 
     void showWindow();
@@ -18,5 +20,5 @@ struct SDLController {
 private:
     std::function<void()> windowInit;
     SDL_Window *window;
-    RendererType rendererType;
+    GlobalConfig config;
 };

@@ -94,6 +94,21 @@
         "geometry": "cpp",
         "qtalignedmalloc": "cpp",
         "concepts": "cpp",
-        "type_traits": "cpp"
+        "type_traits": "cpp",
+        "*.ipp": "cpp",
+        "any": "cpp",
+        "barrier": "cpp",
+        "cinttypes": "cpp",
+        "codecvt": "cpp",
+        "csetjmp": "cpp",
+        "csignal": "cpp",
+        "latch": "cpp",
+        "numbers": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "source_location": "cpp",
+        "strstream": "cpp",
+        "typeindex": "cpp",
+        "valarray": "cpp"
     }
 }

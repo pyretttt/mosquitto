@@ -20,15 +20,24 @@ FetchContent_Declare(
     GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
     GIT_TAG f19a6803c87cb8486c3147cd180edb02c9ff9a68
 )
+# FetchContent_Declare(
+#     rpp
+#     GIT_REPOSITORY https://github.com/victimsnino/ReactivePlusPlus.git
+#     GIT_TAG d309d583b255443d3241d5e0486e28d658ed1772
+# )
+set(BOOST_INCLUDE_LIBRARIES signals2)
+set(BOOST_ENABLE_CMAKE ON)
 FetchContent_Declare(
-    rpp
-    GIT_REPOSITORY https://github.com/victimsnino/ReactivePlusPlus.git
-    GIT_TAG d309d583b255443d3241d5e0486e28d658ed1772
+    Boost
+    GIT_REPOSITORY https://github.com/boostorg/boost.git
+    GIT_TAG boost-1.87.0
+    GIT_SHALLOW TRUE
 )
 FetchContent_MakeAvailable(sdl2)
 FetchContent_MakeAvailable(eigen_lib)
-FetchContent_MakeAvailable(rpp)
+# FetchContent_MakeAvailable(rpp)
+FetchContent_MakeAvailable(Boost)
 
 target_compile_features(${PROJ_NAME} PRIVATE cxx_std_23)
-target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2 Eigen3::Eigen rpp)
+target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2 Eigen3::Eigen Boost::signals2)
 target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers)

@@ -1,15 +1,17 @@
 #pragma once
 
+#include <utility>
+
 #include "MathUtils.h"
-#include "rpp/rpp.hpp"
+#include "ReactivePrimitives.h"
 
 namespace sdl {
-class Camera {
+class Camera final {
 public:
-    Camera() = default;
+    Camera() = delete;
     Camera(
-        rpp::subjects::behavior_subject<float> fov,
-        rpp::subjects::behavior_subject<float> aspectRatio
+        ObservableObject<float> fov,
+        ObservableObject<std::pair<size_t, size_t>> windowSize
     );
     ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const;
     ml::Matrix4f const &getCameraTransformation() const;
@@ -19,5 +21,6 @@ private:
     ml::Matrix4f perspectiveProjectionMatrix;
     float fov;
     float aspectRatio;
+    DisposePool disposePool;
 };
 }
