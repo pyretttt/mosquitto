@@ -6,7 +6,7 @@
 namespace sdl {
 class Camera {
 public:
-    Camera() = delete;
+    Camera() = default;
     Camera(
         rpp::subjects::behavior_subject<float> fov,
         rpp::subjects::behavior_subject<float> aspectRatio

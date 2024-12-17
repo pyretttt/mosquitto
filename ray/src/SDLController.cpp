@@ -1,7 +1,6 @@
 #include <memory>
 
 #include "SDL.h"
-#include "rpp/rpp.hpp"
 
 #include "Errors.h"
 #include "RendererFactory.h"
