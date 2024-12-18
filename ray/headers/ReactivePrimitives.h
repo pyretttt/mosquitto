@@ -16,7 +16,7 @@ public:
                 this->currentValue = value;
             });
     }
-    
+
     ObservableObject(ObservableObject<T> const &other) : currentValue(other.currentValue), sig(other.sig) {
         connection = sig->connect([this](T value) {
             this->currentValue = value;
