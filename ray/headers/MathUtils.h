@@ -205,4 +205,17 @@ std::tuple<float, float, float> inline barycentricWeights(
 
     return std::make_tuple(alpha, beta, gamma);
 }
+
+ml::Matrix4f cameraMatrix(Vector3f lookAt, Vector3f up, Vector3f translation) {
+    
+    Vecto3f left = crossProduct(lookAt, up).lpNorm<2>();
+    Matrix4f result = eye<4>();
+
+    result(0, 0) = lookAt(0, 0);
+    result(0, 1) = lookAt(1, 0);
+    result(0, 2) = lookAt(2, 0);
+    result(1, 0) = up(0, 0);
+    result(1, 1) = up(1, 0);
+    result(1, 2) = up(2, 0);
+}
 } // namespace ml
