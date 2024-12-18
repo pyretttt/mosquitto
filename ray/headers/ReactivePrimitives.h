@@ -10,12 +10,13 @@ template <typename T>
 class ObservableObject {
 public:
     explicit ObservableObject(T initialValue) : 
-    currentValue(initialValue),
-    sig(std::make_shared<boost::signals2::signal<void(T)>>()) {
-        connection = sig->connect([this](T value) {
-            this->currentValue = value;
-        });
+        currentValue(initialValue),
+        sig(std::make_shared<boost::signals2::signal<void(T)>>()) {
+            connection = sig->connect([this](T value) {
+                this->currentValue = value;
+            });
     }
+    
     ObservableObject(ObservableObject<T> const &other) : currentValue(other.currentValue), sig(other.sig) {
         connection = sig->connect([this](T value) {
             this->currentValue = value;

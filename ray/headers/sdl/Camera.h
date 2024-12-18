@@ -6,6 +6,7 @@
 #include "ReactivePrimitives.h"
 
 namespace sdl {
+
 class Camera final {
 public:
     Camera() = delete;
