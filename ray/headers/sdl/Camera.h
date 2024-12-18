@@ -9,6 +9,9 @@ namespace sdl {
 class Camera final {
 public:
     Camera() = delete;
+    Camera(Camera &&other) = delete;
+    Camera(Camera const &other) = delete;
+
     Camera(
         ObservableObject<float> fov,
         ObservableObject<std::pair<size_t, size_t>> windowSize

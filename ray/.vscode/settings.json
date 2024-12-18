@@ -109,6 +109,7 @@
         "source_location": "cpp",
         "strstream": "cpp",
         "typeindex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "cassert": "cpp"
     }
 }

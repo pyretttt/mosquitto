@@ -8,14 +8,14 @@ struct Lazy final {
     Lazy() = default;
     Lazy(std::function<T()> &&factory) : factory(std::move(factory)) {}
 
-    std::shared_ptr<T> operator()() {
+    T &operator()() {
         if (instance) {
             return instance;
         }
-        instance = std::make_shared<T>(factory());
+        instance = factory();
         return instance;
     }
 private:
-    std::shared_ptr<T> instance;
+    T instance;
     std::function<T()> factory;
 };

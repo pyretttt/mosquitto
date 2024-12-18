@@ -21,7 +21,7 @@ sdl::Camera::Camera(
     );
 }
 
-ml::Matrix4f const &sdl::Camera::getCameraTransformation() const noexcept {
+    ml::Matrix4f const &sdl::Camera::getCameraTransformation() const noexcept {
     return transformation;
 }
 

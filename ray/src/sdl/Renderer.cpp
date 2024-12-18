@@ -9,7 +9,7 @@
 sdl::Renderer::Renderer(
     SDL_Window *window,
     std::pair<size_t, size_t> resolution,
-    Lazy<Camera> camera
+    Lazy<std::shared_ptr<sdl::Camera>> camera
 )
     : renderer(SDL_CreateRenderer(window, -1, 0)),
       camera(camera),
@@ -36,8 +36,7 @@ sdl::Renderer::~Renderer() {
 }
 
 void sdl::Renderer::update(MeshData const &data, float dt) {
-    ml::Matrix4f const &perspectiveProjectionMatrix = camera()->getScenePerspectiveProjectionMatrix();
-    // ml::Matrix4f perspectiveProjectionMatrix = ml::eye<4>();
+    ml::Matrix4f const perspectiveProjectionMatrix = camera()->getScenePerspectiveProjectionMatrix();
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
         auto const transformMatrix = node.getTransform();

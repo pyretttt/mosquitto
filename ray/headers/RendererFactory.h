@@ -23,8 +23,8 @@ std::shared_ptr<Renderer> inline makeRenderer(RenderFactoryParams const &params)
         return std::make_shared<sdl::Renderer>(
             params.window,
             params.globalConfig.windowSize.value(),
-            Lazy<sdl::Camera>([config = params.globalConfig]() {
-                return sdl::Camera(config.fov, config.windowSize);
+            Lazy<std::shared_ptr<sdl::Camera>>([config = params.globalConfig]() {
+                return std::make_shared<sdl::Camera>(config.fov, config.windowSize);
             })
         );
     case RendererType::OpenGL:
