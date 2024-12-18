@@ -23,7 +23,7 @@ struct Face {
 };
 
 struct MeshBuffer {
-    MeshBuffer(std::vector<ml::Vector3f> const &vertices, std::vector<Face> const &faces);
+    MeshBuffer(std::vector<ml::Vector3f> vertices, std::vector<Face> faces);
     std::vector<ml::Vector3f> vertices;
     std::vector<Face> faces;
     // TODO: Add texture
@@ -31,7 +31,7 @@ struct MeshBuffer {
 
 struct MeshNode {
     MeshNode() = delete;
-    explicit MeshNode(MeshBuffer const &meshBuffer);
+    explicit MeshNode(MeshBuffer meshBuffer);
     MeshBuffer meshBuffer;
     ml::Matrix4f transform = ml::eye<4>();
     std::weak_ptr<MeshNode> parent;

@@ -33,7 +33,7 @@ void SDLController::showWindow() {
         throw Errors::WindowInitFailed;
     }
     renderer = makeRenderer(
-        modified<RenderFactoryParams>({config}, [this](RenderFactoryParams &params) {
+        modified<RenderFactoryParams>(RenderFactoryParams(config), [this](RenderFactoryParams &params) {
             params.window = this->window;
         })
     );
