@@ -9,6 +9,11 @@
 #include "GlobalConfig.h"
 
 struct SDLController {
+    SDLController() = delete;
+    SDLController(SDLController const &other) = delete;
+    SDLController(SDLController &&other) = delete;
+    SDLController operator=(SDLController const &other) = delete;
+    SDLController operator=(SDLController &&other) = delete;
     SDLController(
         GlobalConfig config
     );

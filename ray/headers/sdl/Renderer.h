@@ -16,7 +16,12 @@ namespace sdl {
 class Camera;
 
 struct Renderer : public ::Renderer {
-    Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution, Lazy<std::shared_ptr<Camera>> camera);
+    Renderer() = delete;
+    Renderer(Renderer &&other) = delete;
+    Renderer(Renderer const &other) = delete;
+    Renderer operator=(Renderer &&other) = delete;
+    Renderer operator=(Renderer const &other) = delete;
+    Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution, Lazy<Camera> camera);
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
@@ -28,7 +33,7 @@ private:
     void fillTriangle(Triangle t, uint32_t color) noexcept;
 
     std::pair<size_t, size_t> resolution;
-    Lazy<std::shared_ptr<sdl::Camera>> camera;
+    Lazy<sdl::Camera> camera;
     SDL_Renderer *renderer;
     std::unique_ptr<uint32_t[]> colorBuffer;
     std::unique_ptr<uint32_t[]> zBuffer;

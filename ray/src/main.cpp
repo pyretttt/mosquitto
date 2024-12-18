@@ -15,15 +15,11 @@ int main() {
         std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
         return -1;
     }
-    ObservableProperty<float> fov(0.89);
-    ObservableProperty<std::pair<size_t, size_t>> windowSize({800, 600});
+    // ObservableProperty<float> fov(0.89);
+    // ObservableProperty<std::pair<size_t, size_t>> windowSize({800, 600});
 
-    auto camera = sdl::Camera(fov, windowSize);
-    windowSize.value({10, 10});
-    ml::Matrix4f m0 = camera.getScenePerspectiveProjectionMatrix();
-    windowSize.value({20, 20});
-    ml::Matrix4f m1 = camera.getScenePerspectiveProjectionMatrix();
-
+    // auto camera = sdl::Camera(fov, windowSize);
+    // auto camera2 = camera;
     RunLoop::instance()
         .start();
     return 0;

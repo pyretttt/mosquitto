@@ -9,7 +9,7 @@
 sdl::Renderer::Renderer(
     SDL_Window *window,
     std::pair<size_t, size_t> resolution,
-    Lazy<std::shared_ptr<sdl::Camera>> camera
+    Lazy<sdl::Camera> camera
 )
     : renderer(SDL_CreateRenderer(window, -1, 0)),
       camera(camera),

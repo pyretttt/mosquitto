@@ -11,6 +11,8 @@ public:
     Camera() = delete;
     Camera(Camera &&other) = delete;
     Camera(Camera const &other) = delete;
+    Camera operator=(Camera &&other) = delete;
+    Camera operator=(Camera const &other) = delete;
 
     Camera(
         ObservableObject<float> fov,
