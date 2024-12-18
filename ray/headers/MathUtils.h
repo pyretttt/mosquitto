@@ -206,16 +206,25 @@ std::tuple<float, float, float> inline barycentricWeights(
     return std::make_tuple(alpha, beta, gamma);
 }
 
-ml::Matrix4f cameraMatrix(Vector3f lookAt, Vector3f up, Vector3f translation) {
-    
-    Vecto3f left = crossProduct(lookAt, up).lpNorm<2>();
-    Matrix4f result = eye<4>();
-
-    result(0, 0) = lookAt(0, 0);
-    result(0, 1) = lookAt(1, 0);
-    result(0, 2) = lookAt(2, 0);
-    result(1, 0) = up(0, 0);
-    result(1, 1) = up(1, 0);
-    result(1, 2) = up(2, 0);
+ml::Matrix4f inline cameraMatrix(Vector3f position, Vector3f cameraTarget, Vector3f up = {0, 1, 0}) {
+    Vector3f lookAt = (position - cameraTarget).normalized();
+    Vector3f right = crossProduct(up, lookAt).normalized();
+    // Already normalized, but let's keep for robust
+    Vector3f upper = crossProduct(lookAt, right).normalized();
+    Matrix4f result;
+    result(0, 0) = right(0, 0);
+    result(0, 1) = right(1, 0);
+    result(0, 2) = right(2, 0);
+    result(1, 0) = upper(0, 0);
+    result(1, 1) = upper(1, 0);
+    result(1, 2) = upper(2, 0);
+    result(2, 0) = lookAt(0, 0);
+    result(2, 1) = lookAt(1, 0);
+    result(2, 2) = lookAt(2, 0);
+    result(0, 3) = -dotProduct(position, right);
+    result(1, 3) = -dotProduct(position, upper);
+    result(2, 3) = -dotProduct(position, lookAt);
+    result(3, 3) = 1.f;
+    return result;
 }
 } // namespace ml

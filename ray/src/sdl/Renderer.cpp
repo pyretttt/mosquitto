@@ -37,6 +37,7 @@ sdl::Renderer::~Renderer() {
 
 void sdl::Renderer::update(MeshData const &data, float dt) {
     ml::Matrix4f const perspectiveProjectionMatrix = camera()->getScenePerspectiveProjectionMatrix();
+    ml::Matrix4f const cameraTransformation = camera()->getCameraTransformation();
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
         auto const transformMatrix = node.getTransform();
@@ -46,6 +47,10 @@ void sdl::Renderer::update(MeshData const &data, float dt) {
             auto vertexA = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.a], 1.f));
             auto vertexB = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.b], 1.f));
             auto vertexC = ml::matMul(transformMatrix, ml::as<4, 3, float>(mesh.vertices[face.c], 1.f));
+
+            vertexA = ml::matMul(cameraTransformation, vertexA);
+            vertexB = ml::matMul(cameraTransformation, vertexB);
+            vertexC = ml::matMul(cameraTransformation, vertexC);
             // perspective projection
             ml::Vector4f projectedPoints[] = {
                 ml::matMul(perspectiveProjectionMatrix, vertexA),
