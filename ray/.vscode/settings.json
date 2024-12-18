@@ -110,6 +110,7 @@
         "strstream": "cpp",
         "typeindex": "cpp",
         "valarray": "cpp",
-        "cassert": "cpp"
+        "cassert": "cpp",
+        "scoped_allocator": "cpp"
     }
 }

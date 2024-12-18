@@ -25,7 +25,7 @@ struct Renderer : public ::Renderer {
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
-    ~Renderer();
+    ~Renderer() override;
 
 private:
     void drawPoint(uint32_t color, ml::Vector2i position, size_t thickness = 0) noexcept;

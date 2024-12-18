@@ -6,7 +6,7 @@
 template<typename T>
 struct Lazy final {
     Lazy() = default;
-    Lazy(std::function<std::shared_ptr<T>()> &&factory) : factory(std::move(factory)) {}
+    explicit Lazy(std::function<std::shared_ptr<T>()> &&factory) : factory(std::move(factory)) {}
 
     std::shared_ptr<T> &operator()() {
         if (instance) {

@@ -9,21 +9,20 @@ using DisposePool = std::vector<boost::signals2::scoped_connection>;
 template <typename T>
 class ObservableObject {
 public:
-    ObservableObject(T initialValue) : currentValue(initialValue) {
-        sig = std::make_shared<boost::signals2::signal<void(T)>>();
+    explicit ObservableObject(T initialValue) : 
+    currentValue(initialValue),
+    sig(std::make_shared<boost::signals2::signal<void(T)>>()) {
         connection = sig->connect([this](T value) {
             this->currentValue = value;
         });
     }
-    ObservableObject(ObservableObject<T> const &other) : currentValue(other.currentValue) {
-        sig = other.sig;
+    ObservableObject(ObservableObject<T> const &other) : currentValue(other.currentValue), sig(other.sig) {
         connection = sig->connect([this](T value) {
             this->currentValue = value;
         });
     }
 
-    ObservableObject(ObservableObject<T> &&other) : currentValue(other.currentValue) {
-        sig = std::move(other.sig);
+    ObservableObject(ObservableObject<T> &&other) : currentValue(other.currentValue), sig(std::move(other.sig)) {
         connection = sig->connect([this](T value) {
             this->currentValue = value;
         });
@@ -35,14 +34,16 @@ public:
         connection = sig->connect([this](T value) {
             this->currentValue = value;
         });
+        return *this;
     }
 
-    ObservableObject<T> operator=(ObservableObject<T> &other) {
+    ObservableObject<T> operator=(ObservableObject<T> const &other) {
         currentValue = other.currentValue;
         sig = other.sig;
         connection = sig->connect([this](T value) {
             this->currentValue = value;
         });
+        return *this;
     }
 
     T value() const noexcept {

@@ -14,7 +14,7 @@ struct SDLController {
     SDLController(SDLController &&other) = delete;
     SDLController operator=(SDLController const &other) = delete;
     SDLController operator=(SDLController &&other) = delete;
-    SDLController(
+    explicit SDLController(
         GlobalConfig config
     );
     ~SDLController();

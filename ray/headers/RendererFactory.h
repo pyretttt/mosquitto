@@ -10,7 +10,7 @@
 #include "sdl/Renderer.h"
 
 struct RenderFactoryParams {
-    RenderFactoryParams(GlobalConfig const &globalConfig) : globalConfig(globalConfig) {
+    explicit RenderFactoryParams(GlobalConfig const &globalConfig) : globalConfig(globalConfig) {
     };
 
     SDL_Window *window = nullptr;

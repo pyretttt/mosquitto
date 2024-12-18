@@ -21,8 +21,7 @@ public:
 
     void start() {
         sdlController.showWindow();
-        Renderer::MeshData node{
-            MeshBuffer{
+        auto meshBuffer= MeshBuffer{
                 {
                     ml::Vector3f(-0.5, 0.5, 0.5),   // 0. left - top - near
                     ml::Vector3f(-0.5, -0.5, 0.5),  // 1. left - bottom - near
@@ -52,8 +51,10 @@ public:
                     Face{3, 6, 2, {}}, // right
                     Face{3, 7, 6, {}},
                 }
-            }
-        };
+            };
+        Renderer::MeshData node{{
+            meshBuffer
+        }};
 
         while (!shouldClose) {
             auto currentTicks = SDL_GetTicks();

@@ -14,7 +14,7 @@ public:
     Camera operator=(Camera &&other) = delete;
     Camera operator=(Camera const &other) = delete;
 
-    Camera(
+    explicit Camera(
         ObservableObject<float> fov,
         ObservableObject<std::pair<size_t, size_t>> windowSize
     );

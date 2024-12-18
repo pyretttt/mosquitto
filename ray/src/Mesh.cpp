@@ -6,11 +6,11 @@ Face::Face(int a, int b, int c, Attributes::Cases attributes)
       c(c),
       attributes(attributes) {}
 
-MeshBuffer::MeshBuffer(std::vector<ml::Vector3f> vertices, std::vector<Face> faces)
+MeshBuffer::MeshBuffer(std::vector<ml::Vector3f> const &vertices, std::vector<Face> const &faces)
     : vertices(vertices),
       faces(faces) {}
 
-MeshNode::MeshNode(MeshBuffer meshBuffer) : meshBuffer(meshBuffer) {}
+MeshNode::MeshNode(MeshBuffer const &meshBuffer) : meshBuffer(meshBuffer) {}
 
 ml::Matrix4f MeshNode::getTransform() const noexcept {
     if (auto par = parent.lock()) {

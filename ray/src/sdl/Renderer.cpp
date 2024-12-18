@@ -88,16 +88,16 @@ void sdl::Renderer::update(MeshData const &data, float dt) {
             auto const renderMethod = RenderMethod::fill;
             switch (renderMethod) {
             case RenderMethod::vertices:
-                for (size_t i = 0; i < 3; i++) {
-                    drawPoint(color, {tri.vertices[i](0, 0), tri.vertices[i](1, 0)}, 3);
+                for (size_t j = 0; j < 3; j++) {
+                    drawPoint(color, {tri.vertices[j](0, 0), tri.vertices[j](1, 0)}, 3);
                 }
                 break;
             case RenderMethod::wireframe:
                 drawLine({tri.vertices[0](0, 0), tri.vertices[0](1, 0)}, {tri.vertices[1](0, 0), tri.vertices[1](1, 0)}, color);
                 drawLine({tri.vertices[1](0, 0), tri.vertices[1](1, 0)}, {tri.vertices[2](0, 0), tri.vertices[2](1, 0)}, color);
                 drawLine({tri.vertices[2](0, 0), tri.vertices[2](1, 0)}, {tri.vertices[0](0, 0), tri.vertices[0](1, 0)}, color);
-                for (size_t i = 0; i < 3; i++) {
-                    drawPoint(color, {tri.vertices[i](0, 0), tri.vertices[i](1, 0)}, 3);
+                for (size_t j = 0; j < 3; j++) {
+                    drawPoint(color, {tri.vertices[j](0, 0), tri.vertices[j](1, 0)}, 3);
                 }
                 break;
             case RenderMethod::fill:
