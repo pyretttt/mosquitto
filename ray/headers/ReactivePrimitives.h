@@ -76,7 +76,6 @@
 
 struct Connection {
     Connection(std::function<void()> &&dispose) : dipose(dispose) {}
-    Connection(std::function<void()> const &dispose) : dipose(dispose) {}
     
     ~Connection() {
         dispose();
@@ -87,7 +86,7 @@ struct Connection {
 
 template <typename T>
 struct Observer {
-    Observer(std::function<T> &&notify) : notify(notify) {};
+    Observer(std::function<T> &&notify) : notify(std::move(notify)) {};
     std::function<T> notify;
 };
 
@@ -123,9 +122,11 @@ public:
     void send(T const &value) const noexcept {
         auto const &observers = *observers;
         for (auto const &[key, observer] : observers) {
-            observer.notify(std::move(value));
+            observer.notify(value);
         }
     }
+
+
 
 private:
     using Key = uint32_t;
@@ -136,10 +137,13 @@ private:
 template <typename UpstreamValue, typename ThisValue>
 class ObservableObject {
 public:
-    ObservableObject(ThisValue initialValue, Signal<UpstreamValue> &upstream, std::function<) : value(std::make_shared(initialValue)) {
+    ObservableObject(ThisValue initialValue, Signal<UpstreamValue> &upstream) : value(std::make_shared(initialValue)) {
+        std::weak_ptr<ThisValue> wpt(value);
         upstream.subscribe(
             Observer<UpstreamValue>([value](T newValue) {
-                *value = newValue;
+                if (auto spt = wpt.lock()) {
+                    *spt = std::move(newValue);
+                }
             })
         )
     }
