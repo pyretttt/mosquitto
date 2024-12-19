@@ -126,6 +126,11 @@ public:
         }
     }
 
+    template<typename V>
+    Signal<V> map(std::function<V(const & T)> &&conversion) {
+        
+    }
+
 
 
 private:
