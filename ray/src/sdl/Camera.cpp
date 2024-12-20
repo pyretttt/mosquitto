@@ -5,12 +5,10 @@
 sdl::Camera::Camera(
     ObservableObject<float> fov,
     ObservableObject<std::pair<size_t, size_t>> windowSize
-) : fov(fov.value()), aspectRatio(static_cast<float>(windowSize.value().first) / windowSize.value().second) {
-    transformation = ml::cameraMatrix(
-        {0, 0, 0},
-        {0, 0, -1}
-    );
-    perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(this->fov, this->aspectRatio, true, 0.1, 1000);
+) : fov(fov.value()),
+    aspectRatio(static_cast<float>(windowSize.value().first) / windowSize.value().second),
+    transformation(ml::cameraMatrix({0, 0, 0}, {0, 0, -1})),
+    perspectiveProjectionMatrix(ml::perspectiveProjectionMatrix(this->fov, this->aspectRatio, true, 0.1, 1000)) {
     disposePool.push_back(
         fov.addObserver([this](float value) {
             this->fov = value;

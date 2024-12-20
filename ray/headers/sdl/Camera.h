@@ -23,10 +23,10 @@ public:
     ml::Matrix4f const &getCameraTransformation() const noexcept;
 
 private:
-    ml::Matrix4f transformation;
-    ml::Matrix4f perspectiveProjectionMatrix;
     float fov;
     float aspectRatio;
+    ml::Matrix4f transformation;
+    ml::Matrix4f perspectiveProjectionMatrix;
     DisposePool disposePool;
 };
 }
