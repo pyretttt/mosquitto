@@ -14,7 +14,7 @@ struct RenderFactoryParams {
     };
 
     SDL_Window *window = nullptr;
-    GlobalConfig globalConfig;
+    GlobalConfig const &globalConfig;
 };
 
 std::shared_ptr<Renderer> inline makeRenderer(RenderFactoryParams const &params) {
@@ -23,7 +23,7 @@ std::shared_ptr<Renderer> inline makeRenderer(RenderFactoryParams const &params)
         return std::make_shared<sdl::Renderer>(
             params.window,
             params.globalConfig.windowSize.value(),
-            Lazy<sdl::Camera>([config = params.globalConfig]() {
+            Lazy<sdl::Camera>([&config = params.globalConfig]() {
                 return std::make_shared<sdl::Camera>(config.fov, config.windowSize);
             })
         );

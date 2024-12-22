@@ -15,7 +15,7 @@ struct SDLController {
     SDLController operator=(SDLController const &other) = delete;
     SDLController operator=(SDLController &&other) = delete;
     explicit SDLController(
-        GlobalConfig config
+        GlobalConfig const &config
     );
     ~SDLController();
 
@@ -25,5 +25,5 @@ struct SDLController {
 private:
     std::function<void()> windowInit;
     SDL_Window *window;
-    GlobalConfig config;
+    GlobalConfig const &config;
 };

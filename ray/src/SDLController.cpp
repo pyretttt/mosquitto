@@ -10,9 +10,9 @@
 #include "sdl/Renderer.h"
 
 SDLController::SDLController(
-    GlobalConfig config
+    GlobalConfig const &config
 ) : config(config) {
-    windowInit = [config, this]() {
+    windowInit = [&config, this]() {
         auto winSize{config.windowSize.value()};
         this->window = SDL_CreateWindow(
             nullptr,

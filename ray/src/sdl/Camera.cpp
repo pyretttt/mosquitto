@@ -3,20 +3,20 @@
 #include "sdl/Camera.h"
 
 sdl::Camera::Camera(
-    ObservableObject<float> fov,
-    ObservableObject<std::pair<size_t, size_t>> windowSize
+    ObservableObject<float> const &fov,
+    ObservableObject<std::pair<size_t, size_t>> const &windowSize
 ) : fov(fov.value()),
     aspectRatio(static_cast<float>(windowSize.value().first) / windowSize.value().second),
     transformation(ml::cameraMatrix({0, 0, 0}, {0, 0, -1})),
     perspectiveProjectionMatrix(ml::perspectiveProjectionMatrix(this->fov, this->aspectRatio, true, 0.1, 1000)) {
-    disposePool.push_back(
-        fov.addObserver([this](float value) {
+    connections.push_back(
+        fov.subscribe([this](float value) {
             this->fov = value;
             this->perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(value, this->aspectRatio, true, 0.1, 1000);
         })
     );
-    disposePool.push_back(
-        windowSize.addObserver([this](std::pair<size_t, size_t> value) {
+    connections.push_back(
+        windowSize.subscribe([this](std::pair<size_t, size_t> value) {
             this->aspectRatio = static_cast<float>(value.first) / value.second;
             this->perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(this->fov, this->aspectRatio, true, 0.1, 1000);
         })

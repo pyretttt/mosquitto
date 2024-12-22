@@ -16,8 +16,8 @@ public:
     Camera operator=(Camera const &other) = delete;
 
     explicit Camera(
-        ObservableObject<float> fov,
-        ObservableObject<std::pair<size_t, size_t>> windowSize
+        ObservableObject<float> const &fov,
+        ObservableObject<std::pair<size_t, size_t>> const &windowSize
     );
     ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const noexcept;
     ml::Matrix4f const &getCameraTransformation() const noexcept;
@@ -27,6 +27,6 @@ private:
     float aspectRatio;
     ml::Matrix4f transformation;
     ml::Matrix4f perspectiveProjectionMatrix;
-    DisposePool disposePool;
+    Connections connections;
 };
 }

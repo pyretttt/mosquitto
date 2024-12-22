@@ -25,7 +25,7 @@ public:
         Renderer::MeshData node = Renderer::MeshData{
             MeshNode(
                 MeshBuffer(
-                    std::vector<ml::Vector3f> {
+                    std::vector<ml::Vector3f>{
                         ml::Vector3f(-0.5, 0.5, 0.5),   // 0. left - top - near
                         ml::Vector3f(-0.5, -0.5, 0.5),  // 1. left - bottom - near
                         ml::Vector3f(0.5, 0.5, 0.5),    // 2. right - top - near
@@ -35,7 +35,7 @@ public:
                         ml::Vector3f(0.5, 0.5, -0.5),   // 6. right - top - far
                         ml::Vector3f(0.5, -0.5, -0.5),  // 7. right - bottom - far
                     },
-                    std::vector<Face> {
+                    std::vector<Face>{
                         Face{5, 6, 7, {}}, // far front
                         Face{5, 4, 6, {}},
 
@@ -82,7 +82,14 @@ public:
     }
 
 private:
-    RunLoop() : globalConfig(rendererType, windowSize, fov), sdlController(SDLController(globalConfig)) {}
+    RunLoop() : globalConfig(
+                    GlobalConfig(
+                        ObservableProperty<RendererType>(RendererType::CPU),
+                        ObservableProperty<std::pair<size_t, size_t>>({800, 600}),
+                        ObservableProperty<float>(1.3962634016)
+                    )
+                ),
+                sdlController(SDLController(globalConfig)) {}
 
     inline void processInput() {
         SDL_Event event;
@@ -107,7 +114,7 @@ private:
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
-                    windowSize.value({event.window.data1, event.window.data2});
+                    globalConfig.windowSize.value({event.window.data1, event.window.data2});
                     std::cout << "after resize" << std::endl;
                     break;
                 }
@@ -118,10 +125,6 @@ private:
         }
     }
 
-    ObservableProperty<RendererType> rendererType{RendererType::CPU};
-    ObservableProperty<std::pair<size_t, size_t>> windowSize{{800, 600}};
-    ObservableProperty<float> fov{1.3962634016}; // 80 degrees
-
     GlobalConfig globalConfig;
     SDLController sdlController;
 
@@ -129,6 +132,4 @@ private:
     unsigned long long previousFrameTicks = 0;
     const int frameRate = 60;
     const int frameTime = 1000 / frameRate;
-
-    DisposePool disposePool;
 };
