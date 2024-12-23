@@ -42,6 +42,22 @@
             },
             "detail": "Runs static analysis",
             "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "CTest",
+            "command": "ctest",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": {
+                "kind": "none",
+                "isDefault": false
+            },
+            "detail": "Runs tests",
+            "problemMatcher": []
         }
     ],
     "version": "2.0.0"

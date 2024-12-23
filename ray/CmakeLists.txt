@@ -31,9 +31,32 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(sdl2)
 FetchContent_MakeAvailable(eigen_lib)
-# FetchContent_MakeAvailable(rpp)
 FetchContent_MakeAvailable(Boost)
 
 target_compile_features(${PROJ_NAME} PRIVATE cxx_std_23)
-target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2 Eigen3::Eigen Boost::signals2 Boost::uuid)
+target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2 Eigen3::Eigen)
 target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers)
+
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG b514bdc898e2951020cbdca1304b75f5950d1f59
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+add_executable(
+  ReactivePrimitivesTests
+  tests/ReactivePrimitivesTests.cpp
+)
+target_link_libraries(
+  ReactivePrimitivesTests
+  GTest::gtest_main
+)
+target_compile_features(ReactivePrimitivesTests PRIVATE cxx_std_23)
+target_include_directories(ReactivePrimitivesTests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers)
+include(GoogleTest)
+gtest_discover_tests(ReactivePrimitivesTests)

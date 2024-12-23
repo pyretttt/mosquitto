@@ -1,8 +1,8 @@
 #pragma once
 
 #include <functional>
-
-#include "boost/signals2.hpp"
+#include <iostream>
+#include <map>
 
 struct Connection final {
     Connection() = default;
@@ -11,7 +11,8 @@ struct Connection final {
     ) : dispose(std::move(dispose)) {}
 
     ~Connection() {
-        dispose();
+        if (dispose) 
+            dispose();
     }
 
 private:
@@ -69,8 +70,9 @@ public:
     Observable<T> static inline values(
         std::vector<T> values
     ) {
-        return Observable<T>([values = std::move(values)](auto observer) {
+        return Observable<T>([values = std::move(values)](Observer<T> observer) {
             for (auto const &value : values) {
+                std::cout << value << std::endl;
                 observer.action(value);
             }
             return std::make_unique<Connection>();
@@ -94,7 +96,7 @@ public:
     std::unique_ptr<Connection> subscribe(
         std::function<void(T const &)> action
     ) const noexcept {
-        return connectObserver(Observer(action));
+        return connectObserver(Observer<T>(action));
     }
 
     std::unique_ptr<Connection> subscribe(
@@ -118,12 +120,12 @@ public:
 
     Channel(
         Channel<T> &&other
-    ) : key(std::move(other.key)), observers(std::move(other.observers)), observable(std::move(other.observable)) {}
+    ) : key_(std::move(other.key_)), observers(std::move(other.observers)), observable(std::move(other.observable)) {}
 
     Channel<T> &operator=(
         Channel<T> &&other
     ) {
-        key = std::move(other.key);
+        key_ = std::move(other.key_);
         observers = std::move(other.observers);
         observable = std::move(observable);
         return *this;
@@ -132,14 +134,14 @@ public:
     std::unique_ptr<Connection> subscribe(
         std::function<void(T const &)> action
     ) {
-        return observable.subscribe(Observer(action));
+        return observable.subscribe(Observer<T>(action));
     }
 
     void send(
-        T value
+        T const &value
     ) const noexcept {
-        for (auto const &[key, observer] : *observers) {
-            observer.action(std::move(value));
+        for (auto const &[_, observer] : *observers) {
+            observer.action(value);
         }
     }
 
@@ -150,7 +152,7 @@ public:
 private:
     Observable<T> makeObservable() {
         std::weak_ptr<std::map<Key, Observer<T>>> weakObservers(observers);
-        std::shared_ptr<Key> key = this->key;
+        auto key = key_;
         return Observable<T>([=](Observer<T> observer) {
             auto key_ = *key;
             *key = key_ + 1;
@@ -167,7 +169,7 @@ private:
     }
 
     using Key = uint32_t;
-    std::shared_ptr<Key> key{std::make_shared<Key>(0)};
+    std::shared_ptr<Key> key_{std::make_shared<Key>(0)};
     std::shared_ptr<std::map<Key, Observer<T>>> observers = std::make_shared<std::map<Key, Observer<T>>>();
     Observable<T> observable = makeObservable();
 };
@@ -246,7 +248,7 @@ protected:
 template <typename T>
 class ObservableProperty final {
 public:
-    ObservableProperty(
+    explicit ObservableProperty(
         T const value
     ) : currentValue(std::make_shared<T>(std::move(value))) {
         bindConnection(channel.asObservable());
