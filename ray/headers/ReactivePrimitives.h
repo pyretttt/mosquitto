@@ -28,8 +28,7 @@ struct Observer final {
 
     Observer(
         Observer<T> &&other
-    ) : action(std::move(other.action)) {
-    }
+    ) : action(std::move(other.action)) {}
 
     Observer(
         Observer<T> const &other
@@ -188,7 +187,7 @@ public:
 
     explicit ObservableObject(
         T const initialValue,
-        Observable<T> observable
+        Observable<T> const &observable
     ) : currentValue(std::make_shared<T>(std::move(initialValue))),
         observable(std::move(observable)) {
         bindConnection(observable);
@@ -268,8 +267,8 @@ public:
         channel.send(std::move(val));
     }
 
-    ObservableObject<T> asObservableObject() const noexcept {
-        return ObservableObject<T>(*currentValue, channel.asObservable());
+    std::unique_ptr<ObservableObject<T>> asObservableObject() const noexcept {
+        return std::make_unique<ObservableObject<T>>(*currentValue, channel.asObservable());
     }
 
 private:

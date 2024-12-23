@@ -16,17 +16,17 @@ public:
     Camera operator=(Camera const &other) = delete;
 
     explicit Camera(
-        ObservableObject<float> const &fov,
-        ObservableObject<std::pair<size_t, size_t>> const &windowSize
+        std::unique_ptr<ObservableObject<float>> &&fov,
+        std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize
     );
     ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const noexcept;
     ml::Matrix4f const &getCameraTransformation() const noexcept;
 
 private:
-    float fov;
-    float aspectRatio;
+    std::unique_ptr<ObservableObject<float>> fov_;
+    std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize_;
     ml::Matrix4f transformation;
     ml::Matrix4f perspectiveProjectionMatrix;
     Connections connections;
 };
-}
+} // namespace sdl
