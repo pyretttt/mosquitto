@@ -3,7 +3,7 @@
 #include <array>
 #include <variant>
 
-#include "MathUtils.h"
+#include "MathUtils.hpp"
 
 struct Attributes {
     struct Color {
@@ -19,7 +19,7 @@ struct Attributes {
 struct Face {
     Face(int a, int b, int c, Attributes::Cases attributes);
     int a, b, c;
-    Attributes::Cases attributes;    
+    Attributes::Cases attributes;
 };
 
 struct MeshBuffer {

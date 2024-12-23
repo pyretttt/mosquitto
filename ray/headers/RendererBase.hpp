@@ -3,7 +3,7 @@
 #include <memory>
 #include <utility>
 
-#include "Mesh.h"
+#include "Mesh.hpp"
 
 enum class RendererType {
     CPU,

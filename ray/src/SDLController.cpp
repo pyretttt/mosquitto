@@ -2,12 +2,12 @@
 
 #include "SDL.h"
 
-#include "Errors.h"
-#include "ReactivePrimitives.h"
-#include "RendererFactory.h"
-#include "SDLController.h"
-#include "Utility.h"
-#include "sdl/Renderer.h"
+#include "Errors.hpp"
+#include "ReactivePrimitives.hpp"
+#include "RendererFactory.hpp"
+#include "SDLController.hpp"
+#include "Utility.hpp"
+#include "sdl/Renderer.hpp"
 
 SDLController::SDLController(
     GlobalConfig const &config

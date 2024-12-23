@@ -4,11 +4,11 @@
 
 #include "SDL.h"
 
-#include "Lazy.h"
-#include "ReactivePrimitives.h"
+#include "Lazy.hpp"
+#include "ReactivePrimitives.hpp"
 #include "RunLoop.cpp"
-#include "SDLController.h"
-#include "sdl/Camera.h"
+#include "SDLController.hpp"
+#include "sdl/Camera.hpp"
 
 int main() {
     if (SDL_Init(SDL_INIT_EVERYTHING)) {

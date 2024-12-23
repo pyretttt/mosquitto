@@ -3,11 +3,11 @@
 #include "Eigen/Dense"
 #include "SDL.h"
 
-#include "GlobalConfig.h"
-#include "MathUtils.h"
-#include "ReactivePrimitives.h"
-#include "RendererBase.h"
-#include "SDLController.h"
+#include "GlobalConfig.hpp"
+#include "MathUtils.hpp"
+#include "ReactivePrimitives.hpp"
+#include "RendererBase.hpp"
+#include "SDLController.hpp"
 
 class RunLoop {
 public:

@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "sdl/Camera.h"
+#include "sdl/Camera.hpp"
 
 sdl::Camera::Camera(
     std::unique_ptr<ObservableObject<float>> &&fov,

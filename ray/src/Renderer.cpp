@@ -1,3 +1,3 @@
-#include "RendererBase.h"
+#include "RendererBase.hpp"
 
 Renderer::~Renderer() {};

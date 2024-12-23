@@ -2,8 +2,8 @@
 
 #include <utility>
 
-#include "MathUtils.h"
-#include "ReactivePrimitives.h"
+#include "MathUtils.hpp"
+#include "ReactivePrimitives.hpp"
 
 namespace sdl {
 

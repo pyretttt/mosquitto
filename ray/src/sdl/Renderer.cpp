@@ -1,10 +1,10 @@
 #include <iostream>
 #include <memory>
 
-#include "MathUtils.h"
-#include "Utility.h"
-#include "sdl/Camera.h"
-#include "sdl/Renderer.h"
+#include "MathUtils.hpp"
+#include "Utility.hpp"
+#include "sdl/Camera.hpp"
+#include "sdl/Renderer.hpp"
 
 sdl::Renderer::Renderer(
     SDL_Window *window,
@@ -35,7 +35,9 @@ sdl::Renderer::~Renderer() {
     SDL_DestroyRenderer(renderer);
 }
 
-void sdl::Renderer::update(MeshData const &data, float dt) {
+void sdl::Renderer::update(
+    MeshData const &data, float dt
+) {
     ml::Matrix4f const perspectiveProjectionMatrix = camera()->getScenePerspectiveProjectionMatrix();
     ml::Matrix4f const cameraTransformation = camera()->getCameraTransformation();
     for (auto const &node : data) {
@@ -126,7 +128,9 @@ void sdl::Renderer::render() const {
     SDL_RenderPresent(renderer);
 }
 
-void sdl::Renderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thickness) noexcept {
+void sdl::Renderer::drawPoint(
+    uint32_t color, ml::Vector2i position, size_t thickness
+) noexcept {
     if (thickness == 0) {
         colorBuffer[position.x() + position.y() * resolution.first] = color;
         return;
@@ -140,15 +144,21 @@ void sdl::Renderer::drawPoint(uint32_t color, ml::Vector2i position, size_t thic
     }
 }
 
-static constexpr float fpart(float num) {
+static constexpr float fpart(
+    float num
+) {
     return num - static_cast<int>(num);
 }
 
-static constexpr float oneComplement(float num) {
+static constexpr float oneComplement(
+    float num
+) {
     return 1 - fpart(num);
 }
 
-void sdl::Renderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept {
+void sdl::Renderer::drawLine(
+    ml::Vector2i from, ml::Vector2i to, uint32_t color
+) noexcept {
     int x0{from.x()},
         y0{from.y()},
         x1{to.x()},
@@ -185,7 +195,9 @@ void sdl::Renderer::drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color)
     }
 }
 
-void sdl::Renderer::fillTriangle(Triangle tri, uint32_t color) noexcept {
+void sdl::Renderer::fillTriangle(
+    Triangle tri, uint32_t color
+) noexcept {
     auto &t0 = tri.vertices[0];
     auto &t1 = tri.vertices[1];
     auto &t2 = tri.vertices[2];

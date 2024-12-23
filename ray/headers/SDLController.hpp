@@ -5,8 +5,8 @@
 
 #include "SDL.h"
 
-#include "RendererBase.h"
-#include "GlobalConfig.h"
+#include "GlobalConfig.hpp"
+#include "RendererBase.hpp"
 
 struct SDLController {
     SDLController() = delete;
@@ -22,6 +22,7 @@ struct SDLController {
     void showWindow();
 
     std::shared_ptr<Renderer> renderer;
+
 private:
     std::function<void()> windowInit;
     SDL_Window *window;

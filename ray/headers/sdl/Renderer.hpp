@@ -5,11 +5,11 @@
 
 #include "SDL.h"
 
-#include "MathUtils.h"
-#include "Mesh.h"
-#include "RendererBase.h"
-#include "sdl/Light.h"
-#include "Lazy.h"
+#include "Lazy.hpp"
+#include "MathUtils.hpp"
+#include "Mesh.hpp"
+#include "RendererBase.hpp"
+#include "sdl/Light.hpp"
 
 namespace sdl {
 
