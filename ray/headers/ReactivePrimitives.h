@@ -59,6 +59,14 @@ public:
         std::function<std::unique_ptr<Connection>(Observer<T>)> connectObserver
     ) : connectObserver(std::move(connectObserver)) {}
 
+    explicit Observable(
+        Observable<T> const &other
+    ) : connectObserver(other.connectObserver) {}
+
+    explicit Observable(
+        Observable<T> &&other
+    ) : connectObserver(std::move(other.connectObserver)) {}
+
     Observable<T> static inline values(
         std::vector<T> values
     ) {
@@ -90,6 +98,12 @@ public:
         return connectObserver(Observer(action));
     }
 
+    std::unique_ptr<Connection> subscribe(
+        Observer<T> observer
+    ) const noexcept {
+        return connectObserver(std::move(observer));
+    }
+
 private:
     std::function<std::unique_ptr<Connection>(Observer<T>)> connectObserver;
 };
@@ -119,7 +133,7 @@ public:
     std::unique_ptr<Connection> subscribe(
         std::function<void(T const &)> action
     ) {
-        return observable.subscribe(std::move(Observer(action)));
+        return observable.subscribe(Observer(action));
     }
 
     void send(
@@ -142,7 +156,7 @@ private:
             auto key_ = *key;
             *key = key_ + 1;
             if (auto spt = weakObservers.lock()) {
-                spt->operator[](key_) = std::move(observer);
+                spt->insert(std::make_pair(key_, observer));
             }
 
             return std::make_unique<Connection>([=]() {
@@ -156,7 +170,7 @@ private:
     using Key = uint32_t;
     std::shared_ptr<Key> key{std::make_shared<Key>(0)};
     std::shared_ptr<std::map<Key, Observer<T>>> observers = std::make_shared<std::map<Key, Observer<T>>>();
-    Observable<T> observable;
+    Observable<T> observable = makeObservable();
 };
 
 template <typename T>
@@ -231,14 +245,21 @@ protected:
 };
 
 template <typename T>
-class ObservableProperty final : public ObservableObject<T> {
+class ObservableProperty final {
 public:
-    using ObservableObject<T>::value;
+    ObservableProperty(
+        T const value
+    ) : currentValue(std::make_shared<T>(std::move(value))) {
+        bindConnection(channel.asObservable());
+    }
 
     ObservableProperty(
-        T const value,
-        Channel<T> channel = Channel<T>()
-    ) : channel(std::move(channel)), ObservableObject<T>(value, channel.asObservable()) {
+        ObservableProperty<T> &&other
+    ) : currentValue(std::move(other.currentValue)), connection(std::move(other.connection)), channel(std::move(other.channel)) {
+    }
+
+    T &value() const noexcept {
+        return *currentValue;
     }
 
     void value(
@@ -247,10 +268,23 @@ public:
         channel.send(std::move(val));
     }
 
-    ObservableObject<T> &asObservableObject() const noexcept {
-        return *this;
+    ObservableObject<T> asObservableObject() const noexcept {
+        return ObservableObject<T>(*currentValue, channel.asObservable());
     }
 
 private:
+    void bindConnection(
+        Observable<T> const &observable
+    ) {
+        std::weak_ptr<T> wpt(currentValue);
+        connection = observable.subscribe([wpt](T const &value) {
+            if (auto spt = wpt.lock()) {
+                *spt = value;
+            }
+        });
+    }
+
     Channel<T> channel;
+    std::unique_ptr<Connection> connection;
+    std::shared_ptr<T> currentValue;
 };
