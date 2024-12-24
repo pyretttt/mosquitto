@@ -6,17 +6,21 @@
 
 struct Connection final {
     Connection() = default;
+    Connection(Connection const &other) = delete;
+    Connection(
+        Connection &&other
+    ) : dispose_(std::move(other.dispose_)) {}
     explicit Connection(
         std::function<void()> dispose
-    ) : dispose(std::move(dispose)) {}
+    ) : dispose_(std::move(dispose)) {}
 
     ~Connection() {
-        if (dispose) 
-            dispose();
+        if (dispose_)
+            dispose_();
     }
 
 private:
-    std::function<void()> dispose;
+    std::function<void()> dispose_;
 };
 
 using Connections = std::vector<std::unique_ptr<Connection>>;
@@ -57,23 +61,23 @@ class Observable final {
 public:
     explicit Observable(
         std::function<std::unique_ptr<Connection>(Observer<T>)> connectObserver
-    ) : connectObserver(std::move(connectObserver)) {}
+    ) : connectObserver_(std::move(connectObserver)) {}
 
     explicit Observable(
         Observable<T> const &other
-    ) : connectObserver(other.connectObserver) {}
+    ) : connectObserver_(other.connectObserver_) {}
 
     explicit Observable(
         Observable<T> &&other
-    ) : connectObserver(std::move(other.connectObserver)) {}
+    ) : connectObserver_(std::move(other.connectObserver_)) {}
 
     Observable<T> static inline values(
         std::vector<T> values
     ) {
         return Observable<T>([values = std::move(values)](Observer<T> observer) {
             for (auto const &value : values) {
-                std::cout << value << std::endl;
-                observer.action(value);
+                if (observer.action)
+                    observer.action(value);
             }
             return std::make_unique<Connection>();
         });
@@ -83,7 +87,7 @@ public:
     Observable<V> map(
         std::function<V(T const &)> conversion
     ) {
-        auto connect = connectObserver;
+        auto connect = connectObserver_;
         return Observable([connectObserver = std::move(connect), conversion = std::move(conversion)](Observer<T> observer) {
             observer.action = [action = std::move(observer.action), conversion](T const &value) {
                 action(conversion(value));
@@ -96,24 +100,23 @@ public:
     std::unique_ptr<Connection> subscribe(
         std::function<void(T const &)> action
     ) const noexcept {
-        return connectObserver(Observer<T>(action));
+        return connectObserver_(Observer<T>(action));
     }
 
     std::unique_ptr<Connection> subscribe(
         Observer<T> observer
     ) const noexcept {
-        return connectObserver(std::move(observer));
+        return connectObserver_(std::move(observer));
     }
 
 private:
-    std::function<std::unique_ptr<Connection>(Observer<T>)> connectObserver;
+    std::function<std::unique_ptr<Connection>(Observer<T>)> connectObserver_;
 };
 
 template <typename T>
 class Channel final {
 public:
-    Channel() : observable(makeObservable()) {
-    }
+    Channel() : observable(makeObservable()) {}
 
     Channel(Channel<T> const &other) = delete;
     Channel<T> &operator=(Channel<T> const &other) = delete;
@@ -134,14 +137,15 @@ public:
     std::unique_ptr<Connection> subscribe(
         std::function<void(T const &)> action
     ) {
-        return observable.subscribe(Observer<T>(action));
+        return observable.subscribe(Observer<T>(std::move(action)));
     }
 
     void send(
         T const &value
     ) const noexcept {
         for (auto const &[_, observer] : *observers) {
-            observer.action(value);
+            if (observer.action)
+                observer.action(value);
         }
     }
 
@@ -191,7 +195,7 @@ public:
         T const initialValue,
         Observable<T> const &observable
     ) : currentValue(std::make_shared<T>(std::move(initialValue))),
-        observable(std::move(observable)) {
+        observable(observable) {
         bindConnection(observable);
     }
 
