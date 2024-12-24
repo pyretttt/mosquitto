@@ -88,12 +88,19 @@ public:
         std::function<V(T const &)> conversion
     ) {
         auto connect = connectObserver_;
-        return Observable([connectObserver = std::move(connect), conversion = std::move(conversion)](Observer<T> observer) {
-            observer.action = [action = std::move(observer.action), conversion](T const &value) {
-                action(conversion(value));
-            };
+        // return Observable<V>([connectObserver = std::move(connect), conversion = std::move(conversion)](Observer<T> observer) {
+        //     observer.action = [action = std::move(observer.action), conversion](T const &value) {
+        //         action(conversion(value));
+        //     };
 
-            return connectObserver(std::move(observer));
+        //     return connectObserver(std::move(observer));
+        // });
+        return Observable<V>([connectObserver = std::move(connect), conversion = std::move(conversion)](Observer<V> observer) {
+            return connectObserver(
+                Observer<T>([action = std::move(observer.action), conversion = std::move(conversion)](T const &value) {
+                    action(conversion(value));
+                })
+            );
         });
     }
 
