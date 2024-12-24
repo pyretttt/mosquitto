@@ -63,11 +63,11 @@ public:
         std::function<std::unique_ptr<Connection>(Observer<T>)> connectObserver
     ) : connectObserver_(std::move(connectObserver)) {}
 
-    explicit Observable(
+    Observable(
         Observable<T> const &other
     ) : connectObserver_(other.connectObserver_) {}
 
-    explicit Observable(
+    Observable(
         Observable<T> &&other
     ) : connectObserver_(std::move(other.connectObserver_)) {}
 
@@ -86,15 +86,8 @@ public:
     template <typename V>
     Observable<V> map(
         std::function<V(T const &)> conversion
-    ) {
+    ) const noexcept {
         auto connect = connectObserver_;
-        // return Observable<V>([connectObserver = std::move(connect), conversion = std::move(conversion)](Observer<T> observer) {
-        //     observer.action = [action = std::move(observer.action), conversion](T const &value) {
-        //         action(conversion(value));
-        //     };
-
-        //     return connectObserver(std::move(observer));
-        // });
         return Observable<V>([connectObserver = std::move(connect), conversion = std::move(conversion)](Observer<V> observer) {
             return connectObserver(
                 Observer<T>([action = std::move(observer.action), conversion = std::move(conversion)](T const &value) {
@@ -107,7 +100,7 @@ public:
     std::unique_ptr<Connection> subscribe(
         std::function<void(T const &)> action
     ) const noexcept {
-        return connectObserver_(Observer<T>(action));
+        return connectObserver_(Observer<T>(std::move(action)));
     }
 
     std::unique_ptr<Connection> subscribe(
