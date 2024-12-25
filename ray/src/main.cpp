@@ -9,6 +9,7 @@
 #include "RunLoop.cpp"
 #include "SDLController.hpp"
 #include "sdl/Camera.hpp"
+#include "Plane.hpp"
 
 int main() {
     if (SDL_Init(SDL_INIT_EVERYTHING)) {

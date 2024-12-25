@@ -15,8 +15,12 @@ struct GlobalConfig final {
         ObservableProperty<float> &&fov
     ) : rendererType(std::move(rendererType)), windowSize(std::move(windowSize)), fov(std::move(fov)) {}
 
-    GlobalConfig(GlobalConfig &&other) : rendererType(std::move(other.rendererType)), windowSize(std::move(other.windowSize)), fov(std::move(other.fov)) {
-                                         };
+    GlobalConfig(
+        GlobalConfig &&other
+    )
+        : rendererType(std::move(other.rendererType)),
+          windowSize(std::move(other.windowSize)),
+          fov(std::move(other.fov)) {}
 
     GlobalConfig(GlobalConfig const &other) = delete;
     GlobalConfig operator=(GlobalConfig const &other) = delete;
