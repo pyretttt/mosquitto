@@ -12,6 +12,9 @@ struct Plane {
 
     ml::Vector3f point;
     ml::Vector3f normal;
+
+    clip(
+    )
 };
 
 using ClippingPlanes = std::array<Plane, 6>;
@@ -34,7 +37,7 @@ using ClippingPlanes = std::array<Plane, 6>;
 //     auto far(Plane({0, 0, 0}, {0, 0, 1}));
 // }
 
-ClippingPlanes inline makeCameraSpaceClippingPlanes(
+ClippingPlanes inline makeEuclideanClippingPlanes(
     float verticalFov, float aspectRatio, float zfar, float znear
 ) noexcept {
     float const halfTan = tanf(verticalFov / 2);
