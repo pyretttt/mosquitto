@@ -214,9 +214,9 @@ void sdl::Renderer::fillTriangle(
         swap(t0, t1);
     }
 
-    int x0 = t0.x(), y0 = t0.y(), z0 = t0.z();
-    int x1 = t1.x(), y1 = t1.y(), z1 = t1.z();
-    int x2 = t2.x(), y2 = t2.y(), z2 = t2.z();
+    int x0 = t0.x(), y0 = t0.y(), z0 = t0.w();
+    int x1 = t1.x(), y1 = t1.y(), z1 = t1.w();
+    int x2 = t2.x(), y2 = t2.y(), z2 = t2.w();
 
     if (y0 != y1) {
         float inv_slope0 = static_cast<float>(x1 - x0) / (y1 - y0);
