@@ -227,4 +227,17 @@ ml::Matrix4f inline cameraMatrix(Vector3f position, Vector3f cameraTarget, Vecto
     result(3, 3) = 1.f;
     return result;
 }
+
+template <typename Vector>
+Vector lerp(
+    Vector const &a, 
+    Vector const &b, 
+    float alpha
+) {
+    Vector res;
+    for (size_t i = 0; i < res.size(); i++) {
+        res(i, 0) = std::lerp(a(i, 0), b(i, 0), alpha);
+    }
+    return res;
+}
 } // namespace ml

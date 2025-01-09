@@ -21,6 +21,11 @@ int main() {
 
     // auto camera = sdl::Camera(fov, windowSize);
     // auto camera2 = camera;
+
+    ml::Vector3f a = {0, 0, 0};
+    ml::Vector3f b = {10, 15, 20};
+    std::cout << ml::lerp(a, b, 0.5) << std::endl;
+
     RunLoop::instance()
         .start();
     return 0;

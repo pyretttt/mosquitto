@@ -12,9 +12,6 @@ struct Plane {
 
     ml::Vector3f point;
     ml::Vector3f normal;
-
-    clip(
-    )
 };
 
 using ClippingPlanes = std::array<Plane, 6>;
