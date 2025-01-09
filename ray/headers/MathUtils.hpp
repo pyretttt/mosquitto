@@ -65,13 +65,17 @@ Matrix4f inline screenSpaceProjection(
 }
 
 template <typename Mat>
-Mat inline matrixScale(Mat matrix, float scalar) noexcept {
+Mat inline matrixScale(
+    Mat matrix, float scalar
+) noexcept {
     matrix *= scalar;
     return matrix;
 }
 
 template <typename M1, typename M2>
-decltype(auto) inline matMul(M1 &&lhs, M2 &&rhs) noexcept {
+decltype(auto) inline matMul(
+    M1 &&lhs, M2 &&rhs
+) noexcept {
     return (lhs * rhs).eval();
 }
 
@@ -90,7 +94,9 @@ Eigen::Matrix<float, size, size> inline eye() noexcept {
     return Eigen::Matrix<float, size, size>::Identity();
 }
 
-decltype(auto) inline rodriguezRotationMatrix(Vector3f axis, float angle) noexcept {
+decltype(auto) inline rodriguezRotationMatrix(
+    Vector3f axis, float angle
+) noexcept {
     axis.normalize();
     Matrix4f rotationMatrix = Matrix4f::Zero();
     auto cosValue = cosf(angle);
@@ -117,12 +123,16 @@ decltype(auto) inline rodriguezRotationMatrix(Vector3f axis, float angle) noexce
     return rotationMatrix;
 }
 
-Matrix4f inline scaleMatrix(float x, float y, float z = 1, float w = 1) {
+Matrix4f inline scaleMatrix(
+    float x, float y, float z = 1, float w = 1
+) {
     Vector4f m({x, y, z, w});
     return m.asDiagonal();
 }
 
-decltype(auto) inline translationMatrix(float tx, float ty, float tz) {
+decltype(auto) inline translationMatrix(
+    float tx, float ty, float tz
+) {
     Matrix4f res = Matrix4f::Identity();
     res(0, 3) = tx;
     res(1, 3) = ty;
@@ -130,7 +140,9 @@ decltype(auto) inline translationMatrix(float tx, float ty, float tz) {
     return res;
 }
 
-Matrix4f inline rotateAroundPoint(Vector3f supportPoint, Vector3f rotationAxis, float angle) {
+Matrix4f inline rotateAroundPoint(
+    Vector3f supportPoint, Vector3f rotationAxis, float angle
+) {
     Matrix4f translation = Matrix4f::Identity();
     translation(0, 3) = -supportPoint(0, 0);
     translation(1, 3) = -supportPoint(1, 0);
@@ -145,17 +157,23 @@ Matrix4f inline rotateAroundPoint(Vector3f supportPoint, Vector3f rotationAxis, 
     return result;
 }
 
-Vector3f inline crossProduct(Vector3f const &u, Vector3f const &v) {
+Vector3f inline crossProduct(
+    Vector3f const &u, Vector3f const &v
+) {
     return u.cross(v).eval();
 }
 
 template <typename Vector>
-float inline dotProduct(Vector const &u, Vector const &v) {
+float inline dotProduct(
+    Vector const &u, Vector const &v
+) {
     return u.dot(v);
 }
 
 template <typename Vector>
-float inline cosineSimilarity(Vector const &u, Vector const &v) {
+float inline cosineSimilarity(
+    Vector const &u, Vector const &v
+) {
     float uNorm = u.template lpNorm<2>();
     float vNorm = v.template lpNorm<2>();
     float res = u.dot(v) / (uNorm * vNorm);
@@ -163,7 +181,9 @@ float inline cosineSimilarity(Vector const &u, Vector const &v) {
 }
 
 template <size_t to, size_t from, typename Scalar>
-Eigen::Matrix<Scalar, to, 1> inline as(Eigen::Matrix<Scalar, from, 1> vector, float fillValue = 0) {
+Eigen::Matrix<Scalar, to, 1> inline as(
+    Eigen::Matrix<Scalar, from, 1> vector, float fillValue = 0
+) {
     Eigen::Matrix<Scalar, to, 1> res = Eigen::Matrix<Scalar, to, 1>::Constant(fillValue);
     auto vecSize = vector.size();
     if (to < vecSize) {
@@ -176,8 +196,8 @@ Eigen::Matrix<Scalar, to, 1> inline as(Eigen::Matrix<Scalar, from, 1> vector, fl
 }
 
 std::tuple<float, float, float> inline barycentricWeights(
-    Vector2i u, 
-    Vector2i v, 
+    Vector2i u,
+    Vector2i v,
     Vector2i w,
     Vector2i point
 ) {
@@ -186,9 +206,10 @@ std::tuple<float, float, float> inline barycentricWeights(
     Vector3f ww = {w.x(), w.y(), 0};
     Vector3f pp = {point.x(), point.y(), 0};
     auto doubledArea = crossProduct(
-        (vv - uu).eval(),
-        (ww - uu).eval()
-    ).lpNorm<2>();
+                           (vv - uu).eval(),
+                           (ww - uu).eval()
+    )
+                           .lpNorm<2>();
 
     Vector3f up = uu - pp;
     Vector3f vp = vv - pp;
@@ -206,7 +227,24 @@ std::tuple<float, float, float> inline barycentricWeights(
     return std::make_tuple(alpha, beta, gamma);
 }
 
-ml::Matrix4f inline cameraMatrix(Vector3f position, Vector3f cameraTarget, Vector3f up = {0, 1, 0}) {
+template <typename Value>
+Value perspectiveInterpolate(
+    Value const &A,
+    Value const &B,
+    Value const &C,
+    std::tuple<float, float, float> const &weights
+) noexcept {
+    Value aRecip = 1 / A;
+    Value bRecip = 1 / B;
+    Value cRecip = 1 / C;
+
+    Value recipInterpolated = std::get<0>(weights) * aRecip + std::get<1>(weights) * bRecip + std::get<2>(weights) * cRecip;
+    return 1 / recipInterpolated;
+}
+
+ml::Matrix4f inline cameraMatrix(
+    Vector3f position, Vector3f cameraTarget, Vector3f up = {0, 1, 0}
+) {
     Vector3f lookAt = (position - cameraTarget).normalized();
     Vector3f right = crossProduct(up, lookAt).normalized();
     // Already normalized, but let's keep for robust
@@ -230,8 +268,8 @@ ml::Matrix4f inline cameraMatrix(Vector3f position, Vector3f cameraTarget, Vecto
 
 template <typename Vector>
 Vector lerp(
-    Vector const &a, 
-    Vector const &b, 
+    Vector const &a,
+    Vector const &b,
     float alpha
 ) {
     Vector res;

@@ -1,5 +1,6 @@
 #include <iostream>
 #include <memory>
+#include <limits>
 
 #include "MathUtils.hpp"
 #include "Utility.hpp"
@@ -20,6 +21,7 @@ sdl::Renderer::Renderer(
     auto resolutionSize = resolution.first * resolution.second;
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
     zBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
+    memset(zBuffer.get(), std::numeric_limits<uint32_t>::max(), resolutionSize * sizeof(uint32_t));
 
     screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
@@ -125,6 +127,7 @@ void sdl::Renderer::render() const {
     );
     SDL_RenderCopy(renderer, renderTarget, nullptr, nullptr);
     memset(colorBuffer.get(), (uint32_t)0xFF000000, w * h * sizeof(uint32_t));
+    memset(zBuffer.get(), std::numeric_limits<uint32_t>::max(), w * h * sizeof(uint32_t));
     SDL_RenderPresent(renderer);
 }
 
@@ -211,9 +214,9 @@ void sdl::Renderer::fillTriangle(
         swap(t0, t1);
     }
 
-    int x0 = t0.x(), y0 = t0.y();
-    int x1 = t1.x(), y1 = t1.y();
-    int x2 = t2.x(), y2 = t2.y();
+    int x0 = t0.x(), y0 = t0.y(), z0 = t0.z();
+    int x1 = t1.x(), y1 = t1.y(), z1 = t1.z();
+    int x2 = t2.x(), y2 = t2.y(), z2 = t2.z();
 
     if (y0 != y1) {
         float inv_slope0 = static_cast<float>(x1 - x0) / (y1 - y0);
@@ -225,7 +228,20 @@ void sdl::Renderer::fillTriangle(
                 std::swap(xBegin, xEnd);
             }
             for (int x = xBegin; x <= xEnd; x++) {
-                colorBuffer[x + y * resolution.first] = color;
+                auto weights = ml::barycentricWeights(
+                    {x0, y0},
+                    {x1, y1},
+                    {x2, y2},
+                    {x, y}
+                );
+                auto zValue = ml::perspectiveInterpolate(
+                    z0, z1, z2, weights
+                );
+                auto texelIdx = x + y * resolution.first;
+                if (zBuffer[texelIdx] > zValue) {
+                    zBuffer[texelIdx] = zValue;
+                    colorBuffer[texelIdx] = color;
+                }
             }
         }
     }
@@ -239,7 +255,20 @@ void sdl::Renderer::fillTriangle(
                 std::swap(xBegin, xEnd);
             }
             for (int x = xBegin; x <= xEnd; x++) {
-                colorBuffer[x + y * resolution.first] = color;
+                auto weights = ml::barycentricWeights(
+                    {x0, y0},
+                    {x1, y1},
+                    {x2, y2},
+                    {x, y}
+                );
+                auto zValue = ml::perspectiveInterpolate(
+                    z0, z1, z2, weights
+                );
+                auto texelIdx = x + y * resolution.first;
+                if (zBuffer[texelIdx] > zValue) {
+                    zBuffer[texelIdx] = zValue;
+                    colorBuffer[texelIdx] = color;
+                }
             }
         }
     }
