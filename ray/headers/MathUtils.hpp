@@ -238,7 +238,9 @@ Value perspectiveInterpolate(
     Value bRecip = 1 / B;
     Value cRecip = 1 / C;
 
-    Value recipInterpolated = std::get<0>(weights) * aRecip + std::get<1>(weights) * bRecip + std::get<2>(weights) * cRecip;
+    Value recipInterpolated = std::get<0>(weights) * aRecip
+        + std::get<1>(weights) * bRecip 
+        + std::get<2>(weights) * cRecip;
     return 1 / recipInterpolated;
 }
 

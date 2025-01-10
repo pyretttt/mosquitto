@@ -220,13 +220,16 @@ void sdl::Renderer::fillTriangle(
     auto &t1 = tri.vertices[1];
     auto &t2 = tri.vertices[2];
     if (t0.y() > t1.y()) {
-        swap(t0, t1);
+        std::swap(t0, t1);
+        std::swap(z0, z1);
     }
     if (t1.y() > t2.y()) {
-        swap(t1, t2);
+        std::swap(t1, t2);
+        std::swap(z1, z2);
     }
     if (t0.y() > t1.y()) {
-        swap(t0, t1);
+        std::swap(t0, t1);
+        std::swap(z0, z1);
     }
 
     int x0 = t0.x(), y0 = t0.y();

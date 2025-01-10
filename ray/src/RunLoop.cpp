@@ -65,8 +65,9 @@ public:
                 SDL_Delay(frameTime - dt);
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
-
-            ml::Matrix4f transformationMatrix = ml::scaleMatrix(10, 10, 10);
+            previousFrameTicks = currentTicks;
+            std::cout << "Dt " << dt << std::endl;
+            ml::Matrix4f transformationMatrix = ml::scaleMatrix(15, 15, 15);
             transformationMatrix = ml::matMul(
                 ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 1000),
                 transformationMatrix
@@ -77,7 +78,6 @@ public:
             processInput();
             sdlController.renderer->update(node, dt);
             sdlController.renderer->render();
-            previousFrameTicks = SDL_GetTicks();
         }
     }
 
@@ -130,6 +130,6 @@ private:
 
     bool shouldClose = false;
     unsigned long long previousFrameTicks = 0;
-    const int frameRate = 60;
+    const int frameRate = 120;
     const int frameTime = 1000 / frameRate;
 };
