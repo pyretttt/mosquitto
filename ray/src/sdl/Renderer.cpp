@@ -1,11 +1,20 @@
 #include <iostream>
-#include <memory>
 #include <limits>
+#include <memory>
 
 #include "MathUtils.hpp"
 #include "Utility.hpp"
 #include "sdl/Camera.hpp"
 #include "sdl/Renderer.hpp"
+
+template <typename T>
+static void safeMemorySet(
+    T *p, T const &value, size_t n
+) {
+    for (size_t i = 0; i < n; i++) {
+        p[i] = value;
+    }
+}
 
 sdl::Renderer::Renderer(
     SDL_Window *window,
@@ -16,12 +25,12 @@ sdl::Renderer::Renderer(
       camera(camera),
       resolution(resolution) {
 
-    light = {sdl::light::DirectionalLight{{0, 0, -1}}};
+    light = {sdl::light::DirectionalLight{{0, -0.7071067812, -0.7071067812}}};
 
     auto resolutionSize = resolution.first * resolution.second;
     colorBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
-    zBuffer = std::unique_ptr<uint32_t[]>(new uint32_t[resolutionSize]);
-    memset(zBuffer.get(), std::numeric_limits<uint32_t>::max(), resolutionSize * sizeof(uint32_t));
+    zBuffer = std::unique_ptr<float[]>(new float[resolutionSize]);
+    safeMemorySet(zBuffer.get(), std::numeric_limits<float>::max(), resolutionSize);
 
     screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
@@ -62,9 +71,11 @@ void sdl::Renderer::update(
                 ml::matMul(perspectiveProjectionMatrix, vertexC)
             };
 
-            projectedPoints[0] = ml::matrixScale(projectedPoints[0], 1 / projectedPoints[0](3, 0));
-            projectedPoints[1] = ml::matrixScale(projectedPoints[1], 1 / projectedPoints[1](3, 0));
-            projectedPoints[2] = ml::matrixScale(projectedPoints[2], 1 / projectedPoints[2](3, 0));
+            float z0 = projectedPoints[0](3, 0), z1 = projectedPoints[1](3, 0), z2 = projectedPoints[2](3, 0);
+
+            for (size_t i = 0; i < 3; i++) {
+                projectedPoints[i] = ml::matrixScale(projectedPoints[i], 1 / projectedPoints[i](3, 0));
+            }
 
             // screen space projection
             ml::Vector4f screenProjectedPoints[] = {
@@ -110,7 +121,7 @@ void sdl::Renderer::update(
                 }
                 break;
             case RenderMethod::fill:
-                fillTriangle(tri, color);
+                fillTriangle(tri, z0, z1, z2, color);
                 break;
             }
         }
@@ -126,8 +137,8 @@ void sdl::Renderer::render() const {
         w * sizeof(uint32_t)
     );
     SDL_RenderCopy(renderer, renderTarget, nullptr, nullptr);
-    memset(colorBuffer.get(), (uint32_t)0xFF000000, w * h * sizeof(uint32_t));
-    memset(zBuffer.get(), std::numeric_limits<uint32_t>::max(), w * h * sizeof(uint32_t));
+    safeMemorySet(colorBuffer.get(), (uint32_t)0xFF000000, w * h);
+    safeMemorySet(zBuffer.get(), std::numeric_limits<float>::max(), w * h);
     SDL_RenderPresent(renderer);
 }
 
@@ -199,7 +210,11 @@ void sdl::Renderer::drawLine(
 }
 
 void sdl::Renderer::fillTriangle(
-    Triangle tri, uint32_t color
+    Triangle tri,
+    float z0,
+    float z1,
+    float z2,
+    uint32_t color
 ) noexcept {
     auto &t0 = tri.vertices[0];
     auto &t1 = tri.vertices[1];
@@ -214,9 +229,9 @@ void sdl::Renderer::fillTriangle(
         swap(t0, t1);
     }
 
-    int x0 = t0.x(), y0 = t0.y(), z0 = t0.w();
-    int x1 = t1.x(), y1 = t1.y(), z1 = t1.w();
-    int x2 = t2.x(), y2 = t2.y(), z2 = t2.w();
+    int x0 = t0.x(), y0 = t0.y();
+    int x1 = t1.x(), y1 = t1.y();
+    int x2 = t2.x(), y2 = t2.y();
 
     if (y0 != y1) {
         float inv_slope0 = static_cast<float>(x1 - x0) / (y1 - y0);

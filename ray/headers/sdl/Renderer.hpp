@@ -30,13 +30,13 @@ struct Renderer : public ::Renderer {
 private:
     void drawPoint(uint32_t color, ml::Vector2i position, size_t thickness = 0) noexcept;
     void drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept;
-    void fillTriangle(Triangle t, uint32_t color) noexcept;
+    void fillTriangle(Triangle t, float z0, float z1, float z2, uint32_t color) noexcept;
 
     std::pair<size_t, size_t> resolution;
     Lazy<sdl::Camera> camera;
     SDL_Renderer *renderer;
     std::unique_ptr<uint32_t[]> colorBuffer;
-    std::unique_ptr<uint32_t[]> zBuffer;
+    std::unique_ptr<float[]> zBuffer;
     SDL_Texture *renderTarget;
     ml::Matrix4f screenSpaceProjection_;
     light::Cases light;
