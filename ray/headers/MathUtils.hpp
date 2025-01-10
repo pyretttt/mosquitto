@@ -196,32 +196,28 @@ Eigen::Matrix<Scalar, to, 1> inline as(
 }
 
 std::tuple<float, float, float> inline barycentricWeights(
-    Vector2f u,
-    Vector2f v,
-    Vector2f w,
-    Vector2f point
+    Vector2f const &u,
+    Vector2f const &v,
+    Vector2f const &w,
+    Vector2f const &point
 ) {
     Vector3f uu = {u.x(), u.y(), 0};
     Vector3f vv = {v.x(), v.y(), 0};
     Vector3f ww = {w.x(), w.y(), 0};
     Vector3f pp = {point.x(), point.y(), 0};
-    auto doubledArea = crossProduct(
-                           (vv - uu).eval(),
-                           (ww - uu).eval()
-    )
-                           .lpNorm<2>();
+    auto doubledArea = (vv - uu).cross(ww - uu).lpNorm<2>();
 
     Vector3f up = uu - pp;
     Vector3f vp = vv - pp;
     Vector3f wp = ww - pp;
     auto alpha = std::abs(
-        crossProduct(vp, wp).lpNorm<2>() / doubledArea
+        vp.cross(wp).lpNorm<2>() / doubledArea
     );
     auto beta = std::abs(
-        crossProduct(up, wp).lpNorm<2>() / doubledArea
+        up.cross(wp).lpNorm<2>() / doubledArea
     );
     auto gamma = std::abs(
-        crossProduct(up, vp).lpNorm<2>() / doubledArea
+        up.cross(vp).lpNorm<2>() / doubledArea
     );
 
     return std::make_tuple(alpha, beta, gamma);
