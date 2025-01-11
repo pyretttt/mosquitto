@@ -71,10 +71,10 @@ void sdl::Renderer::update(
                 ml::matMul(perspectiveProjectionMatrix, vertexC)
             };
 
-            float z0 = projectedPoints[0](3, 0), z1 = projectedPoints[1](3, 0), z2 = projectedPoints[2](3, 0);
+            float z0 = projectedPoints[0][3], z1 = projectedPoints[1][3], z2 = projectedPoints[2][3];
 
             for (size_t i = 0; i < 3; i++) {
-                projectedPoints[i] = ml::matrixScale(projectedPoints[i], 1 / projectedPoints[i](3, 0));
+                projectedPoints[i] = ml::matrixScale(projectedPoints[i], 1 / projectedPoints[i][3]);
             }
 
             // screen space projection
@@ -91,11 +91,10 @@ void sdl::Renderer::update(
                 },
                 face.attributes
             };
-            ml::Vector3f faceNormal = ml::crossProduct(
-                (ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA)).eval(),
-                (ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)).eval()
-            );
-            faceNormal.normalize();
+            ml::Vector3f faceNormal = ml::normalized(ml::crossProduct(
+                ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA),
+                ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)
+            ));
 
             auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
             auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
@@ -109,15 +108,15 @@ void sdl::Renderer::update(
             switch (renderMethod) {
             case RenderMethod::vertices:
                 for (size_t j = 0; j < 3; j++) {
-                    drawPoint(color, {tri.vertices[j](0, 0), tri.vertices[j](1, 0)}, 3);
+                    drawPoint(color, {tri.vertices[j][0], tri.vertices[j][1]}, 3);
                 }
                 break;
             case RenderMethod::wireframe:
-                drawLine({tri.vertices[0](0, 0), tri.vertices[0](1, 0)}, {tri.vertices[1](0, 0), tri.vertices[1](1, 0)}, color);
-                drawLine({tri.vertices[1](0, 0), tri.vertices[1](1, 0)}, {tri.vertices[2](0, 0), tri.vertices[2](1, 0)}, color);
-                drawLine({tri.vertices[2](0, 0), tri.vertices[2](1, 0)}, {tri.vertices[0](0, 0), tri.vertices[0](1, 0)}, color);
+                drawLine({tri.vertices[0][0], tri.vertices[0][1]}, {tri.vertices[1][0], tri.vertices[1][1]}, color);
+                drawLine({tri.vertices[1][0], tri.vertices[1][1]}, {tri.vertices[2][0], tri.vertices[2][1]}, color);
+                drawLine({tri.vertices[2][0], tri.vertices[2][1]}, {tri.vertices[0][0], tri.vertices[0][1]}, color);
                 for (size_t j = 0; j < 3; j++) {
-                    drawPoint(color, {tri.vertices[j](0, 0), tri.vertices[j](1, 0)}, 3);
+                    drawPoint(color, {tri.vertices[j][0], tri.vertices[j][1]}, 3);
                 }
                 break;
             case RenderMethod::fill:
@@ -146,14 +145,14 @@ void sdl::Renderer::drawPoint(
     uint32_t color, ml::Vector2i position, size_t thickness
 ) noexcept {
     if (thickness == 0) {
-        colorBuffer[position.x() + position.y() * resolution.first] = color;
+        colorBuffer[position.x + position.y * resolution.first] = color;
         return;
     }
 
     int thick = thickness;
     for (int i = -thick; i < thick; i++) {
         for (int j = -thick; j < thick; j++) {
-            colorBuffer[position.x() + i + (position.y() + j) * resolution.first] = color;
+            colorBuffer[position.x + i + (position.y + j) * resolution.first] = color;
         }
     }
 }
@@ -173,11 +172,11 @@ static constexpr float oneComplement(
 void sdl::Renderer::drawLine(
     ml::Vector2i from, ml::Vector2i to, uint32_t color
 ) noexcept {
-    int x0{from.x()},
-        y0{from.y()},
-        x1{to.x()},
-        y1{to.y()};
-    bool isSteep = std::abs(from.y() - to.y()) > std::abs(from.x() - to.x());
+    int x0{from.x},
+        y0{from.y},
+        x1{to.x},
+        y1{to.y};
+    bool isSteep = std::abs(from.y - to.y) > std::abs(from.x - to.x);
     if (isSteep) {
         std::swap(x0, y0);
         std::swap(x1, y1);
@@ -219,22 +218,22 @@ void sdl::Renderer::fillTriangle(
     auto &t0 = tri.vertices[0];
     auto &t1 = tri.vertices[1];
     auto &t2 = tri.vertices[2];
-    if (t0.y() > t1.y()) {
+    if (t0.y > t1.y) {
         std::swap(t0, t1);
         std::swap(z0, z1);
     }
-    if (t1.y() > t2.y()) {
+    if (t1.y > t2.y) {
         std::swap(t1, t2);
         std::swap(z1, z2);
     }
-    if (t0.y() > t1.y()) {
+    if (t0.y > t1.y) {
         std::swap(t0, t1);
         std::swap(z0, z1);
     }
 
-    int x0 = t0.x(), y0 = t0.y();
-    int x1 = t1.x(), y1 = t1.y();
-    int x2 = t2.x(), y2 = t2.y();
+    int x0 = t0.x, y0 = t0.y;
+    int x1 = t1.x, y1 = t1.y;
+    int x2 = t2.x, y2 = t2.y;
 
     if (y0 != y1) {
         float inv_slope0 = static_cast<float>(x1 - x0) / (y1 - y0);

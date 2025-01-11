@@ -33,7 +33,7 @@ struct MeshNode {
     MeshNode() = delete;
     explicit MeshNode(MeshBuffer const &meshBuffer);
     MeshBuffer meshBuffer;
-    ml::Matrix4f transform = ml::eye<4>();
+    ml::Matrix4f transform = ml::diagonal<ml::Matrix4f>();
     std::weak_ptr<MeshNode> parent;
     std::vector<MeshNode> children;
 
