@@ -27,6 +27,26 @@ namespace http {
         char buffer[MaxBufferSize];
     };
 
+    struct ReaderStream final {
+        ReaderStream() : dataBuff() {
+            dataBuff.reserve(MaxBufferSize);
+        }
+
+        void process(char *data, size_t n) {
+            dataBuff.insert(dataBuff.end(), data, data + n);
+        }
+
+        void reset() {
+            headersComplete = false;
+        }
+
+        std::vector<char> dataBuff;
+        std::queue<HttpRequest> requests;
+
+        bool headersComplete = false;
+        
+    };
+
     // Os specific functions
     int createNonBlockingSocket() {
         int sock_fd = socket(AF_INET, SOCK_STREAM | O_NONBLOCK, 0);
@@ -37,6 +57,7 @@ namespace http {
     }
 
     struct SocketManager {
+        SocketManager() = default;
         SocketManager(int connectionSocket) : kq(kqueue()), connectionSock(connectionSocket) {
             registerSock(connectionSocket);
         }
@@ -86,14 +107,30 @@ namespace http {
                     int fd = evList[i].ident;
                     unregisterSock(fd);
                     clients.erase(fd);
-                } else if (evList[i].filter == EVFILT_READ) {
+                } else if (evList[i].filter == EVFILT_READ || evList[i].filter == EVFILT_WRITE) {
 
                 }
             }
         }
 
-        void handleReadWrite() {
-            
+        void handleReadWrite(
+            struct kevent event,
+            std::unordered_map<int, ClientData> &clients,
+            std::unordered_map<std::string, std::unordered_map<HttpMethod, RequestHandler>> const &requestHandlers
+        ) {
+            if (event.filter == EVFILT_READ) {
+                auto &clientData = clients.at(event.ident);
+                ssize_t nbyte = recv(event.ident, clientData.buffer, MaxBufferSize, 0);
+
+                if (nbyte > 0) {
+
+                }
+
+            } else if (event.filter == EVFILT_WRITE) {
+
+            } else {
+                throw std::runtime_error("Assertion error");
+            }
         }
 
         int kq;
