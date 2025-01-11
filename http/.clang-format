@@ -1,0 +1,13 @@
+---
+UseTab: Never
+IndentWidth: 4
+AccessModifierOffset: -4
+AllowShortIfStatementsOnASingleLine: false
+ColumnLimit: 0
+AlignAfterOpenBracket: BlockIndent
+BinPackArguments: false
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: true
+BreakFunctionDefinitionParameters: true
+BreakTemplateDeclarations: Yes
+IndentAccessModifiers: false
