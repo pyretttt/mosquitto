@@ -106,6 +106,7 @@
         "specialfunctions": "cpp",
         "splines": "cpp",
         "*.inc": "cpp",
-        "concepts": "cpp"
+        "concepts": "cpp",
+        "hash_map": "cpp"
     }
 }
