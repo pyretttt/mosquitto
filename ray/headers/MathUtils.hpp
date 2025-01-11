@@ -22,7 +22,7 @@ template <typename Mat>
 float inline euclideanNorm(
     Mat const &matrix
 ) noexcept {
-    return matrix.length();
+    return glm::length(matrix);
 }
 
 template <typename Mat>
@@ -96,7 +96,7 @@ Matrix4f inline perspectiveProjectionMatrix(
     mat[2][2] = far / (far - near);
     mat[2][3] = -far * near / (far - near);
     mat[3][2] = -1.f;
-    return mat;
+    return glm::transpose(mat);
 }
 
 Matrix4f inline screenSpaceProjection(
@@ -111,7 +111,7 @@ Matrix4f inline screenSpaceProjection(
     mat[0][3] = width / 2.f;
     mat[1][3] = height / 2.f;
 
-    return mat;
+    return glm::transpose(mat);
 }
 
 template <typename M1, typename M2>
@@ -147,7 +147,7 @@ decltype(auto) inline rodriguezRotationMatrix(
 
     rotationMatrix[3][3] = 1.0f;
 
-    return rotationMatrix;
+    return glm::transpose(rotationMatrix);
 }
 
 Matrix4f inline scaleMatrix(
@@ -168,7 +168,7 @@ decltype(auto) inline translationMatrix(
     res[0][3] = tx;
     res[1][3] = ty;
     res[2][3] = tz;
-    return res;
+    return glm::transpose(res);
 }
 
 Matrix4f inline rotateAroundPoint(
@@ -185,7 +185,7 @@ Matrix4f inline rotateAroundPoint(
     reverseTranslation[2][3] = supportPoint[2];
 
     Matrix4f result = reverseTranslation * (rotation * translation);
-    return result;
+    return glm::transpose(result);
 }
 
 template <typename Vector>
@@ -277,7 +277,7 @@ ml::Matrix4f inline cameraMatrix(
     result[1][3] = -dotProduct(position, upper);
     result[2][3] = -dotProduct(position, lookAt);
     result[3][3] = 1.f;
-    return result;
+    return glm::transpose(result);
 }
 
 template <typename Vector>
