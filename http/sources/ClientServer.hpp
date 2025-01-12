@@ -11,8 +11,17 @@
 #include <unordered_map>
 #include <thread>
 #include <sstream>
+#include <optional>
 
 #include "HttpMessage.hpp"
+
+std::string_view trim(std::string_view s)
+{
+    s.remove_prefix(std::min(s.find_first_not_of(" \t\r\v\n"), s.size()));
+    s.remove_suffix(std::min(s.size() - s.find_last_not_of(" \t\r\v\n") - 1, s.size()));
+
+    return s;
+}
 
 namespace http {
     constexpr size_t MaxBufferSize = 4096;
@@ -20,11 +29,12 @@ namespace http {
     constexpr size_t BacklogSize = 1000;
 
     struct ClientData {
-        ClientData() : fd(-1), length(0), cursor(0), buffer() {}
+        ClientData() : fd(-1) {}
         int fd;
-        size_t length;
-        size_t cursor;
-        char buffer[MaxBufferSize];
+        MessageProcessor messageProcessor;
+        // size_t length;
+        // size_t cursor;
+        // char buffer[MaxBufferSize];
     };
 
     struct MessageProcessor final {
@@ -32,15 +42,38 @@ namespace http {
             dataBuff.reserve(MaxBufferSize);
         }
 
-        void process(char *data, size_t n) {
+        std::optional<HttpRequest> processRead(char *data, size_t n) {
             dataBuff.append(data, n);
             size_t headersEnd = dataBuff.find("\r\n\r\n");
             if (headersEnd == std::string::npos) {
                 return;
-            } else {
+            } else if (!filledHeaders) {
                 std::string_view sv = std::string_view(dataBuff).substr(0, headersEnd + 4);
                 parseStartLineAndHeaders(sv);
+                filledHeaders = true;
             }
+
+            std::optional<HttpRequest> ret;
+            if (request.headers.find("Content-Length") != request.headers.end()) {
+                int contentLength = std::stoi(request.headers["Content-Length"]);
+                auto contentReceived = dataBuff.length() - (headersEnd + 4);
+                if (contentReceived >= contentLength) {
+                    request.body = dataBuff.substr(headersEnd + 4, contentLength);
+                    reset(headersEnd + 4 + contentLength);
+                } else {
+                    reset(headersEnd + 4);
+                    return ret;
+                }
+                ret = request;
+            } else {
+                ret = request;
+            }
+            return ret;
+        }
+
+        void reset(size_t bufferPos) {
+            request = HttpRequest();
+            dataBuff.erase(dataBuff.begin() + bufferPos);
         }
 
         bool parseStartLineAndHeaders(std::string_view &startLineAndHeaders) {
@@ -48,7 +81,7 @@ namespace http {
             size_t end = 0;
             bool hasParsedStartLine = false;
             while ((end = startLineAndHeaders.find("\r\n", start)) != std::string_view::npos) {
-                auto substr = startLineAndHeaders.substr(start, end);
+                auto substr = startLineAndHeaders.substr(start, end - start);
                 if (hasParsedStartLine) {
                     
                 } else {
@@ -57,37 +90,42 @@ namespace http {
                 }
                 start = end;
             }
-
-
         }
 
-        bool parseStartLine(std::string_view &startLine) {
+        void parseStartLine(std::string_view &startLine) {
             size_t start = 0;
             size_t end = 0;
             size_t i = 0;
             while ((end = startLine.find(" ", start)) != std::string_view::npos) {
-                auto substr = startLine.substr(start, end);
+                auto substr = startLine.substr(start, end - start);
                 switch (i) {
                 case 0:
-                    inProgress.method = HttpMethod::fromString(std::string(substr));
+                    request.method = HttpMethod::fromString(std::string(substr));
                 case 1:
-                    inProgress.url = std::string(substr);
+                    request.url = std::string(substr);
                 case 2:
-                    inProgress.version = httpVersionFromString(std::string(substr));
+                    request.version = httpVersionFromString(std::string(substr));
                 default:
-                    throw std::runtime_error("Wrong starting line");
+                    throw std::runtime_error("Wrong starting line of http request");
                 }
                 i++;
                 start = end;
             } 
         }
 
-        std::string dataBuff;
-        std::queue<HttpRequest> requests;
-        HttpRequest inProgress;
+        void parseHeader(std::string_view &header) {
+            auto semicolonPos = header.find(':');
+            if (semicolonPos == std::string_view::npos) {
+                throw std::runtime_error("Wrong header format");
+            }
+            std::string key = std::string(trim(header.substr(0, semicolonPos)));
+            std::string value = std::string(trim(header.substr(semicolonPos + 1)));
+            request.headers.insert({key, value});
+        }
 
-        // State
-        bool hasStartedNewMessage = false;
+        std::string dataBuff;
+        HttpRequest request;
+        bool filledHeaders = false;
     };
 
     // Os specific functions
@@ -163,14 +201,30 @@ namespace http {
         ) {
             if (event.filter == EVFILT_READ) {
                 auto &clientData = clients.at(event.ident);
-                ssize_t nbyte = recv(event.ident, clientData.buffer, MaxBufferSize, 0);
+                char buffer[MaxBufferSize];
+                ssize_t nbyte = recv(event.ident, buffer, MaxBufferSize, 0);
 
                 if (nbyte > 0) {
-
+                    try {
+                        auto httpRequest = clientData.messageProcessor.processRead(buffer, nbyte);
+                        if (httpRequest) {
+                            try {
+                                auto response = requestHandlers
+                                    .at(httpRequest->url)
+                                    .at(httpRequest->method)(httpRequest.value());
+                                // TODO: Write response
+                            } catch (std::out_of_range &err) {
+                                std::cerr << "Can not find request handler" << std::endl;
+                            }
+                        }
+                    } catch(std::runtime_error &error) {
+                        auto resp = HttpResponse();
+                        resp.statusCode = HttpStatusCode::BadRequest;
+                    }
                 }
 
             } else if (event.filter == EVFILT_WRITE) {
-
+                
             } else {
                 throw std::runtime_error("Assertion error");
             }
@@ -203,7 +257,7 @@ namespace http {
             inet_pton(AF_INET, host.c_str(), &servAddr.sin_addr.s_addr);
             servAddr.sin_port = htons(port);
 
-            if (bind(sock_fd, &servAddr, sizeof(servAddr)) < 0) {
+            if (bind(sock_fd, reinterpret_cast<sockaddr *>(&servAddr), sizeof(servAddr)) < 0) {
                 throw std::runtime_error("Failed to bind socket");
             }
 

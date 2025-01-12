@@ -192,6 +192,7 @@ namespace http {
 
         HttpVersion version;
         Headers headers;
+        std::string body;
     };
 
     struct HttpRequest final : public HttpMessage {
