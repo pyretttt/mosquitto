@@ -27,24 +27,67 @@ namespace http {
         char buffer[MaxBufferSize];
     };
 
-    struct ReaderStream final {
-        ReaderStream() : dataBuff() {
+    struct MessageProcessor final {
+        MessageProcessor() : dataBuff() {
             dataBuff.reserve(MaxBufferSize);
         }
 
         void process(char *data, size_t n) {
-            dataBuff.insert(dataBuff.end(), data, data + n);
+            dataBuff.append(data, n);
+            size_t headersEnd = dataBuff.find("\r\n\r\n");
+            if (headersEnd == std::string::npos) {
+                return;
+            } else {
+                std::string_view sv = std::string_view(dataBuff).substr(0, headersEnd + 4);
+                parseStartLineAndHeaders(sv);
+            }
         }
 
-        void reset() {
-            headersComplete = false;
+        bool parseStartLineAndHeaders(std::string_view &startLineAndHeaders) {
+            size_t start = 0;
+            size_t end = 0;
+            bool hasParsedStartLine = false;
+            while ((end = startLineAndHeaders.find("\r\n", start)) != std::string_view::npos) {
+                auto substr = startLineAndHeaders.substr(start, end);
+                if (hasParsedStartLine) {
+                    
+                } else {
+                    parseStartLine(substr);
+                    hasParsedStartLine = true;
+                }
+                start = end;
+            }
+
+
         }
 
-        std::vector<char> dataBuff;
+        bool parseStartLine(std::string_view &startLine) {
+            size_t start = 0;
+            size_t end = 0;
+            size_t i = 0;
+            while ((end = startLine.find(" ", start)) != std::string_view::npos) {
+                auto substr = startLine.substr(start, end);
+                switch (i) {
+                case 0:
+                    inProgress.method = HttpMethod::fromString(std::string(substr));
+                case 1:
+                    inProgress.url = std::string(substr);
+                case 2:
+                    inProgress.version = httpVersionFromString(std::string(substr));
+                default:
+                    throw std::runtime_error("Wrong starting line");
+                }
+                i++;
+                start = end;
+            } 
+        }
+
+        std::string dataBuff;
         std::queue<HttpRequest> requests;
+        HttpRequest inProgress;
 
-        bool headersComplete = false;
-        
+        // State
+        bool hasStartedNewMessage = false;
     };
 
     // Os specific functions

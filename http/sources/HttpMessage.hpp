@@ -195,11 +195,12 @@ namespace http {
     };
 
     struct HttpRequest final : public HttpMessage {
+        HttpRequest() = default;
         HttpRequest(std::string const &url, HttpMethod method) 
             : url(url), 
             method(method) {}
 
-        HttpMethod method;
+        HttpMethod method = HttpMethod(HttpMethod::Method::DELETE);
         std::string url;
     };
 
