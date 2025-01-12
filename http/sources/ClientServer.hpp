@@ -77,13 +77,19 @@ namespace http {
             bool hasParsedStartLine = false;
             while ((end = startLineAndHeaders.find("\r\n", start)) != std::string_view::npos) {
                 auto substr = startLineAndHeaders.substr(start, end - start);
+                
+                if (substr.empty()) {
+                    start = end + 2;
+                    continue; 
+                }
+
                 if (hasParsedStartLine) {
                     parseHeader(substr);
                 } else {
                     parseStartLine(substr);
                     hasParsedStartLine = true;
                 }
-                start = end;
+                start = end + 2;
             }
         }
 
@@ -96,16 +102,17 @@ namespace http {
                 switch (i) {
                 case 0:
                     request.method = HttpMethod::fromString(std::string(substr));
+                    break;
                 case 1:
                     request.url = std::string(substr);
-                case 2:
-                    request.version = httpVersionFromString(std::string(substr));
+                    break;
                 default:
                     throw std::runtime_error("Wrong starting line of http request");
                 }
                 i++;
-                start = end;
-            } 
+                start = end + 1;
+            }
+            request.version = httpVersionFromString(std::string(startLine.substr(start)));
         }
 
         void parseHeader(std::string_view &header) {
@@ -134,7 +141,10 @@ namespace http {
 
     // Os specific functions
     int createNonBlockingSocket() {
-        int sock_fd = socket(AF_INET, SOCK_STREAM | O_NONBLOCK, 0);
+        int sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+        int flags = fcntl(sock_fd, F_GETFL, 0);
+        fcntl(sock_fd, F_SETFL, flags | O_NONBLOCK);
+
         if (sock_fd < 0) {
             throw std::runtime_error("Failed to create socket");
         }
@@ -223,6 +233,7 @@ namespace http {
                             }
                         }
                     } catch(std::runtime_error &error) {
+                        std::cerr << error.what() << std::endl;
                         auto resp = HttpResponse();
                         resp.statusCode = HttpStatusCode::BadRequest;
                     }
@@ -243,12 +254,14 @@ namespace http {
         explicit Server(std::string const &host, std::uint16_t port)
             : host(host), 
             port(port),
-            isRunning(true) {};
+            isRunning(false) {};
         
         void start() {
+            isRunning.store(true);
+            
             sock_fd = createNonBlockingSocket();
             int opt = 1;
-            if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt)) < 0) {
+            if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR /*| SO_REUSEPORT*/, &opt, sizeof(opt)) < 0) {
                 throw std::runtime_error("Failed to set socket options");
             }
 

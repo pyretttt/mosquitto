@@ -19,10 +19,10 @@ int main() {
         resp.version = req.version;
         return resp;
     };
-    // std::unordered_map<http::HttpMethod, http::RequestHandler> homeHandlers;
-    // homeHandlers.insert({http::HttpMethod::Method::GET, homeGetHandler});
-    // server.requestHandlers.insert({"/home", homeHandlers});
-
+    std::unordered_map<size_t, http::RequestHandler> homeHandlers;
+    homeHandlers.insert({http::HttpMethod(http::HttpMethod::Method::GET).id(), homeGetHandler});
+    server.requestHandlers.insert({"/home", homeHandlers});
+    server.start();
     while (server.isRunning) {
         std::this_thread::sleep_for(1000ms);
     }
