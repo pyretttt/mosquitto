@@ -113,7 +113,7 @@ namespace http {
     using Headers = std::unordered_map<std::string, std::string>;
 
     struct HttpMethod {
-        enum class Method {
+        enum class Method : size_t {
             GET,
             HEAD,
             POST,
@@ -150,7 +150,7 @@ namespace http {
             throw std::invalid_argument("Unexpected http method");
         }
 
-        std::string toString(std::string const &string) {
+        std::string toString() const {
             switch (value) {
             case Method::GET:
                 return "GET";
@@ -174,18 +174,14 @@ namespace http {
                 return "";
             }
         }
+
+    size_t id() const {
+        return static_cast<size_t>(value);
+    }
+
     private:
         Method value;
     };
-
-
-    class HttpMessage final {
-    public:
-        HttpMessage() = default;
-
-        Headers headers;
-    };
-
 
     struct HttpMessage {
         HttpMessage() : version(HttpVersion::HTTP_1_1) {}
@@ -198,8 +194,8 @@ namespace http {
     struct HttpRequest final : public HttpMessage {
         HttpRequest() = default;
         HttpRequest(std::string const &url, HttpMethod method) 
-            : url(url), 
-            method(method) {}
+            : method(method),
+            url(url) {}
 
         HttpMethod method = HttpMethod(HttpMethod::Method::DELETE);
         std::string url;

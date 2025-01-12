@@ -28,14 +28,8 @@ namespace http {
     constexpr size_t ThreadPoolSize = 4;
     constexpr size_t BacklogSize = 1000;
 
-    struct ClientData {
-        ClientData() : fd(-1) {}
-        int fd;
-        MessageProcessor messageProcessor;
-        // size_t length;
-        // size_t cursor;
-        // char buffer[MaxBufferSize];
-    };
+    using RequestHandler = std::function<HttpResponse (HttpRequest const &)>;
+    using RequestHandlersMap = std::unordered_map<std::string, std::unordered_map<size_t, RequestHandler>>;
 
     struct MessageProcessor final {
         MessageProcessor() : dataBuff() {
@@ -43,19 +37,20 @@ namespace http {
         }
 
         std::optional<HttpRequest> processRead(char *data, size_t n) {
+            std::optional<HttpRequest> ret;
+
             dataBuff.append(data, n);
             size_t headersEnd = dataBuff.find("\r\n\r\n");
             if (headersEnd == std::string::npos) {
-                return;
+                return ret;
             } else if (!filledHeaders) {
                 std::string_view sv = std::string_view(dataBuff).substr(0, headersEnd + 4);
                 parseStartLineAndHeaders(sv);
                 filledHeaders = true;
             }
 
-            std::optional<HttpRequest> ret;
             if (request.headers.find("Content-Length") != request.headers.end()) {
-                int contentLength = std::stoi(request.headers["Content-Length"]);
+                size_t contentLength = static_cast<size_t>(std::stoi(request.headers["Content-Length"]));
                 auto contentReceived = dataBuff.length() - (headersEnd + 4);
                 if (contentReceived >= contentLength) {
                     request.body = dataBuff.substr(headersEnd + 4, contentLength);
@@ -76,14 +71,14 @@ namespace http {
             dataBuff.erase(dataBuff.begin() + bufferPos);
         }
 
-        bool parseStartLineAndHeaders(std::string_view &startLineAndHeaders) {
+        void parseStartLineAndHeaders(std::string_view &startLineAndHeaders) {
             size_t start = 0;
             size_t end = 0;
             bool hasParsedStartLine = false;
             while ((end = startLineAndHeaders.find("\r\n", start)) != std::string_view::npos) {
                 auto substr = startLineAndHeaders.substr(start, end - start);
                 if (hasParsedStartLine) {
-                    
+                    parseHeader(substr);
                 } else {
                     parseStartLine(substr);
                     hasParsedStartLine = true;
@@ -128,6 +123,15 @@ namespace http {
         bool filledHeaders = false;
     };
 
+    struct ClientData {
+        ClientData() : fd(-1) {}
+        int fd;
+        MessageProcessor messageProcessor;
+        // size_t length;
+        // size_t cursor;
+        // char buffer[MaxBufferSize];
+    };
+
     // Os specific functions
     int createNonBlockingSocket() {
         int sock_fd = socket(AF_INET, SOCK_STREAM | O_NONBLOCK, 0);
@@ -161,7 +165,7 @@ namespace http {
 
         void pollEvents(
             std::unordered_map<int, ClientData> &clients,
-            std::unordered_map<std::string, std::unordered_map<HttpMethod, RequestHandler>> const &requestHandlers
+            RequestHandlersMap const &requestHandlers
         ) {
             struct kevent evList[BacklogSize];
             int nevent = kevent(kq, nullptr, 0, evList, BacklogSize, nullptr);
@@ -170,7 +174,7 @@ namespace http {
             }
             struct sockaddr_storage addr;
             socklen_t socklen = sizeof(addr);
-            for (size_t i = 0; i < nevent; i++) {
+            for (int i = 0; i < nevent; i++) {
                 if (evList[i].ident == connectionSock) {
                     int clientSocket = accept(
                         evList[i].ident, 
@@ -189,7 +193,7 @@ namespace http {
                     unregisterSock(fd);
                     clients.erase(fd);
                 } else if (evList[i].filter == EVFILT_READ || evList[i].filter == EVFILT_WRITE) {
-
+                    handleReadWrite(evList[i], clients, requestHandlers);
                 }
             }
         }
@@ -197,7 +201,7 @@ namespace http {
         void handleReadWrite(
             struct kevent event,
             std::unordered_map<int, ClientData> &clients,
-            std::unordered_map<std::string, std::unordered_map<HttpMethod, RequestHandler>> const &requestHandlers
+            RequestHandlersMap const &requestHandlers
         ) {
             if (event.filter == EVFILT_READ) {
                 auto &clientData = clients.at(event.ident);
@@ -209,9 +213,10 @@ namespace http {
                         auto httpRequest = clientData.messageProcessor.processRead(buffer, nbyte);
                         if (httpRequest) {
                             try {
-                                auto response = requestHandlers
+                                RequestHandler const &handler = requestHandlers
                                     .at(httpRequest->url)
-                                    .at(httpRequest->method)(httpRequest.value());
+                                    .at(httpRequest->method.id());
+                                auto resp = handler(httpRequest.value());
                                 // TODO: Write response
                             } catch (std::out_of_range &err) {
                                 std::cerr << "Can not find request handler" << std::endl;
@@ -224,7 +229,7 @@ namespace http {
                 }
 
             } else if (event.filter == EVFILT_WRITE) {
-                
+
             } else {
                 throw std::runtime_error("Assertion error");
             }
@@ -233,10 +238,6 @@ namespace http {
         int kq;
         int connectionSock;
     };
-
-
-    using RequestHandler = std::function<HttpResponse (HttpRequest const &)>;
-
 
     struct Server final {
         explicit Server(std::string const &host, std::uint16_t port)
@@ -273,7 +274,7 @@ namespace http {
 
         void runLoop() {
             while (isRunning.load()) {
-                socketManager.pollEvents();
+                socketManager.pollEvents(clients, requestHandlers);
             }
         }
 
@@ -287,7 +288,7 @@ namespace http {
             RequestHandler &&callback
         ) {
             requestHandlers[path].insert(
-                std::make_pair(method, std::move(callback))
+                std::make_pair(method.id(), std::move(callback))
             );
         }
 
@@ -298,7 +299,7 @@ namespace http {
         std::thread runLoopThread;
         std::atomic<bool> isRunning;
         std::unordered_map<int, ClientData> clients;
-        std::unordered_map<std::string, std::unordered_map<HttpMethod, RequestHandler>> requestHandlers;
+        RequestHandlersMap requestHandlers;
 
         std::thread workerThreads[ThreadPoolSize];
         int workerEpollFd[ThreadPoolSize];
