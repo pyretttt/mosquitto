@@ -12,8 +12,10 @@
 #include <thread>
 #include <sstream>
 #include <optional>
+#include <unistd.h>
 
 #include "HttpMessage.hpp"
+#include "Utils.hpp"
 
 std::string_view trim(std::string_view s)
 {
@@ -32,49 +34,51 @@ namespace http {
     using RequestHandlersMap = std::unordered_map<std::string, std::unordered_map<size_t, RequestHandler>>;
 
     struct MessageProcessor final {
-        MessageProcessor() : dataBuff() {
-            dataBuff.reserve(MaxBufferSize);
+        MessageProcessor() : readDataBuff() {
+            readDataBuff.reserve(MaxBufferSize);
         }
 
         std::optional<HttpRequest> processRead(char *data, size_t n) {
             std::optional<HttpRequest> ret;
 
-            dataBuff.append(data, n);
-            size_t headersEnd = dataBuff.find("\r\n\r\n");
+            readDataBuff.append(data, n);
+            size_t headersEnd = readDataBuff.find("\r\n\r\n");
             if (headersEnd == std::string::npos) {
                 return ret;
             } else if (!filledHeaders) {
-                std::string_view sv = std::string_view(dataBuff).substr(0, headersEnd + 4);
-                parseStartLineAndHeaders(sv);
+                std::string_view sv = std::string_view(readDataBuff).substr(0, headersEnd + 4);
+                readStartLineAndHeaders(sv);
                 filledHeaders = true;
             }
 
             if (request.headers.find("Content-Length") != request.headers.end()) {
                 size_t contentLength = static_cast<size_t>(std::stoi(request.headers["Content-Length"]));
-                auto contentReceived = dataBuff.length() - (headersEnd + 4);
+                auto contentReceived = readDataBuff.length() - (headersEnd + 4);
                 if (contentReceived >= contentLength) {
-                    request.body = dataBuff.substr(headersEnd + 4, contentLength);
+                    request.body = readDataBuff.substr(headersEnd + 4, contentLength);
+                    ret = request;
                     reset(headersEnd + 4 + contentLength);
                 } else {
+                    ret = request;
                     reset(headersEnd + 4);
-                    return ret;
                 }
-                ret = request;
             } else {
                 ret = request;
+                reset(headersEnd + 4);
             }
             return ret;
         }
 
         void reset(size_t bufferPos) {
+            filledHeaders = false;
             request = HttpRequest();
-            dataBuff.erase(dataBuff.begin() + bufferPos);
+            readDataBuff.erase(readDataBuff.begin() + bufferPos);
         }
 
-        void parseStartLineAndHeaders(std::string_view &startLineAndHeaders) {
+        void readStartLineAndHeaders(std::string_view &startLineAndHeaders) {
             size_t start = 0;
             size_t end = 0;
-            bool hasParsedStartLine = false;
+            bool hasReadStartLine = false;
             while ((end = startLineAndHeaders.find("\r\n", start)) != std::string_view::npos) {
                 auto substr = startLineAndHeaders.substr(start, end - start);
                 
@@ -83,17 +87,17 @@ namespace http {
                     continue; 
                 }
 
-                if (hasParsedStartLine) {
-                    parseHeader(substr);
+                if (hasReadStartLine) {
+                    readHeader(substr);
                 } else {
-                    parseStartLine(substr);
-                    hasParsedStartLine = true;
+                    readStartLine(substr);
+                    hasReadStartLine = true;
                 }
                 start = end + 2;
             }
         }
 
-        void parseStartLine(std::string_view &startLine) {
+        void readStartLine(std::string_view &startLine) {
             size_t start = 0;
             size_t end = 0;
             size_t i = 0;
@@ -115,7 +119,7 @@ namespace http {
             request.version = httpVersionFromString(std::string(startLine.substr(start)));
         }
 
-        void parseHeader(std::string_view &header) {
+        void readHeader(std::string_view &header) {
             auto semicolonPos = header.find(':');
             if (semicolonPos == std::string_view::npos) {
                 throw std::runtime_error("Wrong header format");
@@ -125,7 +129,21 @@ namespace http {
             request.headers.insert({key, value});
         }
 
-        std::string dataBuff;
+        int processWrite(int sock_fd) {
+            int nbyte = send(sock_fd, writeDataBuff.data(), writeDataBuff.size(), 0);
+            if (nbyte < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    return 0;
+                }
+
+                throw std::runtime_error("Socket write error");
+            }
+            writeDataBuff.erase(nbyte);
+            return nbyte;
+        }
+
+        std::string readDataBuff;
+        std::string writeDataBuff;
         HttpRequest request;
         bool filledHeaders = false;
     };
@@ -154,22 +172,38 @@ namespace http {
     struct SocketManager {
         SocketManager() = default;
         SocketManager(int connectionSocket) : kq(kqueue()), connectionSock(connectionSocket) {
-            registerSock(connectionSocket);
+            registerReadSock(connectionSocket);
         }
 
-        void registerSock(int sock) {
+        void registerReadSock(int sock) {
             struct kevent evSet;
             EV_SET(&evSet, sock, EVFILT_READ, EV_ADD, 0, 0, nullptr);
             if (kevent(kq, &evSet, 1, nullptr, 0, nullptr) == -1) { // Adds event to kqueue
-                throw std::runtime_error("Failed to register event");
+                throw std::runtime_error("Failed to register read event");
             }
         }
 
-        void unregisterSock(int sock) {
+        void registerWriteSock(int sock) {
+            struct kevent evSet;
+            EV_SET(&evSet, sock, EVFILT_WRITE, EV_ADD, 0, 0, NULL);
+            if (kevent(kq, &evSet, 1, nullptr, 0, nullptr) == -1) { // Adds event to kqueue
+                throw std::runtime_error("Failed to register write event");
+            }
+        }
+
+        void unregisterReadSock(int sock) {
             struct kevent evSet;
             EV_SET(&evSet, sock, EVFILT_READ, EV_DELETE, 0, 0, nullptr);
             if (kevent(kq, &evSet, 1, nullptr, 0, nullptr) == -1) { // Adds event to kqueue
-                throw std::runtime_error("Failed to unregister event");
+                throw std::runtime_error("Failed to unregister read event");
+            }
+        }
+
+        void unregisterWriteSock(int sock) {
+            struct kevent evSet;
+            EV_SET(&evSet, sock, EVFILT_WRITE, EV_DELETE, 0, 0, nullptr);
+            if (kevent(kq, &evSet, 1, nullptr, 0, nullptr) == -1) { // Adds event to kqueue
+                std::cerr << "Failed to unregister write event" << std::endl;
             }
         }
 
@@ -191,17 +225,20 @@ namespace http {
                         reinterpret_cast<struct sockaddr *>(&addr), 
                         &socklen
                     );
-                    if (clientSocket < 0) {
+                    int flags = fcntl(clientSocket, F_GETFL, 0);
+                    if (clientSocket < 0 || fcntl(clientSocket, F_SETFL, flags | O_NONBLOCK) < 0) {
                         std::runtime_error("Failed to accept client socket");
                     }
                     auto clientData = ClientData();
                     clientData.fd = clientSocket;
                     clients[clientSocket] = clientData;
-                    registerSock(clientSocket);
+                    registerReadSock(clientSocket);
                 } else if (evList[i].flags & EV_EOF) {
                     int fd = evList[i].ident;
-                    unregisterSock(fd);
+                    unregisterReadSock(fd);
+                    unregisterWriteSock(fd);
                     clients.erase(fd);
+                    close(fd);
                 } else if (evList[i].filter == EVFILT_READ || evList[i].filter == EVFILT_WRITE) {
                     handleReadWrite(evList[i], clients, requestHandlers);
                 }
@@ -227,7 +264,10 @@ namespace http {
                                     .at(httpRequest->url)
                                     .at(httpRequest->method.id());
                                 auto resp = handler(httpRequest.value());
-                                // TODO: Write response
+                                std::stringstream ss;
+                                ss << resp;
+                                clientData.messageProcessor.writeDataBuff = ss.str();
+                                registerWriteSock(event.ident);
                             } catch (std::out_of_range &err) {
                                 std::cerr << "Can not find request handler" << std::endl;
                             }
@@ -240,7 +280,15 @@ namespace http {
                 }
 
             } else if (event.filter == EVFILT_WRITE) {
-
+                auto &clientData = clients.at(event.ident);
+                size_t toWrite = clientData.messageProcessor.writeDataBuff.size();
+                size_t nbyte = clientData.messageProcessor.processWrite(event.ident);
+                unregisterWriteSock(event.ident);
+                if (nbyte < toWrite) {
+                    registerWriteSock(event.ident);
+                    return;
+                }
+                close(event.ident);
             } else {
                 throw std::runtime_error("Assertion error");
             }

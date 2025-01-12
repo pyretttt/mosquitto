@@ -4,7 +4,7 @@
 #include <string>
 
 namespace http {
-    enum class HttpStatusCode {
+    enum class HttpStatusCode: size_t {
         Continue = 100,
         SwitchingProtocols = 101,
         EarlyHints = 103,

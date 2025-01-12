@@ -15,6 +15,10 @@ int main() {
         auto resp = http::HttpResponse();
         resp.body = req.body;
         resp.headers = req.headers;
+        resp.headers.insert({"Server", "Apache"});
+        resp.headers.insert({"Host", "127.0.0.1"});
+        resp.headers.insert({"Content-Type", "application/json"});
+        resp.body = "{\"json\": 123}";
         resp.statusCode = http::HttpStatusCode::Ok;
         resp.version = req.version;
         return resp;
