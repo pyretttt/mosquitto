@@ -1,5 +1,10 @@
 import torch, torch.nn as nn
 
+
+# Queries, Keys, Values
+# D_k scale + softmax
+# Linear projection
+
 class Attention(nn.Module):
     def __init__(
         self, 
@@ -42,7 +47,7 @@ class Attention(nn.Module):
             torch.permute(self.keys, (0, 2, 1))
         ) / (self.d_k ** 0.5) # (B x S_source x S_target)
         if mask:
-            attn_scores.masked_fill(mask == 0, -1e9)
+            attn_scores.masked_fill(mask == 0, float('-inf'))
         
         attn_scores = torch.softmax(attn_scores, dim=-2) # over source sequence
         
@@ -107,9 +112,10 @@ class MultiheadAttention(nn.Module):
         attn_scores = torch.matmul(
             queries, 
             torch.permute(self.keys, (0, 1, 3, 2))
-        ) / (self.d_k ** 0.5) # (B x H x S_source x S_target)
+        ) / ((self.d_k // self.nheads) ** 0.5) # (B x H x S_source x S_target)
+        
         if mask:
-            attn_scores.masked_fill(mask == 0, -1e9)
+            attn_scores.masked_fill(mask == 0, float('-inf'))
 
         attn_scores = torch.softmax(attn_scores, dim=-2) # over source sequence
 
