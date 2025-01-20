@@ -2,11 +2,6 @@ import math
 
 import torch, torch.nn as nn
 
-
-# Queries, Keys, Values
-# D_k scale + softmax
-# Linear projection
-
 class Attention(nn.Module):
     def __init__(
         self, 
@@ -24,8 +19,11 @@ class Attention(nn.Module):
         self.values_proj = nn.Linear(input_size, d_k, bias=bias) # Weights with shape (d_k x I)
         self.linear = nn.Linear(d_k, input_size, bias=bias)
         self.is_self_attn = is_self_attn
-        self.attn_dropout = nn.Dropout(dropout, inplace=True)
-        self.resid_dropout = nn.Dropout(dropout, inplace=True)
+        self.std = math.sqrt(self.d_k)
+        self.attn_dropout = nn.Dropout(dropout)
+        self.resid_dropout = nn.Dropout(dropout)
+        self.keys = None
+        self.values = None
         
     
     def init_keys(self, x: torch.Tensor):
@@ -50,9 +48,9 @@ class Attention(nn.Module):
         attn_scores = torch.matmul(
             queries, 
             self.keys.transpose(-2, -1)
-        ) / math.sqrt(self.d_k) # (B x S_source x S_target)
-        if mask:
-            attn_scores.masked_fill(mask == 0, float('-inf'))
+        ) / self.std # (B x S_source x S_target)
+        if mask is not None:
+            attn_scores = attn_scores.masked_fill(mask == 0, float('-inf'))
         
         attn_scores = torch.softmax(attn_scores, dim=-1) # over source sequence
         attn_scores = self.attn_dropout(attn_scores)
@@ -84,9 +82,11 @@ class MultiheadAttention(nn.Module):
         self.values_proj = nn.Linear(input_size, d_k, bias=bias) # Weights with shape (d_k x I)
         self.linear = nn.Linear(d_k, input_size)
         self.is_self_attn = is_self_attn
-        self.attn_dropout = nn.Dropout(dropout, inplace=True)
-        self.resid_dropout = nn.Dropout(dropout, inplace=True)
+        self.attn_dropout = nn.Dropout(dropout)
+        self.resid_dropout = nn.Dropout(dropout)
         self.std = math.sqrt(self.d_k // self.nheads)
+        self.keys = None
+        self.values = None
         
     
     def init_keys(self, x):
@@ -125,8 +125,8 @@ class MultiheadAttention(nn.Module):
             self.keys.transpose(-2, -1)
         ) / (self.std) # (B x H x S_source x S_target)
         
-        if mask:
-            attn_scores.masked_fill(mask == 0, float('-inf'))
+        if mask is not None:
+            attn_scores = attn_scores.masked_fill(mask == 0, float('-inf'))
 
         attn_scores = torch.softmax(attn_scores, dim=-1) # over source sequence
         attn_scores = self.attn_dropout(attn_scores)
@@ -139,7 +139,7 @@ class MultiheadAttention(nn.Module):
 
 
 if __name__ == "__main__":
-    attn = MultiheadAttention(64, 32, 4, is_self_attn=True)
+    attn = MultiheadAttention(64, 32, 4, is_self_attn=True, dropout=0.0)
     out = attn(torch.randn(4, 2, 64))
     print(out.shape)
     # out = attn.multihead_forward(attn.queries_proj, torch.randn(6, 6, 64))
