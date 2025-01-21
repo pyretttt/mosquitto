@@ -26,6 +26,7 @@ class TransformerBlock(nn.Module):
         self.projection = nn.ModuleList([
             nn.Linear(input_size, linear_proj),
             nn.ReLU(),
+            nn.Swi
             nn.Linear(linear_proj, input_size),
             nn.Dropout(input_size)
         ])
@@ -42,8 +43,8 @@ class TransformerBlock(nn.Module):
         Returns:
             x (torch.tensor): B x S x F shape
         """
-        
-        x = x + self.attn(self.layer_norm1(x))
+        B, S, _ = x.size()
+        x = x + self.attn(self.layer_norm1(x), mask=torch.tril())
         x = x + self.projection(self.layer_norm2(x))
         
         return x
