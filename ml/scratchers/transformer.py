@@ -12,6 +12,7 @@ class Config:
     nlayers: int
     is_self_attn: bool
     max_seq_len: int
+    nheads: int
 
 
 class TransformerBlock(nn.Module):
@@ -27,7 +28,7 @@ class TransformerBlock(nn.Module):
             nn.Linear(config.input_size, config.transformer_proj_dim),
             nn.ReLU(),
             nn.Linear(config.transformer_proj_dim, config.input_size),
-            nn.Dropout(config.input_size)
+            nn.Dropout(config.dropout)
         ])
         self.layer_norm1 = nn.LayerNorm(config.input_size)
         self.layer_norm2 = nn.LayerNorm(config.input_size)
@@ -64,28 +65,34 @@ class TransformerDecoder(nn.Module):
             ) for _ in range(config.nlayers)
         ])
         self.config = config
-    
+        
+        
+    def init_keys(self, keys):
+        for block in self.blocks:
+            block.init_keys(keys)
 
-    def forward(self, x: torch.Tensor, source_seq: torch.Tensor):
+
+    def forward(self, x: torch.Tensor):
         """Forwards sequence
 
         Args:
             x (torch.Tensor): shifted sequence
             source_seq (torch.Tensor): index of last source sequence element
         """
-        if not self.config.is_self_attn:
-           for block in self.blocks:
-               block.init_keys(x[:, :source_seq, :]) 
-        out = self.blocks(x[:, source_seq-1:-1, :])
-        return out
+        for block in self.blocks:
+            x = block(x)
+        return x
 
 
-    def predict(self, x: torch.Tensor, len: Optional[int]):
-        if not self.config.is_self_attn:
-           for block in self.blocks:
-               block.init_keys(x)
-        inputs = x[:, -1, :]
+    def predict_next(self, x: torch.Tensor):
+        for block in self.blocks:
+            x = block(x)
+
+        return x[:, -1:, :]
+    
+    def predict(self, x, len):
+        inputs = x
         for i in range(min(len, self.config.max_seq_len)):
-            inputs = torch.cat((inputs, self.blocks(inputs)), dim=-2) 
-            
+            inputs = torch.cat((inputs, self.predict_next(inputs)), dim=-2)
+
         return inputs[:, 1:, :]
