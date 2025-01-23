@@ -234,9 +234,7 @@ std::tuple<float, float, float> inline barycentricWeights(
     auto beta = std::abs(
         euclideanNorm(cross(up, wp)) / doubledArea
     );
-    auto gamma = std::abs(
-        euclideanNorm(cross(up, vp)) / doubledArea
-    );
+    auto gamma = 1 - alpha - beta;
 
     return std::make_tuple(alpha, beta, gamma);
 }

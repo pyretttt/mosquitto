@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -35,7 +36,7 @@ sdl::Renderer::Renderer(
     screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
     renderTarget = SDL_CreateTexture(
         renderer,
-        SDL_PIXELFORMAT_RGBA32,
+        SDL_PIXELFORMAT_RGBA8888,
         SDL_TEXTUREACCESS_STREAMING,
         resolution.first,
         resolution.second
@@ -72,7 +73,6 @@ void sdl::Renderer::update(
             };
 
             float z0 = projectedPoints[0][3], z1 = projectedPoints[1][3], z2 = projectedPoints[2][3];
-
             for (size_t i = 0; i < 3; i++) {
                 projectedPoints[i] = ml::matrixScale(projectedPoints[i], 1 / projectedPoints[i][3]);
             }
@@ -98,8 +98,8 @@ void sdl::Renderer::update(
 
             auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
             auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
-            uint32_t color = interpolateColorIntensity(
-                0xFFFFFFFF,
+            uint32_t color = interpolateRGBAColorIntensity(
+                0x00FF00FF,
                 lightIntensity,
                 0.1f
             );
@@ -136,7 +136,7 @@ void sdl::Renderer::render() const {
         w * sizeof(uint32_t)
     );
     SDL_RenderCopy(renderer, renderTarget, nullptr, nullptr);
-    safeMemorySet(colorBuffer.get(), (uint32_t)0xFF000000, w * h);
+    safeMemorySet(colorBuffer.get(), (uint32_t)0xFF0000FF, w * h);
     safeMemorySet(zBuffer.get(), std::numeric_limits<float>::max(), w * h);
     SDL_RenderPresent(renderer);
 }
@@ -201,8 +201,8 @@ void sdl::Renderer::drawLine(
     float y = y0;
     while (x <= x1) {
         int y_ = y;
-        assign(x, y_, interpolateColorIntensity(color, oneComplement(std::abs(y))));
-        assign(x, y_ + 1, interpolateColorIntensity(color, fpart(std::abs(y))));
+        assign(x, y_, interpolateRGBAColorIntensity(color, oneComplement(std::abs(y))));
+        assign(x, y_ + 1, interpolateRGBAColorIntensity(color, fpart(std::abs(y))));
         x++;
         y += slope;
     }
@@ -265,7 +265,7 @@ void sdl::Renderer::fillTriangle(
     if (y1 != y2) {
         float inv_slope0 = static_cast<float>(x0 - x2) / (y2 - y0);
         float inv_slope1 = static_cast<float>(x1 - x2) / (y2 - y1);
-        for (int y = y2; y > y1; y--) {
+        for (int y = y2; y >= y1; y--) {
             int xBegin = x2 + (y2 - y) * inv_slope0;
             int xEnd = x2 + (y2 - y) * inv_slope1;
             if (xBegin > xEnd) {

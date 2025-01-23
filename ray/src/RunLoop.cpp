@@ -69,7 +69,7 @@ public:
             std::cout << "Dt " << dt << std::endl;
             ml::Matrix4f transformationMatrix = ml::scaleMatrix(15, 15, 15);
             transformationMatrix = ml::matMul(
-                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks) / 1000),
+                ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(currentTicks * rotationSpeed) / 1000),
                 transformationMatrix
             );
             transformationMatrix = ml::matMul(ml::translationMatrix(0, -20, -50), transformationMatrix);
@@ -105,6 +105,8 @@ private:
                     shouldClose = true;
                     SDL_Quit();
                     break;
+                case SDLK_SPACE:
+                    rotationSpeed = rotationSpeed == 0 ? 1.f : 0;
                 }
                 break;
             case SDL_QUIT:
@@ -132,4 +134,5 @@ private:
     unsigned long long previousFrameTicks = 0;
     const int frameRate = 120;
     const int frameTime = 1000 / frameRate;
+    float rotationSpeed = 1.0f;
 };
