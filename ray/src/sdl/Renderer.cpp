@@ -65,6 +65,16 @@ void sdl::Renderer::update(
             vertexA = ml::matMul(cameraTransformation, vertexA);
             vertexB = ml::matMul(cameraTransformation, vertexB);
             vertexC = ml::matMul(cameraTransformation, vertexC);
+
+            ml::Vector3f faceNormal = ml::normalized(ml::crossProduct(
+                ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA),
+                ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)
+            ));
+
+            if (ml::dotProduct(faceNormal, -ml::as<3, 4, float>(vertexA)) <= 0.f) {
+                continue;
+            }
+
             // perspective projection
             ml::Vector4f projectedPoints[] = {
                 ml::matMul(perspectiveProjectionMatrix, vertexA),
@@ -91,15 +101,11 @@ void sdl::Renderer::update(
                 },
                 face.attributes
             };
-            ml::Vector3f faceNormal = ml::normalized(ml::crossProduct(
-                ml::as<3, 4, float>(vertexB) - ml::as<3, 4, float>(vertexA),
-                ml::as<3, 4, float>(vertexC) - ml::as<3, 4, float>(vertexA)
-            ));
 
             auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
             auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
             uint32_t color = interpolateRGBAColorIntensity(
-                0x00FF00FF,
+                0x00FF0088,
                 lightIntensity,
                 0.1f
             );

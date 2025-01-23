@@ -279,7 +279,7 @@ ml::Matrix4f inline cameraMatrix(
 }
 
 template <typename Vector>
-Vector lerp(
+Vector inline lerp(
     Vector const &a,
     Vector const &b,
     float alpha
