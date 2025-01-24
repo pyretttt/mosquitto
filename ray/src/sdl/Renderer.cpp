@@ -141,8 +141,9 @@ void sdl::Renderer::render() const {
         colorBuffer.get(),
         w * sizeof(uint32_t)
     );
+
     SDL_RenderCopy(renderer, renderTarget, nullptr, nullptr);
-    safeMemorySet(colorBuffer.get(), (uint32_t)0xFF0000FF, w * h);
+    safeMemorySet(colorBuffer.get(), (uint32_t)0x000000FF, w * h);
     safeMemorySet(zBuffer.get(), std::numeric_limits<float>::max(), w * h);
     SDL_RenderPresent(renderer);
 }
@@ -241,16 +242,19 @@ void sdl::Renderer::fillTriangle(
     int x1 = t1.x, y1 = t1.y;
     int x2 = t2.x, y2 = t2.y;
 
+    // According to rasterization rules:
+    // https://learn.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules
+    // Do not draw bottom and right edge
     if (y0 != y1) {
         float inv_slope0 = static_cast<float>(x1 - x0) / (y1 - y0);
         float inv_slope1 = static_cast<float>(x2 - x0) / (y2 - y0);
-        for (int y = y0; y <= y1; y++) {
+        for (int y = y0; y < y1; y++) {
             int xBegin = x0 + (y - y0) * inv_slope0;
             int xEnd = x0 + (y - y0) * inv_slope1;
             if (xBegin > xEnd) {
                 std::swap(xBegin, xEnd);
             }
-            for (int x = xBegin; x <= xEnd; x++) {
+            for (int x = xBegin; x < xEnd; x++) {
                 auto weights = ml::barycentricWeights(
                     {x0, y0},
                     {x1, y1},
@@ -277,7 +281,7 @@ void sdl::Renderer::fillTriangle(
             if (xBegin > xEnd) {
                 std::swap(xBegin, xEnd);
             }
-            for (int x = xBegin; x <= xEnd; x++) {
+            for (int x = xBegin; x < xEnd; x++) {
                 auto weights = ml::barycentricWeights(
                     {x0, y0},
                     {x1, y1},
