@@ -102,8 +102,8 @@ class MultiheadAttention(nn.Module):
         
     
     def init_keys(self, x):
-        self.keys = self.multihead_proj(self.keys_proj, x) # (B x H x S x d_k)
-        self.values = self.multihead_proj(self.values_proj, x) # (B x H x S x d_k)
+        self.keys = self.multihead_proj(kvs=self.keys_proj, x=x) # (B x H x S x d_k)
+        self.values = self.multihead_proj(kvs=self.values_proj, x=x) # (B x H x S x d_k)
 
 
     def multihead_proj(

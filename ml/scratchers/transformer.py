@@ -24,12 +24,12 @@ class TransformerBlock(nn.Module):
         super().__init__()
         self.attn = attn_factory(config)
         self.config = config
-        self.projection = nn.ModuleList([
+        self.projection = nn.Sequential(
             nn.Linear(config.input_size, config.transformer_proj_dim),
             nn.ReLU(),
             nn.Linear(config.transformer_proj_dim, config.input_size),
             nn.Dropout(config.dropout)
-        ])
+        )
         self.layer_norm1 = nn.LayerNorm(config.input_size)
         self.layer_norm2 = nn.LayerNorm(config.input_size)
 
@@ -51,9 +51,6 @@ class TransformerBlock(nn.Module):
         
         return x
 
-
-# Forward train
-# Forward predict
 
 class TransformerDecoder(nn.Module):
     def __init__(self, config: Config, attn_factory: Callable[[Config], nn.Module]):
