@@ -1,6 +1,7 @@
 from typing import Callable, Optional
 from dataclasses import dataclass
 
+from scratchers.positional_embeddings import PositionalEmbeddings, PositionalEncoding
 import torch, torch.nn as nn
 
 @dataclass
@@ -62,12 +63,13 @@ class TransformerDecoder(nn.Module):
             ) for _ in range(config.nlayers)
         ])
         self.config = config
-        
-        
+        self.pemb = PositionalEmbeddings(
+            max_len=config.max_seq_len, d_k=config.input_size
+        )
+
     def init_keys(self, keys):
         for block in self.blocks:
             block.init_keys(keys)
-
 
     def forward(self, x: torch.Tensor):
         """Forwards sequence
@@ -76,17 +78,19 @@ class TransformerDecoder(nn.Module):
             x (torch.Tensor): shifted sequence
             source_seq (torch.Tensor): index of last source sequence element
         """
+        x = self.pemb(x)
         for block in self.blocks:
             block.init_keys(x)
             x = block(x)
         return x
-    
+
     def predict(self, x):
         """Predicts next token
 
         Args:
             x (torch.Tensor): input sequence
         """
+        x = self.pemb(x)
         for block in self.blocks:
             block.init_keys(x)
             x = block(x)
