@@ -80,19 +80,18 @@ class TransformerDecoder(nn.Module):
             source_seq (torch.Tensor): index of last source sequence element
         """
         for block in self.blocks:
+            block.init_keys(x)
             x = block(x)
         return x
+    
+    def predict(self, x):
+        """Predicts next token
 
-
-    def predict_next(self, x: torch.Tensor):
+        Args:
+            x (torch.Tensor): input sequence
+        """
         for block in self.blocks:
+            block.init_keys(x)
             x = block(x)
 
-        return x[:, -1:, :]
-    
-    def predict(self, x, len):
-        inputs = x
-        for i in range(min(len, self.config.max_seq_len)):
-            inputs = torch.cat((inputs, self.predict_next(inputs)), dim=-2)
-
-        return inputs[:, 1:, :]
+        return x[:, -1, :]
