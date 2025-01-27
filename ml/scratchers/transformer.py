@@ -1,7 +1,7 @@
 from typing import Callable, Optional
 from dataclasses import dataclass
 
-from scratchers.positional_embeddings import PositionalEmbeddings, PositionalEncoding
+from scratchers.positional_embeddings import PositionalEmbeddings
 import torch, torch.nn as nn
 
 @dataclass
@@ -14,6 +14,7 @@ class Config:
     is_self_attn: bool
     max_seq_len: int
     nheads: int
+    pre_layer_norm: bool
 
 
 class TransformerBlock(nn.Module):
@@ -26,13 +27,13 @@ class TransformerBlock(nn.Module):
         self.attn = attn_factory(config)
         self.config = config
         self.projection = nn.Sequential(
-            nn.Linear(config.input_size, config.transformer_proj_dim),
+            nn.Linear(config.attn_d_k, config.transformer_proj_dim),
             nn.ReLU(),
-            nn.Linear(config.transformer_proj_dim, config.input_size),
+            nn.Linear(config.transformer_proj_dim, config.attn_d_k),
             nn.Dropout(config.dropout)
         )
-        self.layer_norm1 = nn.LayerNorm(config.input_size)
-        self.layer_norm2 = nn.LayerNorm(config.input_size)
+        self.layer_norm1 = nn.LayerNorm(config.attn_d_k)
+        self.layer_norm2 = nn.LayerNorm(config.attn_d_k)
 
     def init_keys(self, keys):
         self.attn.init_keys(keys)
@@ -47,9 +48,12 @@ class TransformerBlock(nn.Module):
         Returns:
             x (torch.tensor): B x S x F shape
         """
-        x = x + self.attn(self.layer_norm1(x))
-        x = x + self.projection(self.layer_norm2(x))
-        
+        if self.config.pre_layer_norm:
+            x = x + self.attn(self.layer_norm1(x))
+            x = x + self.projection(self.layer_norm2(x))
+        else:
+            x = self.layer_norm1(x + self.attn(x))
+            x = self.layer_norm2(x + self.projection(x))
         return x
 
 
@@ -64,35 +68,28 @@ class TransformerDecoder(nn.Module):
         ])
         self.config = config
         self.pemb = PositionalEmbeddings(
-            max_len=config.max_seq_len, d_k=config.input_size
+            max_len=config.max_seq_len, d_k=config.attn_d_k
         )
-
-    def init_keys(self, keys):
-        for block in self.blocks:
-            block.init_keys(keys)
+        self.embedding_proj1 = nn.Linear(config.input_size, config.attn_d_k)
+        self.embedding_proj2 = nn.Linear(config.attn_d_k, config.input_size)
 
     def forward(self, x: torch.Tensor):
         """Forwards sequence
 
         Args:
             x (torch.Tensor): shifted sequence
-            source_seq (torch.Tensor): index of last source sequence element
         """
+        x = self.embedding_proj1(x)
         x = self.pemb(x)
         for block in self.blocks:
             block.init_keys(x)
             x = block(x)
-        return x
+        return self.embedding_proj2(x)
 
-    def predict(self, x):
+    def predict(self, x: torch.Tensor):
         """Predicts next token
 
         Args:
             x (torch.Tensor): input sequence
         """
-        x = self.pemb(x)
-        for block in self.blocks:
-            block.init_keys(x)
-            x = block(x)
-
-        return x[:, -1, :]
+        return self(x)[:, -1:, :]
