@@ -153,6 +153,3 @@ if __name__ == "__main__":
     attn = MultiheadAttention(64, 32, 4, is_self_attn=True, dropout=0.0)
     out = attn(torch.randn(4, 2, 64))
     print(out.shape)
-    # out = attn.multihead_forward(attn.queries_proj, torch.randn(6, 6, 64))
-    # print(out[0].shape)
-    # print(len(out))

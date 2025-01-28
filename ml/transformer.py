@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 
 
-from scratchers.transformer import Config
+from scratchers.vanilla_transformer.transformer import TransformerConfig
 from scratchers.positional_embeddings import PositionalEmbeddings
 
 
 class TorchGPT(nn.Module):
-    def __init__(self, config: Config):
+    def __init__(self, config: TransformerConfig):
         super().__init__()
         encoder_layer = nn.TransformerEncoderLayer(
             d_model=config.attn_d_k,

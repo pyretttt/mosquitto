@@ -1,27 +1,16 @@
 from typing import Callable, Optional
 from dataclasses import dataclass
 
-from scratchers.positional_embeddings import PositionalEmbeddings
 import torch, torch.nn as nn
 
-@dataclass
-class Config:
-    input_size: int
-    attn_d_k: int
-    transformer_proj_dim: int
-    dropout: float
-    nlayers: int
-    is_self_attn: bool
-    max_seq_len: int
-    nheads: int
-    pre_layer_norm: bool
-
+from scratchers.positional_embeddings import PositionalEmbeddings
+from scratchers.transformer_config import TransformerConfig
 
 class TransformerBlock(nn.Module):
     def __init__(
         self,
-        config: Config,
-        attn_factory: Callable[[Config], nn.Module]
+        config: TransformerConfig,
+        attn_factory: Callable[[TransformerConfig], nn.Module]
     ):
         super().__init__()
         self.attn = attn_factory(config)
@@ -58,7 +47,7 @@ class TransformerBlock(nn.Module):
 
 
 class TransformerDecoder(nn.Module):
-    def __init__(self, config: Config, attn_factory: Callable[[Config], nn.Module]):
+    def __init__(self, config: TransformerConfig, attn_factory: Callable[[TransformerConfig], nn.Module]):
         super().__init__()
         self.blocks = nn.ModuleList([
             TransformerBlock(
