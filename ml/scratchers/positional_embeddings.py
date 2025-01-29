@@ -20,4 +20,4 @@ class PositionalEmbeddings(nn.Module):
 
     def forward(self, x):
         # x = x * math.sqrt(self.d_k)
-        return x + self.pe[:, :x.size(1), :]
+        return x + self.pe[:, :x.size(-2), :]

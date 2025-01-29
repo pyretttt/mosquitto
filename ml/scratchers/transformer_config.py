@@ -11,3 +11,4 @@ class TransformerConfig:
     max_seq_len: int
     nheads: int
     pre_layer_norm: bool
+    use_cache: bool

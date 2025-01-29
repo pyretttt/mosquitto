@@ -1,4 +1,4 @@
-from types import Optional
+from typing import Optional
 import math
 
 import torch
@@ -11,14 +11,18 @@ class Cache():
         self.values = None
 
     def update(self, queries, keys, values):
-        if self.queries_proj is None:
+        if self.queries is None:
             self.queries = queries
             self.keys = keys
             self.values = values
+        else:
+            self.queries = torch.cat((self.queries, queries), dim=-2)
+            self.keys = torch.cat((self.keys, keys), dim=-2)
+            self.values = torch.cat((self.values, values), dim=-2)
 
     def __len__(self):
-        if self.queries_proj is not None:
-            return self.queries_proj.size(-2)
+        if self.queries is not None:
+            return self.queries.size(-2)
         else:
             return 0
 
@@ -27,13 +31,11 @@ class Attention(nn.Module):
     def __init__(
         self, 
         d_k: int,
-        linear_dim: int,
         dropout: float = 0.2,
         bias: bool = True
     ):
         super().__init__()
         self.d_k = d_k
-        self.linear_dim = linear_dim
         self.dropout = dropout
         self.bias = bias
         self.attn_dropout = nn.Dropout(dropout)
@@ -65,8 +67,8 @@ class Attention(nn.Module):
             k = cache.keys
             v = cache.values
 
-        attn_scores = torch.matmul(q, v.transpose(-2, -1)) / self.std
-        attn_scores = torch.masked_fill(attn_scores, ~mask, value=float('-inf'))
+        attn_scores = torch.matmul(q, k.transpose(-2, -1)) / self.std
+        attn_scores = attn_scores.masked_fill(mask == 0, value=float('-inf'))
         attn_scores = torch.softmax(attn_scores, dim=-1)
         attn_scores = self.attn_dropout(attn_scores)
 
