@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 
 from scratchers.transformer_config import TransformerConfig
-from scratchers.transformer.attn import Attention, Cache
+from scratchers.transformer.attn import Attention, KVCache
 from scratchers.positional_embeddings import PositionalEmbeddings
 
 class TransformerLayer(nn.Module):
@@ -20,17 +20,16 @@ class TransformerLayer(nn.Module):
             nn.Linear(config.attn_d_k, config.transformer_proj_dim),
             nn.ReLU(),
             nn.Linear(config.transformer_proj_dim, config.attn_d_k),
-            nn.Dropout()
+            nn.Dropout(config.dropout)
         )
 
     def forward(
         self, 
         x: torch.Tensor, 
         attn_mask: torch.Tensor,
-        cache: Optional[Cache]
+        cache: Optional[KVCache]
     ):
-        attn_out = self.attention(self.layer_norm1(x), mask=attn_mask, cache=cache)
-        x = x[:, -attn_out.size(-2):, :] + attn_out
+        x = x + self.attention(self.layer_norm1(x), mask=attn_mask, cache=cache)
         x = x + self.linear_layer(self.layer_norm2(x))
         return x
 
@@ -48,7 +47,7 @@ class TransformerDecoder(nn.Module):
 
     @staticmethod
     def self_attn_mask(shape: tuple[int]):
-        return torch.triu(
+        return torch.tril(
             torch.ones(shape[-2:])
         ).view(*shape)
 
@@ -67,12 +66,14 @@ class TransformerDecoder(nn.Module):
 
     def predict(self, x, max_seq):
         self.eval()
-        cache = [Cache() for _ in range(len(self.attn_blocks))]
-        
+        cache = [KVCache() if self.use_cache else None 
+                 for _ in range(len(self.attn_blocks))]
+
         inputs = x
         for i in range(max_seq):
             out = self.linear_projector1(inputs)
             out = self.pemb(out)
+            out = out[:, -1:, :] if i else out # Take last query after positional encodings
             for idx, block in enumerate(self.attn_blocks):
                 out = block(
                     out, 
@@ -87,7 +88,7 @@ class TransformerDecoder(nn.Module):
 
 if __name__ == "__main__":
     config = TransformerConfig(
-        2, 32, 64, 0.2, 1, False, 24, 1, True, True
+        2, 32, 64, 0.2, 2, False, 24, 2, True, True
     )
     decoder = TransformerDecoder(config)
     out = decoder.predict(torch.randn(1, 12, 2), 12)

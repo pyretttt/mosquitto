@@ -4,25 +4,22 @@ import math
 import torch
 import torch.nn as nn
 
-class Cache():
+class KVCache():
     def __init__(self):
-        self.queries = None
-        self.keys = None
-        self.values = None
+        self.keys_cache = None
+        self.values_cache = None
 
-    def update(self, queries, keys, values):
-        if self.queries is None:
-            self.queries = queries
-            self.keys = keys
-            self.values = values
+    def update(self, keys, values):
+        if self.keys_cache is None:
+            self.keys_cache = keys
+            self.values_cache = values
         else:
-            self.queries = torch.cat((self.queries, queries), dim=-2)
-            self.keys = torch.cat((self.keys, keys), dim=-2)
-            self.values = torch.cat((self.values, values), dim=-2)
+            self.keys_cache = torch.cat((self.keys_cache, keys), dim=-2)
+            self.values_cache = torch.cat((self.values_cache, values), dim=-2)
 
     def __len__(self):
-        if self.queries is not None:
-            return self.queries.size(-2)
+        if self.keys_cache is not None:
+            return self.keys_cache.size(-2)
         else:
             return 0
 
@@ -51,24 +48,19 @@ class Attention(nn.Module):
         self, 
         x: torch.Tensor, 
         mask: torch.Tensor,
-        cache: Optional[Cache]
+        cache: Optional[KVCache]
     ):
-        has_cache = cache is not None
-        cache_len = len(cache) if has_cache else 0        
-        x = x[:, cache_len:, :]
-        mask = mask[:, cache_len:, :]
-
         q = self.queries(x)
         k = self.keys(x)
         v = self.values(x)
 
-        if has_cache:
-            cache.update(q, k, v)
-            k = cache.keys
-            v = cache.values
+        if cache is not None:
+            cache.update(k, v)
+            k = cache.keys_cache
+            v = cache.values_cache
 
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) / self.std
-        attn_scores = attn_scores.masked_fill(mask == 0, value=float('-inf'))
+        attn_scores = attn_scores.masked_fill(mask[:, -attn_scores.size(-2):, :] == 0, float('-inf'))
         attn_scores = torch.softmax(attn_scores, dim=-1)
         attn_scores = self.attn_dropout(attn_scores)
 
