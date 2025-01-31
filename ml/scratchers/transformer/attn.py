@@ -5,23 +5,18 @@ import torch
 import torch.nn as nn
 
 class KVCache():
-    def __init__(self):
-        self.keys_cache = None
-        self.values_cache = None
+    def __init__(self, shape):
+        self.keys_cache = torch.empty(shape)
+        self.values_cache = torch.empty(shape)
+        self._cursor = 0
 
     def update(self, keys, values):
-        if self.keys_cache is None:
-            self.keys_cache = keys
-            self.values_cache = values
-        else:
-            self.keys_cache = torch.cat((self.keys_cache, keys), dim=-2)
-            self.values_cache = torch.cat((self.values_cache, values), dim=-2)
+        self.keys_cache[:, self._cursor: self._cursor + keys.size(-2), :] = keys
+        self.values_cache[:, self._cursor: self._cursor + values.size(-2), :] = values
+        self._cursor += keys.size(-2)
 
     def __len__(self):
-        if self.keys_cache is not None:
-            return self.keys_cache.size(-2)
-        else:
-            return 0
+        return self._cursor
 
 
 class Attention(nn.Module):
@@ -56,8 +51,8 @@ class Attention(nn.Module):
 
         if cache is not None:
             cache.update(k, v)
-            k = cache.keys_cache
-            v = cache.values_cache
+            k = cache.keys_cache[:, :len(cache), :]
+            v = cache.values_cache[:, :len(cache), :]
 
         attn_scores = torch.matmul(q, k.transpose(-2, -1)) / self.std
         attn_scores = attn_scores.masked_fill(mask[:, -attn_scores.size(-2):, :] == 0, float('-inf'))

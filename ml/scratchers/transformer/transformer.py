@@ -44,6 +44,8 @@ class TransformerDecoder(nn.Module):
         ])
         self.linear_projector2 = nn.Linear(config.attn_d_k, config.input_size)
         self.use_cache = config.use_cache
+        self.d_k = config.attn_d_k
+        self.max_seq_len = config.max_seq_len
 
     @staticmethod
     def self_attn_mask(shape: tuple[int]):
@@ -64,13 +66,13 @@ class TransformerDecoder(nn.Module):
         x = self.linear_projector2(x)
         return x
 
-    def predict(self, x, max_seq):
+    def predict(self, x, max_output_seq):
         self.eval()
-        cache = [KVCache() if self.use_cache else None 
+        cache = [KVCache((x.size(0), self.max_seq_len, self.d_k)) if self.use_cache else None 
                  for _ in range(len(self.attn_blocks))]
 
         inputs = x
-        for i in range(max_seq):
+        for i in range(max_output_seq):
             out = self.linear_projector1(inputs)
             out = self.pemb(out)
             out = out[:, -1:, :] if i else out # Take last query after positional encodings
