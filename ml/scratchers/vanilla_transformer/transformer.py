@@ -82,3 +82,4 @@ class TransformerDecoder(nn.Module):
             x (torch.Tensor): input sequence
         """
         return self(x)[:, -1:, :]
+
