@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://g1butl7n4i81"]
+
+[ext_resource type="PackedScene" uid="uid://bvy2e0k35siqy" path="res://assets/kaila/kaila_r2u.glb" id="1_6cep6"]
+
+[node name="Kaila" type="Node3D"]
+
+[node name="kaila_r2u" parent="." instance=ExtResource("1_6cep6")]

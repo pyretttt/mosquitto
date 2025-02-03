@@ -16,6 +16,10 @@ var camera_current_angle: float
 func _ready():
 	setup_camera()
 	camera_current_angle = CAMERA_ANGLE_BEGIN
+	$Kaila.position = Vector3.ZERO
+	var kaila_run : Animation= $Kaila/kaila_r2u/AnimationPlayer.get_animation("stance")
+	kaila_run.loop_mode = Animation.LOOP_LINEAR
+	$Kaila/kaila_r2u/AnimationPlayer.play("stance")
 
 
 func _process(delta):
@@ -35,6 +39,7 @@ func _process(delta):
 		
 		# Light ray rotation
 		$DirectionalLight3D.rotate(Vector3.UP, delta_angle)
+		#$Kaila/kaila_r2u/AnimationPlayer.play("run")
 
 
 func _input(event):
