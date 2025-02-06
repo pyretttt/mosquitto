@@ -43,26 +43,27 @@ class Transformer(nn.Module):
         self.decoder = TransformerDecoder(config)
    
     @staticmethod
-    def self_attn_mask(shape: tuple[int]):
+    def self_attn_mask(shape: tuple[int], device='cpu'):
         return torch.tril(
-            torch.ones(shape[-2:])
+            torch.ones(shape[-2:], device=device)
         ).view(*shape)
 
     def forward(
         self,
         src_seq: torch.Tensor,
-        tgt_seq: Optional[torch.Tensor] = None,
+        tgt_seq: torch.Tensor,
     ):
         x = self.linear_projector1(src_seq)
         x = self.pemb(x)
-        if tgt_seq is None: # Hack for playground
-            tgt_seq = x
-        memory = self.encoder(x, mask=torch.ones(x.size(-2), x.size(-2)).unsqueeze(0))
+
+        tgt_seq = self.linear_projector1(tgt_seq)
+        tgt_seq = self.pemb(tgt_seq)
+        memory = self.encoder(x, mask=torch.ones(x.size(-2), x.size(-2), device=x.device).unsqueeze(0))
         out = self.decoder(
-            torch.concat((memory[:, -1:, :], tgt_seq[:, :-1, :]), dim=-2),
+            tgt_seq,
             memory,
-            self.self_attn_mask((1, tgt_seq.size(-2), tgt_seq.size(-2))),
-            memory_mask=torch.ones(tgt_seq.size(-2), x.size(-2)).unsqueeze(0)
+            self.self_attn_mask((1, tgt_seq.size(-2), tgt_seq.size(-2)), device=x.device),
+            memory_mask=torch.ones(tgt_seq.size(-2), x.size(-2), device=x.device).unsqueeze(0)
         )
         out = self.linear_projector2(out)
         return out
