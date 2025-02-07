@@ -1,9 +1,8 @@
-[gd_scene load_steps=10 format=3 uid="uid://iq35gkf582qc"]
+[gd_scene load_steps=9 format=3 uid="uid://iq35gkf582qc"]
 
 [ext_resource type="PackedScene" uid="uid://bxidlfroi48fk" path="res://game_map.tscn" id="1_3ghbh"]
 [ext_resource type="Script" path="res://main.gd" id="1_ex88s"]
 [ext_resource type="Script" path="res://flight_camera.gd" id="3_l7wv8"]
-[ext_resource type="PackedScene" uid="uid://g1butl7n4i81" path="res://characters/kaila.tscn" id="4_pqf4d"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w40nb"]
 albedo_color = Color(0.729167, 0.35, 1, 1)
@@ -26,7 +25,7 @@ material = SubResource("StandardMaterial3D_vv0yd")
 script = ExtResource("1_ex88s")
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("1_3ghbh")]
-transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -12, 0, -5)
+transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -9, -5, 6)
 
 [node name="FlightCamera" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 27, 27)
@@ -61,6 +60,3 @@ transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 30, 10)
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.56, 52.9, 14.654)
 visible = false
 mesh = SubResource("BoxMesh_3farh")
-
-[node name="Kaila" parent="." instance=ExtResource("4_pqf4d")]
-transform = Transform3D(8, 0, 0, 0, 8, 0, 0, 0, 8, 0, 0, 0)
