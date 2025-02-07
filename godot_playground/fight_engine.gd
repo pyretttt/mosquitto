@@ -1,22 +1,44 @@
+# FIGHT ENGINE START
 class_name FightEngine
 
 extends RefCounted
 
+var characters: Dictionary
+var operations: Dictionary # Dictionary[Character, Array[AtomOp]]
+
+#func _init():
+	
+
+## FIGHT ENGINE END
+
 enum Team { RED, BLUE }
+
+class Pair:
+	var left: Variant
+	var right: Variant
+
+	func _init(left: Variant, right: Variant):
+		self.left = left
+		self.right = right
 
 class AtomOp:
 	var owner: WeakRef
-	
-	var duration: float # in seconds 
-	var progress: float = 0.0
-	
+	var duration: float
+	var progress: float
+	var is_exclusive: bool
 	var is_owner_alive: bool:
 		get: return owner.get_ref() != null
-		
 	
-	func _init(owner: WeakRef, duration: float):
+	func _init(
+		owner: WeakRef,
+	 	duration: float,
+		progress: float = 0.0,
+		is_exclusive: bool = true
+	):
 		self.owner = owner
 		self.duration = duration
+		self.progress = progress
+		self.is_exclusive = is_exclusive
 
 	func update_progress(dt: float): # in seconds
 		var delta_progress = dt / duration
@@ -62,12 +84,14 @@ class AttackOp extends AtomOp:
 		owner: WeakRef, 
 		target: WeakRef,
 		physical_damage: int,
-		duration: float # in sec,
+		duration: float, # in sec,
+		progress: float = 0.0,
+		is_recurrent: bool = true
 	):
-		super._init(owner, duration)
+		super._init(owner, duration, progress)
 		self.target = target
 		self.physical_damage = physical_damage
-	
+		self.is_recurrent = is_recurrent
 	
 	func tick(
 		dt: float, # in seconds
@@ -84,6 +108,18 @@ class AttackOp extends AtomOp:
 			if target_ != null:
 				target_.get_damage(self.damage, 0)
 		
+		if self.is_recurrent:
+			var new_op: AtomOp = AttackOp.new(
+				owner, 
+				self.target, 
+				self.physical_damage,
+				duration,
+				progress,
+				true
+			)
+			self.progress = INF
+			return ops + new_op
+			
 		return ops
 
 class CharacterAbility:
@@ -207,13 +243,13 @@ class Character:
 		]
 		
 	func pick_an_enemy_to_move_to(enemies: Array[Character]):
-		# Propably there's a sorting side effect
+		assert(not enemies.is_empty(), "Empty enemies set")
 		var enemies_ = enemies.duplicate()
 		enemies_.sort_custom(
 			func (enemy1: Character, enemy2: Character):
 				return distance(enemy1) < distance(enemy2)
 		)
-		
+
 		# Pick first for now
 		return enemies_[0]
 		
@@ -229,7 +265,7 @@ class Character:
 		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED]
 		for ability in abilities:
 			if ability.is_suitable(self, allies, enemies):
-				ability.launch(self, allies, enemies)
+				return ability.launch(self, allies, enemies)
 		
 		if has_attack_target(enemies):
 			return attack_enemy(enemies)
