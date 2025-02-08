@@ -1,3 +1,5 @@
+class_name Queue
+
 extends RefCounted
 
 var _elements: Array[Variant]

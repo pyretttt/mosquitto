@@ -4,9 +4,12 @@ class_name FightEngine
 extends RefCounted
 
 var characters: Dictionary # Dictionary[Team, Array[Characters]]
-var operations: Dictionary # Dictionary[Character, Array[AtomOp]]
+var operations: Dictionary = {} # Dictionary[Character, Array[AtomOp]]
 
-#func _init():
+func _init(
+	config: Configs.FightConfig
+):
+	pass
 
 func loop(dt: float):
 	var is_char_alive = func (char: Character):
@@ -16,15 +19,19 @@ func loop(dt: float):
 	var red_alive = red_team.filter(is_char_alive)
 	var blue_alive = blue_team.filter(is_char_alive)
 	
-	for character: Character in operations: # It implies that all actions are simultaneous
+	for character: Character in operations: # It implies that all actions are simultaneous			
 		var ops: Array[AtomOp] = operations[character]
 		var to_append: Array[AtomOp] = []
 		var to_remove_idx: Array[int] = []
 		for op_idx in range(ops.size()):
 			var op = ops[op_idx]
+			if (character.operation_state == Character.OperationState.LOCKED
+				and op.is_interruptable):
+				to_remove_idx.append(op_idx) # Maybe call AtomOp.on_interrupt()
+				continue
 			to_append.append_array(op.tick(dt, characters))
 			if op.progress >= 1.0:
-				to_remove_idx.append(op_idx)
+				to_remove_idx.append(op_idx) # Maybe call AtomOp.on_remove()
 			if op.is_exclusive:
 				break
 		
@@ -33,25 +40,13 @@ func loop(dt: float):
 			ops.remove_at(remove_idx)
 		ops.append_array(to_append)
 
-	for character: Character in red_alive:
-		var actions = character.act(characters)
-		operations[character] += actions
-	
-	for character: Character in blue_alive:
+	for character: Character in (red_alive + blue_alive):
 		var actions = character.act(characters)
 		operations[character] += actions
 
 ## FIGHT ENGINE END
 
 enum Team { RED, BLUE }
-
-class Pair:
-	var left: Variant
-	var right: Variant
-
-	func _init(left: Variant, right: Variant):
-		self.left = left
-		self.right = right
 
 class AtomOp:
 	var owner: Character
@@ -145,7 +140,12 @@ class AttackOp extends AtomOp:
 			progress = INF
 			return []
 		if progress == 0.0:
-			owner.animation_state = CharacterOperationState.ATTACKING
+			owner.animation_state = AnimationState.new(
+				AnimationState.Type.ATTACKING,
+				owner.move_speed,
+				owner.config.fight_anims.pick_random(),
+				true
+			)
 		var ops = super.tick(dt, characters)
 		if progress >= 1.0:
 			self.target.get_damage(self.damage, 0)
@@ -192,27 +192,13 @@ class CharacterAbility:
 		cooldown_in_progress = 0.0
 		return []
 
-
-class CharacterConfig:
-	var hp: int
-	var move_speed: float
-	var base_attack_damage: int
-	var attack_range: float
-	var run_anim: String
-	var fight_anims: Array[String]
-	var stance_anims: Array[String]
-	var scene_name: String
-	var abilities: Array[CharacterAbility]
-	var attack_speed: float
-
-
 class AnimationState:
 	enum Type {
 		IDLE,
 		MOVING,
 		ATTACKING,
 		SPELLING,
-		KNOCKED,
+		STUNNED,
 		DIYING
 	}
 	
@@ -233,13 +219,16 @@ class AnimationState:
 		self.is_looped = is_looped
 		
 	
-	
-	
 
 class Character:
+	enum OperationState {
+		LOCKED,
+		UNLOCKED
+	}
+	
 	var id: int
 	var team_id: Team
-	var config: CharacterConfig
+	var config: Configs.CharacterConfig
 	
 	# State
 	var hps: Vector2i # Remaining/Total let's be int for a simplicity
@@ -251,6 +240,7 @@ class Character:
 	var crit_odds: float # TODO: Apply
 	var abilities: Array[CharacterAbility]
 	var position: Vector2
+	var operation_state: OperationState = OperationState.UNLOCKED
 	
 	signal animation_state_changed(old: AnimationState, new: AnimationState)
 	var animation_state = FightEngine.AnimationState.new(
@@ -274,7 +264,7 @@ class Character:
 			hps.x = max(0, hps.x) 
 			health_changed.emit(old_value, hps.x)
 	
-	func _init(id: int, config: CharacterConfig, team_id: Team):
+	func _init(id: int, config: Configs.CharacterConfig, team_id: Team):
 		pass
 		
 
@@ -312,8 +302,8 @@ class Character:
 		
 		return [
 			FightEngine.AttackOp.new(
-				weakref(self), 
-				weakref(target),
+				self,
+				target,
 			 	attack_damage,
 				attack_speed
 			)
@@ -326,18 +316,20 @@ class Character:
 			func (enemy1: Character, enemy2: Character):
 				return distance(enemy1) < distance(enemy2)
 		)
-
 		# Pick first for now
 		return enemies_[0]
 		
 	func move_to(character: Character) -> AtomOp:
 		var direction = (character.posisition - position).normalized()
 		return FightEngine.MoveOp.new(
-			weakref(self), 
+			self, 
 			direction * config.move_speed
 		)
 	
 	func act(characters: Dictionary) -> Array[AtomOp]:
+		if operation_state == OperationState.LOCKED:
+			return []
+		
 		var allies = characters[team_id]
 		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED]
 		for ability in abilities:

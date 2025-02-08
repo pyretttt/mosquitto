@@ -1,0 +1,17 @@
+[gd_resource type="JSON" format=3 uid="uid://bjh7tg2566huc"]
+
+[resource]
+data = {
+"abilities": [],
+"attack_damage": 1.0,
+"attack_range": 1.0,
+"attack_speed": 1.0,
+"class": "warrior",
+"fight_anims": ["hit"],
+"hp": 1.0,
+"move_speed": 1.0,
+"name": "Kaila",
+"run_anim": "run",
+"scene_path": "characters/kaila.tscn",
+"stance_anims": ["stance"]
+}
