@@ -2,16 +2,31 @@
 
 [resource]
 data = {
-"abilities": [],
-"attack_damage": 1.0,
-"attack_range": 1.0,
-"attack_speed": 1.0,
-"class": "warrior",
-"fight_anims": ["hit"],
-"hp": 1.0,
-"move_speed": 1.0,
-"name": "Kaila",
-"run_anim": "run",
-"scene_path": "characters/kaila.tscn",
-"stance_anims": ["stance"]
+    "name": "Kaila",
+    "scene_path": "characters/kaila.tscn",
+    "class": "warrior",
+    
+    "hp": 1.0,
+    "move_speed": 1.0,
+    "attack_damage": 1.1,
+    "attack_range": 1.0,
+    "attack_speed": 1.0,
+    "armor": 1.0,
+    "magic_resistance": 1.0,
+    "crit_odds": 0.0,
+    
+    "run_anim": "run",
+    "fight_anims": ["hit"],
+    "stance_anims": ["stance"],
+    "abilities": [],
+    "level_up": {
+        "hp_update": 0.1,
+        "move_speed_update": 0.0,
+        "attack_damage_update": 0.1,
+        "attack_range_update": 0.0,
+        "attack_speed_update": 0.1,
+        "armor_update": "5",
+        "magic_resistance_update": "5",
+        "crit_odds_update": 5
+    }
 }

@@ -315,7 +315,7 @@ class Character:
 	func lvl_up():
 		self.hps.y += config.level_up.hp_update
 		self.armor = min(config.level_up.armor_update + armor, 60)
-		self.magic_resistance += config.level_up.magic_resistance_update
+		self.magic_resistance = min(config.level_up.magic_resistance_update + magic_resistance, 60)
 		self.attack_damage += config.level_up.attack_damage_update
 		self.attack_speed += config.level_up.attack_speed_update
 		self.move_speed += config.level_up.move_speed_updates
