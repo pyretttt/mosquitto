@@ -11,6 +11,23 @@ static var armor_scale: int = 1
 static var magic_resistance_scale: int = 1
 static var crit_odds_scale: float = 1
 
+const configs_path = "characters/configs"
+
+class ConfigLoader:
+	func load_character_configs() -> Array[CharacterConfig]:
+		const path := "res://" + configs_path
+		if not DirAccess.dir_exists_absolute(path):
+			assert(false, "Non existing configs directory")
+		var file_names := DirAccess.get_files_at(path)
+		var result: Array[CharacterConfig] = []
+		for file in file_names:
+			var config_path = path.path_join(file)
+			var config_text = FileAccess.get_file_as_string(config_path)
+			var parsed_config = JSON.parse_string(config_text)
+			result.append(CharacterConfig.from_json(parsed_config))
+			
+		return result
+
 class FightConfig:
 	enum Mode {
 		DEMO,
