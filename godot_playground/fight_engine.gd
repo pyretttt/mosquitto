@@ -4,7 +4,6 @@ class_name FightEngine
 extends RefCounted
 
 var characters: Dictionary # Dictionary[Team, Array[Characters]]
-var operations: Dictionary = {} # Dictionary[Character, Array[AtomOp]]
 
 func _init(
 	config: Configs.FightConfig
@@ -12,60 +11,59 @@ func _init(
 	pass
 
 func loop(dt: float):
-	var is_char_alive = func (char: Character):
-		char.current_hp > 0
+	var is_char_alive = func (c: Character):
+		return c.current_hp > 0
 	var red_team: Array[Character] = characters[Team.RED]
 	var blue_team: Array[Character] = characters[Team.BLUE]
 	var red_alive = red_team.filter(is_char_alive)
 	var blue_alive = blue_team.filter(is_char_alive)
+	var all_alive = red_alive + blue_alive
 	
-	for character: Character in operations: # It implies that all actions are simultaneous			
-		var ops: Array[AtomOp] = operations[character]
-		var to_append: Array[AtomOp] = []
+	for character: Character in all_alive: # It implies that all actions are simultaneous
+		var ops: Array[Operation] = character.ops
+		var to_append: Array[Operation] = []
 		var to_remove_idx: Array[int] = []
 		for op_idx in range(ops.size()):
 			var op = ops[op_idx]
-			if (character.operation_state == Character.OperationState.LOCKED
-				and op.is_interruptable):
-				to_remove_idx.append(op_idx) # Maybe call AtomOp.on_interrupt()
-				continue
 			to_append.append_array(op.tick(dt, characters))
 			if op.progress >= 1.0:
-				to_remove_idx.append(op_idx) # Maybe call AtomOp.on_remove()
+				to_remove_idx.append(op_idx)
 			if op.is_exclusive:
 				break
-		
-		to_remove_idx.reverse()
-		for remove_idx in to_remove_idx:
-			ops.remove_at(remove_idx)
+
 		for remove_idx in to_remove_idx:
 			if ops[remove_idx].progress >= 1.0:
-				ops[remove_idx].finalize() # TODO: Implement
+				ops[remove_idx].finalize(characters)
+			ops[remove_idx].on_remove(characters, null)
+			ops.remove_at(remove_idx)
 		ops.append_array(to_append)
 
-	for character: Character in (red_alive + blue_alive):
+	for character: Character in all_alive:
 		var actions = character.act(characters)
-		operations[character] += actions
+		character.ops.append_array(actions)
 
 ## FIGHT ENGINE END
 
 enum Team { RED, BLUE }
 
-class AtomOp:
-	var owner: Character
+class Operation:
+	var owner: WeakRef # Convert to weakref
 	var duration: float
 	var progress: float
 	var is_exclusive: bool
 	var is_interruptable: bool
 	
 	var owner_id: int:
-		get: return owner.id
+		get: return strong_owner.id
 
 	var is_owner_alive: bool:
-		get: return owner.current_hp > 0
+		get: return strong_owner.current_hp > 0
+		
+	var strong_owner: Character:
+		get: return owner.get_ref()
 	
 	func _init(
-		owner: Character,
+		owner: WeakRef,
 	 	duration: float,
 		progress: float = 0.0,
 		is_exclusive: bool = true,
@@ -78,20 +76,26 @@ class AtomOp:
 		self.is_interruptable = is_interruptable
 
 	func update_progress(dt: float): # in seconds
+		assert(duration > 0.0, "Zero or less duration is error")
 		var delta_progress = dt / duration
 		progress = min(progress + delta_progress, 1.0)
-
+	
+	func finalize(characters: Dictionary): # Maybe add -> Array[Operation]
+		pass
+		
+	func on_remove(characters: Dictionary, cause: Operation): # Maybe add -> Array[Operation] and change cause: Operation -> Variant[String, Operation]
+		pass
+	
 	func tick(
 		dt: float, # in seconds
 		characters: Dictionary
-	) -> Array[AtomOp]:
+	) -> Array[Operation]:
 		update_progress(dt)
 		return []
 
-# Single iteration movement
-class MoveOp extends AtomOp:
+class MoveOp extends Operation:
 	func _init(
-		owner: Character, 
+		owner: WeakRef, 
 		speed: Vector2, # per second
 		duration: float = 1,
 		is_one_shot: bool = true
@@ -102,29 +106,33 @@ class MoveOp extends AtomOp:
 		
 	func tick(
 		dt: float, # in seconds
-		characters: Dictionary
-	) -> Array[AtomOp]:
-		if not is_owner_alive:
-			progress = INF
-			return []
+		operation_map: Dictionary
+	) -> Array[Operation]:
 		if progress == 0.0:
-			owner.animation_state = AnimationState.new(
+			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.MOVING,
-				owner.move_speed,
-				owner.config.run_anim_names,
+				strong_owner.move_speed,
+				strong_owner.config.run_anim_names,
 				true
 			)
-		var ops = super.tick(dt, characters)
-		owner.position += self.speed * dt
+		var ops = super.tick(dt, operation_map)
+		strong_owner.position += self.speed * dt
 		if self.is_one_shot:
 			progress = INF
 		
 		return ops
 
-class AttackOp extends AtomOp:
+class AttackOp extends Operation:
+	var target: WeakRef
+	
+	var strong_target: Character:
+		get: return target.get_ref() as Character
+		
+	var failed: bool = false
+	
 	func _init(
-		owner: Character, 
-		target: Character,
+		owner: WeakRef, 
+		target: WeakRef,
 		physical_damage: int,
 		duration: float, # in sec,
 		progress: float = 0.0,
@@ -135,37 +143,43 @@ class AttackOp extends AtomOp:
 		self.physical_damage = physical_damage
 		self.is_recurrent = is_recurrent
 	
+	func finalize(characters: Dictionary):
+		if not failed:
+			# TODO: Add critical damage test
+			strong_target.get_damage(self.physical_damage, 0, self)
+			
+	func update_progress(dt: float):
+		if not strong_target.current_hp > 0:
+			progress = INF
+		elif strong_owner.distance(strong_target) > strong_owner.config.attack_range * 2:
+			progress = INF
+		else:
+			super.update_progress(dt)
+	
 	func tick(
 		dt: float, # in seconds
-		characters: Dictionary
-	) -> Array[AtomOp]:
-		if not is_owner_alive:
-			progress = INF
-			return []
+		operation_map: Dictionary
+	) -> Array[Operation]:
 		if progress == 0.0:
-			owner.animation_state = AnimationState.new(
+			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.ATTACKING,
-				owner.move_speed,
-				owner.config.fight_anims.pick_random(),
+				strong_owner.move_speed,
+				strong_owner.config.fight_anims.pick_random(),
 				true
 			)
-		var ops = super.tick(dt, characters)
-		if progress >= 1.0:
-			self.target.get_damage(self.damage, 0)
-		
-		if self.is_recurrent: # Probably not needed
-			var new_op: AtomOp = AttackOp.new(
-				owner, 
-				self.target, 
-				self.physical_damage,
-				duration,
-				progress,
-				true
-			)
-			self.progress = INF
-			return ops + new_op
-			
-		return ops
+		return super.tick(dt, operation_map)
+
+
+class DeathOp extends Operation:
+	func _init(
+		owner: WeakRef
+	):
+		super._init(owner, 1.0, 1.0, true, false)
+	
+	func tick(dt: float, characters: Dictionary):
+		# TODO: Implement
+		return []
+
 
 class CharacterAbility:
 	var cooldown: float # in seconds
@@ -191,7 +205,7 @@ class CharacterAbility:
 		owner: Character,
 		allies: Array[Character],
 		enemies: Array[Character]
-	) -> Array[AtomOp]:
+	) -> Array[Operation]:
 		cooldown_in_progress = 0.0
 		return []
 
@@ -221,29 +235,24 @@ class AnimationState:
 		self.animationName = animationName
 		self.is_looped = is_looped
 		
-	
+
 
 class Character:
-	enum OperationState {
-		LOCKED,
-		UNLOCKED
-	}
-	
 	var id: int
 	var team_id: Team
 	var config: Configs.CharacterConfig
 	
 	# State
 	var hps: Vector2i # Remaining/Total let's be int for a simplicity
-	var physical_armor: int # 0 to 60
-	var magic_resistance: int # 0 to 60
+	var armor: float # 0 to 0.6
+	var magic_resistance: float # 0 to 0.6
 	var attack_damage: int
 	var attack_speed: float
 	var move_speed: float
 	var crit_odds: float # TODO: Apply
 	var abilities: Array[CharacterAbility]
 	var position: Vector2
-	var operation_state: OperationState = OperationState.UNLOCKED
+	var ops: Array[Operation]
 	
 	signal animation_state_changed(old: AnimationState, new: AnimationState)
 	var animation_state = FightEngine.AnimationState.new(
@@ -260,33 +269,54 @@ class Character:
 			animation_state_changed.emit(old_state, value)
 
 	signal health_changed(old: int, new: int)
-	var current_hp:
+	var current_hp: int:
 		get: return hps.x
 		set(value):
 			var old_value = hps.x
 			hps.x = max(0, hps.x) 
 			health_changed.emit(old_value, hps.x)
 	
-	func _init(id: int, config: Configs.CharacterConfig, team_id: Team):
-		pass
-		
+	func _init(
+		id: int, 
+		config: Configs.CharacterConfig, 
+		team_id: Team, 
+		position: Vector2 = Vector2.ZERO
+	):
+		self.id = id
+		self.team_id = team_id
+		self.config = config
+		self.hps = Vector2i(config.hp, config.hp)
+		self.physical_armor = config.physical_armor
+		self.magic_resistance = config.magic_resistance
+		self.attack_damage = config.attack_damage
+		self.attack_speed = attack_speed
+		self.move_speed = move_speed
+		self.crit_odds = crit_odds
+		self.abilities = [] # TODO: Implement later
+		self.position = position
+		self.ops = ops # Enrich with passive abilities
 
 	func lvl_up():
-		pass
+		self.hps.y += config.level_up.hp_update
+		self.armor = min(config.level_up.armor_update + armor, 60)
+		self.magic_resistance += config.level_up.magic_resistance_update
+		self.attack_damage += config.level_up.attack_damage_update
+		self.attack_speed += config.level_up.attack_speed_update
+		self.move_speed += config.level_up.move_speed_updates
+		self.crit_odds += config.level_up.crit_odds_updates
 	
-	func get_damage(physical_damage: int, magic_damage: int):
+	func get_damage(physical_damage: int, magic_damage: int, cause: Operation):
 		assert(current_hp > 0, "Character receive damage when not alive")
 		if physical_damage > 0:
-			var taken_physical_damage = roundi(physical_damage * (1 - physical_armor / 100))
+			var taken_physical_damage = roundi(physical_damage * armor)
 			current_hp -= taken_physical_damage
 		if magic_damage > 0 and current_hp > 0:
-			var taken_magic_damage = roundi(magic_damage * (1 - magic_resistance / 100))
+			var taken_magic_damage = roundi(magic_damage * magic_resistance)
 			current_hp -= taken_magic_damage
 
 	func distance(to: Character) -> float:
 		var direction: Vector2 = to.posisition - position
 		return direction.length()
-
 
 	func has_attack_target(enemies: Array[Character]) -> bool:
 		for enemy in enemies:
@@ -294,7 +324,7 @@ class Character:
 				return true
 		return false
 		
-	func attack_enemy(enemies: Array[Character]) -> Array[AtomOp]:
+	func attack_enemy(enemies: Array[Character]) -> Array[Operation]:
 		var reachable_targets = enemies.filter(
 			func (enemy: Character): 
 				return config.attack_range >= distance(enemy)
@@ -305,7 +335,7 @@ class Character:
 		
 		return [
 			FightEngine.AttackOp.new(
-				self,
+				weakref(self),
 				target,
 			 	attack_damage,
 				attack_speed
@@ -322,16 +352,26 @@ class Character:
 		# Pick first for now
 		return enemies_[0]
 		
-	func move_to(character: Character) -> AtomOp:
+	func move_to(character: Character) -> Operation:
 		var direction = (character.posisition - position).normalized()
 		return FightEngine.MoveOp.new(
-			self, 
+			weakref(self), 
 			direction * config.move_speed
 		)
 	
-	func act(characters: Dictionary) -> Array[AtomOp]:
-		if operation_state == OperationState.LOCKED:
-			return []
+	func cancel_all_operations(characters: Dictionary, cause: Operation):
+		for op: Operation in ops: # Maybe reverse order
+			op.on_remove(characters, cause)
+		ops.clear()
+	
+	func act(characters: Dictionary) -> Array[Operation]:
+		if current_hp == 0: # act in such state should be called once
+			var death_op = DeathOp.new(weakref(self))
+			cancel_all_operations(characters, death_op)
+			return [death_op]
+			
+		if not ops.is_empty() and ops[0].is_exclusive:
+			return [] # probably convert to null
 		
 		var allies = characters[team_id]
 		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED]

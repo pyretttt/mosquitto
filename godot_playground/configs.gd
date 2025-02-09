@@ -7,6 +7,9 @@ static var move_speed_scale: float = 3.0
 static var attack_speed_scale: float = 1.0
 static var attack_damage_scale: int = 120
 static var attack_range_scale: float = 1.2
+static var armor_scale: int = 1
+static var magic_resistance_scale: int = 1
+static var crit_odds_scale: float = 1
 
 class FightConfig:
 	enum Mode {
@@ -40,6 +43,9 @@ class CharacterConfig:
 	var attack_damage: float
 	var attack_range: float
 	var attack_speed: float
+	var armor: float
+	var magic_resistance: float
+	var crit_odds: float
 	
 	var run_anim: String
 	var fight_anims: Array[String]
@@ -64,6 +70,11 @@ class CharacterConfig:
 		cfg.attack_damage = character_config.attack_damage * Configs.attack_damage_scale
 		cfg.attack_range = character_config.attack_range * Configs.attack_range_scale
 		cfg.attack_speed = character_config.attack_speed * Configs.attack_speed_scale
+		cfg.armor = character_config.armor * Configs.armor_scale
+		assert(cfg.armor <= 0.6, "Max armor is 0.6")
+		cfg.magic_resistance = character_config.magic_resistance * Configs.magic_resistance_scale
+		assert(cfg.magic_resistance <= 0.6, "Max magic resistance is 0.6")
+		cfg.crit_odds = character_config.crit_odds * Configs.crit_odds_scale
 		
 		cfg.run_anim = character_config.run_anim
 		cfg.fight_anims = character_config.fight_anims
@@ -79,6 +90,9 @@ class LevelUpConfig:
 	var attack_damage_update: float
 	var attack_range_update: float
 	var attack_speed_update: float
+	var armor_update: int
+	var magic_resistance_update: int
+	var crit_odds_update: float
 	
 	static func from_json(cfg: Variant) -> LevelUpConfig:
 		var obj = LevelUpConfig.new()
@@ -87,6 +101,9 @@ class LevelUpConfig:
 		obj.attack_damage_update = cfg.attack_damage_update * Configs.attack_damage_scale
 		obj.attack_range_update = cfg.attack_range_update * Configs.attack_range_scale
 		obj.attack_speed_update = cfg.attack_speed_update * Configs.attack_speed_scale
+		obj.armor_update = cfg.armor_update * Configs.armor_scale
+		obj.magic_resistance_update = cfg.magic_resistance_update * Configs.magic_resistance_scale
+		obj.crit_odds_update = cfg.crit_odds_update * Configs.magic_resistance_scale
 
 		return obj
 
