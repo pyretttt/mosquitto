@@ -3,12 +3,29 @@ class_name FightEngine
 
 extends RefCounted
 
+var rng = RandomNumberGenerator.new()
 var characters: Dictionary # Dictionary[Team, Array[Characters]]
+
 
 func _init(
 	config: Configs.FightConfig
 ):
-	pass
+	match config.mode:
+		Configs.FightConfig.Mode.DEMO:
+			for team in [Team.RED, Team.BLUE]:
+				var allies = []
+				for i in range(config.max_characters_in_team):
+					allies.append(config.characters_configs.pick_random())
+				allies.map(
+					func (char_cfg: Configs.CharacterConfig):
+						Character.new(rng.randi(), char_cfg, team)
+				)
+				characters[team] = allies
+		Configs.FightConfig.Mode.AUTOCHESS:
+			# TODO: Implement later
+			pass
+		
+	
 
 func loop(dt: float):
 	var is_char_alive = func (c: Character):
@@ -234,7 +251,6 @@ class AnimationState:
 		self.speed = speed
 		self.animationName = animationName
 		self.is_looped = is_looped
-		
 
 
 class Character:
@@ -294,7 +310,7 @@ class Character:
 		self.crit_odds = crit_odds
 		self.abilities = [] # TODO: Implement later
 		self.position = position
-		self.ops = ops # Enrich with passive abilities
+		self.ops = [] # Enrich with passive abilities
 
 	func lvl_up():
 		self.hps.y += config.level_up.hp_update
