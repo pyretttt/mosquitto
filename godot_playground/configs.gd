@@ -6,15 +6,15 @@ static var hp_scale: int = 1500
 static var move_speed_scale: float = 3.0
 static var attack_speed_scale: float = 1.0
 static var attack_damage_scale: int = 120
-static var attack_range_scale: float = 1.2
-static var armor_scale: int = 1
-static var magic_resistance_scale: int = 1
-static var crit_odds_scale: float = 1
+static var attack_range_scale: float = 1.4
+static var armor_scale: int = 1.0
+static var magic_resistance_scale: int = 1.0
+static var crit_odds_scale: float = 1.0
 
 const configs_path = "characters/configs"
 
 class ConfigLoader:
-	func load_character_configs() -> Array[CharacterConfig]:
+	static func load_character_configs() -> Array[CharacterConfig]:
 		const path := "res://" + configs_path
 		if not DirAccess.dir_exists_absolute(path):
 			assert(false, "Non existing configs directory")
@@ -22,9 +22,9 @@ class ConfigLoader:
 		var result: Array[CharacterConfig] = []
 		for file in file_names:
 			var config_path = path.path_join(file)
-			var config_text = FileAccess.get_file_as_string(config_path)
-			var parsed_config = JSON.parse_string(config_text)
-			result.append(CharacterConfig.from_json(parsed_config))
+			var json = load(config_path)
+			result.append(CharacterConfig.from_json(json.data))
+			print("Loaded ", config_path, " config")
 			
 		return result
 
@@ -65,19 +65,19 @@ class CharacterConfig:
 	var crit_odds: float
 	
 	var run_anim: String
-	var fight_anims: Array[String]
-	var stance_anims: Array[String]
-	var abilities: Array[AbilityConfig]
+	var fight_anims: Array
+	var stance_anims: Array
+	var abilities: Array
 	
 	var level_up: LevelUpConfig
 	
 	static func from_json(character_config: Variant) -> CharacterConfig:
 		var cfg = CharacterConfig.new()
 		match character_config.class:
-			"warrior": cfg.class = CharacterClass.WARRIOR
-			"mage": cfg.class = CharacterClass.MAGE
-			"rifleman": cfg.class = CharacterClass.RIFLEMAN
-			"tank": cfg.class = CharacterClass.TANK
+			"warrior": cfg.cls = CharacterClass.WARRIOR
+			"mage": cfg.cls = CharacterClass.MAGE
+			"rifleman": cfg.cls = CharacterClass.RIFLEMAN
+			"tank": cfg.cls = CharacterClass.TANK
 			var unknown: assert(false, "Unknown character class %s" % unknown)
 		
 		cfg.name = character_config.name
@@ -94,8 +94,9 @@ class CharacterConfig:
 		cfg.crit_odds = character_config.crit_odds * Configs.crit_odds_scale
 		
 		cfg.run_anim = character_config.run_anim
-		cfg.fight_anims = character_config.fight_anims
-		cfg.stance_anims = character_config.stance_anims
+		print("typeof: ", type_string(typeof(character_config.fight_anims as Array[String])))
+		cfg.fight_anims = Array(character_config.fight_anims)
+		cfg.stance_anims = (character_config.stance_anims as Array[String])
 		cfg.abilities = character_config.abilities.map(AbilityConfig.from_json)
 		
 		cfg.level_up = LevelUpConfig.from_json(character_config.level_up)

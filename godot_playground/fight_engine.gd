@@ -302,7 +302,7 @@ class Character:
 		self.team_id = team_id
 		self.config = config
 		self.hps = Vector2i(config.hp, config.hp)
-		self.physical_armor = config.physical_armor
+		self.armor = config.armor
 		self.magic_resistance = config.magic_resistance
 		self.attack_damage = config.attack_damage
 		self.attack_speed = attack_speed

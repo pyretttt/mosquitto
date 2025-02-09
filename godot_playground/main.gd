@@ -1,5 +1,13 @@
 extends Node3D
 
+@onready var fight_engine = FightEngine.new(
+	Configs.FightConfig.new(
+		Configs.ConfigLoader.load_character_configs(),
+		Configs.FightConfig.Mode.DEMO,
+		3
+	)
+)
+
 # Camera
 var CAMERA_ANGLE_BEGIN: float
 var CAMERA_BEGIN_POS: Vector3
@@ -12,14 +20,15 @@ const CAMERA_INTEROP_PROGRESS_PER_SE := PI / 4
 var cameraMovingDirection := 0
 var camera_current_angle: float
 
+
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	setup_camera()
 	camera_current_angle = CAMERA_ANGLE_BEGIN
-	$Kaila.position = Vector3.ZERO
-	var kaila_run : Animation= $Kaila/kaila_r2u/AnimationPlayer.get_animation("stance")
-	kaila_run.loop_mode = Animation.LOOP_LINEAR
-	$Kaila/kaila_r2u/AnimationPlayer.play("stance")
+	#$Kaila.position = Vector3.ZERO
+	#var kaila_run : Animation= $Kaila/kaila_r2u/AnimationPlayer.get_animation("stance")
+	#kaila_run.loop_mode = Animation.LOOP_LINEAR
+	#$Kaila/kaila_r2u/AnimationPlayer.play("stance")
 
 
 func _process(delta):

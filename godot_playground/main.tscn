@@ -25,7 +25,7 @@ material = SubResource("StandardMaterial3D_vv0yd")
 script = ExtResource("1_ex88s")
 
 [node name="Sketchfab_Scene" parent="." instance=ExtResource("1_3ghbh")]
-transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -9, -5, 6)
+transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -12, 0, -5)
 
 [node name="FlightCamera" type="MeshInstance3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 27, 27)
