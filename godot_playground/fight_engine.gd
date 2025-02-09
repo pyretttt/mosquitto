@@ -38,6 +38,9 @@ func loop(dt: float):
 		to_remove_idx.reverse()
 		for remove_idx in to_remove_idx:
 			ops.remove_at(remove_idx)
+		for remove_idx in to_remove_idx:
+			if ops[remove_idx].progress >= 1.0:
+				ops[remove_idx].finalize() # TODO: Implement
 		ops.append_array(to_append)
 
 	for character: Character in (red_alive + blue_alive):
