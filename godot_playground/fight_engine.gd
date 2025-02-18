@@ -13,19 +13,20 @@ func _init(
 	match config.mode:
 		Configs.FightConfig.Mode.DEMO:
 			for team in [Team.RED, Team.BLUE]:
-				var allies = []
+				var allies: Array = []
 				for i in range(config.max_characters_in_team):
 					allies.append(config.characters_configs.pick_random())
-				allies.map(
+				characters[team] = allies.map(
 					func (char_cfg: Configs.CharacterConfig):
-						Character.new(rng.randi(), char_cfg, team)
+						# TODO: Remove rng
+						return Character.new(rng.randi(), char_cfg, team)
 				)
-				characters[team] = allies
 		Configs.FightConfig.Mode.AUTOCHESS:
 			# TODO: Implement later
 			pass
-		
-	
+
+func get_characters() -> Dictionary:
+	return characters
 
 func loop(dt: float):
 	var is_char_alive = func (c: Character):

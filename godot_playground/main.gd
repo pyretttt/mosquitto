@@ -1,12 +1,17 @@
 extends Node3D
 
-@onready var fight_engine = FightEngine.new(
-	Configs.FightConfig.new(
-		Configs.ConfigLoader.load_character_configs(),
-		Configs.FightConfig.Mode.DEMO,
-		3
-	)
+### To fight engine scene
+
+var configs: Configs.FightConfig = Configs.FightConfig.new(
+	Configs.ConfigLoader.load_character_configs(),
+	Configs.FightConfig.Mode.DEMO,
+	3
 )
+
+var fight_engine := FightEngine.new(configs)
+var character_nodes: Dictionary # [int, Node3d]
+@onready 
+var character_scenes: Dictionary = create_scenes(configs.characters_configs) # [String, Scene] name to scene
 
 # Camera
 var CAMERA_ANGLE_BEGIN: float
@@ -25,6 +30,10 @@ var camera_current_angle: float
 func _ready():
 	setup_camera()
 	camera_current_angle = CAMERA_ANGLE_BEGIN
+	
+	character_nodes = init_characters_scenes()
+	initial_layout_characters()
+	
 	#$Kaila.position = Vector3.ZERO
 	#var kaila_run : Animation= $Kaila/kaila_r2u/AnimationPlayer.get_animation("stance")
 	#kaila_run.loop_mode = Animation.LOOP_LINEAR
@@ -78,3 +87,49 @@ func camera_point(angle, a, b):
 		r_theta * cos(angle),
 		r_theta * sin(angle)
 	)
+	
+	
+## To separate fight engine scene
+func create_scenes(configs: Array[Configs.CharacterConfig]) -> Dictionary: # [Team, Character]
+	var result = {}
+	for config: Configs.CharacterConfig in configs:
+		var scene_path = "res://".path_join(config.scene_path)
+		var character_scene = load(scene_path)
+		result[config.name] = character_scene
+		
+	return result
+	
+func init_characters_scenes() -> Dictionary:
+	var characters: Dictionary = fight_engine.get_characters()
+	var read_team: Array = characters[FightEngine.Team.RED]
+	var blue_team: Array = characters[FightEngine.Team.BLUE]
+	var result = {}
+	for character: FightEngine.Character in read_team + blue_team:
+		var scene: Resource = character_scenes[character.config.name]
+		if scene.can_instantiate():
+			result[character.id] = scene.instantiate()
+		else:
+			assert(
+				false, 
+				"Unable to create scene for character: %s".format(character.config.name)
+			)
+	
+	return result
+
+func initial_layout_characters():
+	var characters: Dictionary = fight_engine.get_characters()
+	var read_team: Array = characters[FightEngine.Team.RED]
+	var blue_team: Array = characters[FightEngine.Team.BLUE]
+	
+	for character: FightEngine.Character in read_team + blue_team:
+		var char_node: Node3D = character_nodes[character.id]
+		add_child(char_node)
+		
+		match character.team_id:
+			FightEngine.Team.RED:
+				char_node.translate(Vector3(-20, 1, randf_range(-7.0, 7.0)))
+			FightEngine.Team.BLUE:
+				char_node.translate(Vector3(20, 1, randf_range(-7.0, 7.0)))
+		
+		# TODO: Remove after map scale adjusting
+		char_node.scale = Vector3(3, 3, 3)

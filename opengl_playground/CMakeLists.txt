@@ -10,18 +10,23 @@ FetchContent_Declare(
     GIT_TAG 7b6aead9fb88b3623e3b3725ebb42670cbe4c579
 )
 FetchContent_Declare(
-    concurrencpp
-    GIT_REPOSITORY https://github.com/David-Haim/concurrencpp.git
-    GIT_TAG 7a88f5401e15e1b64acae70077e40df1a5a9f6bf
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 0af55ccecd98d4e5a8d1fad7de25ba429d60e863
 )
-FetchContent_MakeAvailable(glfw concurrencpp)
+FetchContent_Declare(
+    glm
+    GIT_REPOSITORY https://github.com/g-truc/glm.git
+    GIT_TAG 0af55ccecd98d4e5a8d1fad7de25ba429d60e863
+)
+FetchContent_MakeAvailable(glfw glm)
 
 find_package(OpenGL REQUIRED)
 
 aux_source_directory(${CMAKE_CURRENT_SOURCE_DIR}/src SRC_SOURCES)
 add_executable(opengl_playground ${SRC_SOURCES})
 target_compile_features(opengl_playground PRIVATE cxx_std_23)
-target_link_libraries(opengl_playground PRIVATE glfw ${OPENGL_gl_LIBRARY})
+target_link_libraries(opengl_playground PRIVATE glfw ${OPENGL_gl_LIBRARY} glm::glm)
 target_include_directories(opengl_playground PRIVATE src ${GLFW_SOURCE_DIR}/deps ${OPENGL_INCLUDE_DIR}) # to include glad for opengl
 
 target_link_libraries(opengl_playground PRIVATE "-framework Cocoa")

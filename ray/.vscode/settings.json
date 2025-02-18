@@ -111,6 +111,7 @@
         "typeindex": "cpp",
         "valarray": "cpp",
         "cassert": "cpp",
-        "scoped_allocator": "cpp"
+        "scoped_allocator": "cpp",
+        "exception": "cpp"
     }
 }
