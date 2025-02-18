@@ -64,7 +64,6 @@ func _process(delta):
 		
 		# Light ray rotation
 		$DirectionalLight3D.rotate(Vector3.UP, delta_angle)
-		#$Kaila/kaila_r2u/AnimationPlayer.play("run")
 
 
 func _input(event):
@@ -145,3 +144,9 @@ func update_characters():
 		var char_node: Node3D = character_nodes[character.id]
 		char_node.position = character.position
 		char_node.get_node("kaila_r2u/AnimationPlayer").play("run")
+		var x_rotated = character.rotation * Quaternion(char_node.basis.x.x, char_node.basis.x.y, char_node.basis.x.z, 0) * character.rotation.inverse()
+		char_node.basis.x = Vector3(x_rotated.x, x_rotated.y, x_rotated.z)
+		var z_rotated = character.rotation * Quaternion(char_node.basis.z.x, char_node.basis.z.y, char_node.basis.z.z, 0) * character.rotation.inverse()
+		char_node.basis.z = Vector3(z_rotated.x, z_rotated.y, z_rotated.z)
+		print(char_node.basis.z)
+		#char_node.basis.z = (character.rotation * char_node.basis.z) * character.rotation.inverse()

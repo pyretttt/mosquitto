@@ -20,16 +20,25 @@ func _init(
 					allies.append(config.characters_configs.pick_random())
 				characters[team] = allies.map(
 					func (char_cfg: Configs.CharacterConfig):
+						
 						var char = Character.new(
 							rng.randi(), 
 							char_cfg, 
-							team
+							team,
+							Vector3.ZERO,
+							Quaternion.IDENTITY
 						)
 						match team:
 							Team.RED:
 								char.position = read_team_position
+								char.rotation = Quaternion(
+									0, sin(PI/4), 0, cos(PI/4)
+								)
 							Team.BLUE:
 								char.position = blue_team_position
+								char.rotation = Quaternion(
+									0, -sin(PI/4), 0, cos(PI/4)
+								)
 						
 						char.position.z += randf_range(-10.0, 10.0)
 						# TODO: Remove rng
@@ -287,6 +296,7 @@ class Character:
 	var crit_odds: float # TODO: Apply
 	var abilities: Array[CharacterAbility]
 	var position: Vector3
+	var rotation: Quaternion
 	var ops: Array[Operation]
 	
 	signal animation_state_changed(old: AnimationState, new: AnimationState)
@@ -315,7 +325,8 @@ class Character:
 		id: int, 
 		config: Configs.CharacterConfig, 
 		team_id: Team, 
-		position: Vector3 = Vector3.ZERO
+		position: Vector3,
+		rotation: Quaternion
 	):
 		self.id = id
 		self.team_id = team_id
@@ -329,6 +340,7 @@ class Character:
 		self.crit_odds = config.crit_odds
 		self.abilities = [] # TODO: Implement later
 		self.position = position
+		self.rotation = rotation
 		self.ops = [] # Enrich with passive abilities
 
 	func lvl_up():
