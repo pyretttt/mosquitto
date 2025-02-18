@@ -8,7 +8,9 @@ var characters: Dictionary # Dictionary[Team, Array[Characters]]
 
 
 func _init(
-	config: Configs.FightConfig
+	config: Configs.FightConfig,
+	read_team_position: Vector3,
+	blue_team_position: Vector3
 ):
 	match config.mode:
 		Configs.FightConfig.Mode.DEMO:
@@ -18,8 +20,20 @@ func _init(
 					allies.append(config.characters_configs.pick_random())
 				characters[team] = allies.map(
 					func (char_cfg: Configs.CharacterConfig):
+						var char = Character.new(
+							rng.randi(), 
+							char_cfg, 
+							team
+						)
+						match team:
+							Team.RED:
+								char.position = read_team_position
+							Team.BLUE:
+								char.position = blue_team_position
+						
+						char.position.z += randf_range(-10.0, 10.0)
 						# TODO: Remove rng
-						return Character.new(rng.randi(), char_cfg, team)
+						return char
 				)
 		Configs.FightConfig.Mode.AUTOCHESS:
 			# TODO: Implement later
@@ -31,8 +45,8 @@ func get_characters() -> Dictionary:
 func loop(dt: float):
 	var is_char_alive = func (c: Character):
 		return c.current_hp > 0
-	var red_team: Array[Character] = characters[Team.RED]
-	var blue_team: Array[Character] = characters[Team.BLUE]
+	var red_team: Array = characters[Team.RED]
+	var blue_team: Array = characters[Team.BLUE]
 	var red_alive = red_team.filter(is_char_alive)
 	var blue_alive = blue_team.filter(is_char_alive)
 	var all_alive = red_alive + blue_alive
@@ -112,9 +126,11 @@ class Operation:
 		return []
 
 class MoveOp extends Operation:
+	var speed: Vector3
+	var is_one_shot: bool
 	func _init(
 		owner: WeakRef, 
-		speed: Vector2, # per second
+		speed: Vector3, # per second
 		duration: float = 1,
 		is_one_shot: bool = true
 	):
@@ -130,7 +146,7 @@ class MoveOp extends Operation:
 			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.MOVING,
 				strong_owner.move_speed,
-				strong_owner.config.run_anim_names,
+				strong_owner.config.run_anim,
 				true
 			)
 		var ops = super.tick(dt, operation_map)
@@ -142,6 +158,8 @@ class MoveOp extends Operation:
 
 class AttackOp extends Operation:
 	var target: WeakRef
+	var physical_damage: int
+	var is_recurrent: bool
 	
 	var strong_target: Character:
 		get: return target.get_ref() as Character
@@ -268,7 +286,7 @@ class Character:
 	var move_speed: float
 	var crit_odds: float # TODO: Apply
 	var abilities: Array[CharacterAbility]
-	var position: Vector2
+	var position: Vector3
 	var ops: Array[Operation]
 	
 	signal animation_state_changed(old: AnimationState, new: AnimationState)
@@ -297,7 +315,7 @@ class Character:
 		id: int, 
 		config: Configs.CharacterConfig, 
 		team_id: Team, 
-		position: Vector2 = Vector2.ZERO
+		position: Vector3 = Vector3.ZERO
 	):
 		self.id = id
 		self.team_id = team_id
@@ -332,16 +350,16 @@ class Character:
 			current_hp -= taken_magic_damage
 
 	func distance(to: Character) -> float:
-		var direction: Vector2 = to.posisition - position
+		var direction: Vector3 = to.position - position
 		return direction.length()
 
-	func has_attack_target(enemies: Array[Character]) -> bool:
+	func has_attack_target(enemies: Array) -> bool:
 		for enemy in enemies:
 			if config.attack_range >= distance(enemy):
 				return true
 		return false
 		
-	func attack_enemy(enemies: Array[Character]) -> Array[Operation]:
+	func attack_enemy(enemies: Array) -> Array[Operation]:
 		var reachable_targets = enemies.filter(
 			func (enemy: Character): 
 				return config.attack_range >= distance(enemy)
@@ -353,13 +371,13 @@ class Character:
 		return [
 			FightEngine.AttackOp.new(
 				weakref(self),
-				target,
+				weakref(target),
 			 	attack_damage,
 				attack_speed
 			)
 		]
 		
-	func pick_an_enemy_to_move_to(enemies: Array[Character]):
+	func pick_an_enemy_to_move_to(enemies: Array):
 		assert(not enemies.is_empty(), "Empty enemies set")
 		var enemies_ = enemies.duplicate()
 		enemies_.sort_custom(
@@ -370,7 +388,7 @@ class Character:
 		return enemies_[0]
 		
 	func move_to(character: Character) -> Operation:
-		var direction = (character.posisition - position).normalized()
+		var direction := (character.position - position).normalized()
 		return FightEngine.MoveOp.new(
 			weakref(self), 
 			direction * config.move_speed

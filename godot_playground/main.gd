@@ -8,7 +8,11 @@ var configs: Configs.FightConfig = Configs.FightConfig.new(
 	3
 )
 
-var fight_engine := FightEngine.new(configs)
+var fight_engine := FightEngine.new(
+	configs,
+	Vector3(-20, 1, 0),
+	Vector3(20, 1, 0),
+)
 var character_nodes: Dictionary # [int, Node3d]
 @onready 
 var character_scenes: Dictionary = create_scenes(configs.characters_configs) # [String, Scene] name to scene
@@ -41,6 +45,9 @@ func _ready():
 
 
 func _process(delta):
+	fight_engine.loop(delta)
+	
+	
 	if (cameraMovingDirection != 0):
 		var delta_angle = cameraMovingDirection * delta * CAMERA_INTEROP_PROGRESS_PER_SE
 		camera_current_angle += delta_angle
@@ -124,12 +131,7 @@ func initial_layout_characters():
 	for character: FightEngine.Character in read_team + blue_team:
 		var char_node: Node3D = character_nodes[character.id]
 		add_child(char_node)
-		
-		match character.team_id:
-			FightEngine.Team.RED:
-				char_node.translate(Vector3(-20, 1, randf_range(-7.0, 7.0)))
-			FightEngine.Team.BLUE:
-				char_node.translate(Vector3(20, 1, randf_range(-7.0, 7.0)))
+		char_node.position = character.position
 		
 		# TODO: Remove after map scale adjusting
 		char_node.scale = Vector3(3, 3, 3)
