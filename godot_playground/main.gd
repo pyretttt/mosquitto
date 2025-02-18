@@ -46,7 +46,7 @@ func _ready():
 
 func _process(delta):
 	fight_engine.loop(delta)
-	
+	update_characters()
 	
 	if (cameraMovingDirection != 0):
 		var delta_angle = cameraMovingDirection * delta * CAMERA_INTEROP_PROGRESS_PER_SE
@@ -135,3 +135,13 @@ func initial_layout_characters():
 		
 		# TODO: Remove after map scale adjusting
 		char_node.scale = Vector3(3, 3, 3)
+
+func update_characters():
+	var characters: Dictionary = fight_engine.get_characters()
+	var read_team: Array = characters[FightEngine.Team.RED]
+	var blue_team: Array = characters[FightEngine.Team.BLUE]
+	
+	for character: FightEngine.Character in read_team + blue_team:
+		var char_node: Node3D = character_nodes[character.id]
+		char_node.position = character.position
+		char_node.get_node("kaila_r2u/AnimationPlayer").play("run")

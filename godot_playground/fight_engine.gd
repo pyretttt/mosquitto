@@ -324,9 +324,9 @@ class Character:
 		self.armor = config.armor
 		self.magic_resistance = config.magic_resistance
 		self.attack_damage = config.attack_damage
-		self.attack_speed = attack_speed
-		self.move_speed = move_speed
-		self.crit_odds = crit_odds
+		self.attack_speed = config.attack_speed
+		self.move_speed = config.move_speed
+		self.crit_odds = config.crit_odds
 		self.abilities = [] # TODO: Implement later
 		self.position = position
 		self.ops = [] # Enrich with passive abilities
