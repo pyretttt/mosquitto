@@ -158,13 +158,17 @@ class MoveOp extends Operation:
 		if progress == 0.0:
 			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.MOVING,
-				strong_owner.move_speed,
-				strong_owner.config.run_anim,
-				true
+				1.0,
+				true,
+				(
+					strong_owner.animation_state.id 
+					if strong_owner.animation_state.type == AnimationState.Type.MOVING 
+					else randi()
+				)
 			)
 		
 		var speed_normalized: Vector3 = speed.normalized()
-		strong_owner.rotate_to(speed_normalized)
+		strong_owner.look_at(speed_normalized)
 		
 		var ops = super.tick(dt, operation_map)
 		strong_owner.position += self.speed * dt
@@ -216,9 +220,9 @@ class AttackOp extends Operation:
 		if progress == 0.0:
 			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.ATTACKING,
-				strong_owner.move_speed,
-				strong_owner.config.fight_anims.pick_random(),
-				true
+				1.0,
+				true,
+				randi()
 			)
 		return super.tick(dt, operation_map)
 
@@ -274,19 +278,19 @@ class AnimationState:
 	
 	var type: Type
 	var speed: float # from 0 to 2
-	var animationName: String
 	var is_looped: bool
+	var id: int
 	
 	func _init(
 		type: Type, 
 		speed: float,
-		animationName: String,
-		is_looped: bool
+		is_looped: bool,
+		id: int
 	):
 		self.type = type
 		self.speed = speed
-		self.animationName = animationName
 		self.is_looped = is_looped
+		self.id = id
 
 
 class Character:
@@ -310,19 +314,12 @@ class Character:
 	var rotation: Quaternion
 	var basis: Basis # Without rotations
 	
-	signal animation_state_changed(old: AnimationState, new: AnimationState)
 	var animation_state = FightEngine.AnimationState.new(
 		AnimationState.Type.IDLE, 
-		0.0,
-		"",
-		false
-	):
-		get:
-			return animation_state
-		set(value):
-			var old_state = animation_state
-			animation_state = value
-			animation_state_changed.emit(old_state, value)
+		1.0,
+		false,
+		randi()
+	)
 
 	signal health_changed(old: int, new: int)
 	var current_hp: int:
@@ -445,13 +442,11 @@ class Character:
 			var enemy = pick_an_enemy_to_move_to(enemies)
 			return [move_to(enemy)]
 
-	func rotate_to(alignment_vec: Vector3):
+	func look_at(look_at_vec: Vector3):
 		# Rotates about UP axis
 		# Assumes that forward is z axis - it's default in most cases.
 		var angle = atan2(
-			alignment_vec.x,
-			alignment_vec.z
+			look_at_vec.x,
+			look_at_vec.z
 		)
 		rotation = Quaternion(Vector3.UP, angle)
-		
-		

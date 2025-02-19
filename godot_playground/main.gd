@@ -13,6 +13,7 @@ var fight_engine := FightEngine.new(
 	Vector3(-20, 1, 0),
 	Vector3(20, 1, 0),
 )
+var char_to_animation: Dictionary # [int, int]
 var character_nodes: Dictionary # [int, Node3d]
 @onready 
 var character_scenes: Dictionary = create_scenes(configs.characters_configs) # [String, Scene] name to scene
@@ -142,8 +143,31 @@ func update_characters():
 	
 	for character: FightEngine.Character in read_team + blue_team:
 		var char_node: Node3D = character_nodes[character.id]
-		char_node.get_node("kaila_r2u/AnimationPlayer").play("run")		
-		
 		var char_basis = Math.apply_quat_to_basis(character.rotation, character.basis)
 		char_node.basis = char_basis
 		char_node.transform.origin = character.position
+		update_animation_state(char_node, character)
+		
+			
+func update_animation_state(char_node: Node3D, character: FightEngine.Character):
+		var animation_player: AnimationPlayer = char_node.get_node("kaila_r2u/AnimationPlayer")
+		
+		if char_to_animation.has(character.id):
+			var current_anim = char_to_animation[character.id]
+			if character.animation_state.id == current_anim:
+				return
+			char_to_animation[character.id] = character.animation_state.id
+		else:
+			char_to_animation[character.id] = character.animation_state.id
+		var anim_name: String
+		match character.animation_state.type:
+			FightEngine.AnimationState.Type.IDLE:
+				anim_name = character.config.stance_anims.pick_random()
+			FightEngine.AnimationState.Type.MOVING:
+				anim_name = character.config.run_anim
+			FightEngine.AnimationState.Type.ATTACKING:
+				anim_name = character.config.fight_anims.pick_random()
+		
+		var animation: Animation = animation_player.get_animation(anim_name)
+		animation.loop_mode = Animation.LOOP_LINEAR if character.animation_state.is_looped else Animation.LOOP_NONE
+		animation_player.play(anim_name, -1, character.animation_state.speed)
