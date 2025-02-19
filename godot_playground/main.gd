@@ -144,9 +144,20 @@ func update_characters():
 		var char_node: Node3D = character_nodes[character.id]
 		char_node.position = character.position
 		char_node.get_node("kaila_r2u/AnimationPlayer").play("run")
-		var x_rotated = character.rotation * Quaternion(char_node.basis.x.x, char_node.basis.x.y, char_node.basis.x.z, 0) * character.rotation.inverse()
-		char_node.basis.x = Vector3(x_rotated.x, x_rotated.y, x_rotated.z)
-		var z_rotated = character.rotation * Quaternion(char_node.basis.z.x, char_node.basis.z.y, char_node.basis.z.z, 0) * character.rotation.inverse()
-		char_node.basis.z = Vector3(z_rotated.x, z_rotated.y, z_rotated.z)
-		print(char_node.basis.z)
-		#char_node.basis.z = (character.rotation * char_node.basis.z) * character.rotation.inverse()
+		
+		var quat = character.rotation
+		var rotation_basis = Basis.IDENTITY * 3
+		var new_x = character.rotation * as_quat(rotation_basis.x) * character.rotation.inverse()
+		var new_y = character.rotation * as_quat(rotation_basis.y) * character.rotation.inverse()
+		var new_z = character.rotation * as_quat(rotation_basis.z) * character.rotation.inverse()
+		rotation_basis.x = from_quat(new_x)
+		rotation_basis.y = from_quat(new_y)
+		rotation_basis.z = from_quat(new_z)
+		
+		char_node.basis = rotation_basis
+
+func as_quat(vec: Vector3):
+	return Quaternion(vec.x, vec.y, vec.z, 0)
+	
+func from_quat(quat: Quaternion):
+	return Vector3(quat.x, quat.y, quat.z)

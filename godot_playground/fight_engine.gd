@@ -33,12 +33,12 @@ func _init(
 								char.position = read_team_position
 								char.rotation = Quaternion(
 									0, sin(PI/4), 0, cos(PI/4)
-								)
+								).normalized()
 							Team.BLUE:
 								char.position = blue_team_position
 								char.rotation = Quaternion(
 									0, -sin(PI/4), 0, cos(PI/4)
-								)
+								).normalized()
 						
 						char.position.z += randf_range(-10.0, 10.0)
 						# TODO: Remove rng
