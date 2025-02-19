@@ -447,7 +447,7 @@ class Character:
 
 	func rotate_to(alignment_vec: Vector3):
 		# Rotates about UP axis
-		assert(alignment_vec.is_normalized(), "Non normalized vector")
+		# Assumes that forward is z axis - it's default in most cases.
 		var angle = atan2(
 			alignment_vec.x,
 			alignment_vec.z
