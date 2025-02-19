@@ -26,21 +26,25 @@ func _init(
 							char_cfg, 
 							team,
 							Vector3.ZERO,
-							Quaternion.IDENTITY
+							Quaternion(Vector3.UP, 0),
+							Basis.IDENTITY * 3
 						)
 						match team:
 							Team.RED:
 								char.position = read_team_position
 								char.rotation = Quaternion(
-									0, sin(PI/4), 0, cos(PI/4)
+									Vector3.UP,
+									PI/2
 								).normalized()
 							Team.BLUE:
 								char.position = blue_team_position
 								char.rotation = Quaternion(
-									0, -sin(PI/4), 0, cos(PI/4)
+									Vector3.UP, 
+									-PI/2
 								).normalized()
+
 						
-						char.position.z += randf_range(-10.0, 10.0)
+						char.position.z += randf_range(-30.0, 30.0)
 						# TODO: Remove rng
 						return char
 				)
@@ -144,7 +148,7 @@ class MoveOp extends Operation:
 		is_one_shot: bool = true
 	):
 		super._init(owner, 1.0)
-		self.speed = speed
+		self.speed = Vector3(speed.x, 0, speed.z)
 		self.is_one_shot = is_one_shot
 		
 	func tick(
@@ -158,6 +162,10 @@ class MoveOp extends Operation:
 				strong_owner.config.run_anim,
 				true
 			)
+		
+		var speed_normalized: Vector3 = speed.normalized()
+		strong_owner.rotate_to(speed_normalized)
+		
 		var ops = super.tick(dt, operation_map)
 		strong_owner.position += self.speed * dt
 		if self.is_one_shot:
@@ -295,9 +303,12 @@ class Character:
 	var move_speed: float
 	var crit_odds: float # TODO: Apply
 	var abilities: Array[CharacterAbility]
+	var ops: Array[Operation]
+	
+	# Transformations
 	var position: Vector3
 	var rotation: Quaternion
-	var ops: Array[Operation]
+	var basis: Basis # Without rotations
 	
 	signal animation_state_changed(old: AnimationState, new: AnimationState)
 	var animation_state = FightEngine.AnimationState.new(
@@ -326,7 +337,8 @@ class Character:
 		config: Configs.CharacterConfig, 
 		team_id: Team, 
 		position: Vector3,
-		rotation: Quaternion
+		rotation: Quaternion,
+		basis: Basis
 	):
 		self.id = id
 		self.team_id = team_id
@@ -341,6 +353,7 @@ class Character:
 		self.abilities = [] # TODO: Implement later
 		self.position = position
 		self.rotation = rotation
+		self.basis = basis
 		self.ops = [] # Enrich with passive abilities
 
 	func lvl_up():
@@ -431,3 +444,14 @@ class Character:
 		else:
 			var enemy = pick_an_enemy_to_move_to(enemies)
 			return [move_to(enemy)]
+
+	func rotate_to(alignment_vec: Vector3):
+		# Rotates about UP axis
+		assert(alignment_vec.is_normalized(), "Non normalized vector")
+		var angle = atan2(
+			alignment_vec.x,
+			alignment_vec.z
+		)
+		rotation = Quaternion(Vector3.UP, angle)
+		
+		
