@@ -170,4 +170,8 @@ func update_animation_state(char_node: Node3D, character: FightEngine.Character)
 		
 		var animation: Animation = animation_player.get_animation(anim_name)
 		animation.loop_mode = Animation.LOOP_LINEAR if character.animation_state.is_looped else Animation.LOOP_NONE
-		animation_player.play(anim_name, -1, character.animation_state.speed)
+		var animation_duration = animation.get_length()
+		var animation_speed = 1.0
+		if character.animation_state.duration > 0:
+			animation_speed = animation_duration / character.animation_state.duration
+		animation_player.play(anim_name, -1, animation_speed)

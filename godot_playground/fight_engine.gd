@@ -3,7 +3,7 @@ class_name FightEngine
 
 extends RefCounted
 
-var rng = RandomNumberGenerator.new()
+static var rng = RandomNumberGenerator.new()
 var characters: Dictionary # Dictionary[Team, Array[Characters]]
 
 
@@ -21,7 +21,7 @@ func _init(
 				characters[team] = allies.map(
 					func (char_cfg: Configs.CharacterConfig):
 						var char = Character.new(
-							rng.randi(), 
+							randi(), # bad but there's no convenient method =)
 							char_cfg, 
 							team,
 							Vector3.ZERO,
@@ -43,8 +43,8 @@ func _init(
 								).normalized()
 
 						
-						char.position.z += randf_range(-10.0, 10.0)
 						# TODO: Remove rng
+						char.position.z += randf_range(-10.0, 10.0)
 						return char
 				)
 		Configs.FightConfig.Mode.AUTOCHESS:
@@ -55,10 +55,11 @@ func get_characters() -> Dictionary:
 	return characters
 
 func loop(dt: float):
-	var is_char_alive = func (c: Character):
-		return c.current_hp > 0
 	var red_team: Array = characters[Team.RED]
 	var blue_team: Array = characters[Team.BLUE]
+	
+	var is_char_alive = func (c: Character):
+		return c.current_hp > 0
 	var red_alive = red_team.filter(is_char_alive)
 	var blue_alive = blue_team.filter(is_char_alive)
 	var all_alive = red_alive + blue_alive
@@ -149,15 +150,15 @@ class MoveOp extends Operation:
 		super._init(owner, 1.0)
 		self.speed = Vector3(speed.x, 0, speed.z)
 		self.is_one_shot = is_one_shot
-		
+	
 	func tick(
 		dt: float, # in seconds
-		operation_map: Dictionary
+		characters: Dictionary
 	) -> Array[Operation]:
 		if progress == 0.0:
 			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.MOVING,
-				1.0,
+				-1.0,
 				true,
 				(
 					strong_owner.animation_state.id 
@@ -169,7 +170,7 @@ class MoveOp extends Operation:
 		var speed_normalized: Vector3 = speed.normalized()
 		strong_owner.look_at(speed_normalized)
 		
-		var ops = super.tick(dt, operation_map)
+		var ops = super.tick(dt, characters)
 		strong_owner.position += self.speed * dt
 		if self.is_one_shot:
 			progress = INF
@@ -179,7 +180,6 @@ class MoveOp extends Operation:
 class AttackOp extends Operation:
 	var target: WeakRef
 	var physical_damage: int
-	var is_recurrent: bool
 	
 	var strong_target: Character:
 		get: return target.get_ref() as Character
@@ -191,40 +191,66 @@ class AttackOp extends Operation:
 		target: WeakRef,
 		physical_damage: int,
 		duration: float, # in sec,
-		progress: float = 0.0,
-		is_recurrent: bool = true
+		progress: float = 0.0
 	):
 		super._init(owner, duration, progress)
 		self.target = target
 		self.physical_damage = physical_damage
-		self.is_recurrent = is_recurrent
 	
 	func finalize(characters: Dictionary):
 		if not failed:
-			# TODO: Add critical damage test
-			strong_target.get_damage(self.physical_damage, 0, self)
+			var is_crit = FightEngine.rng.randf() < strong_owner.crit_odds
+			var multiplier = 2 if is_crit else 1
+			strong_target.get_damage(
+				self.physical_damage * multiplier,
+				0, 
+				self
+			)
 			
 	func update_progress(dt: float):
 		if not strong_target.current_hp > 0:
+			failed = true
 			progress = INF
 		elif strong_owner.distance(strong_target) > strong_owner.config.attack_range * 2:
+			failed = true
 			progress = INF
 		else:
 			super.update_progress(dt)
 	
 	func tick(
 		dt: float, # in seconds
-		operation_map: Dictionary
+		characters: Dictionary
 	) -> Array[Operation]:
 		if progress == 0.0:
 			strong_owner.animation_state = AnimationState.new(
 				AnimationState.Type.ATTACKING,
-				1.0,
+				1.0 / strong_owner.attack_speed,
 				true,
 				randi()
 			)
-		return super.tick(dt, operation_map)
+		return super.tick(dt, characters)
 
+class StanceOp extends Operation:
+	func _init(
+		owner: WeakRef,
+		duration: float = 1,
+		is_one_shot: bool = true
+	):
+		super._init(owner, duration)
+	
+	func tick(dt: float, characters: Dictionary):
+		if progress == 0.0:
+			strong_owner.animation_state = AnimationState.new(
+				AnimationState.Type.IDLE,
+				-1.0,
+				true,
+				(
+					strong_owner.animation_state.id 
+					if strong_owner.animation_state.type == AnimationState.Type.IDLE 
+					else randi()
+				)
+			)
+		return super.tick(dt, characters)
 
 class DeathOp extends Operation:
 	func _init(
@@ -276,18 +302,18 @@ class AnimationState:
 	}
 	
 	var type: Type
-	var speed: float # from 0 to 2
+	var duration: float # any negative to inherit
 	var is_looped: bool
 	var id: int
 	
 	func _init(
 		type: Type, 
-		speed: float,
+		duration: float,
 		is_looped: bool,
 		id: int
 	):
 		self.type = type
-		self.speed = speed
+		self.duration = duration
 		self.is_looped = is_looped
 		self.id = id
 
@@ -302,16 +328,16 @@ class Character:
 	var armor: float # 0 to 1
 	var magic_resistance: float # 0 to 1
 	var attack_damage: int
-	var attack_speed: float
-	var move_speed: float
-	var crit_odds: float # TODO: Apply
+	var attack_speed: float # attacks per se
+	var move_speed: float # points per see
+	var crit_odds: float # 0 to 1
 	var abilities: Array[CharacterAbility]
 	var ops: Array[Operation]
 	
 	# Transformations
 	var position: Vector3
 	var rotation: Quaternion
-	var basis: Basis # Without rotations
+	var basis: Basis # Only scale and 
 	
 	var animation_state = FightEngine.AnimationState.new(
 		AnimationState.Type.IDLE, 
@@ -351,8 +377,8 @@ class Character:
 
 	func lvl_up():
 		self.hps.y += config.level_up.hp_update
-		self.armor = min(config.level_up.armor_update + armor, 60)
-		self.magic_resistance = min(config.level_up.magic_resistance_update + magic_resistance, 60)
+		self.armor += armor
+		self.magic_resistance += config.level_up.magic_resistance_update
 		self.attack_damage += config.level_up.attack_damage_update
 		self.attack_speed += config.level_up.attack_speed_update
 		self.move_speed += config.level_up.move_speed_updates
@@ -427,8 +453,9 @@ class Character:
 			return [] # probably convert to null
 		
 		var allies = characters[team_id].filter(func (c): return c.current_hp > 0)
-		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED].filter(func (c): return c.current_hp > 0)
-		print(characters[Team.BLUE if team_id == Team.RED else Team.RED])
+		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED].filter(
+			func (c): return c.current_hp > 0
+		)
 		for ability in abilities:
 			if ability.is_suitable(self, allies, enemies):
 				return ability.launch(self, allies, enemies)
@@ -439,7 +466,7 @@ class Character:
 			var enemy = pick_an_enemy_to_move_to(enemies)
 			return [move_to(enemy)]
 		else:
-			return []
+			return [StanceOp.new(weakref(self))]
 
 	func look_at(look_at_vec: Vector3):
 		# Rotates about UP axis

@@ -2,14 +2,14 @@ class_name Configs
 
 extends Object
 
-static var hp_scale: int = 1500
-static var move_speed_scale: float = 3.0
-static var attack_speed_scale: float = 1.0
-static var attack_damage_scale: int = 120
-static var attack_range_scale: float = 4
-static var armor_scale: int = 1.0
-static var magic_resistance_scale: int = 1.0
-static var crit_odds_scale: float = 1.0
+static var hp_scale: int = 1500 # absolute points
+static var move_speed_scale: float = 3.0 # points per se
+static var attack_speed_scale: float = 1.0 # attack per se
+static var attack_damage_scale: int = 120 # absolute points
+static var attack_range_scale: float = 4 # absolute points 
+static var armor_scale: float = 1.0 # percent
+static var magic_resistance_scale: float = 1.0 # percent
+static var crit_odds_scale: float = 1.0 # percent
 
 const configs_path = "characters/configs"
 
@@ -103,13 +103,13 @@ class CharacterConfig:
 		return cfg
 
 class LevelUpConfig:
-	var hp_update: float
+	var hp_update: int
 	var move_speed_update: float
-	var attack_damage_update: float
+	var attack_damage_update: int
 	var attack_range_update: float
 	var attack_speed_update: float
-	var armor_update: int
-	var magic_resistance_update: int
+	var armor_update: float
+	var magic_resistance_update: float
 	var crit_odds_update: float
 	
 	static func from_json(cfg: Variant) -> LevelUpConfig:

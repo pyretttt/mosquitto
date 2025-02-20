@@ -6,7 +6,7 @@ data = {
 "armor": 0.0,
 "attack_damage": 1.1,
 "attack_range": 1.0,
-"attack_speed": 1.0,
+"attack_speed": 0.5,
 "class": "warrior",
 "crit_odds": 0.0,
 "fight_anims": ["hit"],
@@ -19,7 +19,7 @@ data = {
 "crit_odds_update": 0.05,
 "hp_update": 0.1,
 "magic_resistance_update": 0.05,
-"move_speed_update": 0.0
+"move_speed_update": 0.1
 },
 "magic_resistance": 0.0,
 "move_speed": 1.0,
