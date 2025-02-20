@@ -20,7 +20,6 @@ func _init(
 					allies.append(config.characters_configs.pick_random())
 				characters[team] = allies.map(
 					func (char_cfg: Configs.CharacterConfig):
-						
 						var char = Character.new(
 							rng.randi(), 
 							char_cfg, 
@@ -44,7 +43,7 @@ func _init(
 								).normalized()
 
 						
-						char.position.z += randf_range(-30.0, 30.0)
+						char.position.z += randf_range(-10.0, 10.0)
 						# TODO: Remove rng
 						return char
 				)
@@ -300,8 +299,8 @@ class Character:
 	
 	# State
 	var hps: Vector2i # Remaining/Total let's be int for a simplicity
-	var armor: float # 0 to 0.6
-	var magic_resistance: float # 0 to 0.6
+	var armor: float # 0 to 1
+	var magic_resistance: float # 0 to 1
 	var attack_damage: int
 	var attack_speed: float
 	var move_speed: float
@@ -321,13 +320,10 @@ class Character:
 		randi()
 	)
 
-	signal health_changed(old: int, new: int)
 	var current_hp: int:
 		get: return hps.x
 		set(value):
-			var old_value = hps.x
-			hps.x = max(0, hps.x) 
-			health_changed.emit(old_value, hps.x)
+			hps.x = max(0, value)
 	
 	func _init(
 		id: int, 
@@ -365,10 +361,10 @@ class Character:
 	func get_damage(physical_damage: int, magic_damage: int, cause: Operation):
 		assert(current_hp > 0, "Character receive damage when not alive")
 		if physical_damage > 0:
-			var taken_physical_damage = roundi(physical_damage * armor)
+			var taken_physical_damage = physical_damage - roundi(physical_damage * armor)
 			current_hp -= taken_physical_damage
 		if magic_damage > 0 and current_hp > 0:
-			var taken_magic_damage = roundi(magic_damage * magic_resistance)
+			var taken_magic_damage = magic_damage - roundi(magic_damage * magic_resistance)
 			current_hp -= taken_magic_damage
 
 	func distance(to: Character) -> float:
@@ -430,17 +426,20 @@ class Character:
 		if not ops.is_empty() and ops[0].is_exclusive:
 			return [] # probably convert to null
 		
-		var allies = characters[team_id]
-		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED]
+		var allies = characters[team_id].filter(func (c): return c.current_hp > 0)
+		var enemies = characters[Team.BLUE if team_id == Team.RED else Team.RED].filter(func (c): return c.current_hp > 0)
+		print(characters[Team.BLUE if team_id == Team.RED else Team.RED])
 		for ability in abilities:
 			if ability.is_suitable(self, allies, enemies):
 				return ability.launch(self, allies, enemies)
 		
 		if has_attack_target(enemies):
 			return attack_enemy(enemies)
-		else:
+		elif not enemies.is_empty():
 			var enemy = pick_an_enemy_to_move_to(enemies)
 			return [move_to(enemy)]
+		else:
+			return []
 
 	func look_at(look_at_vec: Vector3):
 		# Rotates about UP axis
