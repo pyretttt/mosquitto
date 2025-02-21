@@ -274,7 +274,7 @@ ml::Matrix4f inline cameraMatrix(
     result[0][3] = -dotProduct(position, right);
     result[1][3] = -dotProduct(position, upper);
     result[2][3] = -dotProduct(position, lookAt);
-    result[3][3] = 1.f;
+    result[3][3] = 1.0f;
     return glm::transpose(result);
 }
 

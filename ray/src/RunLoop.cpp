@@ -95,6 +95,11 @@ private:
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
+            case SDL_PRESSED:
+                switch (event.key.keysym.sym) {
+                    case SDLK_w:
+                        // camera
+                }
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                 case SDLK_UP:
@@ -121,13 +126,14 @@ private:
                 switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
                     globalConfig.windowSize.value({event.window.data1, event.window.data2});
-                    std::cout << "after resize" << std::endl;
                     break;
                 }
                 break;
             default:
                 break;
             }
+
+            sdlController.renderer->processInput(&event);
         }
     }
 

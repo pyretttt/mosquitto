@@ -47,11 +47,31 @@ sdl::Renderer::~Renderer() {
     SDL_DestroyRenderer(renderer);
 }
 
+void sdl::Renderer::processInput(void const *eventData) {
+    SDL_Event event = *reinterpret_cast<SDL_Event const *>(eventData);
+    static float const cameraSpeed = 0.5f;
+    switch (event.type) {
+    case SDL_KEYDOWN:
+        switch (event.key.keysym.sym) {
+            case SDLK_w:
+            case SDLK_a:
+            case SDLK_d:
+            case SDLK_s:
+                camera()->handleInput(
+                    CameraInput::Translate::make(event.key.keysym.sym, cameraSpeed)
+                );
+        }
+    // case SDL
+    default:
+        break;
+    }
+}
+
 void sdl::Renderer::update(
     MeshData const &data, float dt
 ) {
     ml::Matrix4f const perspectiveProjectionMatrix = camera()->getScenePerspectiveProjectionMatrix();
-    ml::Matrix4f const cameraTransformation = camera()->getCameraTransformation();
+    ml::Matrix4f const cameraTransformation = camera()->getViewTransformation();
     for (auto const &node : data) {
         auto const &mesh = node.meshBuffer;
         auto const transformMatrix = node.getTransform();

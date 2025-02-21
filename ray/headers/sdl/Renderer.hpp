@@ -22,6 +22,7 @@ struct Renderer : public ::Renderer {
     Renderer operator=(Renderer &&other) = delete;
     Renderer operator=(Renderer const &other) = delete;
     Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution, Lazy<Camera> camera);
+    void processInput(void const *) override;
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
