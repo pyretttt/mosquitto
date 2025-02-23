@@ -112,6 +112,7 @@
         "valarray": "cpp",
         "cassert": "cpp",
         "scoped_allocator": "cpp",
-        "exception": "cpp"
+        "exception": "cpp",
+        "__memory": "cpp"
     }
 }

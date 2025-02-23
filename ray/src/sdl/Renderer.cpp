@@ -49,7 +49,7 @@ sdl::Renderer::~Renderer() {
 
 void sdl::Renderer::processInput(void const *eventData) {
     SDL_Event event = *reinterpret_cast<SDL_Event const *>(eventData);
-    static float const cameraSpeed = 0.5f;
+    static float const cameraSpeed = 0.25f;
     switch (event.type) {
     case SDL_KEYDOWN:
         switch (event.key.keysym.sym) {
@@ -60,9 +60,29 @@ void sdl::Renderer::processInput(void const *eventData) {
                 camera()->handleInput(
                     CameraInput::Translate::make(event.key.keysym.sym, cameraSpeed)
                 );
+                break;
+            case SDLK_f:
+                auto const currentValue = SDL_ShowCursor(SDL_QUERY);
+                SDL_ShowCursor(currentValue == SDL_ENABLE ? SDL_DISABLE : SDL_ENABLE);
+                break;
         }
-    // case SDL
-    default:
+    case SDL_MOUSEMOTION:
+        auto const isTrackingMoution = SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE;
+        if (isTrackingMoution) {
+            // Some strange behavior when cursor is switched it reports huge delta
+            if (std::abs(event.motion.yrel) > (int32_t)resolution.second
+             || std::abs(event.motion.yrel) > (int32_t)resolution.first) {
+                break;
+            }
+            camera()->handleInput(
+                CameraInput::Rotate {
+                    .delta = std::make_pair(
+                        event.motion.yrel,
+                        event.motion.xrel
+                    )
+                }
+            );
+        }
         break;
     }
 }

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 #include "sdl/Camera.hpp"
 
@@ -40,11 +41,19 @@ void sdl::Camera::handleInput(CameraInput::Cases const &input) noexcept {
         origin.z += +value->backward - value->forward;
         origin.x += value->right - value->left;
     } else if (auto const *value = std::get_if<CameraInput::Rotate>(&input)) {
-
+        static float const mouseSpeed = 0.01f;
+        float dy = value->delta.first * mouseSpeed;
+        float dx = value->delta.second * mouseSpeed;
+        rotate_about_x += dy;
+        rotate_about_x = std::max(std::min(rotate_about_x, ml::kPI_2), -ml::kPI_2);
+        rotate_about_y += dx;
     }
 
+    lookAt.x = sinf(rotate_about_y);
+    lookAt.y = -cosf(rotate_about_y) * sinf(rotate_about_x);
+    lookAt.z = -cosf(rotate_about_x) * cosf(rotate_about_y);
+
     viewMatrix = ml::cameraMatrix(origin, lookAt + origin);
-    std::cout << "Origin.z " << origin.z << std::endl;
 }
 
 ml::Matrix4f const &sdl::Camera::getViewTransformation() const noexcept {

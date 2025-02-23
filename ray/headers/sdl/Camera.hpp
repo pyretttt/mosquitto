@@ -40,7 +40,7 @@ struct CameraInput {
         }
     };
     struct Rotate {
-        std::array<ml::Vector2f, 3> uv;
+        std::pair<int32_t, int32_t> delta;
     };
 
     using Cases = std::variant<Translate, Rotate>;
@@ -66,12 +66,13 @@ public:
 private:
     ml::Vector3f origin;
     ml::Vector3f lookAt = {0, 0, -1};
-    // ml::Vector3f up;
-    // ml::Vector3f right;
     std::unique_ptr<ObservableObject<float>> fov_;
     std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize_;
     ml::Matrix4f viewMatrix;
     ml::Matrix4f perspectiveProjectionMatrix;
     Connections connections;
+
+    float rotate_about_x = 0, rotate_about_y = 0; // x and y
+    std::optional<int32_t> last_x, last_y;
 };
 } // namespace sdl

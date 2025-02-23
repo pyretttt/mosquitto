@@ -66,7 +66,7 @@ public:
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
             previousFrameTicks = currentTicks;
-            std::cout << "Dt " << dt << std::endl;
+            // std::cout << "Dt " << dt << std::endl;
             ml::Matrix4f transformationMatrix = ml::scaleMatrix(15, 15, 15);
             transformationMatrix = ml::matMul(
                 ml::rodriguezRotationMatrix({0, 1, 0}, static_cast<float>(freezeTick.has_value() ? freezeTick.value() : currentTicks) / 1000),

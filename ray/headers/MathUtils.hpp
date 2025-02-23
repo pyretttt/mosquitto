@@ -9,6 +9,9 @@
 
 namespace ml {
 
+constexpr float kPI = M_PI;
+constexpr float kPI_2 = M_PI / 2;
+
 using Vector4f = glm::vec4;
 using Vector3f = glm::vec3;
 using Vector2f = glm::vec2;
