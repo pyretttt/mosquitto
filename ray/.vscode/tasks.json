@@ -2,6 +2,28 @@
     "tasks": [
         {
             "type": "shell",
+            "label": "cmake_macos_configure",
+            "command": "cmake",
+            "args": [
+                "-S",
+                ".",
+                "-B",
+                "./build",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_C_COMPILER=/usr/bin/clang",
+                "-DCMAKE_CXX_COMPILER=/usr/bin/clang++"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Runs cmake configuration for macos using clang compiler (cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++)"
+        },
+        {
+            "type": "shell",
             "label": "cmake_build",
             "command": "cmake",
             "args": [

@@ -114,5 +114,7 @@
         "scoped_allocator": "cpp",
         "exception": "cpp",
         "__memory": "cpp"
-    }
+    },
+    "cmake.configureOnOpen": false,
+    "cmake.configureOnEdit": false
 }

@@ -70,7 +70,7 @@ void sdl::Renderer::processInput(void const *eventData) {
         auto const isTrackingMoution = SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE;
         if (isTrackingMoution) {
             // Some strange behavior when cursor is switched it reports huge delta
-            if (std::abs(event.motion.yrel) > (int32_t)resolution.second
+            if (std::abs(event.motion.xrel) > (int32_t)resolution.second
              || std::abs(event.motion.yrel) > (int32_t)resolution.first) {
                 break;
             }

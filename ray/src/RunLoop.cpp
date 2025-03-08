@@ -98,7 +98,7 @@ private:
             case SDL_PRESSED:
                 switch (event.key.keysym.sym) {
                     case SDLK_w:
-                        // camera
+                        break;
                 }
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
