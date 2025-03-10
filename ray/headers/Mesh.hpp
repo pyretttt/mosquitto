@@ -6,26 +6,27 @@
 #include "MathUtils.hpp"
 
 struct Attributes {
-    struct Color {
-        std::array<uint32_t, 3> color;
-    };
-    struct Texture {
-        std::array<ml::Vector2f, 3> uv;
-    };
+    using Color = uint32_t;
+    using TextureUV = ml::Vector2f;
+    using Value = float;
 
-    using Cases = std::variant<Color, Texture>;
+    using Cases = std::variant<Color, TextureUV, Value>;
 };
 
 struct Face {
-    Face(int a, int b, int c, Attributes::Cases attributes);
+    Face(int a, int b, int c);
     int a, b, c;
-    Attributes::Cases attributes;
 };
 
 struct MeshBuffer {
-    MeshBuffer(std::vector<ml::Vector3f> const &vertices, std::vector<Face> const &faces);
+    MeshBuffer(
+        std::vector<ml::Vector3f> const &vertices, 
+        std::vector<Face> const &faces, 
+        std::vector<Attributes::Cases> const &attributes
+    );
     std::vector<ml::Vector3f> vertices;
     std::vector<Face> faces;
+    std::vector<Attributes::Cases> attributes;
     // TODO: Add texture
 };
 
@@ -43,8 +44,8 @@ struct MeshNode {
 struct Triangle {
     Triangle(
         std::array<ml::Vector4f, 3> vertices,
-        Attributes::Cases attributes
+        std::array<Attributes::Cases, 3> attributes
     );
     std::array<ml::Vector4f, 3> vertices;
-    Attributes::Cases attributes;
+    std::array<Attributes::Cases, 3> attributes;
 };

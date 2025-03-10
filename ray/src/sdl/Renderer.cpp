@@ -2,11 +2,13 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <array>
 
 #include "MathUtils.hpp"
 #include "Utility.hpp"
 #include "sdl/Camera.hpp"
 #include "sdl/Renderer.hpp"
+#include "Polygon.hpp"
 
 template <typename T>
 static void safeMemorySet(
@@ -122,6 +124,20 @@ void sdl::Renderer::update(
                 ml::matMul(perspectiveProjectionMatrix, vertexC)
             };
 
+            std::array<Attributes::Cases, 3> attributes = {
+                    mesh.attributes[face.a],
+                    mesh.attributes[face.b],
+                    mesh.attributes[face.c],
+            };
+            auto polygon = Polygon::fromTriangle(
+                Triangle(
+                    std::to_array<ml::Vector4f>(projectedPoints),
+                    attributes
+                )
+            );
+            polygon
+
+
             float z0 = projectedPoints[0][3], z1 = projectedPoints[1][3], z2 = projectedPoints[2][3];
             for (size_t i = 0; i < 3; i++) {
                 projectedPoints[i] = ml::matrixScale(projectedPoints[i], 1 / projectedPoints[i][3]);
@@ -139,7 +155,11 @@ void sdl::Renderer::update(
                  screenProjectedPoints[1],
                  screenProjectedPoints[2]
                 },
-                face.attributes
+                {
+                    mesh.attributes[face.a],
+                    mesh.attributes[face.b],
+                    mesh.attributes[face.c],
+                }
             };
 
             auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);

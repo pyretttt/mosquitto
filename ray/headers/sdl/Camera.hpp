@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <variant>
+#include <vector>
 
 #include "SDL.h"
 
@@ -62,6 +63,7 @@ public:
     ml::Matrix4f const &getViewTransformation() const noexcept;
 
     void handleInput(CameraInput::Cases const &cameraInput) noexcept;
+    // std::vector<>
 
 private:
     ml::Vector3f origin;

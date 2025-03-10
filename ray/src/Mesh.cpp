@@ -1,18 +1,20 @@
 #include "Mesh.hpp"
 
 Face::Face(
-    int a, int b, int c, Attributes::Cases attributes
+    int a, int b, int c
 )
     : a(a),
       b(b),
-      c(c),
-      attributes(attributes) {}
+      c(c) {}
 
 MeshBuffer::MeshBuffer(
-    std::vector<ml::Vector3f> const &vertices, std::vector<Face> const &faces
+    std::vector<ml::Vector3f> const &vertices, 
+    std::vector<Face> const &faces,
+    std::vector<Attributes::Cases> const &attributes
 )
     : vertices(vertices),
-      faces(faces) {}
+      faces(faces),
+      attributes(attributes) {}
 
 MeshNode::MeshNode(
     MeshBuffer const &meshBuffer
@@ -27,7 +29,7 @@ ml::Matrix4f MeshNode::getTransform() const noexcept {
 
 Triangle::Triangle(
     std::array<ml::Vector4f, 3> vertices,
-    Attributes::Cases attributes
+    std::array<Attributes::Cases, 3> attributes
 )
     : vertices(vertices),
       attributes(attributes) {}

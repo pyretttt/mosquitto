@@ -113,7 +113,9 @@
         "cassert": "cpp",
         "scoped_allocator": "cpp",
         "exception": "cpp",
-        "__memory": "cpp"
+        "__memory": "cpp",
+        "dense": "cpp",
+        "cfloat": "cpp"
     },
     "cmake.configureOnOpen": false,
     "cmake.configureOnEdit": false
