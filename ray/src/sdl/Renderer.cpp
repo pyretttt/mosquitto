@@ -135,8 +135,6 @@ void sdl::Renderer::update(
                     attributes
                 )
             );
-            polygon
-
 
             float z0 = projectedPoints[0][3], z1 = projectedPoints[1][3], z2 = projectedPoints[2][3];
             for (size_t i = 0; i < 3; i++) {
