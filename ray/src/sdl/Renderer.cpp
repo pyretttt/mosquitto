@@ -135,57 +135,62 @@ void sdl::Renderer::update(
                     attributes
                 )
             );
+            polygon.clip();
+            auto const triangles = polygon.getTriangles();
 
-            float z0 = projectedPoints[0][3], z1 = projectedPoints[1][3], z2 = projectedPoints[2][3];
-            for (size_t i = 0; i < 3; i++) {
-                projectedPoints[i] = ml::matrixScale(projectedPoints[i], 1 / projectedPoints[i][3]);
-            }
-
-            // screen space projection
-            ml::Vector4f screenProjectedPoints[] = {
-                ml::matMul(screenSpaceProjection_, projectedPoints[0]),
-                ml::matMul(screenSpaceProjection_, projectedPoints[1]),
-                ml::matMul(screenSpaceProjection_, projectedPoints[2])
-            };
-
-            Triangle tri = {
-                {screenProjectedPoints[0],
-                 screenProjectedPoints[1],
-                 screenProjectedPoints[2]
-                },
-                {
-                    mesh.attributes[face.a],
-                    mesh.attributes[face.b],
-                    mesh.attributes[face.c],
+            for (size_t triangleIdx = 0; triangleIdx < polygon.numTriangles(); triangleIdx++) {
+                auto triangleToRender = triangles[triangleIdx];
+                float z0 = triangleToRender.vertices[0][3], z1 = triangleToRender.vertices[1][3], z2 = triangleToRender.vertices[2][3];
+                for (size_t i = 0; i < 3; i++) {
+                    triangleToRender.vertices[i] = ml::matrixScale(triangleToRender.vertices[i], 1 / triangleToRender.vertices[i][3]);
                 }
-            };
 
-            auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
-            auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
-            uint32_t color = interpolateRGBAColorIntensity(
-                0x00FF0088,
-                lightIntensity,
-                0.1f
-            );
+                // screen space projection
+                // ml::Vector4f screenProjectedPoints[] = {
+                //     ml::matMul(screenSpaceProjection_, triangleToRender.vertices[0]),
+                //     ml::matMul(screenSpaceProjection_, triangleToRender.vertices[1]),
+                //     ml::matMul(screenSpaceProjection_, triangleToRender.vertices[2])
+                // };
+                
+                for (size_t i = 0; i < 3; i++) {
+                    triangleToRender.vertices[i] = ml::matMul(screenSpaceProjection_, triangleToRender.vertices[i]);
+                }
 
-            auto const renderMethod = RenderMethod::fill;
-            switch (renderMethod) {
-            case RenderMethod::vertices:
-                for (size_t j = 0; j < 3; j++) {
-                    drawPoint(color, {tri.vertices[j][0], tri.vertices[j][1]}, 3);
+                // Triangle tri = {
+                //     {screenProjectedPoints[0],
+                //     screenProjectedPoints[1],
+                //     screenProjectedPoints[2]
+                //     },
+                    
+                // };
+
+                auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
+                auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
+                uint32_t color = interpolateRGBAColorIntensity(
+                    0x00FF0088,
+                    lightIntensity,
+                    0.1f
+                );
+
+                auto const renderMethod = RenderMethod::fill;
+                switch (renderMethod) {
+                case RenderMethod::vertices:
+                    for (size_t j = 0; j < 3; j++) {
+                        drawPoint(color, {triangleToRender.vertices[j][0], triangleToRender.vertices[j][1]}, 3);
+                    }
+                    break;
+                case RenderMethod::wireframe:
+                    drawLine({triangleToRender.vertices[0][0], triangleToRender.vertices[0][1]}, {triangleToRender.vertices[1][0], triangleToRender.vertices[1][1]}, color);
+                    drawLine({triangleToRender.vertices[1][0], triangleToRender.vertices[1][1]}, {triangleToRender.vertices[2][0], triangleToRender.vertices[2][1]}, color);
+                    drawLine({triangleToRender.vertices[2][0], triangleToRender.vertices[2][1]}, {triangleToRender.vertices[0][0], triangleToRender.vertices[0][1]}, color);
+                    for (size_t j = 0; j < 3; j++) {
+                        drawPoint(color, {triangleToRender.vertices[j][0], triangleToRender.vertices[j][1]}, 3);
+                    }
+                    break;
+                case RenderMethod::fill:
+                    fillTriangle(triangleToRender, z0, z1, z2, color);
+                    break;
                 }
-                break;
-            case RenderMethod::wireframe:
-                drawLine({tri.vertices[0][0], tri.vertices[0][1]}, {tri.vertices[1][0], tri.vertices[1][1]}, color);
-                drawLine({tri.vertices[1][0], tri.vertices[1][1]}, {tri.vertices[2][0], tri.vertices[2][1]}, color);
-                drawLine({tri.vertices[2][0], tri.vertices[2][1]}, {tri.vertices[0][0], tri.vertices[0][1]}, color);
-                for (size_t j = 0; j < 3; j++) {
-                    drawPoint(color, {tri.vertices[j][0], tri.vertices[j][1]}, 3);
-                }
-                break;
-            case RenderMethod::fill:
-                fillTriangle(tri, z0, z1, z2, color);
-                break;
             }
         }
     }

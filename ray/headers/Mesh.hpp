@@ -42,6 +42,7 @@ struct MeshNode {
 };
 
 struct Triangle {
+    Triangle() = default;
     Triangle(
         std::array<ml::Vector4f, 3> vertices,
         std::array<Attributes::Cases, 3> attributes

@@ -5,6 +5,8 @@
 #include "Plane.hpp"
 
 constexpr static size_t maxVerticesAfterClipping = 10;
+constexpr static size_t maxTrianglesAfterClipping = maxVerticesAfterClipping - 2;
+
 
 struct Triangle;
 struct Plane;
@@ -16,5 +18,7 @@ struct Polygon {
 
     static Polygon fromTriangle(Triangle const &tri);
 
-    void clip(ClippingPlanes const &planes) noexcept;
+    void clip() noexcept;
+    std::array<Triangle, maxVerticesAfterClipping - 2> getTriangles() noexcept;
+    size_t numTriangles() noexcept;
 };
