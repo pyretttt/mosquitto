@@ -7,11 +7,11 @@
 namespace {
     float signedDistanceToPlane(
         ml::Vector4f const &vertex,
-        ml::Vector3f const &plane
+        Plane plane
     ) {
-        auto const w = ml::matrixScale(plane, vertex.w);
-        auto const vertexComponent = ml::dotProduct(plane, ml::as<3, 4, float>(vertex));
-        return (w.x + w.y + w.z) - vertexComponent;
+        Plane translatedPlane = plane;
+        translatedPlane.point = ml::matrixScale(translatedPlane.point, vertex.w);
+        return plane.signedDistance(vertex);
     }
 
     ml::Vector4f interpolate(ml::Vector4f const &a, ml::Vector4f const &b, float t) {
@@ -37,13 +37,13 @@ Polygon Polygon::fromTriangle(Triangle const &tri) {
 }
 
 void Polygon::clip() noexcept {
-    static std::vector<ml::Vector3f> planes = {
-        ml::Vector3f(1, 0, 0), // Right
-        ml::Vector3f(-1, 0, 0), // Left
-        ml::Vector3f(0, 1, 0), // Up
-        ml::Vector3f(0, -1, 0), // Down
-        ml::Vector3f(0, 0, 1), // Forward
-        ml::Vector3f(0, 0, -1) // Backward
+    static std::vector<Plane> planes = {
+        Plane(ml::Vector3f(1, 0, 0), ml::Vector3f(-1, 0, 0)), // Right
+        Plane(ml::Vector3f(-1, 0, 0), ml::Vector3f(1, 0, 0)), // Left
+        Plane(ml::Vector3f(0, 1, 0), ml::Vector3f(0, -1, 0)), // Up
+        Plane(ml::Vector3f(0, -1, 0), ml::Vector3f(0, 1, 0)), // Down
+        Plane(ml::Vector3f(0, 0, 1), ml::Vector3f(0, 0, 1)), // Forward
+        Plane(ml::Vector3f(0, 0, 0), ml::Vector3f(0, 0, -1)), // Backward
     };
     for (auto const &plane : planes) {
         std::array<ml::Vector4f, maxVerticesAfterClipping> insideVertices;

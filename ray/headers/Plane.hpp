@@ -12,6 +12,11 @@ struct Plane {
 
     ml::Vector3f point;
     ml::Vector3f normal;
+
+    constexpr inline float signedDistance(ml::Vector3f const &vertex) noexcept {
+        ml::Vector3f const pointingVector = vertex - point;
+        return ml::dotProduct(normal, pointingVector) / ml::euclideanNorm(normal);
+    }
 };
 
 using ClippingPlanes = std::array<Plane, 6>;
