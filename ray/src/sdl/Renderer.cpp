@@ -125,9 +125,9 @@ void sdl::Renderer::update(
             };
 
             std::array<Attributes::Cases, 3> attributes = {
-                    mesh.attributes[face.a],
-                    mesh.attributes[face.b],
-                    mesh.attributes[face.c],
+                mesh.attributes[face.a],
+                mesh.attributes[face.b],
+                mesh.attributes[face.c],
             };
             auto polygon = Polygon::fromTriangle(
                 Triangle(

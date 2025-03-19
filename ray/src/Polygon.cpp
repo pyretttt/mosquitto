@@ -1,7 +1,9 @@
 #include <array>
+#include <iostream>
 
 #include "Polygon.hpp"
 #include "Mesh.hpp"
+#include "Output.hpp"
 
 
 namespace {
@@ -9,9 +11,9 @@ namespace {
         ml::Vector4f const &vertex,
         Plane plane
     ) {
-        Plane translatedPlane = plane;
-        translatedPlane.point = ml::matrixScale(translatedPlane.point, vertex.w);
-        return plane.signedDistance(vertex);
+        plane.point = ml::matrixScale(plane.point, vertex.w);
+        std::cout << "plane.point " << plane.point << std::endl;
+        return plane.signedDistance(ml::as<3, 4, float>(vertex));
     }
 
     ml::Vector4f interpolate(ml::Vector4f const &a, ml::Vector4f const &b, float t) {
@@ -55,6 +57,11 @@ void Polygon::clip() noexcept {
             auto const distanceToCurrent = signedDistanceToPlane(*currentVertex, plane);
             auto const distanceToPrevious = signedDistanceToPlane(*previousVertex, plane);
 
+            std::cout << *currentVertex << std::endl;
+            std::cout << *previousVertex << std::endl;
+            std::cout << plane.normal << std::endl;
+            std::cout << plane.point << std::endl;
+
             if (distanceToCurrent * distanceToPrevious < 0) {
                 auto const distance = distanceToCurrent - distanceToPrevious;
                 auto const t = distanceToCurrent / (distanceToCurrent - distanceToPrevious);
@@ -71,7 +78,7 @@ void Polygon::clip() noexcept {
             previousVertex = currentVertex++;
         }
 
-        for (size_t i = 0; i <= currentIdx; i++) {
+        for (size_t i = 0; i < currentIdx; i++) {
             vertices[i] = insideVertices[i];
         }
         nVertices = currentIdx + 1;
