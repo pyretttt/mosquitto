@@ -1,5 +1,6 @@
 #include <array>
 #include <iostream>
+#include <algorithm>
 
 #include "Polygon.hpp"
 #include "Mesh.hpp"
@@ -11,16 +12,8 @@ namespace {
         ml::Vector4f const &vertex,
         Plane plane
     ) {
-        plane.point = ml::matrixScale(plane.point, vertex.w);
-        std::cout << "plane.point " << plane.point << std::endl;
+        plane.point = ml::matrixScale(plane.point, std::abs(vertex.w));
         return plane.signedDistance(ml::as<3, 4, float>(vertex));
-    }
-
-    ml::Vector4f interpolate(ml::Vector4f const &a, ml::Vector4f const &b, float t) {
-        assert(t <= 1.0 && t >= 0.0);
-        ml::Vector4f diff = b - a;
-        ml::Vector4f const newVertex = a + ml::matrixScale(diff, 1 - t);
-        return newVertex;
     }
 }
 
@@ -39,49 +32,49 @@ Polygon Polygon::fromTriangle(Triangle const &tri) {
 }
 
 void Polygon::clip() noexcept {
+    // Forward and backward planes here are 180 degrees rotated around Y by origin point.
+    // In righthand system we're interested in vertices with negative `z`. After perspective projection matrix negative `z` becames positive.
+    // So to acknowledge it we flip forward and backward planes.
     static std::vector<Plane> planes = {
         Plane(ml::Vector3f(1, 0, 0), ml::Vector3f(-1, 0, 0)), // Right
         Plane(ml::Vector3f(-1, 0, 0), ml::Vector3f(1, 0, 0)), // Left
         Plane(ml::Vector3f(0, 1, 0), ml::Vector3f(0, -1, 0)), // Up
         Plane(ml::Vector3f(0, -1, 0), ml::Vector3f(0, 1, 0)), // Down
-        Plane(ml::Vector3f(0, 0, 1), ml::Vector3f(0, 0, 1)), // Forward
-        Plane(ml::Vector3f(0, 0, 0), ml::Vector3f(0, 0, -1)), // Backward
+        Plane(ml::Vector3f(0, 0, 1), ml::Vector3f(0, 0, -1)), // Forward
+        Plane(ml::Vector3f(0, 0, 0), ml::Vector3f(0, 0, 1)), // Backward
     };
     for (auto const &plane : planes) {
         std::array<ml::Vector4f, maxVerticesAfterClipping> insideVertices;
-        size_t currentIdx = 0;
-        auto currentVertex = &vertices[currentIdx];
+        size_t insideCount = 0;
+        auto currentVertex = &vertices[0];
         auto previousVertex = &vertices[nVertices - 1];
 
-        while (currentVertex != &vertices[nVertices - 1]) {
+        while (currentVertex != &vertices[nVertices]) {
             auto const distanceToCurrent = signedDistanceToPlane(*currentVertex, plane);
             auto const distanceToPrevious = signedDistanceToPlane(*previousVertex, plane);
 
-            std::cout << *currentVertex << std::endl;
-            std::cout << *previousVertex << std::endl;
-            std::cout << plane.normal << std::endl;
-            std::cout << plane.point << std::endl;
-
             if (distanceToCurrent * distanceToPrevious < 0) {
-                auto const distance = distanceToCurrent - distanceToPrevious;
-                auto const t = distanceToCurrent / (distanceToCurrent - distanceToPrevious);
+                // auto const distance = distanceToCurrent - distanceToPrevious;
+                // auto const t = distanceToPrevious / (distanceToPrevious - distanceToCurrent);
                 auto const intersection = ml::matrixScale(
-                    ml::matrixScale(*previousVertex, distanceToCurrent) 
-                        - ml::matrixScale(*currentVertex, distanceToPrevious), 
-                    distance
+                    ml::matrixScale(*currentVertex, distanceToPrevious) 
+                        - ml::matrixScale(*previousVertex, distanceToCurrent), 
+                    distanceToPrevious - distanceToCurrent
                 );
-                insideVertices[currentIdx++] = intersection;
-            } else {
-                insideVertices[currentIdx++] = *currentVertex;
+                insideVertices[insideCount++] = intersection;
+            }
+            if (distanceToCurrent > 0) {
+                insideVertices[insideCount++] = *currentVertex;
             }
 
-            previousVertex = currentVertex++;
+            previousVertex = currentVertex;
+            currentVertex++;
         }
 
-        for (size_t i = 0; i < currentIdx; i++) {
+        for (size_t i = 0; i < insideCount; i++) {
             vertices[i] = insideVertices[i];
         }
-        nVertices = currentIdx + 1;
+        nVertices = insideCount;
     }
 }
 
@@ -98,5 +91,5 @@ std::array<Triangle, maxTrianglesAfterClipping> Polygon::getTriangles() noexcept
 }
 
 size_t Polygon::numTriangles() noexcept {
-    return nVertices - 2;
+    return std::max(0, static_cast<int>(nVertices - 2));
 }

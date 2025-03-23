@@ -144,25 +144,10 @@ void sdl::Renderer::update(
                 for (size_t i = 0; i < 3; i++) {
                     triangleToRender.vertices[i] = ml::matrixScale(triangleToRender.vertices[i], 1 / triangleToRender.vertices[i][3]);
                 }
-
-                // screen space projection
-                // ml::Vector4f screenProjectedPoints[] = {
-                //     ml::matMul(screenSpaceProjection_, triangleToRender.vertices[0]),
-                //     ml::matMul(screenSpaceProjection_, triangleToRender.vertices[1]),
-                //     ml::matMul(screenSpaceProjection_, triangleToRender.vertices[2])
-                // };
                 
                 for (size_t i = 0; i < 3; i++) {
                     triangleToRender.vertices[i] = ml::matMul(screenSpaceProjection_, triangleToRender.vertices[i]);
                 }
-
-                // Triangle tri = {
-                //     {screenProjectedPoints[0],
-                //     screenProjectedPoints[1],
-                //     screenProjectedPoints[2]
-                //     },
-                    
-                // };
 
                 auto const lightInverseDirection = ml::matrixScale(std::get<sdl::light::DirectionalLight>(light).direction, -1.f);
                 auto const lightIntensity = ml::cosineSimilarity(faceNormal, lightInverseDirection);
@@ -172,7 +157,7 @@ void sdl::Renderer::update(
                     0.1f
                 );
 
-                auto const renderMethod = RenderMethod::fill;
+                auto const renderMethod = RenderMethod::wireframe;
                 switch (renderMethod) {
                 case RenderMethod::vertices:
                     for (size_t j = 0; j < 3; j++) {
