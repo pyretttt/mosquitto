@@ -12,7 +12,7 @@ namespace {
         ml::Vector4f const &vertex,
         Plane plane
     ) {
-        plane.point = ml::matrixScale(plane.point, std::abs(vertex.w));
+        plane.point = ml::matrixScale(plane.point, vertex.w);
         return plane.signedDistance(ml::as<3, 4, float>(vertex));
     }
 }
@@ -32,14 +32,14 @@ Polygon Polygon::fromTriangle(Triangle const &tri) {
 }
 
 void Polygon::clip() noexcept {
-    // Forward and backward planes here are 180 degrees rotated around Y by origin point.
-    // In righthand system we're interested in vertices with negative `z`. After perspective projection matrix negative `z` becames positive.
-    // So to acknowledge it we flip forward and backward planes.
     static std::vector<Plane> planes = {
         Plane(ml::Vector3f(1, 0, 0), ml::Vector3f(-1, 0, 0)), // Right
         Plane(ml::Vector3f(-1, 0, 0), ml::Vector3f(1, 0, 0)), // Left
         Plane(ml::Vector3f(0, 1, 0), ml::Vector3f(0, -1, 0)), // Up
         Plane(ml::Vector3f(0, -1, 0), ml::Vector3f(0, 1, 0)), // Down
+        // Forward and backward planes here are 180 degrees rotated around Y by origin point.
+        // In righthand system we're interested in vertices with negative `z`. After perspective projection matrix negative `z` becames positive.
+        // So to acknowledge it we flip forward and backward planes.
         Plane(ml::Vector3f(0, 0, 1), ml::Vector3f(0, 0, -1)), // Forward
         Plane(ml::Vector3f(0, 0, 0), ml::Vector3f(0, 0, 1)), // Backward
     };

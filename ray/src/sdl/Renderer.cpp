@@ -207,7 +207,10 @@ void sdl::Renderer::drawPoint(
     int thick = thickness;
     for (int i = -thick; i < thick; i++) {
         for (int j = -thick; j < thick; j++) {
-            colorBuffer[position.x + i + (position.y + j) * resolution.first] = color;
+            size_t y = position.y + j;
+            size_t x = position.x + i;
+            if (x >= resolution.first || y >= resolution.second) { continue; }
+            colorBuffer[x + y * resolution.first] = color;
         }
     }
 }
@@ -249,6 +252,7 @@ void sdl::Renderer::drawLine(
         if (isSteep) {
             std::swap(x, y);
         }
+        if (x >= res.first || y >= res.second) { return; }
         p[x + y * res.first] = value;
     };
 
