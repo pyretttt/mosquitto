@@ -3,12 +3,6 @@
 #include <cmath>
 #include <functional>
 
-template <typename T>
-constexpr inline T &&modified(T &&object, std::function<void(T &)> modification) {
-    modification(object);
-    return object;
-}
-
 inline constexpr uint32_t interpolateRGBAColorIntensity(uint32_t argb, float intensity, float minValue = 0.0f) {
     float alpha = std::min(std::max(minValue, intensity), 1.0f);
     

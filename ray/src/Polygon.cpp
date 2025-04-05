@@ -45,34 +45,42 @@ void Polygon::clip() noexcept {
     };
     for (auto const &plane : planes) {
         std::array<ml::Vector4f, maxVerticesAfterClipping> insideVertices;
+        std::array<Attributes::Cases, maxVerticesAfterClipping> insideAttributes;
         size_t insideCount = 0;
         auto currentVertex = &vertices[0];
         auto previousVertex = &vertices[nVertices - 1];
+        auto currentAttributes = &insideAttributes[0];
+        auto previousAttributes = &insideAttributes[nVertices - 1];
 
         while (currentVertex != &vertices[nVertices]) {
             auto const distanceToCurrent = signedDistanceToPlane(*currentVertex, plane);
             auto const distanceToPrevious = signedDistanceToPlane(*previousVertex, plane);
 
             if (distanceToCurrent * distanceToPrevious < 0) {
-                // auto const distance = distanceToCurrent - distanceToPrevious;
-                // auto const t = distanceToPrevious / (distanceToPrevious - distanceToCurrent);
+                auto const distance = distanceToPrevious - distanceToCurrent;
+                auto const t = distanceToPrevious / distance;
                 auto const intersection = ml::matrixScale(
                     ml::matrixScale(*currentVertex, distanceToPrevious) 
                         - ml::matrixScale(*previousVertex, distanceToCurrent), 
-                    distanceToPrevious - distanceToCurrent
+                        distance
                 );
+                insideAttributes[insideCount] = Attributes::intepolate(*currentAttributes, *previousAttributes, t);
                 insideVertices[insideCount++] = intersection;
             }
             if (distanceToCurrent > 0) {
+                insideAttributes[insideCount] = *currentAttributes;
                 insideVertices[insideCount++] = *currentVertex;
             }
 
             previousVertex = currentVertex;
+            previousAttributes = currentAttributes;
             currentVertex++;
+            currentAttributes++;
         }
 
         for (size_t i = 0; i < insideCount; i++) {
             vertices[i] = insideVertices[i];
+            interpolatedAttributes[i] = insideAttributes[i];
         }
         nVertices = insideCount;
     }
@@ -83,7 +91,11 @@ std::array<Triangle, maxTrianglesAfterClipping> Polygon::getTriangles() noexcept
     for (size_t i = 0; i < numTriangles(); i++) {
         res[i] = Triangle(
             std::array<ml::Vector4f, 3>({vertices[0], vertices[i + 2], vertices[i + 1]}),
-            std::array<Attributes::Cases, 3>({interpolatedAttributes[0], interpolatedAttributes[1], interpolatedAttributes[2]})
+            std::array<Attributes::Cases, 3>({
+                interpolatedAttributes[0],
+                interpolatedAttributes[i + 2], 
+                interpolatedAttributes[i + 1]
+            })
         );
     }
 

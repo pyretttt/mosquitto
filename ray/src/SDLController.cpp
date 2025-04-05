@@ -2,6 +2,7 @@
 
 #include "SDL.h"
 
+#include "Core.hpp"
 #include "Errors.hpp"
 #include "ReactivePrimitives.hpp"
 #include "RendererFactory.hpp"

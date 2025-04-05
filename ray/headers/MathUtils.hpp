@@ -288,7 +288,7 @@ Vector inline lerp(
     float alpha
 ) {
     Vector res;
-    for (size_t i = 0; i < res.size(); i++) {
+    for (size_t i = 0; i < res.length(); i++) {
         res[i] = std::lerp(a[i], b[i], alpha);
     }
     return res;
