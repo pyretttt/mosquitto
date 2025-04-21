@@ -61,7 +61,7 @@ class TransformerDecoder(nn.Module):
         for block in self.attn_blocks:
             x = block(
                 x, 
-                TransformerDecoder.self_attn_mask((1, x.size(-2), x.size(-2))), 
+                TransformerDecoder.self_attn_mask((1, x.size(-2), x.size(-2))).to(x.device), 
                 cache=None
             )
         
