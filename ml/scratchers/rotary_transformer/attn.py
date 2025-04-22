@@ -5,10 +5,10 @@ import torch
 import torch.nn as nn
 
 class KVCache():
-    def __init__(self, shape):
-        self.queries_cache = torch.empty(shape)
-        self.keys_cache = torch.empty(shape)
-        self.values_cache = torch.empty(shape)
+    def __init__(self, shape, device):
+        self.queries_cache = torch.empty(shape, device=device)
+        self.keys_cache = torch.empty(shape, device=device)
+        self.values_cache = torch.empty(shape, device=device)
         self._cursor = 0
 
     def update(self, queries, keys, values):

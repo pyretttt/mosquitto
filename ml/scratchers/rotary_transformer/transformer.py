@@ -51,9 +51,9 @@ class TransformerDecoder(nn.Module):
         self.max_seq_len = config.max_seq_len
 
     @staticmethod
-    def self_attn_mask(shape: tuple[int]):
+    def self_attn_mask(shape: tuple[int], device):
         return torch.tril(
-            torch.ones(shape[-2:])
+            torch.ones(shape[-2:], device=device)
         ).view(*shape)
 
     def forward(self, x):
@@ -61,7 +61,7 @@ class TransformerDecoder(nn.Module):
         for block in self.attn_blocks:
             x = block(
                 x, 
-                TransformerDecoder.self_attn_mask((1, x.size(-2), x.size(-2))).to(x.device), 
+                TransformerDecoder.self_attn_mask((1, x.size(-2), x.size(-2)), device=x.device), 
                 cache=None
             )
         
@@ -70,7 +70,7 @@ class TransformerDecoder(nn.Module):
 
     def predict(self, x, max_output_seq):
         self.eval()
-        cache = [KVCache((x.size(0), self.max_seq_len, self.d_k)) if self.use_cache else None 
+        cache = [KVCache((x.size(0), self.max_seq_len, self.d_k), device=x.device) if self.use_cache else None 
                  for _ in range(len(self.attn_blocks))]
 
         inputs = x
@@ -80,7 +80,7 @@ class TransformerDecoder(nn.Module):
             for idx, block in enumerate(self.attn_blocks):
                 out = block(
                     out, 
-                    TransformerDecoder.self_attn_mask((1, out.size(-2), out.size(-2))), 
+                    TransformerDecoder.self_attn_mask((1, out.size(-2), out.size(-2)), device=x.device), 
                     cache=cache[idx]
                 )
             
