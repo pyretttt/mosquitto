@@ -7,7 +7,7 @@
 #include "MathUtils.hpp"
 #include "ReactivePrimitives.hpp"
 #include "RendererBase.hpp"
-#include "SDLController.hpp"
+#include "Controller.hpp"
 
 class RunLoop {
 public:
@@ -20,7 +20,7 @@ public:
     }
 
     void start() {
-        sdlController.showWindow();
+        controller.prepare();
         // std::vector<MeshNode>
         Renderer::MeshData node = Renderer::MeshData{
             MeshNode(
@@ -77,20 +77,13 @@ public:
             node[0].transform = transformationMatrix;
 
             processInput();
-            sdlController.renderer->update(node, dt);
-            sdlController.renderer->render();
+            controller.renderer->update(node, dt);
+            controller.renderer->render();
         }
     }
 
 private:
-    RunLoop() : globalConfig(
-                    GlobalConfig(
-                        ObservableProperty<RendererType>(RendererType::CPU),
-                        ObservableProperty<std::pair<size_t, size_t>>({800, 600}),
-                        ObservableProperty<float>(1.3962634016)
-                    )
-                ),
-                sdlController(SDLController(globalConfig)) {}
+    RunLoop() {}
 
     inline void processInput() {
         SDL_Event event;
@@ -126,7 +119,7 @@ private:
             case SDL_WINDOWEVENT:
                 switch (event.window.event) {
                 case SDL_WINDOWEVENT_RESIZED:
-                    globalConfig.windowSize.value({event.window.data1, event.window.data2});
+                    globalConfig->windowSize.value({event.window.data1, event.window.data2});
                     break;
                 }
                 break;
@@ -134,12 +127,16 @@ private:
                 break;
             }
 
-            sdlController.renderer->processInput(&event);
+            controller.renderer->processInput(&event);
         }
     }
 
-    GlobalConfig globalConfig;
-    SDLController sdlController;
+    std::shared_ptr<GlobalConfig> globalConfig = std::make_shared<GlobalConfig>(GlobalConfig(
+        ObservableProperty<RendererType>(RendererType::CPU),
+        ObservableProperty<std::pair<size_t, size_t>>({800, 600}),
+        ObservableProperty<float>(1.3962634016)
+    ));
+    Controller controller = Controller(globalConfig);
 
     bool shouldClose = false;
     unsigned long long previousFrameTicks = 0;

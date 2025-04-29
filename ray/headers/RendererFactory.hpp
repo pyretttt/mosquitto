@@ -10,17 +10,16 @@
 #include "sdl/Renderer.hpp"
 
 struct RenderFactoryParams {
-    explicit RenderFactoryParams(GlobalConfig const &globalConfig) : globalConfig(globalConfig) {
-                                                                     };
+    explicit RenderFactoryParams(std::shared_ptr<GlobalConfig> globalConfig)
+     : globalConfig(globalConfig) {};
 
-    SDL_Window *window = nullptr;
-    GlobalConfig const &globalConfig;
+    std::shared_ptr<GlobalConfig> globalConfig;
 };
 
 std::shared_ptr<Renderer> inline makeRenderer(
     RenderFactoryParams const &params
 ) {
-    switch (params.globalConfig.rendererType.value()) {
+    switch (params.globalConfig->rendererType.value()) {
     case RendererType::CPU:
         return std::make_shared<sdl::Renderer>(
             params.window,
