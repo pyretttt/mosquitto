@@ -20,13 +20,9 @@ static void safeMemorySet(
 }
 
 sdl::Renderer::Renderer(
-    SDL_Window *window,
     std::pair<size_t, size_t> resolution,
     Lazy<sdl::Camera> camera
-)
-    : renderer(SDL_CreateRenderer(window, -1, 0)),
-      camera(camera),
-      resolution(resolution) {
+) : camera(camera), resolution(resolution) {
 
     light = {sdl::light::DirectionalLight{{0, -0.7071067812, -0.7071067812}}};
 
@@ -36,6 +32,18 @@ sdl::Renderer::Renderer(
     safeMemorySet(zBuffer.get(), std::numeric_limits<float>::max(), resolutionSize);
 
     screenSpaceProjection_ = ml::screenSpaceProjection(resolution.first, resolution.second);
+}
+
+void sdl::Renderer::prepareViewPort() {
+    window = SDL_CreateWindow(
+        nullptr,
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        resolution.first,
+        resolution.second,
+        SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
+    );
+    renderer = SDL_CreateRenderer(window, -1, 0);
     renderTarget = SDL_CreateTexture(
         renderer,
         SDL_PIXELFORMAT_RGBA8888,
@@ -47,6 +55,7 @@ sdl::Renderer::Renderer(
 
 sdl::Renderer::~Renderer() {
     SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
 }
 
 void sdl::Renderer::processInput(void const *eventData) {

@@ -18,10 +18,12 @@ struct Controller {
         std::shared_ptr<GlobalConfig> config
     );
     ~Controller();
-
-    void prepare();
-
+    
+    
     std::shared_ptr<Renderer> renderer;
 private:
+    void prepare(std::shared_ptr<GlobalConfig> config);
+
     std::shared_ptr<GlobalConfig> config;
+    std::vector<std::unique_ptr<Connection>> connections;
 };

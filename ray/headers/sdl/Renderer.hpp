@@ -21,7 +21,8 @@ struct Renderer : public ::Renderer {
     Renderer(Renderer const &other) = delete;
     Renderer operator=(Renderer &&other) = delete;
     Renderer operator=(Renderer const &other) = delete;
-    Renderer(SDL_Window *window, std::pair<size_t, size_t> resolution, Lazy<Camera> camera);
+    Renderer(std::pair<size_t, size_t> resolution, Lazy<Camera> camera);
+    void prepareViewPort() override;
     void processInput(void const *) override;
     void update(MeshData const &data, float dt) override;
     void render() const override;
@@ -35,11 +36,13 @@ private:
 
     std::pair<size_t, size_t> resolution;
     Lazy<sdl::Camera> camera;
-    SDL_Renderer *renderer;
     std::unique_ptr<uint32_t[]> colorBuffer;
     std::unique_ptr<float[]> zBuffer;
     SDL_Texture *renderTarget;
     ml::Matrix4f screenSpaceProjection_;
     light::Cases light;
+
+    SDL_Window *window = nullptr;
+    SDL_Renderer *renderer = nullptr;
 };
 } // namespace sdl

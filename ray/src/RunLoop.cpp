@@ -20,7 +20,6 @@ public:
     }
 
     void start() {
-        controller.prepare();
         // std::vector<MeshNode>
         Renderer::MeshData node = Renderer::MeshData{
             MeshNode(
