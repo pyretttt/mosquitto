@@ -8,6 +8,7 @@
 #include "ReactivePrimitives.hpp"
 #include "RunLoop.cpp"
 #include "Controller.hpp"
+#include "opengl/Renderer.hpp"
 #include "sdl/Camera.hpp"
 #include "Plane.hpp"
 
@@ -19,6 +20,8 @@ int main() {
 
     ml::Vector3f a = {0, 0, 0};
     ml::Vector3f b = {10, 15, 20};
+
+    gl::Renderer(std::make_pair(10, 20));
 
     RunLoop::instance()
         .start();

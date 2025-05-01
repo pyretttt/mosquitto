@@ -1,5 +1,3 @@
-#include <gl/glew.h>
-
 #include "SDL_opengl.h"
 #include "SDL.h"
 
@@ -36,7 +34,7 @@ void gl::Renderer::prepareViewPort() {
         }
         config->window.reset(window);
     }
-    glContext = SDL_GL_CreateContext(window);
+    glContext = SDL_GL_CreateContext(config->window.get());
     if (!glContext) {
         std::cerr << "Failed to create gl context" << std::endl;
         throw "GL::context_creation_failure";
@@ -46,4 +44,6 @@ void gl::Renderer::prepareViewPort() {
         std::cerr << "Failed to enable vsync" << std::endl;
         throw "GL::vsync_activation_failure";
     }
+
+    SDL_GL_MakeCurrent(config->window.get(), glContext);
 }
