@@ -1,12 +1,18 @@
 #pragma once
 
 #include <utility>
+#include <memory>
 
+#include "SDL.h"
+
+#include "sdlUtils.hpp"
 #include "ReactivePrimitives.hpp"
 
 enum class RendererType;
 
 struct GlobalConfig final {
+    using WindowPtr = std::unique_ptr<SDL_Window, std::function<void (SDL_Window *)>>;
+
     GlobalConfig() = delete;
 
     GlobalConfig(
@@ -29,4 +35,5 @@ struct GlobalConfig final {
     ObservableProperty<RendererType> rendererType;
     ObservableProperty<std::pair<size_t, size_t>> windowSize;
     ObservableProperty<float> fov;
+    WindowPtr window = WindowPtr(nullptr, destructSDLWindow);
 };

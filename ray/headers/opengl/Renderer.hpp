@@ -1,0 +1,27 @@
+#pragma once
+
+#include <utility>
+
+#include "RendererBase.hpp"
+
+#include "Lazy.hpp"
+
+namespace gl {
+struct Renderer: public ::Renderer {
+    Renderer() = delete;
+    Renderer(Renderer &&other) = delete;
+    Renderer(Renderer const &other) = delete;
+    Renderer operator=(Renderer &&other) = delete;
+    Renderer operator=(Renderer const &other) = delete;
+    Renderer(std::pair<size_t, size_t> resolution);
+    void prepareViewPort() override;
+    void processInput(void const *) override;
+    void update(MeshData const &data, float dt) override;
+    void render() const override;
+
+    ~Renderer() override;
+
+    std::pair<size_t, size_t> resolution;
+    std::shared_ptr<GlobalConfig> config;
+};
+}

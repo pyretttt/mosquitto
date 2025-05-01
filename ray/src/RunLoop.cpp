@@ -1,6 +1,5 @@
 #include <iostream>
 
-#include "Eigen/Dense"
 #include "SDL.h"
 
 #include "GlobalConfig.hpp"
