@@ -4,9 +4,9 @@
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
 
-namespace {
+// namespace {
     
-}
+// }
 
 gl::Renderer::Renderer(
     std::pair<size_t, size_t> resolution, 
@@ -15,6 +15,10 @@ gl::Renderer::Renderer(
     : resolution(resolution)
     , config(config) {
 
+}
+
+gl::Renderer::~Renderer() {
+    
 }
 
 void gl::Renderer::prepareViewPort() {
@@ -54,7 +58,7 @@ void gl::Renderer::prepareViewPort() {
 
 }
 
-void gl::Renderer::processInput(std::any) {
+void gl::Renderer::processInput(Event) {
 
 }
 
@@ -63,5 +67,8 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 }
 
 void gl::Renderer::render() const {
-    
+    glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    SDL_GL_SwapWindow(config->window.get());
 }

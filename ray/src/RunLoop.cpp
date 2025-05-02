@@ -131,7 +131,7 @@ private:
     }
 
     std::shared_ptr<GlobalConfig> globalConfig = std::make_shared<GlobalConfig>(GlobalConfig(
-        ObservableProperty<RendererType>(RendererType::CPU),
+        ObservableProperty<RendererType>(RendererType::OpenGL),
         ObservableProperty<std::pair<size_t, size_t>>({800, 600}),
         ObservableProperty<float>(1.3962634016)
     ));

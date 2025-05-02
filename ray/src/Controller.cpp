@@ -8,6 +8,7 @@
 #include "Controller.hpp"
 #include "Utility.hpp"
 #include "sdl/Renderer.hpp"
+#include "opengl/Renderer.hpp"
 #include "Lazy.hpp"
 #include "sdl/Camera.hpp"
 
@@ -35,7 +36,10 @@ void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
         );
         break;
     case (RendererType::OpenGL):
-        renderer = nullptr;    
+        renderer = std::make_shared<gl::Renderer>(
+            config->windowSize.value(),
+            config
+        );
         break;
     }
     renderer->prepareViewPort();
