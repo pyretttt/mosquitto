@@ -21,8 +21,6 @@ int main() {
     ml::Vector3f a = {0, 0, 0};
     ml::Vector3f b = {10, 15, 20};
 
-    gl::Renderer(std::make_pair(10, 20));
-
     RunLoop::instance()
         .start();
     return 0;

@@ -1,10 +1,12 @@
 #pragma once
 
 #include <utility>
+#include <any>
 
 #include "RendererBase.hpp"
 
 #include "Lazy.hpp"
+
 
 namespace gl {
 struct Renderer: public ::Renderer {
@@ -15,7 +17,7 @@ struct Renderer: public ::Renderer {
     Renderer operator=(Renderer const &other) = delete;
     Renderer(std::pair<size_t, size_t> resolution, std::shared_ptr<GlobalConfig>);
     void prepareViewPort() override;
-    void processInput(void const *) override;
+    void processInput(Event) override;
     void update(MeshData const &data, float dt) override;
     void render() const override;
 

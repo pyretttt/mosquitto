@@ -1,4 +1,5 @@
 #include <iostream>
+#include <any>
 
 #include "SDL.h"
 
@@ -125,7 +126,7 @@ private:
                 break;
             }
 
-            controller.renderer->processInput(&event);
+            controller.renderer->processInput(Event(event));
         }
     }
 

@@ -4,6 +4,9 @@
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
 
+namespace {
+    
+}
 
 gl::Renderer::Renderer(
     std::pair<size_t, size_t> resolution, 
@@ -46,4 +49,19 @@ void gl::Renderer::prepareViewPort() {
     }
 
     SDL_GL_MakeCurrent(config->window.get(), glContext);
+    glViewport(0, 0, resolution.first, resolution.second);
+
+
+}
+
+void gl::Renderer::processInput(std::any) {
+
+}
+
+void gl::Renderer::update(MeshData const &data, float dt) {
+    
+}
+
+void gl::Renderer::render() const {
+    
 }

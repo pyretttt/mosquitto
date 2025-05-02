@@ -4,6 +4,7 @@
 #include <memory>
 #include <array>
 
+#include "Core.hpp"
 #include "MathUtils.hpp"
 #include "Utility.hpp"
 #include "sdl/Camera.hpp"
@@ -58,44 +59,47 @@ sdl::Renderer::~Renderer() {
     SDL_DestroyWindow(window);
 }
 
-void sdl::Renderer::processInput(void const *eventData) {
-    SDL_Event event = *reinterpret_cast<SDL_Event const *>(eventData);
+void sdl::Renderer::processInput(Event event) {
     static float const cameraSpeed = 0.25f;
-    switch (event.type) {
-    case SDL_KEYDOWN:
-        switch (event.key.keysym.sym) {
-            case SDLK_w:
-            case SDLK_a:
-            case SDLK_d:
-            case SDLK_s:
-                camera()->handleInput(
-                    CameraInput::Translate::make(event.key.keysym.sym, cameraSpeed)
-                );
-                break;
-            case SDLK_f:
-                auto const currentValue = SDL_ShowCursor(SDL_QUERY);
-                SDL_ShowCursor(currentValue == SDL_ENABLE ? SDL_DISABLE : SDL_ENABLE);
-                break;
-        }
-    case SDL_MOUSEMOTION:
-        auto const isTrackingMoution = SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE;
-        if (isTrackingMoution) {
-            // Some strange behavior when cursor is switched it reports huge delta
-            if (std::abs(event.motion.xrel) > (int32_t)resolution.second
-             || std::abs(event.motion.yrel) > (int32_t)resolution.first) {
+    std::visit(overload {
+        [&camera = this->camera, resolution = this->resolution](SDL_Event event) {
+            switch (event.type) {
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym) {
+                    case SDLK_w:
+                    case SDLK_a:
+                    case SDLK_d:
+                    case SDLK_s:
+                        camera()->handleInput(
+                            CameraInput::Translate::make(event.key.keysym.sym, cameraSpeed)
+                        );
+                        break;
+                    case SDLK_f:
+                        auto const currentValue = SDL_ShowCursor(SDL_QUERY);
+                        SDL_ShowCursor(currentValue == SDL_ENABLE ? SDL_DISABLE : SDL_ENABLE);
+                        break;
+                }
+            case SDL_MOUSEMOTION:
+                auto const isTrackingMoution = SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE;
+                if (isTrackingMoution) {
+                    // Some strange behavior when cursor is switched it reports huge delta
+                    if (std::abs(event.motion.xrel) > (int32_t)resolution.second
+                    || std::abs(event.motion.yrel) > (int32_t)resolution.first) {
+                        break;
+                    }
+                    camera()->handleInput(
+                        CameraInput::Rotate {
+                            .delta = std::make_pair(
+                                event.motion.yrel,
+                                event.motion.xrel
+                            )
+                        }
+                    );
+                }
                 break;
             }
-            camera()->handleInput(
-                CameraInput::Rotate {
-                    .delta = std::make_pair(
-                        event.motion.yrel,
-                        event.motion.xrel
-                    )
-                }
-            );
         }
-        break;
-    }
+    }, event);
 }
 
 void sdl::Renderer::update(
