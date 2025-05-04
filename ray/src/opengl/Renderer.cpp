@@ -1,19 +1,25 @@
+#include "GL/glew.h"
 #include "SDL_opengl.h"
 #include "SDL.h"
+
 
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
 
-// namespace {
-    
-// }
+namespace {
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f,
+        0.5f, -0.5f, 0.0f,
+        0.0f, 0.5f, 0.0f,
+    };
+    unsigned int VBO;
+}
 
 gl::Renderer::Renderer(
-    std::pair<size_t, size_t> resolution, 
     std::shared_ptr<GlobalConfig> config
 )
-    : resolution(resolution)
-    , config(config) {
+    : config(config)
+    , resolution(config->windowSize.value()) {
 
 }
 
@@ -22,6 +28,7 @@ gl::Renderer::~Renderer() {
 }
 
 void gl::Renderer::prepareViewPort() {
+    
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
@@ -54,8 +61,6 @@ void gl::Renderer::prepareViewPort() {
 
     SDL_GL_MakeCurrent(config->window.get(), glContext);
     glViewport(0, 0, resolution.first, resolution.second);
-
-
 }
 
 void gl::Renderer::processInput(Event) {
@@ -63,7 +68,7 @@ void gl::Renderer::processInput(Event) {
 }
 
 void gl::Renderer::update(MeshData const &data, float dt) {
-    
+    glGenBuffers(1, &VBO);
 }
 
 void gl::Renderer::render() const {

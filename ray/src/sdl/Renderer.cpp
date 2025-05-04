@@ -21,9 +21,12 @@ static void safeMemorySet(
 }
 
 sdl::Renderer::Renderer(
-    std::pair<size_t, size_t> resolution,
+    std::shared_ptr<GlobalConfig> config,
     Lazy<sdl::Camera> camera
-) : camera(camera), resolution(resolution) {
+) 
+    : camera(camera)
+    , config(config)
+    , resolution(config->windowSize.value()) {
 
     light = {sdl::light::DirectionalLight{{0, -0.7071067812, -0.7071067812}}};
 
@@ -36,7 +39,7 @@ sdl::Renderer::Renderer(
 }
 
 void sdl::Renderer::prepareViewPort() {
-    window = SDL_CreateWindow(
+    auto window = SDL_CreateWindow(
         nullptr,
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
@@ -44,6 +47,7 @@ void sdl::Renderer::prepareViewPort() {
         resolution.second,
         SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
     );
+    config->window.reset(window);
     renderer = SDL_CreateRenderer(window, -1, 0);
     renderTarget = SDL_CreateTexture(
         renderer,
@@ -56,7 +60,6 @@ void sdl::Renderer::prepareViewPort() {
 
 sdl::Renderer::~Renderer() {
     SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
 }
 
 void sdl::Renderer::processInput(Event event) {

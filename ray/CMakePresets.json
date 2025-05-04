@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "configurePresets": [
+    {
+        "name": "base",
+        "generator": "Unix Makefiles",
+        "binaryDir": "${sourceDir}/build", 
+        "cacheVariables": {
+            "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        }
+    },
+    {
+      "name": "clang-debug",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+        "name": "clang-release",
+        "inherits": "base",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_C_COMPILER": "clang",
+          "CMAKE_CXX_COMPILER": "clang++"
+        }
+    },
+    {
+        "name": "gcc-debug",
+        "inherits": "base",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Debug",
+          "CMAKE_C_COMPILER": "gcc",
+          "CMAKE_CXX_COMPILER": "g++"
+        }
+    },
+    {
+        "name": "gcc-release",
+        "inherits": "base",
+        "cacheVariables": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_C_COMPILER": "gcc",
+          "CMAKE_CXX_COMPILER": "g++"
+        }
+    }
+  ],
+  "buildPresets": [
+    {
+        "name": "clang-debug-build",
+        "displayName": "clang-debug",
+        "configurePreset": "clang-debug",
+        "description": "Clang build",
+        "jobs": 8
+    }
+  ]
+}

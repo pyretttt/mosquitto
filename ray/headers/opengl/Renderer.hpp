@@ -15,7 +15,7 @@ struct Renderer: public ::Renderer {
     Renderer(Renderer const &other) = delete;
     Renderer operator=(Renderer &&other) = delete;
     Renderer operator=(Renderer const &other) = delete;
-    Renderer(std::pair<size_t, size_t> resolution, std::shared_ptr<GlobalConfig>);
+    Renderer(std::shared_ptr<GlobalConfig>);
     void prepareViewPort() override;
     void processInput(Event) override;
     void update(MeshData const &data, float dt) override;

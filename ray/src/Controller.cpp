@@ -29,7 +29,7 @@ void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
     switch (config->rendererType.value()) {
     case (RendererType::CPU):
         renderer = std::make_shared<sdl::Renderer>(
-            config->windowSize.value(),
+            config,
             Lazy<sdl::Camera>([config = this->config]() {
                 return std::make_shared<sdl::Camera>(config->fov.asObservableObject(), config->windowSize.asObservableObject());
             })
@@ -37,7 +37,6 @@ void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
         break;
     case (RendererType::OpenGL):
         renderer = std::make_shared<gl::Renderer>(
-            config->windowSize.value(),
             config
         );
         break;
