@@ -24,14 +24,14 @@ gl::Renderer::Renderer(
 }
 
 gl::Renderer::~Renderer() {
-    
+    SDL_GL_DeleteContext(glContext);
 }
 
 void gl::Renderer::prepareViewPort() {
-    
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 4);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+    SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
 
     if (!config->window) {
         auto window = SDL_CreateWindow(
@@ -40,7 +40,7 @@ void gl::Renderer::prepareViewPort() {
             SDL_WINDOWPOS_UNDEFINED, 
             resolution.first, 
             resolution.second, 
-            SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
+            SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL
         );
         if (!window) {
             std::cerr << "Failed to create window" << std::endl;
@@ -53,6 +53,12 @@ void gl::Renderer::prepareViewPort() {
         std::cerr << "Failed to create gl context" << std::endl;
         throw "GL::context_creation_failure";
     }
+
+    glewExperimental = GL_TRUE;
+    if (glewInit()) {
+        throw "Glew_init_failure";
+        
+    };
 
     if (SDL_GL_SetSwapInterval(1) < 0) {
         std::cerr << "Failed to enable vsync" << std::endl;

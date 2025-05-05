@@ -5,13 +5,9 @@
             "label": "cmake_macos_configure",
             "command": "cmake",
             "args": [
-                "-S",
-                ".",
-                "-B",
-                "./build",
-                "-DCMAKE_BUILD_TYPE=Debug",
-                "-DCMAKE_C_COMPILER=/usr/bin/clang",
-                "-DCMAKE_CXX_COMPILER=/usr/bin/clang++"
+                "cmake",
+                "--preset",
+                "clang-debug"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -28,9 +24,8 @@
             "command": "cmake",
             "args": [
                 "--build",
-                "./build",
-                "-j",
-                "4"
+                "--preset",
+                "clang-debug-build"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

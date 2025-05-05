@@ -45,7 +45,7 @@ void sdl::Renderer::prepareViewPort() {
         SDL_WINDOWPOS_CENTERED,
         resolution.first,
         resolution.second,
-        SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE
+        SDL_WINDOW_BORDERLESS | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL
     );
     config->window.reset(window);
     renderer = SDL_CreateRenderer(window, -1, 0);
