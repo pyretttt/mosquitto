@@ -5,6 +5,7 @@
 
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
+#include "TextLoader.hpp"
 
 namespace {
     float vertices[] = {
@@ -67,6 +68,8 @@ void gl::Renderer::prepareViewPort() {
 
     SDL_GL_MakeCurrent(config->window.get(), glContext);
     glViewport(0, 0, resolution.first, resolution.second);
+
+    glGenBuffers(1, &VBO);
 }
 
 void gl::Renderer::processInput(Event) {
@@ -74,7 +77,8 @@ void gl::Renderer::processInput(Event) {
 }
 
 void gl::Renderer::update(MeshData const &data, float dt) {
-    glGenBuffers(1, &VBO);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 }
 
 void gl::Renderer::render() const {
