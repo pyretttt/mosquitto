@@ -5,10 +5,11 @@ project(${PROJ_NAME} VERSION 1.0 LANGUAGES C CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC_DIR)
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/sdl SDL_DIR)
-aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/opengl OPENGL_DIR)
-add_executable(${PROJ_NAME} ${SRC_DIR} ${SDL_DIR} ${OPENGL_DIR})
+set(OPENGL_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src/opengl)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC_FILES)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/sdl SDL_FILES)
+aux_source_directory(${OPENGL_SRC_DIR} OPENGL_FILES)
+add_executable(${PROJ_NAME} ${SRC_FILES} ${SDL_FILES} ${OPENGL_FILES})
 
 include(FetchContent)
 
@@ -37,6 +38,10 @@ target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/header
 # target_link_libraries(${PROJ_NAME} PRIVATE "-framework OpenGL")
 # target_link_libraries(${PROJ_NAME} PRIVATE "-framework IOKit")
 
+file(GLOB_RECURSE GL_SHADER_FILES RELATIVE "${OPENGL_SRC_DIR}" "${OPENGL_SRC_DIR}/shaders/*")
+foreach(file IN LISTS GL_SHADER_FILES) 
+  configure_file("${OPENGL_SRC_DIR}/${file}" "${CMAKE_BINARY_DIR}/${file}" COPYONLY)
+endforeach()
 
 include(FetchContent)
 FetchContent_Declare(

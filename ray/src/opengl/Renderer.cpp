@@ -1,3 +1,5 @@
+#include <filesystem>
+
 #include "GL/glew.h"
 #include "SDL_opengl.h"
 #include "SDL.h"
@@ -5,7 +7,9 @@
 
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
-#include "TextLoader.hpp"
+#include "LoadTextFile.hpp"
+
+namespace fs = std::filesystem;
 
 namespace {
     float vertices[] = {
@@ -14,6 +18,8 @@ namespace {
         0.0f, 0.5f, 0.0f,
     };
     unsigned int VBO;
+
+    unsigned int vertexShader;
 }
 
 gl::Renderer::Renderer(
@@ -70,6 +76,13 @@ void gl::Renderer::prepareViewPort() {
     glViewport(0, 0, resolution.first, resolution.second);
 
     glGenBuffers(1, &VBO);
+    glCreateShader(GL_VERTEX_SHADER);
+    auto vertex_shader_text = utils::loadTextFile(
+        fs::path("shaders").append("vertex.vs")
+    );
+    auto vertex_shader_text_ = vertex_shader_text.c_str();
+    glShaderSource(vertexShader, 1, &vertex_shader_text_, nullptr);
+    glCompileShader(vertexShader);
 }
 
 void gl::Renderer::processInput(Event) {
