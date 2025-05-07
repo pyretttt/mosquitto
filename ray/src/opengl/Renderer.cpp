@@ -83,6 +83,8 @@ void gl::Renderer::prepareViewPort() {
     auto vertex_shader_text_ = vertex_shader_text.c_str();
     glShaderSource(vertexShader, 1, &vertex_shader_text_, nullptr);
     glCompileShader(vertexShader);
+
+    glCreateProgram();
 }
 
 void gl::Renderer::processInput(Event) {
