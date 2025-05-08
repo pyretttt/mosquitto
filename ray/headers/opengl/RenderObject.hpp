@@ -3,17 +3,19 @@
 #include <filesystem>
 #include <optional>
 #include <array>
+#include <span>
+
 #include <GL/glew.h>
 
 #include "LoadTextFile.hpp"
 
 namespace gl {
-template <size_t VboCount, typename Attribute>
+template <typename Attribute>
 struct RenderObject {
     using ID = unsigned int;
 
     RenderObject(
-        std::array<Attribute, VboCount> vertexArray,
+        std::vector<Attribute> vertexArray,
         std::filesystem::path vertexShader,
         std::filesystem::path fragmentShader,
         bool eagerInit,
@@ -32,7 +34,7 @@ struct RenderObject {
     ID program = 0;
     ID vbo = 0;
 
-    std::array<Attribute, VboCount> vertexArray;
+    std::vector<Attribute> vertexArray;
 
     std::filesystem::path vertexShaderPath;
     std::filesystem::path fragmentShaderPath;
@@ -40,10 +42,9 @@ struct RenderObject {
     bool debug;
 };
 
-
-template <size_t VboCount, typename Attribute>
-RenderObject<VboCount, Attribute>::RenderObject(
-    std::array<Attribute, VboCount> vertexArray,
+template<typename Attribute>
+RenderObject<Attribute>::RenderObject(
+    std::vector<Attribute> vertexArray,
     std::filesystem::path vertexShader,
     std::filesystem::path fragmentShader,
     bool eagerInit,
@@ -58,13 +59,14 @@ RenderObject<VboCount, Attribute>::RenderObject(
     }
 }
 
-template <size_t VboCount, typename Attribute>
-RenderObject<VboCount, Attribute>::~RenderObject() {
+template<typename Attribute>
+RenderObject<Attribute>::~RenderObject() {
     if (program) glDeleteProgram(program);
+    if (vbo) glDeleteBuffers(1, &vbo);
 }
 
-template <size_t VboCount, typename Attribute>
-void RenderObject<VboCount, Attribute>::prepare() {
+template<typename Attribute>
+void RenderObject<Attribute>::prepare() {
     program = glCreateProgram();
 
     ID vs = glCreateShader(GL_VERTEX_SHADER);
@@ -119,27 +121,30 @@ void RenderObject<VboCount, Attribute>::prepare() {
     glDeleteShader(fs);
 
     glGenBuffers(1, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(
+        GL_ARRAY_BUFFER, 
+        vertexArray.size() * sizeof(Attribute),
+        vertexArray.data(), 
+        GL_STATIC_DRAW
+    );
 
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-template <size_t VboCount, typename Attribute>
-void RenderObject<VboCount, Attribute>::setDebug(bool debug) {
+template<typename Attribute>
+void RenderObject<Attribute>::setDebug(bool debug) {
     this->debug = debug;
 }
 
-template <size_t VboCount, typename Attribute>
-void RenderObject<VboCount, Attribute>::bind() {
+template<typename Attribute>
+void RenderObject<Attribute>::bind() {
     if (!program) {
         throw std::runtime_error("RENDER_OBJECT::ILLFORMED_PROGRAMM");
     }
     glUseProgram(program);
 
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(
-        GL_ARRAY_BUFFER, 
-        vertexArray.size() * sizeof(typename decltype(vertexArray)::value_type), 
-        vertexArray.data(), 
-        GL_STATIC_DRAW
-    );
+
 }
 }
