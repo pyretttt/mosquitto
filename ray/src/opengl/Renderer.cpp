@@ -1,11 +1,12 @@
 #include <filesystem>
 #include <array>
+#include <vector>
 
 #include "GL/glew.h"
 #include "SDL_opengl.h"
 #include "SDL.h"
 
-
+#include "Attributes.hpp"
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
@@ -14,32 +15,26 @@
 namespace fs = std::filesystem;
 
 namespace {
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        0.5f, -0.5f, 0.0f,
-        0.0f, 0.5f, 0.0f,
+    std::vector<attributes::Vec3> vertexArray = {
+        attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
+        attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
+        attributes::Vec3 {.val = {0.0f, 0.5f, 0.0f}}
     };
-    unsigned int VBO;
 
-    unsigned int vertexShader;
-
-    struct FloatAttr {
-        float value;
-    };
+    gl::RenderObject renderObject = gl::RenderObject<attributes::Vec3>(
+        vertexArray,
+        fs::path("shaders").append("vertex.vs"),
+        fs::path("shaders").append("fragment.fs"),
+        false,
+        true
+    );
 }
 
 gl::Renderer::Renderer(
     std::shared_ptr<GlobalConfig> config
 )
     : config(config)
-    , resolution(config->windowSize.value()) {
-        RenderObject<1, FloatAttr> f = RenderObject<1, FloatAttr>(
-            std::to_array({FloatAttr {.value = 5.f}}),
-            "123",
-            "123",
-            false
-        );
-        
+    , resolution(config->windowSize.value()) {        
 }
 
 gl::Renderer::~Renderer() {
@@ -87,16 +82,7 @@ void gl::Renderer::prepareViewPort() {
     SDL_GL_MakeCurrent(config->window.get(), glContext);
     glViewport(0, 0, resolution.first, resolution.second);
 
-    glGenBuffers(1, &VBO);
-    glCreateShader(GL_VERTEX_SHADER);
-    auto vertex_shader_text = utils::loadTextFile(
-        fs::path("shaders").append("vertex.vs")
-    );
-    auto vertex_shader_text_ = vertex_shader_text.c_str();
-    glShaderSource(vertexShader, 1, &vertex_shader_text_, nullptr);
-    glCompileShader(vertexShader);
-
-    glCreateProgram();
+    renderObject.prepare();
 }
 
 void gl::Renderer::processInput(Event) {
@@ -104,13 +90,13 @@ void gl::Renderer::processInput(Event) {
 }
 
 void gl::Renderer::update(MeshData const &data, float dt) {
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 }
 
 void gl::Renderer::render() const {
     glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    renderObject.render();
 
     SDL_GL_SwapWindow(config->window.get());
 }

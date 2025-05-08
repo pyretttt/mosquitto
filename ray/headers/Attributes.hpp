@@ -9,7 +9,7 @@ namespace attributes {
 
     template<size_t size>
     struct Vec {
-        float value[size];
+        float val[size];
     };
 
     struct Color {

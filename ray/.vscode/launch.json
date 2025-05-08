@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/build/RAY",
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/build",
             "MIMode": "lldb",
             "preLaunchTask": "cmake_build"
         },

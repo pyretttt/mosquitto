@@ -8,6 +8,7 @@
 #include <GL/glew.h>
 
 #include "LoadTextFile.hpp"
+#include "glAttribute.hpp"
 
 namespace gl {
 template <typename Attribute>
@@ -25,14 +26,13 @@ struct RenderObject {
     void setDebug(bool);
 
     void prepare();
-    void bind();
-    void unbind();
     void render();
 
     ~RenderObject();
 
     ID program = 0;
     ID vbo = 0;
+    ID vao = 0;
 
     std::vector<Attribute> vertexArray;
 
@@ -120,7 +120,10 @@ void RenderObject<Attribute>::prepare() {
     glDeleteShader(vs);
     glDeleteShader(fs);
 
+    glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
+
+    glBindVertexArray(vao);
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(
         GL_ARRAY_BUFFER, 
@@ -128,7 +131,9 @@ void RenderObject<Attribute>::prepare() {
         vertexArray.data(), 
         GL_STATIC_DRAW
     );
+    bindAttributes<Attribute>();
 
+    glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -138,13 +143,15 @@ void RenderObject<Attribute>::setDebug(bool debug) {
 }
 
 template<typename Attribute>
-void RenderObject<Attribute>::bind() {
+void RenderObject<Attribute>::render() {
     if (!program) {
         throw std::runtime_error("RENDER_OBJECT::ILLFORMED_PROGRAMM");
     }
     glUseProgram(program);
+    glBindVertexArray(vao);
+    glDrawArrays(GL_TRIANGLES, 0, vertexArray.size());
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-
+    glBindVertexArray(0);
+    glUseProgram(0);
 }
 }
