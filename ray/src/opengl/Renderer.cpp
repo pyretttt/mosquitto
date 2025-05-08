@@ -1,4 +1,5 @@
 #include <filesystem>
+#include <array>
 
 #include "GL/glew.h"
 #include "SDL_opengl.h"
@@ -8,6 +9,7 @@
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
+#include "opengl/RenderObject.hpp"
 
 namespace fs = std::filesystem;
 
@@ -20,6 +22,10 @@ namespace {
     unsigned int VBO;
 
     unsigned int vertexShader;
+
+    struct FloatAttr {
+        float value;
+    };
 }
 
 gl::Renderer::Renderer(
@@ -27,7 +33,13 @@ gl::Renderer::Renderer(
 )
     : config(config)
     , resolution(config->windowSize.value()) {
-
+        RenderObject<1, FloatAttr> f = RenderObject<1, FloatAttr>(
+            std::to_array({FloatAttr {.value = 5.f}}),
+            "123",
+            "123",
+            false
+        );
+        
 }
 
 gl::Renderer::~Renderer() {

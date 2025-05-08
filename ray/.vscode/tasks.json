@@ -2,24 +2,6 @@
     "tasks": [
         {
             "type": "shell",
-            "label": "cmake_macos_configure",
-            "command": "cmake",
-            "args": [
-                "cmake",
-                "--preset",
-                "clang-debug"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "group": {
-                "kind": "build",
-                "isDefault": false
-            },
-            "detail": "Runs cmake configuration for macos using clang compiler (cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_COMPILER=/usr/bin/clang -DCMAKE_CXX_COMPILER=/usr/bin/clang++)"
-        },
-        {
-            "type": "shell",
             "label": "cmake_build",
             "command": "cmake",
             "args": [
@@ -32,9 +14,25 @@
             },
             "group": {
                 "kind": "build",
-                "isDefault": true
+                "isDefault": false
             },
             "detail": "Runs make"
+        },
+        {
+            "type": "shell",
+            "label": "cmake_build_and_run",
+            "command": "${workspaceFolder}/build/RAY",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Runs builded program",
+            "dependsOn": ["cmake_build"]
         },
         {
             "type": "shell",
