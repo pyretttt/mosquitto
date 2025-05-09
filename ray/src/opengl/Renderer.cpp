@@ -16,13 +16,28 @@ namespace fs = std::filesystem;
 
 namespace {
     std::vector<attributes::Vec3> vertexArray = {
-        attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
+        attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
         attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
-        attributes::Vec3 {.val = {0.0f, 0.5f, 0.0f}}
+        attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
+        attributes::Vec3 {.val = {-0.5f, 0.5f, 0.0f}},
+    };
+
+    gl::EBO vertexArrayIndices = {
+        0, 1, 3,
+        1, 2, 3 
+    };
+
+    gl::Configuration config = gl::Configuration {
+        .polygonMode = gl::Configuration::PolygonMode {
+            .face = GL_FRONT,
+            .mode = GL_FILL
+        }
     };
 
     gl::RenderObject renderObject = gl::RenderObject<attributes::Vec3>(
         vertexArray,
+        vertexArrayIndices,
+        config,
         fs::path("shaders").append("vertex.vs"),
         fs::path("shaders").append("fragment.fs"),
         false,
