@@ -12,7 +12,7 @@ namespace attributes {
         float val[size];
     };
 
-    struct Color {
+    struct iColor {
         uint32_t val;
     };
 
@@ -20,11 +20,11 @@ namespace attributes {
     using Vec3 = Vec<3>;
     using Vec4 = Vec<4>;
 
-    using Cases = std::variant<
+    using BaseCases = std::variant<
         FloatAttr,
         Vec2,
         Vec3,
         Vec4,
-        Color
+        iColor
     >;
 }

@@ -105,6 +105,11 @@ void gl::Renderer::processInput(Event) {
 }
 
 void gl::Renderer::update(MeshData const &data, float dt) {
+    static float red = 0.f;
+    red += dt / 10000;
+    red = red - static_cast<int>(red);
+    std::cout << dt << " " << red << std::endl;
+    renderObject.setUniform("ourColor", attributes::Vec4 {.val = {red, 0.3f, 0.4f, 1.0f}});
 }
 
 void gl::Renderer::render() const {

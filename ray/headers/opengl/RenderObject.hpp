@@ -3,12 +3,13 @@
 #include <filesystem>
 #include <optional>
 #include <array>
-#include <span>
+#include <type_traits>
 
 #include <GL/glew.h>
 
 #include "LoadTextFile.hpp"
 #include "glAttribute.hpp"
+#include "Core.hpp"
 
 namespace gl {
 
@@ -31,8 +32,8 @@ struct RenderObject {
         std::vector<Attribute> vertexArray,
         EBO vertexArrayIndices,
         Configuration configuration,
-        std::filesystem::path vertexShader,
-        std::filesystem::path fragmentShader,
+        std::optional<std::filesystem::path> vertexShader,
+        std::optional<std::filesystem::path> fragmentShader,
         bool eagerInit,
         bool debug = false
     );
@@ -43,10 +44,12 @@ struct RenderObject {
     RenderObject(RenderObject<Attribute> &&);
     RenderObject<Attribute>& operator=(RenderObject<Attribute>&& other);
 
-    void setDebug(bool);
+    void setDebug(bool) noexcept;
+
+    void setUniform(std::string const &key, attributes::BaseCases const &attr) noexcept;
 
     void prepare();
-    void render();
+    void render() noexcept;
 
     ~RenderObject();
 
@@ -58,8 +61,8 @@ struct RenderObject {
     std::vector<Attribute> vertexArray;
     EBO vertexArrayIndices;
 
-    std::filesystem::path vertexShaderPath;
-    std::filesystem::path fragmentShaderPath;
+    std::optional<std::filesystem::path> vertexShaderPath;
+    std::optional<std::filesystem::path> fragmentShaderPath;
 
     Configuration configuration;
 
@@ -71,8 +74,8 @@ RenderObject<Attribute>::RenderObject(
     std::vector<Attribute> vertexArray,
     EBO vertexArrayIndices,
     Configuration configuration,
-    std::filesystem::path vertexShader,
-    std::filesystem::path fragmentShader,
+    std::optional<std::filesystem::path> vertexShader,
+    std::optional<std::filesystem::path> fragmentShader,
     bool eagerInit,
     bool debug
 ) 
@@ -124,8 +127,6 @@ RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribu
     other.program = 0;
 }
 
-
-
 template<typename Attribute>
 RenderObject<Attribute>::~RenderObject() {
     if (program) glDeleteProgram(program);
@@ -136,58 +137,60 @@ RenderObject<Attribute>::~RenderObject() {
 
 template<typename Attribute>
 void RenderObject<Attribute>::prepare() {
-    program = glCreateProgram();
+    if (vertexShaderPath && fragmentShaderPath) {
+        program = glCreateProgram();
 
-    ID vs = glCreateShader(GL_VERTEX_SHADER);
-    ID fs = glCreateShader(GL_FRAGMENT_SHADER);
-    auto vsStr = utils::loadTextFile(vertexShaderPath);
-    auto fsStr = utils::loadTextFile(fragmentShaderPath);
-    auto vsSource = vsStr.c_str();
-    auto fsSource = fsStr.c_str();
+        ID vs = glCreateShader(GL_VERTEX_SHADER);
+        ID fs = glCreateShader(GL_FRAGMENT_SHADER);
+        auto vsStr = utils::loadTextFile(vertexShaderPath.value());
+        auto fsStr = utils::loadTextFile(fragmentShaderPath.value());
+        auto vsSource = vsStr.c_str();
+        auto fsSource = fsStr.c_str();
 
-    glShaderSource(vs, 1, &vsSource, nullptr);
-    glCompileShader(vs);
+        glShaderSource(vs, 1, &vsSource, nullptr);
+        glCompileShader(vs);
 
-    int success;
-    char infolog[512];
-    if (debug) {
-        glGetShaderiv(vs, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(vs, 512, NULL, infolog);
-            std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED" << std::endl;
-            std::cerr << infolog << std::endl;
+        int success;
+        char infolog[512];
+        if (debug) {
+            glGetShaderiv(vs, GL_COMPILE_STATUS, &success);
+            if (!success) {
+                glGetShaderInfoLog(vs, 512, NULL, infolog);
+                std::cerr << "ERROR::SHADER::VERTEX::COMPILATION_FAILED" << std::endl;
+                std::cerr << infolog << std::endl;
+                memset(infolog, 0, sizeof(infolog));
+                throw std::runtime_error("ERROR::SHADER::VERTEX::COMPILATION_FAILED");
+            }
+        }
+
+        glShaderSource(fs, 1, &fsSource, nullptr);
+        glCompileShader(fs);
+
+        if (debug) {
+            glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
+            if (!success) {
+                glGetShaderInfoLog(vs, 512, NULL, infolog);
+                std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED" << std::endl;
+                std::cerr << infolog << std::endl;
+                throw std::runtime_error("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED");
+            }
             memset(infolog, 0, sizeof(infolog));
-            throw std::runtime_error("ERROR::SHADER::VERTEX::COMPILATION_FAILED");
         }
-    }
 
-    glShaderSource(fs, 1, &fsSource, nullptr);
-    glCompileShader(fs);
+        glAttachShader(program, vs);
+        glAttachShader(program, fs);
+        glLinkProgram(program);
 
-    if (debug) {
-        glGetShaderiv(fs, GL_COMPILE_STATUS, &success);
-        if (!success) {
-            glGetShaderInfoLog(vs, 512, NULL, infolog);
-            std::cerr << "ERROR::SHADER::FRAGMENT::COMPILATION_FAILED" << std::endl;
-            std::cerr << infolog << std::endl;
-            throw std::runtime_error("ERROR::SHADER::FRAGMENT::COMPILATION_FAILED");
+        if (debug) {
+            glGetProgramInfoLog(program, 512, nullptr, infolog);
+            std::cout << "SHADER_PROGRAM::LINK::RESULT" << std::endl;
+            std::cout << infolog << std::endl;
+            memset(infolog, 0, sizeof(infolog));
         }
-        memset(infolog, 0, sizeof(infolog));
+
+        glDeleteShader(vs);
+        glDeleteShader(fs);
     }
-
-    glAttachShader(program, vs);
-    glAttachShader(program, fs);
-    glLinkProgram(program);
-
-    if (debug) {
-        glGetProgramInfoLog(program, 512, nullptr, infolog);
-        std::cout << "SHADER_PROGRAM::LINK::RESULT" << std::endl;
-        std::cout << infolog << std::endl;
-        memset(infolog, 0, sizeof(infolog));
-    }
-
-    glDeleteShader(vs);
-    glDeleteShader(fs);
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -217,21 +220,41 @@ void RenderObject<Attribute>::prepare() {
 }
 
 template<typename Attribute>
-void RenderObject<Attribute>::setDebug(bool debug) {
+void RenderObject<Attribute>::setDebug(bool debug) noexcept {
     this->debug = debug;
 }
 
-template<typename Attribute>
-void RenderObject<Attribute>::render() {
-    if (!program) {
-        throw std::runtime_error("RENDER_OBJECT::ILLFORMED_PROGRAMM");
+template<typename Attribute> 
+void RenderObject<Attribute>::setUniform(
+    std::string const &key, 
+    attributes::BaseCases const &attr
+) noexcept {
+    if (!program) return;
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUseProgram(program);        
+        using namespace attributes;
+        std::visit(overload {
+            [&](FloatAttr const &value) { glUniform1f(location, value.val); },
+            [&](Vec2 const &value) { glUniform2f(location, value.val[0], valu∆e.val[1]); },
+            [&](Vec3 const &value) { glUniform3f(location, value.val[0], value.val[1], value.val[2]); },
+            [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
+            [&](iColor const &value) { glUniform1ui(location, value.val); }
+        }, attr);
     }
-    glUseProgram(program);
+};
+
+template<typename Attribute>
+void RenderObject<Attribute>::render() noexcept {
+    if (program) {
+        glUseProgram(program);
+    }
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
     glDrawElements(GL_TRIANGLES, vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
 
     glBindVertexArray(0);
-    glUseProgram(0);
+    if (program) {
+        glUseProgram(0);
+    }
 }
 }
