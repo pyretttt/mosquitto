@@ -15,11 +15,27 @@
 namespace fs = std::filesystem;
 
 namespace {
-    std::vector<attributes::Vec3> vertexArray = {
-        attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
-        attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
-        attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
-        attributes::Vec3 {.val = {-0.5f, 0.5f, 0.0f}},
+    std::vector<attributes::PositionWithColor> vertexArray = {
+        attributes::PositionWithColor {
+            .position = {0.5f, 0.5f, 0.0f},
+            .color = {0.5f, 0.3f, 0.9f, 1.0f}
+        },
+        attributes::PositionWithColor {
+            .position = {0.5f, -0.5f, 0.0f},
+            .color = {0.7f, 0.2f, 0.6f, 1.0f}
+        },
+        attributes::PositionWithColor {
+            .position = {-0.5f, -0.5f, 0.0f},
+            .color = {0.5f, 0.9f, 0.4f, 1.0f}
+        },
+        attributes::PositionWithColor {
+            .position = {-0.5f, 0.5f, 0.0f},
+            .color = {0.5f, 0.3f, 0.3f, 1.0f}
+        }
+        // attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
+        // attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
+        // attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
+        // attributes::Vec3 {.val = {-0.5f, 0.5f, 0.0f}},
     };
 
     gl::EBO vertexArrayIndices = {
@@ -34,7 +50,7 @@ namespace {
         }
     };
 
-    gl::RenderObject renderObject = gl::RenderObject<attributes::Vec3>(
+    gl::RenderObject renderObject = gl::RenderObject<attributes::PositionWithColor>(
         vertexArray,
         vertexArrayIndices,
         config,
@@ -108,7 +124,6 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     static float red = 0.f;
     red += dt / 10000;
     red = red - static_cast<int>(red);
-    std::cout << dt << " " << red << std::endl;
     renderObject.setUniform("ourColor", attributes::Vec4 {.val = {red, 0.3f, 0.4f, 1.0f}});
 }
 

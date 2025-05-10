@@ -35,4 +35,27 @@ namespace gl {
         );
         glEnableVertexAttribArray(0);
     }
+
+    template<>
+    void bindAttributes<attributes::PositionWithColor>() {
+        glVertexAttribPointer(
+            0,
+            3,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(attributes::PositionWithColor),
+            (void *)0
+        );
+        glVertexAttribPointer(
+            1,
+            4,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(attributes::PositionWithColor),
+            (void *)offsetof(attributes::PositionWithColor, color)
+        );
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+    }
+
 }

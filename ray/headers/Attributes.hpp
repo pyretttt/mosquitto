@@ -20,6 +20,11 @@ namespace attributes {
     using Vec3 = Vec<3>;
     using Vec4 = Vec<4>;
 
+    struct PositionWithColor {
+        Vec3 position;
+        Vec4 color;
+    };
+
     using BaseCases = std::variant<
         FloatAttr,
         Vec2,
