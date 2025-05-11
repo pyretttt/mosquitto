@@ -11,7 +11,7 @@ namespace gl {
     void bindAttributes();
 
     template<>
-    void bindAttributes<attributes::FloatAttr>() {
+    void inline bindAttributes<attributes::FloatAttr>() {
         glVertexAttribPointer(
             0,
             1,
@@ -24,7 +24,7 @@ namespace gl {
     }
 
     template<>
-    void bindAttributes<attributes::Vec3>() {
+    void inline bindAttributes<attributes::Vec3>() {
         glVertexAttribPointer(
             0,
             3,
@@ -37,7 +37,7 @@ namespace gl {
     }
 
     template<>
-    void bindAttributes<attributes::PositionWithColor>() {
+    void inline bindAttributes<attributes::PositionWithColor>() {
         glVertexAttribPointer(
             0,
             3,
@@ -57,5 +57,4 @@ namespace gl {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
     }
-
 }

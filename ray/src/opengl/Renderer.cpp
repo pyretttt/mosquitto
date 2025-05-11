@@ -11,6 +11,7 @@
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
 #include "opengl/RenderObject.hpp"
+#include "opengl/Shader.hpp"
 
 namespace fs = std::filesystem;
 
@@ -50,12 +51,15 @@ namespace {
         }
     };
 
+    gl::Shader shader = gl::Shader(
+        fs::path("shaders").append("vertex.vs"),
+        fs::path("shaders").append("fragment.fs")       
+    );
+
     gl::RenderObject renderObject = gl::RenderObject<attributes::PositionWithColor>(
         vertexArray,
         vertexArrayIndices,
         config,
-        fs::path("shaders").append("vertex.vs"),
-        fs::path("shaders").append("fragment.fs"),
         false,
         true
     );
@@ -114,6 +118,7 @@ void gl::Renderer::prepareViewPort() {
     glViewport(0, 0, resolution.first, resolution.second);
 
     renderObject.prepare();
+    shader.setup();
 }
 
 void gl::Renderer::processInput(Event) {
@@ -124,13 +129,13 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     static float red = 0.f;
     red += dt / 10000;
     red = red - static_cast<int>(red);
-    renderObject.setUniform("ourColor", attributes::Vec4 {.val = {red, 0.3f, 0.4f, 1.0f}});
+    shader.setUniform("ourColor", attributes::Vec4 {.val = {red, 0.3f, 0.4f, 1.0f}});
 }
 
 void gl::Renderer::render() const {
     glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+    shader.use();
     renderObject.render();
 
     SDL_GL_SwapWindow(config->window.get());
