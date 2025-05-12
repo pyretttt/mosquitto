@@ -25,6 +25,11 @@ namespace attributes {
         Vec4 color;
     };
 
+    struct PositionWithText {
+        Vec3 position;
+        Vec2 tex;
+    };
+
     using BaseCases = std::variant<
         FloatAttr,
         Vec2,

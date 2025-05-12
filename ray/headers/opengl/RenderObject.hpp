@@ -4,6 +4,7 @@
 #include <optional>
 #include <array>
 #include <type_traits>
+#include <algorithm>
 
 #include <GL/glew.h>
 
@@ -11,6 +12,7 @@
 #include "glAttribute.hpp"
 #include "Core.hpp"
 #include "glCommon.hpp"
+#include "opengl/glTexture.hpp"
 
 namespace gl {
 
@@ -32,7 +34,8 @@ struct RenderObject {
         EBO vertexArrayIndices,
         Configuration configuration,
         bool eagerInit,
-        bool debug = false
+        bool debug = false,
+        std::vector<glTexture> textures = std::vector<glTexture>()
     );
 
     RenderObject(RenderObject<Attribute> const &) = delete;
@@ -53,9 +56,11 @@ struct RenderObject {
     ID vbo = 0;
     ID vao = 0;
     ID ebo = 0;
+    ID tex;
 
     std::vector<Attribute> vertexArray;
     EBO vertexArrayIndices;
+    std::vector<glTexture> textures;
 
     Configuration configuration;
 
@@ -68,11 +73,13 @@ RenderObject<Attribute>::RenderObject(
     EBO vertexArrayIndices,
     Configuration configuration,
     bool eagerInit,
-    bool debug
+    bool debug,
+    std::vector<glTexture> textures
 ) 
     : configuration(configuration)
     , vertexArray(std::move(vertexArray))
-    , vertexArrayIndices(std::move(vertexArrayIndices)) {
+    , vertexArrayIndices(std::move(vertexArrayIndices))
+    , textures(std::move(textures)) {
     setDebug(debug);
     if (eagerInit) {
         prepare();
@@ -88,6 +95,7 @@ RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
     , vbo(other.vbo)
     , debug(other.debug)
     , configuration(other.configuration)
+    , textures(std::move(other.textures))
 {
     other.vbo = 0;
     other.ebo = 0;
@@ -103,6 +111,7 @@ RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribu
     this->ebo = other.ebo;
     this->debug = debug;
     this->configuration = configuration;
+    this->textures = std::move(other.textures);
     other.vao = 0;
     other.ebo = 0;
     other.vbo = 0;
@@ -117,6 +126,43 @@ RenderObject<Attribute>::~RenderObject() {
 
 template<typename Attribute>
 void RenderObject<Attribute>::prepare() {
+    std::for_each(
+        textures.begin(), 
+        textures.end(),
+        [](auto &texture) {
+            if (!texture.id)
+                glGenTextures(1, &(texture.id));
+        }
+    );
+
+    std::for_each(
+        textures.begin(),
+        textures.end(),
+        [](auto &texture) {
+            glBindTexture(GL_TEXTURE_2D, texture.id);
+            glTexImage2D(
+                GL_TEXTURE_2D, 
+                0, 
+                GL_RGB, 
+                texture.texData->width,
+                texture.texData->height,
+                0,
+                GL_RGB,
+                GL_UNSIGNED_BYTE,
+                texture.texData->ptr.get()
+            );
+            if (texture.mode.mipmaps) {
+                glGenerateMipmap(GL_TEXTURE_2D);
+            }
+            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, texture.mode.border);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture.mode.wrapModeS);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture.mode.wrapModeT);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture.mode.minifyingFilter);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture.mode.magnifyingFilter);
+        }
+    );
+
+
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
     glGenBuffers(1, &ebo);
@@ -154,7 +200,6 @@ void RenderObject<Attribute>::render() noexcept {
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
     glDrawElements(GL_TRIANGLES, vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
-
     glBindVertexArray(0);
 }
 }
