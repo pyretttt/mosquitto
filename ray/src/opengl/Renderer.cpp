@@ -1,37 +1,60 @@
 #include <filesystem>
 #include <array>
 #include <vector>
+#include <memory>
 
 #include "GL/glew.h"
 #include "SDL_opengl.h"
 #include "SDL.h"
 
 #include "Attributes.hpp"
+#include "Core.hpp"
 #include "opengl/Renderer.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
 #include "opengl/RenderObject.hpp"
 #include "opengl/Shader.hpp"
+#include "Tex.hpp"
 
 namespace fs = std::filesystem;
 
 namespace {
-    std::vector<attributes::PositionWithColor> vertexArray = {
-        attributes::PositionWithColor {
-            .position = {0.5f, 0.5f, 0.0f},
-            .color = {0.5f, 0.3f, 0.9f, 1.0f}
+    std::vector<attributes::PositionWithTex> vertexArray = {
+        attributes::PositionWithTex {
+            .posAndColor = attributes::PositionWithColor {
+                .position = {0.5f, 0.5f, 0.0f},
+                .color = {0.5f, 0.3f, 0.9f, 1.0f}
+            },
+            .tex = attributes::Vec2 {
+                .val = {1.f, 1.f}
+            }
         },
-        attributes::PositionWithColor {
-            .position = {0.5f, -0.5f, 0.0f},
-            .color = {0.7f, 0.2f, 0.6f, 1.0f}
+        attributes::PositionWithTex {
+            attributes::PositionWithColor {
+                .position = {0.5f, -0.5f, 0.0f},
+                .color = {0.7f, 0.2f, 0.6f, 1.0f}
+            },
+            .tex = attributes::Vec2 {
+                .val = {1.f, 0.f}
+            }
         },
-        attributes::PositionWithColor {
-            .position = {-0.5f, -0.5f, 0.0f},
-            .color = {0.5f, 0.9f, 0.4f, 1.0f}
+        attributes::PositionWithTex {
+            attributes::PositionWithColor {
+                .position = {-0.5f, -0.5f, 0.0f},
+                .color = {0.5f, 0.9f, 0.4f, 1.0f}
+            },
+            .tex = attributes::Vec2 {
+                .val = {0.f, 0.f}
+            }
         },
-        attributes::PositionWithColor {
-            .position = {-0.5f, 0.5f, 0.0f},
-            .color = {0.5f, 0.3f, 0.3f, 1.0f}
+        attributes::PositionWithTex {
+            attributes::PositionWithColor {
+                .position = {-0.5f, 0.5f, 0.0f},
+                .color = {0.5f, 0.3f, 0.3f, 1.0f}
+            },
+            .tex = attributes::Vec2 {
+                .val = {0.f, 1.f}
+            }
         }
         // attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
         // attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
@@ -56,12 +79,30 @@ namespace {
         fs::path("shaders").append("fragment.fs")       
     );
 
-    gl::RenderObject renderObject = gl::RenderObject<attributes::PositionWithColor>(
+    // std::unique_ptr<TexData> textureData = std::make_unique<TexData>(std::move(loadTextureData(
+    //     fs::path("resources").append("textures").append("container.jpg")
+    // )));
+
+    std::shared_ptr<std::vector<gl::Texture>> textures = std::make_shared<std::vector<gl::Texture>>(
+        modified(std::vector<gl::Texture>(), [](std::vector<gl::Texture> &vec) {
+            vec.emplace_back(
+                gl::TextureMode(), 
+                std::make_unique<TexData>(
+                    loadTextureData(
+                        fs::path("resources").append("textures").append("container.jpg")
+                    )
+                )
+            );
+        })
+    );
+
+    gl::RenderObject renderObject = gl::RenderObject<attributes::PositionWithTex>(
         vertexArray,
         vertexArrayIndices,
         config,
         false,
-        true
+        true,
+        textures
     );
 }
 

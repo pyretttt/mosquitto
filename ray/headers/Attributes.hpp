@@ -25,8 +25,8 @@ namespace attributes {
         Vec4 color;
     };
 
-    struct PositionWithText {
-        Vec3 position;
+    struct PositionWithTex {
+        PositionWithColor posAndColor;
         Vec2 tex;
     };
 

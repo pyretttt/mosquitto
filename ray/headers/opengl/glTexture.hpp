@@ -19,12 +19,31 @@ namespace gl {
         bool mipmaps = true;
     };
 
-    struct glTexture final {
-        TextureMode mode;
-        std::unique_ptr<Tex> texData;
+    struct Texture final {
+        TextureMode mode = TextureMode();
+        std::unique_ptr<TexData> texData;
         ID id = 0;
 
-        ~glTexture() {
+        Texture(
+            TextureMode mode,
+            std::unique_ptr<TexData> texData
+        ) : mode(mode), texData(std::move(texData)) {}
+
+        Texture(
+            Texture &&other
+        ) : mode(other.mode), texData(std::move(other.texData)), id(other.id) {
+            other.id = 0;
+        }
+
+        Texture& operator=(Texture &&other) {
+            this->id = other.id;
+            this->mode = other.mode;
+            this->texData = std::move(other.texData);
+            other.id = 0;
+            return *this;
+        }
+
+        ~Texture() {
             if (id) glDeleteTextures(1, &id);
         }
     };

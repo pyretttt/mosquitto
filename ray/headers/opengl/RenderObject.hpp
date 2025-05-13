@@ -35,7 +35,7 @@ struct RenderObject {
         Configuration configuration,
         bool eagerInit,
         bool debug = false,
-        std::vector<glTexture> textures = std::vector<glTexture>()
+        std::shared_ptr<std::vector<Texture>> textures = nullptr
     );
 
     RenderObject(RenderObject<Attribute> const &) = delete;
@@ -60,7 +60,7 @@ struct RenderObject {
 
     std::vector<Attribute> vertexArray;
     EBO vertexArrayIndices;
-    std::vector<glTexture> textures;
+    std::shared_ptr<std::vector<Texture>> textures;
 
     Configuration configuration;
 
@@ -74,12 +74,12 @@ RenderObject<Attribute>::RenderObject(
     Configuration configuration,
     bool eagerInit,
     bool debug,
-    std::vector<glTexture> textures
+    std::shared_ptr<std::vector<Texture>> textures
 ) 
     : configuration(configuration)
     , vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))
-    , textures(std::move(textures)) {
+    , textures(textures) {
     setDebug(debug);
     if (eagerInit) {
         prepare();
@@ -127,8 +127,8 @@ RenderObject<Attribute>::~RenderObject() {
 template<typename Attribute>
 void RenderObject<Attribute>::prepare() {
     std::for_each(
-        textures.begin(), 
-        textures.end(),
+        textures->begin(), 
+        textures->end(),
         [](auto &texture) {
             if (!texture.id)
                 glGenTextures(1, &(texture.id));
@@ -136,8 +136,8 @@ void RenderObject<Attribute>::prepare() {
     );
 
     std::for_each(
-        textures.begin(),
-        textures.end(),
+        textures->begin(),
+        textures->end(),
         [](auto &texture) {
             glBindTexture(GL_TEXTURE_2D, texture.id);
             glTexImage2D(
@@ -198,6 +198,11 @@ void RenderObject<Attribute>::setDebug(bool debug) noexcept {
 template<typename Attribute>
 void RenderObject<Attribute>::render() noexcept {
     glBindVertexArray(vao);
+    
+    if (!textures->empty()) {
+        glBindTexture(GL_TEXTURE_2D, textures->front().id);
+    }
+
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
     glDrawElements(GL_TRIANGLES, vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);

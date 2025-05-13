@@ -5,6 +5,7 @@
 #include <functional>
 #include <filesystem>
 
+#define STB_IMAGE_IMPLEMENTATION
 #include "3rd_party/stb_image.h"
 
 using TexPointer = std::unique_ptr<
@@ -12,14 +13,14 @@ using TexPointer = std::unique_ptr<
     std::function<void (unsigned char *)>
 >;
 
-struct Tex {
+struct TexData {
     int width;
     int height;
     int channels;
     TexPointer ptr;
 };
 
-Tex inline static loadText(
+TexData inline static loadTextureData(
     std::filesystem::path path
 ) {
     std::string pathStr = path.string();
@@ -38,7 +39,7 @@ Tex inline static loadText(
             stbi_image_free(data);
         }
     );
-    return Tex {
+    return TexData {
         .width = width,
         .height = height,
         .channels = channels,

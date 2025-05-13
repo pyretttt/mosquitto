@@ -3,8 +3,8 @@
 #include <functional>
 #include <utility>
 
-template <typename T>
-constexpr inline T &&modified(T &&object, std::function<void(T &)> modification) {
+template <typename T, typename Callable>
+constexpr inline T &&modified(T &&object, Callable modification) {
     modification(object);
     return object;
 }
