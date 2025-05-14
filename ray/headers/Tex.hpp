@@ -21,11 +21,14 @@ struct TexData {
 };
 
 TexData inline static loadTextureData(
-    std::filesystem::path path
+    std::filesystem::path path,
+    bool flipVertically = true
 ) {
     std::string pathStr = path.string();
     auto pathChars = pathStr.data();
     int width, height, channels;
+
+    stbi_set_flip_vertically_on_load(flipVertically);
     unsigned char *data = stbi_load(
         pathChars,
         &width,

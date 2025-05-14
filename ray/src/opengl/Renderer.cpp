@@ -79,10 +79,6 @@ namespace {
         fs::path("shaders").append("fragment.fs")       
     );
 
-    // std::unique_ptr<TexData> textureData = std::make_unique<TexData>(std::move(loadTextureData(
-    //     fs::path("resources").append("textures").append("container.jpg")
-    // )));
-
     std::shared_ptr<std::vector<gl::Texture>> textures = std::make_shared<std::vector<gl::Texture>>(
         modified(std::vector<gl::Texture>(), [](std::vector<gl::Texture> &vec) {
             vec.emplace_back(
@@ -90,6 +86,14 @@ namespace {
                 std::make_unique<TexData>(
                     loadTextureData(
                         fs::path("resources").append("textures").append("container.jpg")
+                    )
+                )
+            );
+            vec.emplace_back(
+                gl::TextureMode {.bitFormat = GL_RGBA}, 
+                std::make_unique<TexData>(
+                    loadTextureData(
+                        fs::path("resources").append("textures").append("awesomeface.png")
                     )
                 )
             );
@@ -160,6 +164,7 @@ void gl::Renderer::prepareViewPort() {
 
     renderObject.prepare();
     shader.setup();
+    shader.setTextureSamplers(renderObject.textures->size());
 }
 
 void gl::Renderer::processInput(Event) {

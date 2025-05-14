@@ -135,33 +135,29 @@ void RenderObject<Attribute>::prepare() {
         }
     );
 
-    std::for_each(
-        textures->begin(),
-        textures->end(),
-        [](auto &texture) {
-            glBindTexture(GL_TEXTURE_2D, texture.id);
-            glTexImage2D(
-                GL_TEXTURE_2D, 
-                0, 
-                GL_RGB, 
-                texture.texData->width,
-                texture.texData->height,
-                0,
-                GL_RGB,
-                GL_UNSIGNED_BYTE,
-                texture.texData->ptr.get()
-            );
-            if (texture.mode.mipmaps) {
-                glGenerateMipmap(GL_TEXTURE_2D);
-            }
-            glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, texture.mode.border);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, texture.mode.wrapModeS);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, texture.mode.wrapModeT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, texture.mode.minifyingFilter);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, texture.mode.magnifyingFilter);
+    for (size_t i = 0; i < textures->size(); i++) {
+        auto const &tex = textures->at(i);
+        glBindTexture(GL_TEXTURE_2D, tex.id);
+        glTexImage2D(
+            GL_TEXTURE_2D, 
+            0, 
+            GL_RGB, 
+            tex.texData->width,
+            tex.texData->height,
+            0,
+            tex.mode.bitFormat,
+            GL_UNSIGNED_BYTE,
+            tex.texData->ptr.get()
+        );
+        if (tex.mode.mipmaps) {
+            glGenerateMipmap(GL_TEXTURE_2D);
         }
-    );
-
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex.mode.border);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, tex.mode.wrapModeS);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tex.mode.wrapModeT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex.mode.minifyingFilter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex.mode.magnifyingFilter);
+    }
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -199,8 +195,9 @@ template<typename Attribute>
 void RenderObject<Attribute>::render() noexcept {
     glBindVertexArray(vao);
     
-    if (!textures->empty()) {
-        glBindTexture(GL_TEXTURE_2D, textures->front().id);
+    for (size_t i = 0; i < textures->size(); i++) {
+        glActiveTexture(GL_TEXTURE0 + i);
+        glBindTexture(GL_TEXTURE_2D, textures->at(i).id);
     }
 
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);

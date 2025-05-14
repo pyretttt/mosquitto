@@ -17,6 +17,8 @@ namespace gl {
         GLenum minifyingFilter = GL_LINEAR;
         float border[4] = {1.f, 1.f, 1.f, 1.f};
         bool mipmaps = true;
+
+        GLenum bitFormat = GL_RGB; 
     };
 
     struct Texture final {

@@ -77,3 +77,34 @@ void gl::Shader::setup() {
 gl::Shader::~Shader() {
     if (program) glDeleteProgram(program);
 }
+
+void gl::Shader::setUniform(
+    std::string const &key, 
+    attributes::BaseCases const &attr
+) noexcept {
+    if (!program) return;
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUseProgram(program);
+        using namespace attributes;
+        std::visit(overload {
+            [&](FloatAttr const &value) { glUniform1f(location, value.val); },
+            [&](Vec2 const &value) { glUniform2f(location, value.val[0], value.val[1]); },
+            [&](Vec3 const &value) { glUniform3f(location, value.val[0], value.val[1], value.val[2]); },
+            [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
+            [&](iColor const &value) { glUniform1ui(location, value.val); }
+        }, attr);
+        glUseProgram(0);
+    }
+};
+
+void gl::Shader::setTextureSamplers(size_t max) noexcept {
+    if (!program) return;
+    for (size_t i = 0; i < max; i++) {
+        glUseProgram(program);
+        auto key = "texture" + std::to_string(i);
+        if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
+            glUniform1i(location, i);
+        }
+        glUseProgram(0);
+    }
+}
