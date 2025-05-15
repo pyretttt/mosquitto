@@ -13,6 +13,7 @@
 #include "Core.hpp"
 #include "glCommon.hpp"
 #include "opengl/glTexture.hpp"
+#include "opengl/MeshNode.hpp"
 
 namespace gl {
 
@@ -30,12 +31,10 @@ struct Configuration {
 template <typename Attribute>
 struct RenderObject {
     RenderObject(
-        std::vector<Attribute> vertexArray,
-        EBO vertexArrayIndices,
         Configuration configuration,
-        bool eagerInit,
-        bool debug = false,
-        std::shared_ptr<std::vector<Texture>> textures = nullptr
+        std::shared_ptr<MeshNode<Attribute>> meshNode,
+        std::shared_ptr<std::vector<Texture>> textures = nullptr,
+        bool debug = false
     );
 
     RenderObject(RenderObject<Attribute> const &) = delete;
@@ -45,9 +44,7 @@ struct RenderObject {
     RenderObject<Attribute>& operator=(RenderObject<Attribute>&& other);
 
     void setDebug(bool) noexcept;
-
     void setUniform(std::string const &key, attributes::BaseCases const &attr) noexcept;
-
     void prepare();
     void render() noexcept;
 
@@ -58,8 +55,7 @@ struct RenderObject {
     ID ebo = 0;
     ID tex;
 
-    std::vector<Attribute> vertexArray;
-    EBO vertexArrayIndices;
+    std::shared_ptr<MeshNode<Attribute>> meshNode;
     std::shared_ptr<std::vector<Texture>> textures;
 
     Configuration configuration;
@@ -69,33 +65,26 @@ struct RenderObject {
 
 template<typename Attribute>
 RenderObject<Attribute>::RenderObject(
-    std::vector<Attribute> vertexArray,
-    EBO vertexArrayIndices,
     Configuration configuration,
-    bool eagerInit,
-    bool debug,
-    std::shared_ptr<std::vector<Texture>> textures
+    std::shared_ptr<MeshNode<Attribute>> meshNode,
+    std::shared_ptr<std::vector<Texture>> textures,
+    bool debug
 ) 
     : configuration(configuration)
-    , vertexArray(std::move(vertexArray))
-    , vertexArrayIndices(std::move(vertexArrayIndices))
+    , meshNode(meshNode)
     , textures(textures) {
     setDebug(debug);
-    if (eagerInit) {
-        prepare();
-    }
 }
 
 template<typename Attribute>
 RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
-    : vertexArray(std::move(vertexArray))
-    , vertexArrayIndices(std::move(vertexArrayIndices))
-    , vao(other.vao)
+    : vao(other.vao)
     , ebo(other.ebo)
     , vbo(other.vbo)
-    , debug(other.debug)
     , configuration(other.configuration)
+    , meshNode(std::move(other.meshNode))
     , textures(std::move(other.textures))
+    , debug(other.debug)
 {
     other.vbo = 0;
     other.ebo = 0;
@@ -104,14 +93,13 @@ RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
 
 template<typename Attribute>
 RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribute>&& other) {
-    this->vertexArray = std::move(other.vertexArray);
-    this->vertexArrayIndices = std::move(other.vertexArrayIndices);
+    this->configuration = configuration;
+    this->meshNode = std::move(other.meshNode);
+    this->textures = std::move(other.textures);
+    this->debug = debug;
     this->vao = other.vao;
     this->vbo = other.vbo;
     this->ebo = other.ebo;
-    this->debug = debug;
-    this->configuration = configuration;
-    this->textures = std::move(other.textures);
     other.vao = 0;
     other.ebo = 0;
     other.vbo = 0;
@@ -167,8 +155,8 @@ void RenderObject<Attribute>::prepare() {
     glBindBuffer(GL_ARRAY_BUFFER, vbo);
     glBufferData(
         GL_ARRAY_BUFFER, 
-        vertexArray.size() * sizeof(Attribute),
-        vertexArray.data(), 
+        meshNode->vertexArray.size() * sizeof(Attribute),
+        meshNode->vertexArray.data(), 
         GL_STATIC_DRAW
     );
     bindAttributes<Attribute>();
@@ -176,8 +164,8 @@ void RenderObject<Attribute>::prepare() {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(
         GL_ELEMENT_ARRAY_BUFFER, 
-        sizeof(EBO::value_type) * vertexArrayIndices.size(),
-        vertexArrayIndices.data(),
+        sizeof(EBO::value_type) * meshNode->vertexArrayIndices.size(),
+        meshNode->vertexArrayIndices.data(),
         GL_STATIC_DRAW
     );
 
@@ -201,7 +189,7 @@ void RenderObject<Attribute>::render() noexcept {
     }
 
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
-    glDrawElements(GL_TRIANGLES, vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, meshNode->vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
 }

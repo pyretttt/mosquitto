@@ -10,6 +10,7 @@
 #include "Attributes.hpp"
 #include "Core.hpp"
 #include "opengl/Renderer.hpp"
+#include "opengl/MeshNode.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
 #include "opengl/RenderObject.hpp"
@@ -19,53 +20,54 @@
 namespace fs = std::filesystem;
 
 namespace {
-    std::vector<attributes::PositionWithTex> vertexArray = {
-        attributes::PositionWithTex {
-            .posAndColor = attributes::PositionWithColor {
-                .position = {0.5f, 0.5f, 0.0f},
-                .color = {0.5f, 0.3f, 0.9f, 1.0f}
+    std::shared_ptr<gl::MeshNode<attributes::PositionWithTex>> mesh = std::make_shared<gl::MeshNode<attributes::PositionWithTex>>(
+        std::vector<attributes::PositionWithTex>({
+            attributes::PositionWithTex {
+                .posAndColor = attributes::PositionWithColor {
+                    .position = {0.5f, 0.5f, 0.0f},
+                    .color = {0.5f, 0.3f, 0.9f, 1.0f}
+                },
+                .tex = attributes::Vec2 {
+                    .val = {1.f, 1.f}
+                }
             },
-            .tex = attributes::Vec2 {
-                .val = {1.f, 1.f}
-            }
-        },
-        attributes::PositionWithTex {
-            attributes::PositionWithColor {
-                .position = {0.5f, -0.5f, 0.0f},
-                .color = {0.7f, 0.2f, 0.6f, 1.0f}
+            attributes::PositionWithTex {
+                attributes::PositionWithColor {
+                    .position = {0.5f, -0.5f, 0.0f},
+                    .color = {0.7f, 0.2f, 0.6f, 1.0f}
+                },
+                .tex = attributes::Vec2 {
+                    .val = {1.f, 0.f}
+                }
             },
-            .tex = attributes::Vec2 {
-                .val = {1.f, 0.f}
-            }
-        },
-        attributes::PositionWithTex {
-            attributes::PositionWithColor {
-                .position = {-0.5f, -0.5f, 0.0f},
-                .color = {0.5f, 0.9f, 0.4f, 1.0f}
+            attributes::PositionWithTex {
+                attributes::PositionWithColor {
+                    .position = {-0.5f, -0.5f, 0.0f},
+                    .color = {0.5f, 0.9f, 0.4f, 1.0f}
+                },
+                .tex = attributes::Vec2 {
+                    .val = {0.f, 0.f}
+                }
             },
-            .tex = attributes::Vec2 {
-                .val = {0.f, 0.f}
+            attributes::PositionWithTex {
+                attributes::PositionWithColor {
+                    .position = {-0.5f, 0.5f, 0.0f},
+                    .color = {0.5f, 0.3f, 0.3f, 1.0f}
+                },
+                .tex = attributes::Vec2 {
+                    .val = {0.f, 1.f}
+                }
             }
-        },
-        attributes::PositionWithTex {
-            attributes::PositionWithColor {
-                .position = {-0.5f, 0.5f, 0.0f},
-                .color = {0.5f, 0.3f, 0.3f, 1.0f}
-            },
-            .tex = attributes::Vec2 {
-                .val = {0.f, 1.f}
-            }
-        }
-        // attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
-        // attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
-        // attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
-        // attributes::Vec3 {.val = {-0.5f, 0.5f, 0.0f}},
-    };
-
-    gl::EBO vertexArrayIndices = {
-        0, 1, 3,
-        1, 2, 3 
-    };
+            // attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
+            // attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
+            // attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
+            // attributes::Vec3 {.val = {-0.5f, 0.5f, 0.0f}},
+        }),
+        gl::EBO({
+            0, 1, 3,
+            1, 2, 3 
+        })
+    );
 
     gl::Configuration config = gl::Configuration {
         .polygonMode = gl::Configuration::PolygonMode {
@@ -101,12 +103,10 @@ namespace {
     );
 
     gl::RenderObject renderObject = gl::RenderObject<attributes::PositionWithTex>(
-        vertexArray,
-        vertexArrayIndices,
         config,
-        false,
-        true,
-        textures
+        mesh,
+        textures,
+        true
     );
 }
 
