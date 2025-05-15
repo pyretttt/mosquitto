@@ -2,6 +2,8 @@
 
 #include <variant>
 
+#include "MathUtils.hpp"
+
 namespace attributes {
     struct FloatAttr {
         float val;
@@ -30,11 +32,14 @@ namespace attributes {
         Vec2 tex;
     };
 
-    using BaseCases = std::variant<
+    using Mat4 = ml::Matrix4f;
+
+    using UniformCases = std::variant<
         FloatAttr,
         Vec2,
         Vec3,
         Vec4,
-        iColor
+        iColor,
+        Mat4
     >;
 }

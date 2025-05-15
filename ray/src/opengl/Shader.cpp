@@ -6,6 +6,7 @@
 #include "opengl/Shader.hpp"
 #include "LoadTextFile.hpp"
 #include "Core.hpp"
+#include "MathUtils.hpp"
 
 
 void gl::Shader::use() {
@@ -80,7 +81,7 @@ gl::Shader::~Shader() {
 
 void gl::Shader::setUniform(
     std::string const &key, 
-    attributes::BaseCases const &attr
+    attributes::UniformCases const &attr
 ) noexcept {
     if (!program) return;
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
@@ -91,7 +92,9 @@ void gl::Shader::setUniform(
             [&](Vec2 const &value) { glUniform2f(location, value.val[0], value.val[1]); },
             [&](Vec3 const &value) { glUniform3f(location, value.val[0], value.val[1], value.val[2]); },
             [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
-            [&](iColor const &value) { glUniform1ui(location, value.val); }
+            [&](iColor const &value) { glUniform1ui(location, value.val); },
+            // GL_TRUE, because I use row major order
+            [&](Mat4 const &value) { glUniformMatrix4fv(location, 1, GL_TRUE, ml::getPtr(value)); }
         }, attr);
         glUseProgram(0);
     }

@@ -44,7 +44,7 @@ struct RenderObject {
     RenderObject<Attribute>& operator=(RenderObject<Attribute>&& other);
 
     void setDebug(bool) noexcept;
-    void setUniform(std::string const &key, attributes::BaseCases const &attr) noexcept;
+    void setUniform(std::string const &key, attributes::UniformCases const &attr) noexcept;
     void prepare();
     void render() noexcept;
 

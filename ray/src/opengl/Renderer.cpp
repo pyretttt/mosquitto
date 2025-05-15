@@ -16,6 +16,7 @@
 #include "opengl/RenderObject.hpp"
 #include "opengl/Shader.hpp"
 #include "Tex.hpp"
+#include "MathUtils.hpp"
 
 namespace fs = std::filesystem;
 
@@ -172,10 +173,16 @@ void gl::Renderer::processInput(Event) {
 }
 
 void gl::Renderer::update(MeshData const &data, float dt) {
-    static float red = 0.f;
-    red += dt / 10000;
-    red = red - static_cast<int>(red);
-    shader.setUniform("ourColor", attributes::Vec4 {.val = {red, 0.3f, 0.4f, 1.0f}});
+    static float time = 0.f;
+    time += dt / 10000;
+    shader.setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
+
+    auto transformMatrix = mesh->getTransform();
+    transformMatrix = ml::matMul(
+        ml::rotateAroundPoint(ml::diagonal<ml::Vector3f>(0), ml::Vector3f({0, 0, 1}), time),
+        transformMatrix
+    );
+    shader.setUniform("transform", transformMatrix);
 }
 
 void gl::Renderer::render() const {

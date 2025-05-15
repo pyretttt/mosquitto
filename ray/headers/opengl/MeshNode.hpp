@@ -5,8 +5,6 @@
 #include "glCommon.hpp"
 #include "MathUtils.hpp"
 
-
-
 namespace gl {
 
 template <typename Attr>
@@ -40,10 +38,10 @@ MeshNode<Attr>::MeshNode(
 template <typename Attr>
 ml::Matrix4f MeshNode<Attr>::getTransform() const noexcept {
     if (auto strongParent = parent.lock()) {
-        auto parentTransform = ml::matMul(parent->getTransform(), localTransform);
+        auto parentTransform = ml::matMul(strongParent->getTransform(), localTransform);
+        return parentTransform;
     } else {
         return localTransform;
     }
 }
-
 }

@@ -5,6 +5,7 @@
 #include <type_traits>
 
 #include "glm/glm.hpp"
+#include <glm/gtc/type_ptr.hpp>
 
 namespace ml {
 
@@ -291,5 +292,10 @@ Vector inline lerp(
         res[i] = std::lerp(a[i], b[i], alpha);
     }
     return res;
+}
+
+template <typename Vector>
+auto getPtr(Vector const &vec) -> decltype(glm::value_ptr(vec)) {
+    return glm::value_ptr(vec);
 }
 } // namespace ml
