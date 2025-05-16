@@ -1,9 +1,9 @@
 #include <iostream>
 #include <cmath>
 
-#include "sdl/Camera.hpp"
+#include "Camera.hpp"
 
-sdl::Camera::Camera(
+Camera::Camera(
     std::unique_ptr<ObservableObject<float>> &&fov,
     std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize
 ) : fov_(std::move(fov)),
@@ -36,7 +36,7 @@ sdl::Camera::Camera(
 
 }
 
-void sdl::Camera::handleInput(CameraInput::Cases const &input) noexcept {
+void Camera::handleInput(CameraInput::Cases const &input) noexcept {
     if (auto const *value = std::get_if<CameraInput::Translate>(&input)) {
         origin.z += +value->backward - value->forward;
         origin.x += value->right - value->left;
@@ -56,10 +56,10 @@ void sdl::Camera::handleInput(CameraInput::Cases const &input) noexcept {
     viewMatrix = ml::cameraMatrix(origin, lookAt + origin);
 }
 
-ml::Matrix4f const &sdl::Camera::getViewTransformation() const noexcept {
+ml::Matrix4f const &Camera::getViewTransformation() const noexcept {
     return viewMatrix;
 }
 
-ml::Matrix4f const &sdl::Camera::getScenePerspectiveProjectionMatrix() const noexcept {
+ml::Matrix4f const &Camera::getScenePerspectiveProjectionMatrix() const noexcept {
     return perspectiveProjectionMatrix;
 }

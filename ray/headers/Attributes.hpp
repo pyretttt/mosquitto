@@ -34,12 +34,28 @@ namespace attributes {
 
     using Mat4 = ml::Matrix4f;
 
+    struct Transforms {
+        Mat4 worldMatrix;
+        Mat4 viewMatrix;
+        Mat4 projectionMatrix;
+
+        Transforms(
+            Mat4 worldMatrix,
+            Mat4 viewMatrix,
+            Mat4 projectionMatrix
+        ) 
+            : worldMatrix(worldMatrix)
+            , viewMatrix(viewMatrix)
+            , projectionMatrix(projectionMatrix) {}
+    };
+
     using UniformCases = std::variant<
         FloatAttr,
         Vec2,
         Vec3,
         Vec4,
         iColor,
-        Mat4
+        Mat4,
+        Transforms
     >;
 }

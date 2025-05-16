@@ -9,8 +9,6 @@
 #include "MathUtils.hpp"
 #include "ReactivePrimitives.hpp"
 
-namespace sdl {
-
 struct CameraInput {
     struct Translate {
         float forward, backward, left, right;
@@ -63,7 +61,6 @@ public:
     ml::Matrix4f const &getViewTransformation() const noexcept;
 
     void handleInput(CameraInput::Cases const &cameraInput) noexcept;
-    // std::vector<>
 
 private:
     ml::Vector3f origin;
@@ -77,4 +74,3 @@ private:
     float rotate_about_x = 0, rotate_about_y = 0; // x and y
     std::optional<int32_t> last_x, last_y;
 };
-} // namespace sdl

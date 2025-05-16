@@ -9,7 +9,7 @@
 #include "RunLoop.cpp"
 #include "Controller.hpp"
 #include "opengl/Renderer.hpp"
-#include "sdl/Camera.hpp"
+#include "Camera.hpp"
 #include "Plane.hpp"
 
 int main() {

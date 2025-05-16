@@ -7,7 +7,7 @@
 #include "Core.hpp"
 #include "MathUtils.hpp"
 #include "Utility.hpp"
-#include "sdl/Camera.hpp"
+#include "Camera.hpp"
 #include "sdl/Renderer.hpp"
 #include "Polygon.hpp"
 
@@ -22,7 +22,7 @@ static void safeMemorySet(
 
 sdl::Renderer::Renderer(
     std::shared_ptr<GlobalConfig> config,
-    Lazy<sdl::Camera> camera
+    Lazy<Camera> camera
 ) 
     : camera(camera)
     , config(config)

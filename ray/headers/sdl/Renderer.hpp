@@ -11,9 +11,9 @@
 #include "RendererBase.hpp"
 #include "sdl/Light.hpp"
 
-namespace sdl {
-
 class Camera;
+
+namespace sdl {
 
 struct Renderer : public ::Renderer {
     Renderer() = delete;
@@ -34,7 +34,7 @@ private:
     void drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept;
     void fillTriangle(Triangle t, float z0, float z1, float z2, uint32_t color) noexcept;
 
-    Lazy<sdl::Camera> camera;
+    Lazy<Camera> camera;
     std::unique_ptr<uint32_t[]> colorBuffer;
     std::unique_ptr<float[]> zBuffer;
     ml::Matrix4f screenSpaceProjection_;

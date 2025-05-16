@@ -10,7 +10,7 @@
 #include "sdl/Renderer.hpp"
 #include "opengl/Renderer.hpp"
 #include "Lazy.hpp"
-#include "sdl/Camera.hpp"
+#include "Camera.hpp"
 
 Controller::Controller(
     std::shared_ptr<GlobalConfig> config
@@ -26,18 +26,20 @@ Controller::Controller(
 Controller::~Controller() {}
 
 void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
+    auto camera = Lazy<Camera>([config = this->config]() {
+        return std::make_shared<Camera>(config->fov.asObservableObject(), config->windowSize.asObservableObject());
+    });
     switch (config->rendererType.value()) {
     case (RendererType::CPU):
         renderer = std::make_shared<sdl::Renderer>(
             config,
-            Lazy<sdl::Camera>([config = this->config]() {
-                return std::make_shared<sdl::Camera>(config->fov.asObservableObject(), config->windowSize.asObservableObject());
-            })
+            camera
         );
         break;
     case (RendererType::OpenGL):
         renderer = std::make_shared<gl::Renderer>(
-            config
+            config,
+            camera
         );
         break;
     }

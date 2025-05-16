@@ -109,12 +109,26 @@ namespace {
         textures,
         true
     );
+
+    void debugCallback(
+        GLenum source, 
+        GLenum type, 
+        GLuint id, 
+        GLenum severity, 
+        GLsizei length,
+        const GLchar* message, 
+        const void* userParam
+    ) {
+        std::cout << "OpenGL Debug: " << message << std::endl;
+    }
 }
 
 gl::Renderer::Renderer(
-    std::shared_ptr<GlobalConfig> config
+    std::shared_ptr<GlobalConfig> config,
+    Lazy<Camera> camera
 )
     : config(config)
+    , camera(camera)
     , resolution(config->windowSize.value()) {        
 }
 
@@ -166,6 +180,10 @@ void gl::Renderer::prepareViewPort() {
     renderObject.prepare();
     shader.setup();
     shader.setTextureSamplers(renderObject.textures->size());
+
+    glEnable(GL_DEBUG_OUTPUT);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Makes debugging easier
+    // glDebugMessageCallback(debugCallback, nullptr);
 }
 
 void gl::Renderer::processInput(Event) {
@@ -179,10 +197,19 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 
     auto transformMatrix = mesh->getTransform();
     transformMatrix = ml::matMul(
+        ml::translationMatrix(1, 0, 0),
+        transformMatrix
+    );
+    transformMatrix = ml::matMul(
         ml::rotateAroundPoint(ml::diagonal<ml::Vector3f>(0), ml::Vector3f({0, 0, 1}), time),
         transformMatrix
     );
     shader.setUniform("transform", transformMatrix);
+    shader.setUniform("transforms", attributes::Transforms(
+        transformMatrix,
+        camera()->getViewTransformation(),
+        camera()->getViewTransformation()
+    ));
 }
 
 void gl::Renderer::render() const {
