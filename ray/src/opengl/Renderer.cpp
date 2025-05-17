@@ -25,7 +25,7 @@ namespace {
         std::vector<attributes::PositionWithTex>({
             attributes::PositionWithTex {
                 .posAndColor = attributes::PositionWithColor {
-                    .position = {0.5f, 0.5f, 0.0f},
+                    .position = {0.5f, 0.5f, -50.f},
                     .color = {0.5f, 0.3f, 0.9f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -34,7 +34,7 @@ namespace {
             },
             attributes::PositionWithTex {
                 attributes::PositionWithColor {
-                    .position = {0.5f, -0.5f, 0.0f},
+                    .position = {0.5f, -0.5f, -50.f},
                     .color = {0.7f, 0.2f, 0.6f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -43,7 +43,7 @@ namespace {
             },
             attributes::PositionWithTex {
                 attributes::PositionWithColor {
-                    .position = {-0.5f, -0.5f, 0.0f},
+                    .position = {-0.5f, -0.5f, -50.f},
                     .color = {0.5f, 0.9f, 0.4f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -52,7 +52,7 @@ namespace {
             },
             attributes::PositionWithTex {
                 attributes::PositionWithColor {
-                    .position = {-0.5f, 0.5f, 0.0f},
+                    .position = {-0.5f, 0.5f, -50.f},
                     .color = {0.5f, 0.3f, 0.3f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -110,16 +110,14 @@ namespace {
         true
     );
 
-    void debugCallback(
-        GLenum source, 
-        GLenum type, 
-        GLuint id, 
-        GLenum severity, 
-        GLsizei length,
-        const GLchar* message, 
-        const void* userParam
-    ) {
-        std::cout << "OpenGL Debug: " << message << std::endl;
+    void setTransformsUniform(
+        std::string const& key, 
+        attributes::Transforms const &transforms,
+        gl::Shader &shader
+    ) noexcept {
+        shader.setUniform(key + ".worldMatrix", transforms.worldMatrix);
+        shader.setUniform(key + ".projectionMatrix", transforms.projectionMatrix);
+        shader.setUniform(key + ".viewMatrix", transforms.viewMatrix);
     }
 }
 
@@ -182,34 +180,75 @@ void gl::Renderer::prepareViewPort() {
     shader.setTextureSamplers(renderObject.textures->size());
 
     glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS); // Makes debugging easier
-    // glDebugMessageCallback(debugCallback, nullptr);
+    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 }
 
-void gl::Renderer::processInput(Event) {
-
+void gl::Renderer::processInput(Event event) {
+    static float const cameraSpeed = 0.25f;
+    std::visit(overload {
+        [&camera = this->camera, resolution = this->resolution](SDL_Event event) {
+            switch (event.type) {
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym) {
+                    case SDLK_w:
+                    case SDLK_a:
+                    case SDLK_d:
+                    case SDLK_s:
+                        camera()->handleInput(
+                            CameraInput::Translate::make(event.key.keysym.sym, cameraSpeed)
+                        );
+                        break;
+                    case SDLK_f:
+                        auto const currentValue = SDL_ShowCursor(SDL_QUERY);
+                        SDL_ShowCursor(currentValue == SDL_ENABLE ? SDL_DISABLE : SDL_ENABLE);
+                        break;
+                }
+            case SDL_MOUSEMOTION:
+                auto const isTrackingMoution = SDL_ShowCursor(SDL_QUERY) == SDL_DISABLE;
+                if (isTrackingMoution) {
+                    // Some strange behavior when cursor is switched it reports huge delta
+                    if (std::abs(event.motion.xrel) > (int32_t)resolution.second
+                    || std::abs(event.motion.yrel) > (int32_t)resolution.first) {
+                        break;
+                    }
+                    camera()->handleInput(
+                        CameraInput::Rotate {
+                            .delta = std::make_pair(
+                                event.motion.yrel,
+                                event.motion.xrel
+                            )
+                        }
+                    );
+                }
+                break;
+            }
+        }
+    }, event);
 }
 
 void gl::Renderer::update(MeshData const &data, float dt) {
     static float time = 0.f;
     time += dt / 10000;
     shader.setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
-
+    
     auto transformMatrix = mesh->getTransform();
-    transformMatrix = ml::matMul(
-        ml::translationMatrix(1, 0, 0),
-        transformMatrix
-    );
-    transformMatrix = ml::matMul(
-        ml::rotateAroundPoint(ml::diagonal<ml::Vector3f>(0), ml::Vector3f({0, 0, 1}), time),
-        transformMatrix
-    );
-    shader.setUniform("transform", transformMatrix);
-    shader.setUniform("transforms", attributes::Transforms(
-        transformMatrix,
-        camera()->getViewTransformation(),
-        camera()->getViewTransformation()
-    ));
+    // transformMatrix = ml::matMul(
+    //     ml::translationMatrix(1, 0, 0),
+    //     transformMatrix
+    // );
+    // transformMatrix = ml::matMul(
+    //     ml::rotateAroundPoint(ml::diagonal<ml::Vector3f>(0), ml::Vector3f({0, 0, 1}), time),
+    //     transformMatrix
+    // );
+    setTransformsUniform(
+        "transforms",
+        attributes::Transforms(
+            transformMatrix,
+            camera()->getViewTransformation(),
+            camera()->getScenePerspectiveProjectionMatrix()
+        ),
+        shader
+     );
 }
 
 void gl::Renderer::render() const {

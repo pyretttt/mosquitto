@@ -298,4 +298,12 @@ template <typename Vector>
 auto getPtr(Vector const &vec) -> decltype(glm::value_ptr(vec)) {
     return glm::value_ptr(vec);
 }
+
+float toRadians(float degrees) {
+    return degrees * 180 / glm::pi<float>();
+}
+
+float toDegrees(float radians) {
+    radians * 180 / glm::pi<float>();
+}
 } // namespace ml

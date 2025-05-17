@@ -94,20 +94,6 @@ void gl::Shader::setUniform(
             [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
             [&](iColor const &value) { glUniform1ui(location, value.val); },
             [&](Mat4 const &value) { glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value)); },
-            [&](Transforms const &value) {
-                auto projectionKey = key + ".projectionMatrix";
-                if (location = glGetUniformLocation(program, projectionKey.data()); location != -1) {
-                    glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value.projectionMatrix));
-                }
-                auto worldKey = key + ".worldMatrix";
-                if (location = glGetUniformLocation(program, worldKey.data()); location != -1) {
-                    glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value.worldMatrix));
-                }
-                auto viewKey = key + ".viewMatrix";
-                if (location = glGetUniformLocation(program, viewKey.data()); location != -1) {
-                    glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value.viewMatrix));
-                }
-            }
         }, attr);
         glUseProgram(0);
     }

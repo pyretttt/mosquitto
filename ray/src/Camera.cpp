@@ -1,21 +1,46 @@
 #include <iostream>
 #include <cmath>
 
+#include "glm/common.hpp"
+
 #include "Camera.hpp"
+#include "RendererBase.hpp"
+#include "glMath.hpp"
+
+namespace {
+    constexpr float near = 0.1f;
+    constexpr float far = 1000.f;
+
+    ml::Matrix4f getPerspectiveMatrix(
+        RendererType renderer,
+        float fov,
+        float aspect
+    ) noexcept {
+        switch (renderer) {
+        case RendererType::CPU:
+            return ml::perspectiveProjectionMatrix(fov, aspect, true, near, far);
+            break;
+        case RendererType::OpenGL:
+            return gl::glPerspectiveMatrix(fov, aspect, near, far);
+            break;
+        }
+    }
+}
 
 Camera::Camera(
     std::unique_ptr<ObservableObject<float>> &&fov,
-    std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize
-) : fov_(std::move(fov)),
-    windowSize_(std::move(windowSize)),
-    viewMatrix(ml::cameraMatrix(origin, lookAt)),
-    perspectiveProjectionMatrix(
-        ml::perspectiveProjectionMatrix(
-            fov_->value(),
-            static_cast<float>(windowSize_->value().first) / windowSize_->value().second,
-            true,
-            0.1,
-            1000
+    std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize,
+    std::unique_ptr<ObservableObject<RendererType>> &&rendererType
+) 
+    : fov_(std::move(fov))
+    , windowSize_(std::move(windowSize))
+    , viewMatrix(ml::cameraMatrix(origin, lookAt))
+    , rendererType_(std::move(rendererType))
+    , perspectiveProjectionMatrix(
+        getPerspectiveMatrix(
+            rendererType->value(),
+            ml::toRadians(fov_->value()), 
+            static_cast<float>(windowSize_->value().first) / windowSize_->value().second 
         )
     ) {
 
@@ -23,17 +48,31 @@ Camera::Camera(
         fov_->subscribe([this](float value) {
             auto windowSize = this->windowSize_->value();
             auto aspectRatio = static_cast<float>(windowSize.first) / windowSize.second;
-            this->perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(value, aspectRatio, true, 0.1, 1000);
+            // this->perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(value, aspectRatio, true, near, far);
+            getPerspectiveMatrix(
+                this->rendererType_->value(),
+                ml::toRadians(fov_->value()), 
+                aspectRatio
+            );
+            this->perspectiveProjectionMatrix = glm::perspective(glm::radians(45.f), aspectRatio, near, far);
         })
     );
     connections.push_back(
         windowSize_->subscribe([this](std::pair<size_t, size_t> value) {
             std::cout << this->windowSize_->value().first << " " << this->windowSize_->value().second << std::endl;
             auto newAspectRatio = static_cast<float>(value.first) / value.second;
-            this->perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(this->fov_->value(), newAspectRatio, true, 0.1, 1000);
+            // this->perspectiveProjectionMatrix = ml::perspectiveProjectionMatrix(this->fov_->value(), newAspectRatio, true, near, far);
+            this->perspectiveProjectionMatrix = glm::perspective(glm::radians(45.f), newAspectRatio, near, far);
         })
     );
 
+    connections.push_back(
+        rendererType_->subscribe([this](RendererType renderer) {
+            switch (renderer) {
+
+            }
+        });
+    )
 }
 
 void Camera::handleInput(CameraInput::Cases const &input) noexcept {

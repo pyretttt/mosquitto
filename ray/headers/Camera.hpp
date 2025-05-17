@@ -9,6 +9,8 @@
 #include "MathUtils.hpp"
 #include "ReactivePrimitives.hpp"
 
+enum class RendererType;
+
 struct CameraInput {
     struct Translate {
         float forward, backward, left, right;
@@ -55,7 +57,8 @@ public:
 
     explicit Camera(
         std::unique_ptr<ObservableObject<float>> &&fov,
-        std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize
+        std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize,
+        std::unique_ptr<ObservableObject<RendererType>> &&rendererType
     );
     ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const noexcept;
     ml::Matrix4f const &getViewTransformation() const noexcept;
@@ -67,6 +70,7 @@ private:
     ml::Vector3f lookAt = {0, 0, -1};
     std::unique_ptr<ObservableObject<float>> fov_;
     std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize_;
+    std::unique_ptr<ObservableObject<RendererType>> rendererType_;
     ml::Matrix4f viewMatrix;
     ml::Matrix4f perspectiveProjectionMatrix;
     Connections connections;

@@ -55,7 +55,6 @@ namespace attributes {
         Vec3,
         Vec4,
         iColor,
-        Mat4,
-        Transforms
+        Mat4
     >;
 }
