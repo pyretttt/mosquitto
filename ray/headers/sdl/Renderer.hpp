@@ -23,7 +23,7 @@ struct Renderer : public ::Renderer {
     Renderer operator=(Renderer const &other) = delete;
     Renderer(std::shared_ptr<GlobalConfig> config, Lazy<Camera> camera);
     void prepareViewPort() override;
-    void processInput(Event) override;
+    void processInput(Event, float dt) override;
     void update(MeshData const &data, float dt) override;
     void render() const override;
 

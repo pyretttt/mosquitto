@@ -75,7 +75,7 @@ public:
             transformationMatrix = ml::matMul(ml::translationMatrix(0, -20, -50), transformationMatrix);
             node[0].transform = transformationMatrix;
 
-            processInput();
+            processInput(dt);
             controller.renderer->update(node, dt);
             controller.renderer->render();
         }
@@ -84,7 +84,7 @@ public:
 private:
     RunLoop() {}
 
-    inline void processInput() {
+    inline void processInput(float dt) {
         SDL_Event event;
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
@@ -126,7 +126,7 @@ private:
                 break;
             }
 
-            controller.renderer->processInput(Event(event));
+            controller.renderer->processInput(Event(event), dt);
         }
     }
 

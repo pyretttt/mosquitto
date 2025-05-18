@@ -62,7 +62,7 @@ sdl::Renderer::~Renderer() {
     SDL_DestroyRenderer(renderer);
 }
 
-void sdl::Renderer::processInput(Event event) {
+void sdl::Renderer::processInput(Event event, float dt) {
     static float const cameraSpeed = 0.25f;
     std::visit(overload {
         [&camera = this->camera, resolution = this->resolution](SDL_Event event) {

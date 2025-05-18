@@ -24,37 +24,25 @@ namespace {
     std::shared_ptr<gl::MeshNode<attributes::PositionWithTex>> mesh = std::make_shared<gl::MeshNode<attributes::PositionWithTex>>(
         std::vector<attributes::PositionWithTex>({
             attributes::PositionWithTex {
-                .posAndColor = attributes::PositionWithColor {
-                    .position = {0.5f, 0.5f, -5.f},
-                    .color = {0.5f, 0.3f, 0.9f, 1.0f}
-                },
+                .position = {0.5f, 0.5f, -5.f},
                 .tex = attributes::Vec2 {
                     .val = {1.f, 1.f}
                 }
             },
             attributes::PositionWithTex {
-                attributes::PositionWithColor {
-                    .position = {0.5f, -0.5f, -5.f},
-                    .color = {0.7f, 0.2f, 0.6f, 1.0f}
-                },
+                .position = {0.5f, -0.5f, -5.f},
                 .tex = attributes::Vec2 {
                     .val = {1.f, 0.f}
                 }
             },
             attributes::PositionWithTex {
-                attributes::PositionWithColor {
-                    .position = {-0.5f, -0.5f, -5.f},
-                    .color = {0.5f, 0.9f, 0.4f, 1.0f}
-                },
+                .position = {-0.5f, -0.5f, -5.f},
                 .tex = attributes::Vec2 {
                     .val = {0.f, 0.f}
                 }
             },
             attributes::PositionWithTex {
-                attributes::PositionWithColor {
-                    .position = {-0.5f, 0.5f, -5.f},
-                    .color = {0.5f, 0.3f, 0.3f, 1.0f}
-                },
+                .position = {-0.5f, 0.5f, -5.f},
                 .tex = attributes::Vec2 {
                     .val = {0.f, 1.f}
                 }
@@ -72,7 +60,7 @@ namespace {
 
     gl::Configuration config = gl::Configuration {
         .polygonMode = gl::Configuration::PolygonMode {
-            .face = GL_FRONT,
+            .face = GL_FRONT_FACE,
             .mode = GL_FILL
         }
     };
@@ -119,6 +107,17 @@ namespace {
         shader.setUniform(key + ".projectionMatrix", transforms.projectionMatrix);
         shader.setUniform(key + ".viewMatrix", transforms.viewMatrix);
     }
+
+    void configureGl() noexcept {
+        glEnable(GL_DEPTH_TEST);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CW); // TODO: Change to GL_CCW
+    
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    }
 }
 
 gl::Renderer::Renderer(
@@ -139,6 +138,7 @@ void gl::Renderer::prepareViewPort() {
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 1);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
     SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 32);
 
     if (!config->window) {
         auto window = SDL_CreateWindow(
@@ -179,11 +179,10 @@ void gl::Renderer::prepareViewPort() {
     shader.setup();
     shader.setTextureSamplers(renderObject.textures->size());
 
-    glEnable(GL_DEBUG_OUTPUT);
-    glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    configureGl();
 }
 
-void gl::Renderer::processInput(Event event) {
+void gl::Renderer::processInput(Event event, float dt) {
     static float const cameraSpeed = 0.25f;
     std::visit(overload {
         [&camera = this->camera, resolution = this->resolution](SDL_Event event) {
@@ -232,14 +231,6 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     shader.setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
     
     auto transformMatrix = mesh->getTransform();
-    // transformMatrix = ml::matMul(
-    //     ml::translationMatrix(1, 0, 0),
-    //     transformMatrix
-    // );
-    // transformMatrix = ml::matMul(
-    //     ml::rotateAroundPoint(ml::diagonal<ml::Vector3f>(0), ml::Vector3f({0, 0, 1}), time),
-    //     transformMatrix
-    // );
     setTransformsUniform(
         "transforms",
         attributes::Transforms(
