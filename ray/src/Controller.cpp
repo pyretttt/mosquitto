@@ -11,6 +11,7 @@
 #include "opengl/Renderer.hpp"
 #include "Lazy.hpp"
 #include "Camera.hpp"
+#include "GlobalConfig.hpp"
 
 Controller::Controller(
     std::shared_ptr<GlobalConfig> config
@@ -30,7 +31,7 @@ void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
         return std::make_shared<Camera>(
             config->fov.asObservableObject(),
             config->windowSize.asObservableObject(),
-            
+            config->rendererType.asObservableObject()
         );
     });
     switch (config->rendererType.value()) {

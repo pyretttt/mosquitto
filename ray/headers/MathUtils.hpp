@@ -295,15 +295,15 @@ Vector inline lerp(
 }
 
 template <typename Vector>
-auto getPtr(Vector const &vec) -> decltype(glm::value_ptr(vec)) {
+auto inline getPtr(Vector const &vec) -> decltype(glm::value_ptr(vec)) {
     return glm::value_ptr(vec);
 }
 
-float toRadians(float degrees) {
-    return degrees * 180 / glm::pi<float>();
+float inline toRadians(float degrees) {
+    return degrees / 180 * glm::pi<float>();
 }
 
-float toDegrees(float radians) {
-    radians * 180 / glm::pi<float>();
+float inline toDegrees(float radians) {
+    return radians * 180 / glm::pi<float>();
 }
 } // namespace ml

@@ -25,7 +25,7 @@ namespace {
         std::vector<attributes::PositionWithTex>({
             attributes::PositionWithTex {
                 .posAndColor = attributes::PositionWithColor {
-                    .position = {0.5f, 0.5f, -50.f},
+                    .position = {0.5f, 0.5f, -5.f},
                     .color = {0.5f, 0.3f, 0.9f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -34,7 +34,7 @@ namespace {
             },
             attributes::PositionWithTex {
                 attributes::PositionWithColor {
-                    .position = {0.5f, -0.5f, -50.f},
+                    .position = {0.5f, -0.5f, -5.f},
                     .color = {0.7f, 0.2f, 0.6f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -43,7 +43,7 @@ namespace {
             },
             attributes::PositionWithTex {
                 attributes::PositionWithColor {
-                    .position = {-0.5f, -0.5f, -50.f},
+                    .position = {-0.5f, -0.5f, -5.f},
                     .color = {0.5f, 0.9f, 0.4f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
@@ -52,7 +52,7 @@ namespace {
             },
             attributes::PositionWithTex {
                 attributes::PositionWithColor {
-                    .position = {-0.5f, 0.5f, -50.f},
+                    .position = {-0.5f, 0.5f, -5.f},
                     .color = {0.5f, 0.3f, 0.3f, 1.0f}
                 },
                 .tex = attributes::Vec2 {
