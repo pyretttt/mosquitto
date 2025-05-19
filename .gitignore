@@ -15,3 +15,6 @@
 # Godot specific
 **/.godot/
 godot_playground/**/android/
+
+## vcpkg
+**/vcpkg_installed
