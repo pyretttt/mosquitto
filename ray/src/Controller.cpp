@@ -31,7 +31,9 @@ void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
         return std::make_shared<Camera>(
             config->fov.asObservableObject(),
             config->windowSize.asObservableObject(),
-            config->rendererType.asObservableObject()
+            config->rendererType.asObservableObject(),
+            config->cameraSpeed.asObservableObject(),
+            config->mouseSpeed.asObservableObject()
         );
     });
     switch (config->rendererType.value()) {

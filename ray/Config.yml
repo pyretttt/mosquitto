@@ -1,0 +1,15 @@
+
+# degrees
+fov: 70
+
+# Meters in second
+camera_speed: 2.0
+
+mouse_speed: 0.01
+
+# renderer gl or cpu
+renderer: gl
+
+window:
+  width: 800
+  height: 600

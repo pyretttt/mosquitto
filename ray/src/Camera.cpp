@@ -6,8 +6,10 @@
 #include "Camera.hpp"
 #include "RendererBase.hpp"
 #include "opengl/glMath.hpp"
+#include "Core.hpp"
 
 namespace {
+    constexpr float maxZoom = 100.f;
     constexpr float near = 0.1f;
     constexpr float far = 100.f;
 
@@ -26,14 +28,18 @@ namespace {
 }
 
 Camera::Camera(
-    std::unique_ptr<ObservableObject<float>> &&fov,
-    std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize,
-    std::unique_ptr<ObservableObject<RendererType>> &&rendererType
+    std::unique_ptr<ObservableObject<float>> fov,
+    std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize,
+    std::unique_ptr<ObservableObject<RendererType>> rendererType,
+    std::unique_ptr<ObservableObject<float>> cameraSpeed,
+    std::unique_ptr<ObservableObject<float>> mouseSpeed
 ) 
     : fov_(std::move(fov))
     , windowSize_(std::move(windowSize))
     , viewMatrix(ml::cameraMatrix(origin, lookAt))
     , rendererType_(std::move(rendererType))
+    , cameraSpeed_(std::move(cameraSpeed))
+    , mouseSpeed_(std::move(mouseSpeed))
     , perspectiveProjectionMatrix(
         getPerspectiveMatrix(
             rendererType_->value(),
@@ -78,18 +84,24 @@ Camera::Camera(
     );
 }
 
-void Camera::handleInput(CameraInput::Cases const &input) noexcept {
-    if (auto const *value = std::get_if<CameraInput::Translate>(&input)) {
-        origin.z += +value->backward - value->forward;
-        origin.x += value->right - value->left;
-    } else if (auto const *value = std::get_if<CameraInput::Rotate>(&input)) {
-        static float const mouseSpeed = 0.01f;
-        float dy = value->delta.first * mouseSpeed;
-        float dx = value->delta.second * mouseSpeed;
-        rotate_about_x += dy;
-        rotate_about_x = std::max(std::min(rotate_about_x, ml::kPI_2), -ml::kPI_2);
-        rotate_about_y += dx;
-    }
+void Camera::handleInput(CameraInput::Cases const &input, float dt) noexcept {
+    std::visit(overload {
+        [&](CameraInput::Translate const &value) {
+            auto forward = static_cast<int>(value.backward) - static_cast<int>(value.forward);
+            auto side = static_cast<int>(value.right) - static_cast<int>(value.left);
+            auto dist = cameraSpeed_->value() * dt;
+            origin.z += forward * dist;
+            origin.x += side * dist;
+        },
+        [&](CameraInput::Rotate const &value) {
+            auto const mouseSpeed = mouseSpeed_->value();
+            float dy = value.delta.first * mouseSpeed;
+            float dx = value.delta.second * mouseSpeed;
+            rotate_about_x += dy;
+            rotate_about_x = std::max(std::min(rotate_about_x, ml::kPI_2), -ml::kPI_2);
+            rotate_about_y += dx;
+        }
+    }, input);
 
     lookAt.x = sinf(rotate_about_y);
     lookAt.y = -cosf(rotate_about_y) * sinf(rotate_about_x);

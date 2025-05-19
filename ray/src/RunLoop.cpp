@@ -1,13 +1,45 @@
 #include <iostream>
 #include <any>
+#include <unordered_map>
 
 #include "SDL.h"
+#include <yaml-cpp/yaml.h>
 
 #include "GlobalConfig.hpp"
 #include "MathUtils.hpp"
 #include "ReactivePrimitives.hpp"
 #include "RendererBase.hpp"
 #include "Controller.hpp"
+
+namespace {
+    YAML::Node config = YAML::LoadFile("Config.yml");
+
+    GlobalConfig makeGlobalConfig(YAML::Node const &config) {
+        static const std::unordered_map<std::string, RendererType> rendererMap = {
+            {"gl", RendererType::OpenGL},
+            {"cpu", RendererType::CPU}
+        };
+        if (config.IsDefined()) {
+            auto renderer = rendererMap.at(config["renderer"].as<std::string>());
+            auto window = std::make_pair<size_t, size_t>(
+                config["window"]["width"].as<size_t>(),
+                config["window"]["height"].as<size_t>()
+            );
+            auto degrees = config["fov"].as<size_t>();
+            auto cameraSpeed = config["camera_speed"].as<float>();
+            auto mouseSpeed = config["mouse_speed"].as<float>();
+
+            return GlobalConfig(
+                ObservableProperty<RendererType>(RendererType::OpenGL),
+                ObservableProperty<std::pair<size_t, size_t>>({800, 600}),
+                ObservableProperty<float>(ml::toRadians(80)),
+                ObservableProperty<float>(cameraSpeed),
+                ObservableProperty<float>(mouseSpeed)
+            );
+        }
+        throw std::invalid_argument("Invalid congif");
+    }
+}
 
 class RunLoop {
 public:
@@ -20,7 +52,8 @@ public:
     }
 
     void start() {
-        // std::vector<MeshNode>
+        
+
         Renderer::MeshData node = Renderer::MeshData{
             MeshNode(
                 MeshBuffer(
@@ -66,6 +99,7 @@ public:
                 dt = SDL_GetTicks() - previousFrameTicks;
             }
             previousFrameTicks = currentTicks;
+            auto dtFraction = dt / 1000.f;
             // std::cout << "Dt " << dt << std::endl;
             ml::Matrix4f transformationMatrix = ml::scaleMatrix(15, 15, 15);
             transformationMatrix = ml::matMul(
@@ -74,9 +108,9 @@ public:
             );
             transformationMatrix = ml::matMul(ml::translationMatrix(0, -20, -50), transformationMatrix);
             node[0].transform = transformationMatrix;
-
-            processInput(dt);
-            controller.renderer->update(node, dt);
+            
+            processInput(dtFraction);
+            controller.renderer->update(node, dtFraction);
             controller.renderer->render();
         }
     }
@@ -130,11 +164,9 @@ private:
         }
     }
 
-    std::shared_ptr<GlobalConfig> globalConfig = std::make_shared<GlobalConfig>(GlobalConfig(
-        ObservableProperty<RendererType>(RendererType::OpenGL),
-        ObservableProperty<std::pair<size_t, size_t>>({800, 600}),
-        ObservableProperty<float>(ml::toRadians(80))
-    ));
+    std::shared_ptr<GlobalConfig> globalConfig = std::make_shared<GlobalConfig>(
+        makeGlobalConfig(config)
+    );
     Controller controller = Controller(globalConfig);
 
     bool shouldClose = false;

@@ -30,13 +30,11 @@ FetchContent_MakeAvailable(glm)
 find_package(OpenGL REQUIRED)
 
 find_package(glew CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
 
 target_compile_features(${PROJ_NAME} PRIVATE cxx_std_23)
-target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2 glm::glm ${OPENGL_gl_LIBRARY} GLEW::GLEW)
+target_link_libraries(${PROJ_NAME} PRIVATE SDL2::SDL2 glm::glm ${OPENGL_gl_LIBRARY} GLEW::GLEW yaml-cpp::yaml-cpp)
 target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers ${OPENGL_INCLUDE_DIR})
-# target_link_libraries(${PROJ_NAME} PRIVATE "-framework Cocoa")
-# target_link_libraries(${PROJ_NAME} PRIVATE "-framework OpenGL")
-# target_link_libraries(${PROJ_NAME} PRIVATE "-framework IOKit")
 
 file(GLOB_RECURSE GL_SHADER_FILES RELATIVE "${OPENGL_SRC_DIR}" "${OPENGL_SRC_DIR}/shaders/*")
 foreach(file IN LISTS GL_SHADER_FILES) 
@@ -47,6 +45,8 @@ file(GLOB_RECURSE TEXTURE_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "resources/
 foreach(file IN LISTS TEXTURE_FILES) 
   configure_file("${file}" "${CMAKE_BINARY_DIR}/${file}" COPYONLY)
 endforeach()
+
+configure_file("${CMAKE_CURRENT_LIST_DIR}/Config.yml" "${CMAKE_BINARY_DIR}/Config.yml" COPYONLY)
 
 include(FetchContent)
 FetchContent_Declare(

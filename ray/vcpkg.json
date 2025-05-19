@@ -1,5 +1,6 @@
 {
     "dependencies": [
-        "glew"
+        "glew",
+        "yaml-cpp"
     ]
 }

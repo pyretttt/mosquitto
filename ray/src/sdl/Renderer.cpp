@@ -63,9 +63,8 @@ sdl::Renderer::~Renderer() {
 }
 
 void sdl::Renderer::processInput(Event event, float dt) {
-    static float const cameraSpeed = 0.25f;
     std::visit(overload {
-        [&camera = this->camera, resolution = this->resolution](SDL_Event event) {
+        [&camera = this->camera, resolution = this->resolution, dt](SDL_Event event) {
             switch (event.type) {
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
@@ -74,7 +73,8 @@ void sdl::Renderer::processInput(Event event, float dt) {
                     case SDLK_d:
                     case SDLK_s:
                         camera()->handleInput(
-                            CameraInput::Translate::make(event.key.keysym.sym, cameraSpeed)
+                            CameraInput::Translate::make(event.key.keysym.sym),
+                            dt
                         );
                         break;
                     case SDLK_f:
@@ -96,7 +96,8 @@ void sdl::Renderer::processInput(Event event, float dt) {
                                 event.motion.yrel,
                                 event.motion.xrel
                             )
-                        }
+                        },
+                        dt
                     );
                 }
                 break;

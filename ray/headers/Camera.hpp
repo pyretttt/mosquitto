@@ -13,31 +13,32 @@ enum class RendererType;
 
 struct CameraInput {
     struct Translate {
-        float forward, backward, left, right;
+        bool forward, backward, left, right;
 
-        static inline Translate make(SDL_Keycode keyCode, float speed) {
+        static inline Translate make(SDL_Keycode keyCode) {
             Translate t{
-                .forward = 0,
-                .backward = 0,
-                .left = 0,
-                .right = 0
+                .forward = false,
+                .backward = false,
+                .left = false,
+                .right = false
             };
             switch (keyCode) {
                 case SDLK_w:
-                    t.forward = speed;
-                    return t;
+                    t.forward = true;
+                    break;
                 case SDLK_a:
-                    t.left = speed;
-                    return t;
+                    t.left = true;
+                    break;
                 case SDLK_d:
-                    t.right = speed;
-                    return t;
+                    t.right = true;
+                    break;
                 case SDLK_s:
-                    t.backward = speed;
-                    return t;
+                    t.backward = true;
+                    break;
                 default:
-                    return t;
+                    break;
             }
+            return t;
         }
     };
     struct Rotate {
@@ -56,14 +57,16 @@ public:
     Camera operator=(Camera const &other) = delete;
 
     explicit Camera(
-        std::unique_ptr<ObservableObject<float>> &&fov,
-        std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> &&windowSize,
-        std::unique_ptr<ObservableObject<RendererType>> &&rendererType
+        std::unique_ptr<ObservableObject<float>> fov,
+        std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize,
+        std::unique_ptr<ObservableObject<RendererType>> rendererType,
+        std::unique_ptr<ObservableObject<float>> cameraSpeed,
+        std::unique_ptr<ObservableObject<float>> mouseSpeed
     );
     ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const noexcept;
     ml::Matrix4f const &getViewTransformation() const noexcept;
 
-    void handleInput(CameraInput::Cases const &cameraInput) noexcept;
+    void handleInput(CameraInput::Cases const &cameraInput, float dt) noexcept;
 
 private:
     ml::Vector3f origin;
@@ -71,6 +74,8 @@ private:
     std::unique_ptr<ObservableObject<float>> fov_;
     std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize_;
     std::unique_ptr<ObservableObject<RendererType>> rendererType_;
+    std::unique_ptr<ObservableObject<float>> cameraSpeed_;
+    std::unique_ptr<ObservableObject<float>> mouseSpeed_;
     ml::Matrix4f viewMatrix;
     ml::Matrix4f perspectiveProjectionMatrix;
     Connections connections;
