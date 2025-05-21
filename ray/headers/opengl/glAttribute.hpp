@@ -88,7 +88,7 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::PositionWithTex),
+            sizeof(attributes::PosNormalTex),
             (void *)0
         );
 
@@ -97,7 +97,7 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::PositionWithTex),
+            sizeof(attributes::PosNormalTex),
             (void *)offsetof(attributes::PosNormalTex, normal)
         );
 
@@ -106,7 +106,7 @@ namespace gl {
             2,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::PositionWithTex),
+            sizeof(attributes::PosNormalTex),
             (void *)offsetof(attributes::PosNormalTex, tex)
         );
         glEnableVertexAttribArray(0);
