@@ -80,4 +80,37 @@ namespace gl {
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
     }
+
+    template<>
+    void inline bindAttributes<attributes::PosNormalTex>() {
+        glVertexAttribPointer(
+            0,
+            3,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(attributes::PositionWithTex),
+            (void *)0
+        );
+
+        glVertexAttribPointer(
+            1,
+            3,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(attributes::PositionWithTex),
+            (void *)offsetof(attributes::PosNormalTex, normal)
+        );
+
+        glVertexAttribPointer(
+            2,
+            2,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(attributes::PositionWithTex),
+            (void *)offsetof(attributes::PosNormalTex, tex)
+        );
+        glEnableVertexAttribArray(0);
+        glEnableVertexAttribArray(1);
+        glEnableVertexAttribArray(2);
+    }
 }

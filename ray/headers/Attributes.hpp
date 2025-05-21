@@ -49,6 +49,12 @@ namespace attributes {
             , projectionMatrix(projectionMatrix) {}
     };
 
+    struct PosNormalTex {
+        Vec3 position;
+        Vec3 normal;
+        Vec2 tex;
+    };
+
     using UniformCases = std::variant<
         FloatAttr,
         Vec2,

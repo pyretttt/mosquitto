@@ -21,41 +21,203 @@
 namespace fs = std::filesystem;
 
 namespace {
-    std::shared_ptr<gl::MeshNode<attributes::PositionWithTex>> mesh = std::make_shared<gl::MeshNode<attributes::PositionWithTex>>(
-        std::vector<attributes::PositionWithTex>({
-            attributes::PositionWithTex {
-                .position = {0.5f, 0.5f, -5.f},
-                .tex = attributes::Vec2 {
-                    .val = {1.f, 1.f}
-                }
+    std::shared_ptr<gl::MeshNode<attributes::PosNormalTex>> mesh = std::make_shared<gl::MeshNode<attributes::PosNormalTex>>(
+        std::vector<attributes::PosNormalTex>({
+            // 1
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
+                attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PositionWithTex {
-                .position = {0.5f, -0.5f, -5.f},
-                .tex = attributes::Vec2 {
-                    .val = {1.f, 0.f}
-                }
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, -0.5f,}, 
+                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
+                attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PositionWithTex {
-                .position = {-0.5f, -0.5f, -5.f},
-                .tex = attributes::Vec2 {
-                    .val = {0.f, 0.f}
-                }
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
+                attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PositionWithTex {
-                .position = {-0.5f, 0.5f, -5.f},
-                .tex = attributes::Vec2 {
-                    .val = {0.f, 1.f}
-                }
-            }
-            // attributes::Vec3 {.val = {0.5f, 0.5f, 0.0f}},
-            // attributes::Vec3 {.val = {0.5f, -0.5f, 0.0f}},
-            // attributes::Vec3 {.val = {-0.5f, -0.5f, 0.0f}},
-            // attributes::Vec3 {.val = {-0.5f, 0.5f, 0.0f}},
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+
+            // 2
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+
+            // 3
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {-1.f, 0.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {-1.f, 0.f, 0.f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {-1.f, 0.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {-1.f, 0.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {-1.f, 0.f, 0.f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {-1.f, 0.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+
+            // 4
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {1.f, 0.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {1.f, 0.f, 0.f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {1.f, 0.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {1.f, 0.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {1.f, 0.f, 0.f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {1.f, 0.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            // 5
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {0.f, -1.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {0.f, -1.f, 0.f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {0.f, -1.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {0.f, -1.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
+                attributes::Vec3 {0.f, -1.f, 0.f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
+                attributes::Vec3 {0.f, -1.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            // 6
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {0.f, 1.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {0.f, 1.f, 0.f}, 
+                attributes::Vec2 {1.0f, 1.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {0.f, 1.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {0.f, 1.f, 0.f}, 
+                attributes::Vec2 {1.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
+                attributes::Vec3 {0.f, 1.f, 0.f}, 
+                attributes::Vec2 {0.0f, 0.0f}
+            },
+            attributes::PosNormalTex {
+                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
+                attributes::Vec3 {0.f, 1.f, 0.f}, 
+                attributes::Vec2 {0.0f, 1.0f}
+            },
+            
         }),
-        gl::EBO({
+        gl::EBO(/*{
             0, 1, 3,
             1, 2, 3 
-        })
+        }*/)
     );
 
     gl::Configuration config = gl::Configuration {
@@ -91,7 +253,7 @@ namespace {
         })
     );
 
-    gl::RenderObject renderObject = gl::RenderObject<attributes::PositionWithTex>(
+    gl::RenderObject renderObject = gl::RenderObject<attributes::PosNormalTex>(
         config,
         mesh,
         textures,

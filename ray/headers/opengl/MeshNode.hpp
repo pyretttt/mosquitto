@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <numeric>
 
 #include "glCommon.hpp"
 #include "MathUtils.hpp"
@@ -33,6 +34,10 @@ MeshNode<Attr>::MeshNode(
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))
     , localTransform(localTransform)  {
+    if (this->vertexArrayIndices.empty()) {
+        this->vertexArrayIndices = EBO(this->vertexArray.size());
+        std::iota(this->vertexArrayIndices.begin(), this->vertexArrayIndices.end(), this->vertexArray.size());
+    }
 }
 
 template <typename Attr>
