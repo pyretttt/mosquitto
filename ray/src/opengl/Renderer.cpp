@@ -394,6 +394,10 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     shader.setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
     
     auto transformMatrix = mesh->getTransform();
+    transformMatrix = ml::matMul(
+        ml::translationMatrix(0, 0, -5),
+        transformMatrix
+    );
     setTransformsUniform(
         "transforms",
         attributes::Transforms(
