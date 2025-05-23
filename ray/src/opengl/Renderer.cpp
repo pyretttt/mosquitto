@@ -21,193 +21,193 @@
 namespace fs = std::filesystem;
 
 namespace {
-    std::shared_ptr<gl::MeshNode<attributes::PosNormalTex>> mesh = std::make_shared<gl::MeshNode<attributes::PosNormalTex>>(
-        std::vector<attributes::PosNormalTex>({
+    std::shared_ptr<gl::MeshNode<attributes::AssimpVertex>> mesh = std::make_shared<gl::MeshNode<attributes::AssimpVertex>>(
+        std::vector<attributes::AssimpVertex>({
             // 1
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f,}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
 
             // 2
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
 
             // 3
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
 
             // 4
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
             // 5
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
             // 6
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::PosNormalTex {
+            attributes::AssimpVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
@@ -253,7 +253,7 @@ namespace {
         })
     );
 
-    gl::RenderObject renderObject = gl::RenderObject<attributes::PosNormalTex>(
+    gl::RenderObject renderObject = gl::RenderObject<attributes::AssimpVertex>(
         config,
         mesh,
         textures,
@@ -275,7 +275,7 @@ namespace {
 
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
-        glFrontFace(GL_CW); // TODO: Change to GL_CCW
+        glFrontFace(GL_CCW); // TODO: Change to GL_CCW
     
         glEnable(GL_DEBUG_OUTPUT);
         glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
@@ -395,7 +395,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     
     auto transformMatrix = mesh->getTransform();
     transformMatrix = ml::matMul(
-        ml::translationMatrix(0, 0, -5),
+        ml::translationMatrix(0, 0, -1),
         transformMatrix
     );
     setTransformsUniform(

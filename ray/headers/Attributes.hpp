@@ -49,7 +49,7 @@ namespace attributes {
             , projectionMatrix(projectionMatrix) {}
     };
 
-    struct PosNormalTex {
+    struct AssimpVertex {
         Vec3 position;
         Vec3 normal;
         Vec2 tex;

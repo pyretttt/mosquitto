@@ -146,6 +146,7 @@ void RenderObject<Attribute>::prepare() {
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex.mode.minifyingFilter);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex.mode.magnifyingFilter);
     }
+    glBindTexture(GL_TEXTURE_2D, 0);
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -181,14 +182,15 @@ void RenderObject<Attribute>::setDebug(bool debug) noexcept {
 
 template<typename Attribute>
 void RenderObject<Attribute>::render() noexcept {
-    glBindVertexArray(vao);
-    
     for (size_t i = 0; i < textures->size(); i++) {
         glActiveTexture(GL_TEXTURE0 + i);
         glBindTexture(GL_TEXTURE_2D, textures->at(i).id);
     }
-
+    
+    glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
+    // TODO: For test
+    // glDrawArrays(GL_TRIANGLES, 0, 36);
     glDrawElements(GL_TRIANGLES, meshNode->vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }

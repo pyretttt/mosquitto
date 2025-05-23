@@ -115,7 +115,8 @@
         "exception": "cpp",
         "__memory": "cpp",
         "dense": "cpp",
-        "cfloat": "cpp"
+        "cfloat": "cpp",
+        "numeric": "cpp"
     },
     "cmake.configureOnOpen": false,
     "cmake.configureOnEdit": false

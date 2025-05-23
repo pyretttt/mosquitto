@@ -82,13 +82,13 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::PosNormalTex>() {
+    void inline bindAttributes<attributes::AssimpVertex>() {
         glVertexAttribPointer(
             0,
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::PosNormalTex),
+            sizeof(attributes::AssimpVertex),
             (void *)0
         );
 
@@ -97,8 +97,8 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::PosNormalTex),
-            (void *)offsetof(attributes::PosNormalTex, normal)
+            sizeof(attributes::AssimpVertex),
+            (void *)offsetof(attributes::AssimpVertex, normal)
         );
 
         glVertexAttribPointer(
@@ -106,8 +106,8 @@ namespace gl {
             2,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::PosNormalTex),
-            (void *)offsetof(attributes::PosNormalTex, tex)
+            sizeof(attributes::AssimpVertex),
+            (void *)offsetof(attributes::AssimpVertex, tex)
         );
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
