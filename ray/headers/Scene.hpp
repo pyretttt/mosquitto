@@ -5,6 +5,7 @@
 #include "opengl/MeshNode.hpp"
 #include "Attributes.hpp"
 
+namespace system {
 struct Scene {
     using Mesh = gl::MeshNode<attributes::AssimpVertex>;
     using MeshPtr = std::shared_ptr<gl::MeshNode<attributes::AssimpVertex>>;
@@ -17,3 +18,4 @@ struct Scene {
 
     std::vector<MeshPtr> meshes;
 };
+}

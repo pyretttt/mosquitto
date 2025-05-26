@@ -9,8 +9,8 @@
 #include "opengl/glCommon.hpp"
 
 namespace {
-    std::vector<Scene::Mesh> genMeshes(aiNode *node, aiScene const *scene) {
-        std::vector<aiMesh *> meshes;
+    std::vector<Scene::MeshPtr> genMeshes(aiNode *node, aiScene const *scene) {
+        std::vector<Scene::MeshPtr> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
             meshes.emplace_back(makeMesh(mesh));
@@ -20,16 +20,16 @@ namespace {
             auto childMeshes = genMeshes(node->mChildren[i], scene);
             if (!meshes.empty()) {
                 std::for_each(childMeshes.begin(), childMeshes.end(), [](Scene::Mesh &mesh){
-                    mesh.parent = mesh
+                    mesh.parent = mesh;
                     meshes.at(0)
                 });
             }
         }
     }
 
-    Scene::Mesh makeMesh(aiMesh *mesh) {
+    Scene::MeshPtr makeMesh(aiMesh *mesh) {
         std::vector<attributes::AssimpVertex> vertices;
-        gl::EBO ebo;
+        std::vector<unsigned int> verticesArrayIndices;
         std::vector<size_t> texture;
 
         for (size_t i = 0; i < mesh->mNumVertices; i++) {
@@ -52,13 +52,13 @@ namespace {
         for (size_t i = 0; i < mesh->mNumFaces; i++) {
             auto face = mesh->mFaces[i];
             for (size_t j = 0; j <face.mNumIndices; j++) {
-                ebo.push_back(face.mIndices[j]);
+                verticesArrayIndices.push_back(face.mIndices[j]);
             }
         }
 
-        return gl::MeshNode<attributes::AssimpVertex>(
+        return std::make_shared<Scene::Mesh>(
             std::move(vertices),
-            std::move(ebo)
+            std::move(verticesArrayIndices)
         );
     }
 }
