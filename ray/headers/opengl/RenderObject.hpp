@@ -13,7 +13,7 @@
 #include "Core.hpp"
 #include "glCommon.hpp"
 #include "opengl/glTexture.hpp"
-#include "opengl/MeshNode.hpp"
+#include "scene/MeshNode.hpp"
 
 namespace gl {
 
@@ -32,7 +32,7 @@ template <typename Attribute>
 struct RenderObject {
     RenderObject(
         Configuration configuration,
-        std::shared_ptr<MeshNode<Attribute>> meshNode,
+        std::shared_ptr<scene::MeshNode<Attribute>> meshNode,
         std::shared_ptr<std::vector<Texture>> textures = nullptr,
         bool debug = false
     );
@@ -55,7 +55,7 @@ struct RenderObject {
     ID ebo = 0;
     ID tex;
 
-    std::shared_ptr<MeshNode<Attribute>> meshNode;
+    std::shared_ptr<scene::MeshNode<Attribute>> meshNode;
     std::shared_ptr<std::vector<Texture>> textures;
 
     Configuration configuration;
@@ -66,7 +66,7 @@ struct RenderObject {
 template<typename Attribute>
 RenderObject<Attribute>::RenderObject(
     Configuration configuration,
-    std::shared_ptr<MeshNode<Attribute>> meshNode,
+    std::shared_ptr<scene::MeshNode<Attribute>> meshNode,
     std::shared_ptr<std::vector<Texture>> textures,
     bool debug
 ) 

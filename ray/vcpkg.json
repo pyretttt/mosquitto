@@ -2,6 +2,14 @@
     "dependencies": [
         "glew",
         "yaml-cpp",
-        "assimp"
-    ]
+        "assimp",
+        "glm",
+        "sdl2"
+    ],
+    "overrides": [
+    { 
+        "name": "sdl2", 
+        "version": "2.32.6"
+    }
+  ]
 }

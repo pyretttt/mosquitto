@@ -2,13 +2,13 @@
 
 #include <filesystem>
 
-#include "opengl/MeshNode.hpp"
+#include "scene/MeshNode.hpp"
 #include "Attributes.hpp"
 
-namespace system {
+namespace scene {
 struct Scene {
-    using Mesh = gl::MeshNode<attributes::AssimpVertex>;
-    using MeshPtr = std::shared_ptr<gl::MeshNode<attributes::AssimpVertex>>;
+    using Mesh = MeshNode<attributes::AssimpVertex>;
+    using MeshPtr = std::shared_ptr<MeshNode<attributes::AssimpVertex>>;
     Scene(
         std::filesystem::path path,
         std::vector<Mesh> meshes

@@ -4,9 +4,10 @@
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
 
-#include "Scene.hpp"
-#include "opengl/MeshNode.hpp"
-#include "opengl/glCommon.hpp"
+#include "scene/Scene.hpp"
+#include "scene/MeshNode.hpp"
+
+using namespace scene;
 
 namespace {
     std::vector<Scene::MeshPtr> genMeshes(aiNode *node, aiScene const *scene) {
@@ -80,7 +81,5 @@ Scene Scene::assimpImport(std::filesystem::path path) {
     ) {
         throw "Failed to load scene";
     }
-
-
 }
 

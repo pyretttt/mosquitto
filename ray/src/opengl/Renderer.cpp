@@ -10,18 +10,18 @@
 #include "Attributes.hpp"
 #include "Core.hpp"
 #include "opengl/Renderer.hpp"
-#include "opengl/MeshNode.hpp"
+#include "scene/MeshNode.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
 #include "opengl/RenderObject.hpp"
 #include "opengl/Shader.hpp"
-#include "Tex.hpp"
+#include "scene/Tex.hpp"
 #include "MathUtils.hpp"
 
 namespace fs = std::filesystem;
 
 namespace {
-    std::shared_ptr<gl::MeshNode<attributes::AssimpVertex>> mesh = std::make_shared<gl::MeshNode<attributes::AssimpVertex>>(
+    std::shared_ptr<scene::MeshNode<attributes::AssimpVertex>> mesh = std::make_shared<scene::MeshNode<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({
             // 1
             attributes::AssimpVertex {
@@ -236,16 +236,16 @@ namespace {
         modified(std::vector<gl::Texture>(), [](std::vector<gl::Texture> &vec) {
             vec.emplace_back(
                 gl::TextureMode(), 
-                std::make_unique<TexData>(
-                    loadTextureData(
+                std::make_unique<scene::TexData>(
+                    scene::loadTextureData(
                         fs::path("resources").append("textures").append("container.jpg")
                     )
                 )
             );
             vec.emplace_back(
                 gl::TextureMode {.bitFormat = GL_RGBA}, 
-                std::make_unique<TexData>(
-                    loadTextureData(
+                std::make_unique<scene::TexData>(
+                    scene::loadTextureData(
                         fs::path("resources").append("textures").append("awesomeface.png")
                     )
                 )

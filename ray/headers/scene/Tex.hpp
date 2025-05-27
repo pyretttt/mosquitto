@@ -8,6 +8,8 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "3rd_party/stb_image.h"
 
+namespace scene {
+
 using TexPointer = std::unique_ptr<
     unsigned char,
     std::function<void (unsigned char *)>
@@ -48,4 +50,5 @@ TexData inline static loadTextureData(
         .channels = channels,
         .ptr = std::move(texPtr)
     };
+}
 }

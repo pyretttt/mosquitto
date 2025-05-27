@@ -3,23 +3,22 @@
 #include <memory>
 #include <numeric>
 
-#include "glCommon.hpp"
 #include "MathUtils.hpp"
 
-namespace gl {
+namespace scene {
 
 template <typename Attr>
 struct MeshNode {
     MeshNode(
         std::vector<Attr> vertexArray,
-        EBO vertexArrayIndices,
+        std::vector<unsigned int> vertexArrayIndices,
         ml::Matrix4f localTransform = ml::diagonal<ml::Matrix4f>()
     );
 
     ml::Matrix4f getTransform() const noexcept;
 
     std::vector<Attr> vertexArray;
-    EBO vertexArrayIndices;
+    std::vector<unsigned int> vertexArrayIndices;
     ml::Matrix4f localTransform;
     std::weak_ptr<MeshNode> parent;
 };
@@ -28,14 +27,14 @@ struct MeshNode {
 template <typename Attr>
 MeshNode<Attr>::MeshNode(
     std::vector<Attr> vertexArray,
-    EBO vertexArrayIndices,
+    std::vector<unsigned int> vertexArrayIndices,
     ml::Matrix4f localTransform
 ) 
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))
     , localTransform(localTransform)  {
     if (this->vertexArrayIndices.empty()) {
-        this->vertexArrayIndices = EBO(this->vertexArray.size());
+        this->vertexArrayIndices = std::vector<unsigned int>(this->vertexArray.size());
         std::iota(this->vertexArrayIndices.begin(), this->vertexArrayIndices.end(), this->vertexArray.size());
     }
 }

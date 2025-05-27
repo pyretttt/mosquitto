@@ -4,7 +4,7 @@
 
 #include "GL/glew.h"
 
-#include "Tex.hpp"
+#include "scene/Tex.hpp"
 #include "glCommon.hpp"
 
 namespace gl {
@@ -23,12 +23,12 @@ namespace gl {
 
     struct Texture final {
         TextureMode mode = TextureMode();
-        std::unique_ptr<TexData> texData;
+        std::unique_ptr<scene::TexData> texData;
         ID id = 0;
 
         Texture(
             TextureMode mode,
-            std::unique_ptr<TexData> texData
+            std::unique_ptr<scene::TexData> texData
         ) : mode(mode), texData(std::move(texData)) {}
 
         Texture(
