@@ -1,0 +1,21 @@
+- name: Linux essential packages
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+    - name: Packages installation
+      apt:
+        name:
+          - htop
+          - curl
+          - git
+          - python3-pip
+        state: present
+        update_cache: yes
+    - name: Install Python packages with pip
+      pip:
+        name:
+          - cmake
+          - requests
+        executable: pip3
+ 

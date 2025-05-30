@@ -1,14 +1,15 @@
 #pragma once
 
 #include <filesystem>
+#include <unordered_map>
 
 #include "scene/MeshNode.hpp"
 #include "Attributes.hpp"
 
 namespace scene {
 struct Scene {
-    using Mesh = MeshNode<attributes::AssimpVertex>;
-    using MeshPtr = std::shared_ptr<MeshNode<attributes::AssimpVertex>>;
+    using Mesh = SceneNode<attributes::AssimpVertex>;
+    using MeshPtr = std::shared_ptr<SceneNode<attributes::AssimpVertex>>;
     Scene(
         std::filesystem::path path,
         std::vector<Mesh> meshes
@@ -16,6 +17,6 @@ struct Scene {
 
     Scene static assimpImport(std::filesystem::path path);
 
-    std::vector<MeshPtr> meshes;
+    std::unordered_map<size_t, MeshPtr> meshes;
 };
 }

@@ -21,7 +21,7 @@
 namespace fs = std::filesystem;
 
 namespace {
-    std::shared_ptr<scene::MeshNode<attributes::AssimpVertex>> mesh = std::make_shared<scene::MeshNode<attributes::AssimpVertex>>(
+    std::shared_ptr<scene::SceneNode<attributes::AssimpVertex>> mesh = std::make_shared<scene::SceneNode<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({
             // 1
             attributes::AssimpVertex {
