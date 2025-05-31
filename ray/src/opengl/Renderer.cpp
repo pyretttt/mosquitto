@@ -10,7 +10,7 @@
 #include "Attributes.hpp"
 #include "Core.hpp"
 #include "opengl/Renderer.hpp"
-#include "scene/MeshNode.hpp"
+#include "scene/SceneNode.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
 #include "opengl/RenderObject.hpp"
@@ -217,7 +217,8 @@ namespace {
         gl::EBO(/*{
             0, 1, 3,
             1, 2, 3 
-        }*/)
+        }*/),
+        0
     );
 
     gl::Configuration config = gl::Configuration {

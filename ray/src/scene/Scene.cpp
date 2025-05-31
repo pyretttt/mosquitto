@@ -5,12 +5,12 @@
 #include "assimp/postprocess.h"
 
 #include "scene/Scene.hpp"
-#include "scene/MeshNode.hpp"
+#include "scene/SceneNode.hpp"
 
 using namespace scene;
 
 namespace {
-    std::vector<Scene::MeshPtr> genMeshes(aiNode *node, aiScene const *scene) {
+    std::vector<Scene::ScenePtr> genMeshes(aiNode *node, aiScene const *scene) {
         std::vector<Scene::MeshPtr> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
             aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];

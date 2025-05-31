@@ -12,6 +12,7 @@ struct SceneNode {
     SceneNode(
         std::vector<Attr> vertexArray,
         std::vector<unsigned int> vertexArrayIndices,
+        std::vector<size_t> textures,
         size_t identifier,
         ml::Matrix4f localTransform = ml::diagonal<ml::Matrix4f>()
     );
@@ -20,6 +21,7 @@ struct SceneNode {
 
     std::vector<Attr> vertexArray;
     std::vector<unsigned int> vertexArrayIndices;
+    std::vector<size_t> vertexArrayIndices;
     ml::Matrix4f localTransform;
     std::weak_ptr<SceneNode> parent;
 
@@ -31,12 +33,14 @@ template <typename Attr>
 SceneNode<Attr>::SceneNode(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
+    std::vector<size_t> textures,
     size_t identifier,
     ml::Matrix4f localTransform
 ) 
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))
-    , identifier(indetifier)
+    , textures(std::move(texture))
+    , identifier(identifier)
     , localTransform(localTransform)  {
     if (this->vertexArrayIndices.empty()) {
         this->vertexArrayIndices = std::vector<unsigned int>(this->vertexArray.size());

@@ -13,7 +13,7 @@
 #include "Core.hpp"
 #include "glCommon.hpp"
 #include "opengl/glTexture.hpp"
-#include "scene/MeshNode.hpp"
+#include "scene/SceneNode.hpp"
 
 namespace gl {
 
