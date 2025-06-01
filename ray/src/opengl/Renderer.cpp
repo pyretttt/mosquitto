@@ -10,7 +10,7 @@
 #include "Attributes.hpp"
 #include "Core.hpp"
 #include "opengl/Renderer.hpp"
-#include "scene/SceneNode.hpp"
+#include "scene/Mesh.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
 #include "opengl/RenderObject.hpp"
@@ -21,7 +21,7 @@
 namespace fs = std::filesystem;
 
 namespace {
-    std::shared_ptr<scene::SceneNode<attributes::AssimpVertex>> mesh = std::make_shared<scene::SceneNode<attributes::AssimpVertex>>(
+    std::shared_ptr<scene::Mesh<attributes::AssimpVertex>> mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({
             // 1
             attributes::AssimpVertex {

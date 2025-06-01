@@ -23,7 +23,7 @@ class InstanceIdGenerator {
     static size_t instanceId;
 
 public:
-    size_t getInstanceId() const noexcept {
+    size_t static getInstanceId() noexcept {
         return instanceId++;
     }
 };

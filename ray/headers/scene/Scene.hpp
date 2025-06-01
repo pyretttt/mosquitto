@@ -3,22 +3,19 @@
 #include <filesystem>
 #include <unordered_map>
 
-#include "scene/SceneNode.hpp"
+#include "scene/Mesh.hpp"
 #include "scene/Tex.hpp"
+#include "scene/Node.hpp"
 #include "Attributes.hpp"
 
 namespace scene {
+    using TexturePtr = std::shared_ptr<TexData>;
+
 struct Scene {
-    using Node = SceneNode<attributes::AssimpVertex>;
-    using NodePtr = std::shared_ptr<SceneNode<attributes::AssimpVertex>>;
-    // Scene(
-    //     std::filesystem::path path,
-    //     std::vector<Mesh> meshes
-    // );
 
     Scene static assimpImport(std::filesystem::path path);
 
-    std::unordered_map<size_t, MeshPtr> meshes;
-    std::unordered_map<size_t, TexData> textures;
+    std::unordered_map<size_t, NodePtr> nodes;
+    std::unordered_map<size_t, TexturePtr> textures;
 };
 }

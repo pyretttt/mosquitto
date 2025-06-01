@@ -7,9 +7,10 @@
 #include "MathUtils.hpp"
 
 namespace scene {
+
 template <typename Attr>
-struct SceneNode {
-    SceneNode(
+struct Mesh {
+    Mesh(
         std::vector<Attr> vertexArray,
         std::vector<unsigned int> vertexArrayIndices,
         std::vector<size_t> textures,
@@ -21,16 +22,15 @@ struct SceneNode {
 
     std::vector<Attr> vertexArray;
     std::vector<unsigned int> vertexArrayIndices;
-    std::vector<size_t> vertexArrayIndices;
+    std::vector<size_t> textures;
     ml::Matrix4f localTransform;
-    std::weak_ptr<SceneNode> parent;
+    std::weak_ptr<Mesh> parent;
 
     size_t const identifier;
 };
 
-
 template <typename Attr>
-SceneNode<Attr>::SceneNode(
+Mesh<Attr>::Mesh(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
     std::vector<size_t> textures,
@@ -39,7 +39,7 @@ SceneNode<Attr>::SceneNode(
 ) 
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))
-    , textures(std::move(texture))
+    , textures(std::move(textures))
     , identifier(identifier)
     , localTransform(localTransform)  {
     if (this->vertexArrayIndices.empty()) {
@@ -49,7 +49,7 @@ SceneNode<Attr>::SceneNode(
 }
 
 template <typename Attr>
-ml::Matrix4f SceneNode<Attr>::getTransform() const noexcept {
+ml::Matrix4f Mesh<Attr>::getTransform() const noexcept {
     if (auto strongParent = parent.lock()) {
         auto parentTransform = ml::matMul(strongParent->getTransform(), localTransform);
         return parentTransform;

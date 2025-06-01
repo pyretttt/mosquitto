@@ -22,6 +22,8 @@ struct TexData {
     TexPointer ptr;
 };
 
+using TexturePtr = std::shared_ptr<TexData>;
+
 TexData inline static loadTextureData(
     std::filesystem::path path,
     bool flipVertically = true

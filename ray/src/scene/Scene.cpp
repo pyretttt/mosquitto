@@ -1,37 +1,49 @@
 #include <memory>
+#include <algorithm>
 
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
 
 #include "scene/Scene.hpp"
-#include "scene/SceneNode.hpp"
+#include "scene/Mesh.hpp"
+#include "Core.hpp"
 
 using namespace scene;
 
 namespace {
-    std::vector<Scene::ScenePtr> genMeshes(aiNode *node, aiScene const *scene) {
-        std::vector<Scene::MeshPtr> meshes;
-        for (size_t i = 0; i < node->mNumMeshes; i++) {
-            aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-            meshes.emplace_back(makeMesh(mesh));
-        }
-
+    std::vector<scene::NodePtr> genNodes(aiNode *node, aiScene const *scene) {
+        auto rootNode = makeNode(scene, node);
+        std::vector<scene::NodePtr> children;
         for (size_t i = 0; i < node->mNumChildren; i++) {
-            auto childMeshes = genMeshes(node->mChildren[i], scene);
-            if (!meshes.empty()) {
-                std::for_each(childMeshes.begin(), childMeshes.end(), [](Scene::Mesh &mesh){
-                    mesh.parent = mesh;
-                    meshes.at(0)
-                });
-            }
+            auto childNodes = genNodes(node->mChildren[i], scene);
+            std::for_each(childNodes.begin(), childNodes.end(), [&rootNode, &children](scene::NodePtr &child){
+                child->parent = rootNode;
+                children.push_back(child);
+            });
         }
+        
+        std::vector<scene::NodePtr> result = {rootNode};
+        std::move(children.begin(), children.end(), std::back_inserter(result));
+        return std::move(result);
     }
 
-    Scene::MeshPtr makeMesh(aiMesh *mesh) {
+    scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
+        std::vector<scene::MeshPtr> meshes;
+        for (size_t i = 0; i < node->mNumMeshes; i++) {
+            meshes.emplace_back(makeMesh(scene->mMeshes[i]));
+        }
+
+        return std::make_shared<scene::Node>(
+            InstanceIdGenerator<scene::Node>::getInstanceId(),
+            std::move(meshes)
+        );
+    }
+
+    scene::MeshPtr makeMesh(aiMesh *mesh) {
         std::vector<attributes::AssimpVertex> vertices;
         std::vector<unsigned int> verticesArrayIndices;
-        std::vector<size_t> texture;
+        std::vector<size_t> textures;
 
         for (size_t i = 0; i < mesh->mNumVertices; i++) {
             auto pos = mesh->mVertices[i];
@@ -56,10 +68,12 @@ namespace {
                 verticesArrayIndices.push_back(face.mIndices[j]);
             }
         }
-
-        return std::make_shared<Scene::Mesh>(
+        
+        return std::make_shared<scene::Mesh>(
             std::move(vertices),
-            std::move(verticesArrayIndices)
+            std::move(verticesArrayIndices),
+            std::move(textures),
+            InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId()
         );
     }
 }
