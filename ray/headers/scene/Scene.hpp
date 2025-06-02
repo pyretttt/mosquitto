@@ -12,7 +12,6 @@ namespace scene {
     using TexturePtr = std::shared_ptr<TexData>;
 
 struct Scene {
-
     Scene static assimpImport(std::filesystem::path path);
 
     std::unordered_map<size_t, NodePtr> nodes;

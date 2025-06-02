@@ -7,7 +7,6 @@
 #include "Attributes.hpp"
 
 namespace scene {
-using NodePtr = std::shared_ptr<Node>;
 using MeshPtr = std::shared_ptr<Mesh<attributes::AssimpVertex>>;
 
 struct Node {
@@ -18,11 +17,14 @@ struct Node {
         ml::Matrix4f transform = ml::diagonal<ml::Matrix4f>(1)
     );
 
-    ml::Matrix4f getTransform();
+    ml::Matrix4f getTransform() const noexcept;
 
     size_t identifier;
     std::vector<MeshPtr> meshes;
     ml::Matrix4f localTransform;
     std::weak_ptr<Node> parent;
 };
+
+using NodePtr = std::shared_ptr<Node>;
+
 }

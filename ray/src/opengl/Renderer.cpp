@@ -17,11 +17,13 @@
 #include "opengl/Shader.hpp"
 #include "scene/Tex.hpp"
 #include "MathUtils.hpp"
+#include "scene/Node.hpp"
 
 namespace fs = std::filesystem;
 
 namespace {
-    std::shared_ptr<scene::Mesh<attributes::AssimpVertex>> mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
+
+    scene::MeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({
             // 1
             attributes::AssimpVertex {
@@ -214,11 +216,17 @@ namespace {
             },
             
         }),
-        gl::EBO(/*{
+        std::vector<unsigned int>({/*{
             0, 1, 3,
             1, 2, 3 
-        }*/),
+        }*/}),
+        std::vector<scene::TextureIdentifier>({}),
         0
+    );
+
+    std::shared_ptr<scene::Node> node = std::make_shared<scene::Node>(
+        InstanceIdGenerator<scene::Node>::getInstanceId(),
+        std::vector<scene::MeshPtr>({mesh})
     );
 
     gl::Configuration config = gl::Configuration {
@@ -394,7 +402,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     time += dt / 10000;
     shader.setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
     
-    auto transformMatrix = mesh->getTransform();
+    auto transformMatrix = ml::diagonal<ml::Matrix4f>(1);
     transformMatrix = ml::matMul(
         ml::translationMatrix(0, 0, -1),
         transformMatrix

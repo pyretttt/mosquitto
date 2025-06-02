@@ -12,38 +12,10 @@
 using namespace scene;
 
 namespace {
-    std::vector<scene::NodePtr> genNodes(aiNode *node, aiScene const *scene) {
-        auto rootNode = makeNode(scene, node);
-        std::vector<scene::NodePtr> children;
-        for (size_t i = 0; i < node->mNumChildren; i++) {
-            auto childNodes = genNodes(node->mChildren[i], scene);
-            std::for_each(childNodes.begin(), childNodes.end(), [&rootNode, &children](scene::NodePtr &child){
-                child->parent = rootNode;
-                children.push_back(child);
-            });
-        }
-        
-        std::vector<scene::NodePtr> result = {rootNode};
-        std::move(children.begin(), children.end(), std::back_inserter(result));
-        return std::move(result);
-    }
-
-    scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
-        std::vector<scene::MeshPtr> meshes;
-        for (size_t i = 0; i < node->mNumMeshes; i++) {
-            meshes.emplace_back(makeMesh(scene->mMeshes[i]));
-        }
-
-        return std::make_shared<scene::Node>(
-            InstanceIdGenerator<scene::Node>::getInstanceId(),
-            std::move(meshes)
-        );
-    }
-
     scene::MeshPtr makeMesh(aiMesh *mesh) {
         std::vector<attributes::AssimpVertex> vertices;
         std::vector<unsigned int> verticesArrayIndices;
-        std::vector<size_t> textures;
+        std::vector<scene::TextureIdentifier> textures;
 
         for (size_t i = 0; i < mesh->mNumVertices; i++) {
             auto pos = mesh->mVertices[i];
@@ -69,12 +41,40 @@ namespace {
             }
         }
         
-        return std::make_shared<scene::Mesh>(
+        return std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
             std::move(vertices),
             std::move(verticesArrayIndices),
             std::move(textures),
             InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId()
         );
+    }
+
+    scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
+        std::vector<scene::MeshPtr> meshes;
+        for (size_t i = 0; i < node->mNumMeshes; i++) {
+            meshes.emplace_back(makeMesh(scene->mMeshes[i]));
+        }
+
+        return std::make_shared<scene::Node>(
+            InstanceIdGenerator<scene::Node>::getInstanceId(),
+            std::move(meshes)
+        );
+    }
+
+    std::vector<scene::NodePtr> genNodes(aiNode *node, aiScene const *scene) {
+        auto rootNode = makeNode(scene, node);
+        std::vector<scene::NodePtr> children;
+        for (size_t i = 0; i < node->mNumChildren; i++) {
+            auto childNodes = genNodes(node->mChildren[i], scene);
+            std::for_each(childNodes.begin(), childNodes.end(), [&rootNode, &children](scene::NodePtr &child){
+                child->parent = rootNode;
+                children.push_back(child);
+            });
+        }
+        
+        std::vector<scene::NodePtr> result = {rootNode};
+        std::move(children.begin(), children.end(), std::back_inserter(result));
+        return std::move(result);
     }
 }
 

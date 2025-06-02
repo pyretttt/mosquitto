@@ -5,8 +5,6 @@
 #include <functional>
 #include <filesystem>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "3rd_party/stb_image.h"
 
 namespace scene {
 
@@ -24,33 +22,9 @@ struct TexData {
 
 using TexturePtr = std::shared_ptr<TexData>;
 
-TexData inline static loadTextureData(
+TexData loadTextureData(
     std::filesystem::path path,
     bool flipVertically = true
-) {
-    std::string pathStr = path.string();
-    auto pathChars = pathStr.data();
-    int width, height, channels;
+);
 
-    stbi_set_flip_vertically_on_load(flipVertically);
-    unsigned char *data = stbi_load(
-        pathChars,
-        &width,
-        &height,
-        &channels,
-        0
-    );
-    TexPointer texPtr = TexPointer(
-        data,
-        [](unsigned char *data) {
-            stbi_image_free(data);
-        }
-    );
-    return TexData {
-        .width = width,
-        .height = height,
-        .channels = channels,
-        .ptr = std::move(texPtr)
-    };
-}
 }
