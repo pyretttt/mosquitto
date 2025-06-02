@@ -1,5 +1,6 @@
 #include <memory>
 #include <algorithm>
+#include <iterator>
 
 #include "assimp/Importer.hpp"
 #include "assimp/scene.h"
@@ -78,6 +79,13 @@ namespace {
     }
 }
 
+Scene::Scene(
+    std::unordered_map<size_t, NodePtr> nodes,
+    std::unordered_map<size_t, TexturePtr> textures
+) 
+    : nodes(std::move(nodes))
+    , textures(std::move(textures)) {}
+
 Scene Scene::assimpImport(std::filesystem::path path) {
     // auto model = Model(path);
     Assimp::Importer importer;
@@ -95,5 +103,17 @@ Scene Scene::assimpImport(std::filesystem::path path) {
     ) {
         throw "Failed to load scene";
     }
+
+    auto nodes = genNodes(scene->mRootNode, scene);
+    std::unordered_map<size_t, scene::NodePtr> nodesMap;
+    std::transform(nodes.begin(), nodes.end(), std::inserter(nodesMap, nodesMap.end()), [](auto const &node) {
+        return std::make_pair(node->identifier, node);
+    });
+
+    std::unordered_map<size_t, scene::TexturePtr> textureMap;
+    return Scene(
+        std::move(nodesMap),
+        std::move(textureMap)
+    );
 }
 
