@@ -3,6 +3,9 @@
   become: yes
   gather_facts: yes
   tasks:
+    - name: Ping my hosts
+      ansible.builtin.ping:
+
     - name: Packages installation
       apt:
         name:
