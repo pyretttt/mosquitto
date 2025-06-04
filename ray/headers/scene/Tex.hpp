@@ -26,5 +26,4 @@ TexData loadTextureData(
     std::filesystem::path path,
     bool flipVertically = true
 );
-
 }
