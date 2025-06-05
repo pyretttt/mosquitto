@@ -6,6 +6,7 @@
 #include "scene/Mesh.hpp"
 #include "scene/Tex.hpp"
 #include "scene/Node.hpp"
+#include "scene/Material.hpp"
 #include "Attributes.hpp"
 
 namespace scene {
@@ -16,10 +17,10 @@ struct Scene {
 
     Scene(
         std::unordered_map<size_t, NodePtr> nodes,
-        std::unordered_map<size_t, TexturePtr> textures
+        std::unordered_map<size_t, MaterialPtr> materials
     );
 
     std::unordered_map<size_t, NodePtr> nodes;
-    std::unordered_map<size_t, TexturePtr> textures;
+    std::unordered_map<size_t, TexturePtr> materials;
 };
 }

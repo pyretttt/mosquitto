@@ -19,7 +19,7 @@ scene::TexData scene::loadTextureData(
         &channels,
         0
     );
-    TexPointer texPtr = TexPointer(
+    TexDataPointer texPtr = TexDataPointer(
         data,
         [](unsigned char *data) {
             stbi_image_free(data);

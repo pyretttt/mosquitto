@@ -8,7 +8,7 @@
 
 namespace scene {
 
-using TexPointer = std::unique_ptr<
+using TexDataPointer = std::unique_ptr<
     unsigned char,
     std::function<void (unsigned char *)>
 >;
@@ -17,7 +17,7 @@ struct TexData {
     int width;
     int height;
     int channels;
-    TexPointer ptr;
+    TexDataPointer ptr;
 };
 
 using TexturePtr = std::shared_ptr<TexData>;

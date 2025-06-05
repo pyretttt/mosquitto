@@ -13,10 +13,9 @@
 using namespace scene;
 
 namespace {
-    scene::MeshPtr makeMesh(aiMesh *mesh) {
+    scene::MeshPtr makeMesh(aiMesh *mesh, aiScene const *scene) {
         std::vector<attributes::AssimpVertex> vertices;
         std::vector<unsigned int> verticesArrayIndices;
-        std::vector<scene::TextureIdentifier> textures;
 
         for (size_t i = 0; i < mesh->mNumVertices; i++) {
             auto pos = mesh->mVertices[i];
@@ -41,11 +40,15 @@ namespace {
                 verticesArrayIndices.push_back(face.mIndices[j]);
             }
         }
+
+        std::optional<scene::MaterialIdentifier> materialId = mesh->mMaterialIndex >= 0
+            ? std::optional(scene::MaterialIdentifier {.id = mesh->mMaterialIndex})
+            : std::nullopt;
         
         return std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
             std::move(vertices),
             std::move(verticesArrayIndices),
-            std::move(textures),
+            materialId,
             InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId()
         );
     }
@@ -53,7 +56,7 @@ namespace {
     scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
         std::vector<scene::MeshPtr> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
-            meshes.emplace_back(makeMesh(scene->mMeshes[i]));
+            meshes.emplace_back(makeMesh(scene->mMeshes[i], scene));
         }
 
         return std::make_shared<scene::Node>(
@@ -79,12 +82,34 @@ namespace {
     }
 }
 
+std::vector<scene::TexturePtr> loadTextures(
+    std::filesystem::path path, 
+    aiMaterial *material, 
+    aiTextureType type
+) {
+    std::vector<scene::TexturePtr> textures;
+    for (size_t i = 0; i < material->GetTextureCount(type); i++) {
+        aiString subPath;
+        material->GetTexture(type, i, &subPath);
+
+        std::filesystem::path texturePath = path.append(subPath.C_Str());
+        textures.emplace_back(
+            std::make_shared<scene::TexData>(
+                loadTextureData(texturePath)
+            )
+        );
+    }
+
+    return textures;
+}
+
 Scene::Scene(
     std::unordered_map<size_t, NodePtr> nodes,
-    std::unordered_map<size_t, TexturePtr> textures
+    std::unordered_map<size_t, MaterialPtr> materials
 ) 
     : nodes(std::move(nodes))
-    , textures(std::move(textures)) {}
+    , materials(std::move(materials)) {}
+
 
 Scene Scene::assimpImport(std::filesystem::path path) {
     // auto model = Model(path);
@@ -110,10 +135,24 @@ Scene Scene::assimpImport(std::filesystem::path path) {
         return std::make_pair(node->identifier, node);
     });
 
-    std::unordered_map<size_t, scene::TexturePtr> textureMap;
+    std::unordered_map<size_t, scene::MaterialPtr> materialsMap;
+    for (size_t i = 0; i < scene->mNumMaterials; i++) {
+        aiMaterial *material = scene->mMaterials[i++];
+        for (auto const &type : textureTypes) {
+            auto const textures = loadTextures(path, material, type);
+        }
+
+        materialsMap[i] = std::make_shared<Material>(
+            loadTextures(path, material, aiTextureType_AMBIENT),
+            loadTextures(path, material, aiTextureType_DIFFUSE),
+            loadTextures(path, material, aiTextureType_SPECULAR),
+            loadTextures(path, material, aiTextureType_NORMALS)
+        );
+    }
+
     return Scene(
         std::move(nodesMap),
-        std::move(textureMap)
+        std::move(materialsMap)
     );
 }
 
