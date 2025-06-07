@@ -85,19 +85,22 @@ namespace {
 std::vector<scene::TexturePtr> loadTextures(
     std::filesystem::path path, 
     aiMaterial *material, 
-    aiTextureType type
+    aiTextureType type,
+    std::unordered_map<std::string, TexturePtr> &cache
 ) {
     std::vector<scene::TexturePtr> textures;
     for (size_t i = 0; i < material->GetTextureCount(type); i++) {
         aiString subPath;
         material->GetTexture(type, i, &subPath);
-
         std::filesystem::path texturePath = path.append(subPath.C_Str());
-        textures.emplace_back(
-            std::make_shared<scene::TexData>(
+
+        if (!cache.contains(texturePath.string())) {
+            cache[texturePath.string()] = std::make_shared<scene::TexData>(
                 loadTextureData(texturePath)
-            )
-        );
+            );
+        }
+
+        textures.emplace_back(cache.at(texturePath.string()));
     }
 
     return textures;
@@ -105,10 +108,12 @@ std::vector<scene::TexturePtr> loadTextures(
 
 Scene::Scene(
     std::unordered_map<size_t, NodePtr> nodes,
-    std::unordered_map<size_t, MaterialPtr> materials
+    std::unordered_map<size_t, MaterialPtr> materials,
+    std::unordered_map<std::string, TexturePtr> textures
 ) 
     : nodes(std::move(nodes))
-    , materials(std::move(materials)) {}
+    , materials(std::move(materials))
+    , textures(std::move(textures)) {}
 
 
 Scene Scene::assimpImport(std::filesystem::path path) {
@@ -135,21 +140,24 @@ Scene Scene::assimpImport(std::filesystem::path path) {
         return std::make_pair(node->identifier, node);
     });
 
+    std::unordered_map<std::string, TexturePtr> texturesMap;
+
     std::unordered_map<size_t, scene::MaterialPtr> materialsMap;
     for (size_t i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial *material = scene->mMaterials[i++];
 
         materialsMap[i] = std::make_shared<Material>(
-            loadTextures(path, material, aiTextureType_AMBIENT),
-            loadTextures(path, material, aiTextureType_DIFFUSE),
-            loadTextures(path, material, aiTextureType_SPECULAR),
-            loadTextures(path, material, aiTextureType_NORMALS)
+            loadTextures(path, material, aiTextureType_AMBIENT, texturesMap),
+            loadTextures(path, material, aiTextureType_DIFFUSE, texturesMap),
+            loadTextures(path, material, aiTextureType_SPECULAR, texturesMap),
+            loadTextures(path, material, aiTextureType_NORMALS, texturesMap)
         );
     }
 
     return Scene(
         std::move(nodesMap),
-        std::move(materialsMap)
+        std::move(materialsMap),
+        std::move(texturesMap)
     );
 }
 
