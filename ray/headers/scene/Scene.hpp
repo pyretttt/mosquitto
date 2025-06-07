@@ -19,8 +19,12 @@ struct Scene {
         std::unordered_map<size_t, NodePtr> nodes,
         std::unordered_map<size_t, MaterialPtr> materials
     );
+    
+    bool prepare() const;
 
     std::unordered_map<size_t, NodePtr> nodes;
-    std::unordered_map<size_t, TexturePtr> materials;
+    std::unordered_map<size_t, MaterialPtr> materials;
 };
+
+using ScenePtr = std::shared_ptr<Scene>;
 }

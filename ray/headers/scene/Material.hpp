@@ -4,10 +4,8 @@
 
 namespace scene {
 
-using MaterialPtr = std::shared_ptr<MaterialPtr>;
-
 struct Material {
-    Material(    
+    Material(
         std::vector<TexturePtr> ambient,
         std::vector<TexturePtr> diffuse,
         std::vector<TexturePtr> specular,
@@ -19,4 +17,6 @@ struct Material {
     std::vector<TexturePtr> specular;
     std::vector<TexturePtr> normals;
 };
+
+using MaterialPtr = std::shared_ptr<Material>;
 }

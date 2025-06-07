@@ -220,7 +220,7 @@ namespace {
             0, 1, 3,
             1, 2, 3 
         }*/}),
-        std::vector<scene::TextureIdentifier>({}),
+        scene::MaterialIdentifier(),
         0
     );
 
@@ -425,4 +425,9 @@ void gl::Renderer::render() const {
     renderObject.render();
 
     SDL_GL_SwapWindow(config->window.get());
+}
+
+void gl::Renderer::prepareScene(scene::ScenePtr scene) {
+    this->scene = scene;
+    scene->prepare();
 }

@@ -7,6 +7,7 @@
 
 #include "Lazy.hpp"
 #include "Camera.hpp"
+#include "scene/Scene.hpp"
 
 namespace gl {
 struct Renderer: public ::Renderer {
@@ -21,11 +22,15 @@ struct Renderer: public ::Renderer {
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
+    void prepareScene(scene::ScenePtr scene);
+
     ~Renderer() override;
 
     std::pair<size_t, size_t> resolution;
     std::shared_ptr<GlobalConfig> config;
     Lazy<Camera> camera;
     SDL_GLContext glContext;
+
+    scene::ScenePtr scene = nullptr; // TODO: To observable object
 };
 }

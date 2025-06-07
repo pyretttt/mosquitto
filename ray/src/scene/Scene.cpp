@@ -138,9 +138,6 @@ Scene Scene::assimpImport(std::filesystem::path path) {
     std::unordered_map<size_t, scene::MaterialPtr> materialsMap;
     for (size_t i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial *material = scene->mMaterials[i++];
-        for (auto const &type : textureTypes) {
-            auto const textures = loadTextures(path, material, type);
-        }
 
         materialsMap[i] = std::make_shared<Material>(
             loadTextures(path, material, aiTextureType_AMBIENT),

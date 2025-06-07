@@ -1,8 +1,6 @@
 #include "scene/Material.hpp"
 
-using namespace scene;
-
-Material::Material(
+scene::Material::Material(
     std::vector<TexturePtr> ambient,
     std::vector<TexturePtr> diffuse,
     std::vector<TexturePtr> specular,
