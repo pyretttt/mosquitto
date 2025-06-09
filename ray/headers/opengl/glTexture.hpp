@@ -23,24 +23,28 @@ namespace gl {
 
     struct Texture final {
         TextureMode mode = TextureMode();
-        std::unique_ptr<scene::TexData> texData;
+        scene::TexturePtr texturePtr;
         ID id = 0;
 
         Texture(
+            scene::TexturePtr texturePtr
+        ) : texturePtr(texturePtr) {}
+
+        Texture(
             TextureMode mode,
-            std::unique_ptr<scene::TexData> texData
-        ) : mode(mode), texData(std::move(texData)) {}
+            scene::TexturePtr texturePtr
+        ) : mode(mode), texturePtr(texturePtr) {}
 
         Texture(
             Texture &&other
-        ) : mode(other.mode), texData(std::move(other.texData)), id(other.id) {
+        ) : mode(other.mode), texturePtr(std::move(other.texturePtr)), id(other.id) {
             other.id = 0;
         }
 
         Texture& operator=(Texture &&other) {
             this->id = other.id;
             this->mode = other.mode;
-            this->texData = std::move(other.texData);
+            this->texturePtr = std::move(other.texturePtr);
             other.id = 0;
             return *this;
         }
@@ -49,4 +53,6 @@ namespace gl {
             if (id) glDeleteTextures(1, &id);
         }
     };
+
+    using TexturePtr = std::shared_ptr<Texture>;
 }

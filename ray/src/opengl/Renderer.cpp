@@ -429,5 +429,4 @@ void gl::Renderer::render() const {
 
 void gl::Renderer::prepareScene(scene::ScenePtr scene) {
     this->scene = scene;
-    scene->prepare();
 }
