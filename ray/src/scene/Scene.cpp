@@ -7,13 +7,14 @@
 #include "assimp/postprocess.h"
 
 #include "scene/Scene.hpp"
+#include "scene/Node.hpp"
 #include "scene/Mesh.hpp"
 #include "Core.hpp"
 
 using namespace scene;
 
 namespace {
-    scene::MeshPtr makeMesh(aiMesh *mesh, aiScene const *scene) {
+    scene::MaterialMeshPtr makeMesh(aiMesh *mesh, aiScene const *scene) {
         std::vector<attributes::AssimpVertex> vertices;
         std::vector<unsigned int> verticesArrayIndices;
 
@@ -49,18 +50,18 @@ namespace {
             std::move(vertices),
             std::move(verticesArrayIndices),
             materialId,
-            InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId()
+            static_cast<MeshId>(InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId())
         );
     }
 
     scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
-        std::vector<scene::MeshPtr> meshes;
+        std::vector<scene::MaterialMeshPtr> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
             meshes.emplace_back(makeMesh(scene->mMeshes[i], scene));
         }
 
         return std::make_shared<scene::Node>(
-            InstanceIdGenerator<scene::Node>::getInstanceId(),
+            static_cast<NodeId>(InstanceIdGenerator<scene::Node>::getInstanceId()),
             std::move(meshes)
         );
     }
@@ -78,7 +79,7 @@ namespace {
         
         std::vector<scene::NodePtr> result = {rootNode};
         std::move(children.begin(), children.end(), std::back_inserter(result));
-        return std::move(result);
+        return result;
     }
 }
 
@@ -94,22 +95,22 @@ std::vector<scene::TexturePtr> loadTextures(
         material->GetTexture(type, i, &subPath);
         std::filesystem::path texturePath = path.append(subPath.C_Str());
 
-        if (!cache.contains(texturePath.string())) {
-            cache[texturePath.string()] = std::make_shared<scene::TexData>(
+        if (!cache.contains(static_cast<TexturePath>(texturePath.string()))) {
+            cache[static_cast<TexturePath>(texturePath.string())] = std::make_shared<scene::TexData>(
                 loadTextureData(texturePath)
             );
         }
 
-        textures.emplace_back(cache.at(texturePath.string()));
+        textures.emplace_back(cache.at(static_cast<TexturePath>(texturePath.string())));
     }
 
     return textures;
 }
 
 Scene::Scene(
-    std::unordered_map<size_t, NodePtr> nodes,
-    std::unordered_map<size_t, MaterialPtr> materials,
-    std::unordered_map<std::string, TexturePtr> textures
+    std::unordered_map<NodeId, NodePtr> nodes,
+    std::unordered_map<MaterialId, MaterialPtr> materials,
+    std::unordered_map<TexturePath, TexturePtr> textures
 ) 
     : nodes(std::move(nodes))
     , materials(std::move(materials))
@@ -135,14 +136,14 @@ Scene Scene::assimpImport(std::filesystem::path path) {
     }
 
     auto nodes = genNodes(scene->mRootNode, scene);
-    std::unordered_map<size_t, scene::NodePtr> nodesMap;
-    std::transform(nodes.begin(), nodes.end(), std::inserter(nodesMap, nodesMap.end()), [](auto const &node) {
+    std::unordered_map<NodeId, scene::NodePtr> nodesMap;
+    std::transform(nodes.begin(), nodes.end(), std::inserter(nodesMap, nodesMap.end()), [](NodePtr &node) {
         return std::make_pair(node->identifier, node);
     });
 
-    std::unordered_map<std::string, TexturePtr> texturesMap;
+    std::unordered_map<TexturePath, TexturePtr> texturesMap;
 
-    std::unordered_map<size_t, scene::MaterialPtr> materialsMap;
+    std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap;
     for (size_t i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial *material = scene->mMaterials[i++];
 

@@ -1,7 +1,9 @@
 #pragma once
 
 #include "scene/Scene.hpp"
+#include "scene/Identifiers.hpp"
 #include "opengl/RenderObject.hpp"
+#include "opengl/glCommon.hpp"
 #include "Attributes.hpp"
 
 namespace gl {
@@ -10,14 +12,6 @@ struct RenderObjectInfo {
     gl::RenderObject<attributes::AssimpVertex> renderObject;
 };
 
-struct Material {
-    std::vector<gl::TexturePtr> ambient;
-    std::vector<gl::TexturePtr> diffuse;
-    std::vector<gl::TexturePtr> specular;
-    std::vector<gl::TexturePtr> normals;
-};
-
-
 struct RenderScene {
     RenderScene(
         scene::ScenePtr scene,
@@ -25,10 +19,11 @@ struct RenderScene {
     );
 
     void render() const;
+    void prepare();
 
     scene::ScenePtr scene;
     gl::Configuration configuration;
     std::vector<RenderObjectInfo> pbrs;
-    std::unordered_map<size_t, Material> materials;
+    std::unordered_map<scene::MaterialId, Material> materials;
 };
 }

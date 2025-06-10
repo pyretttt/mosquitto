@@ -1,21 +1,26 @@
 #include "opengl/RenderScene.hpp"
-
+#include "scene/Material.hpp"
+#include "scene/Node.hpp"
 
 namespace {
     auto makePbrs(
         scene::ScenePtr scene,
-        gl::Configuration configuration
+        gl::Configuration configuration,
+        std::unordered_map<scene::MaterialId, gl::Material> const &materials
     ) noexcept -> decltype(auto) {
         std::vector<gl::RenderObjectInfo> result;
 
         for (auto const &[id, node] : scene->nodes) {
             for (auto &mesh : node->meshes) {
+                if (!materials.contains(mesh->material)) {
+                    throw "Material::NotFound";
+                }
                 result.emplace_back(
-                    id,
+                    static_cast<size_t>(id),
                     gl::RenderObject<attributes::AssimpVertex>(
                         configuration,
                         mesh,
-                        scene->materials.at(mesh->material)
+                        materials.at(mesh->material)
                     )
                 );
             }
@@ -29,7 +34,7 @@ namespace {
     }
 
     auto makeMaterials(scene::ScenePtr scene) -> decltype(auto) {
-        std::unordered_map<size_t, gl::Material> result;
+        std::unordered_map<scene::MaterialId, gl::Material> result;
         for (auto const &[id, material] : scene->materials) {
             std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
             std::transform(
@@ -58,7 +63,7 @@ namespace {
             );
             result.emplace(
                 std::make_pair(
-                    id, 
+                    static_cast<scene::MaterialId>(id), 
                     gl::Material {
                         .ambient = std::move(ambient),
                         .specular = std::move(specular),
@@ -80,3 +85,8 @@ gl::RenderScene::RenderScene(
     : scene(scene)
     , configuration(configuration) {}
 
+
+void gl::RenderScene::prepare() {
+    this->materials = makeMaterials(scene);
+    this->pbrs = makePbrs(scene, configuration, materials);
+}

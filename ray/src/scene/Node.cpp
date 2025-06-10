@@ -3,8 +3,8 @@
 using namespace scene;
 
 Node::Node(
-    size_t identifier,
-    std::vector<MeshPtr> meshes,
+    NodeId identifier,
+    std::vector<MaterialMeshPtr> meshes,
     ml::Matrix4f transform
 ) 
     : identifier(identifier)

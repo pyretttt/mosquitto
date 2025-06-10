@@ -23,7 +23,7 @@ namespace fs = std::filesystem;
 
 namespace {
 
-    scene::MeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
+    scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({
             // 1
             attributes::AssimpVertex {
@@ -226,7 +226,7 @@ namespace {
 
     std::shared_ptr<scene::Node> node = std::make_shared<scene::Node>(
         InstanceIdGenerator<scene::Node>::getInstanceId(),
-        std::vector<scene::MeshPtr>({mesh})
+        std::vector<scene::MaterialMeshPtr>({mesh})
     );
 
     gl::Configuration config = gl::Configuration {
@@ -241,31 +241,55 @@ namespace {
         fs::path("shaders").append("fragment.fs")       
     );
 
-    std::shared_ptr<std::vector<gl::Texture>> textures = std::make_shared<std::vector<gl::Texture>>(
-        modified(std::vector<gl::Texture>(), [](std::vector<gl::Texture> &vec) {
+    // std::shared_ptr<std::vector<gl::Texture>> textures = std::make_shared<std::vector<gl::Texture>>(
+    //     modified(std::vector<gl::Texture>(), [](std::vector<gl::Texture> &vec) {
+    //         vec.emplace_back(
+    //             gl::TextureMode(), 
+    //             std::make_unique<scene::TexData>(
+    //                 scene::loadTextureData(
+    //                     fs::path("resources").append("textures").append("container.jpg")
+    //                 )
+    //             )
+    //         );
+    //         vec.emplace_back(
+    //             gl::TextureMode {.bitFormat = GL_RGBA}, 
+    //             std::make_unique<scene::TexData>(
+    //                 scene::loadTextureData(
+    //                     fs::path("resources").append("textures").append("awesomeface.png")
+    //                 )
+    //             )
+    //         );
+    //     })
+    // );
+    gl::Material material = gl::Material {
+        .ambient = modified(std::vector<gl::TexturePtr>(), [](std::vector<gl::Texture> &vec) {
             vec.emplace_back(
-                gl::TextureMode(), 
-                std::make_unique<scene::TexData>(
-                    scene::loadTextureData(
-                        fs::path("resources").append("textures").append("container.jpg")
+                std::make_shared<gl::TexturePtr>(
+                    gl::TextureMode(), 
+                    std::make_unique<scene::TexData>(
+                        scene::loadTextureData(
+                            fs::path("resources").append("textures").append("container.jpg")
+                        )
                     )
                 )
             );
             vec.emplace_back(
-                gl::TextureMode {.bitFormat = GL_RGBA}, 
-                std::make_unique<scene::TexData>(
-                    scene::loadTextureData(
-                        fs::path("resources").append("textures").append("awesomeface.png")
+                std::make_shared<gl::TexturePtr>(
+                    gl::TextureMode {.bitFormat = GL_RGBA}, 
+                    std::make_unique<scene::TexData>(
+                        scene::loadTextureData(
+                            fs::path("resources").append("textures").append("awesomeface.png")
+                        )
                     )
                 )
             );
-        })
-    );
+        }),
+    };
 
     gl::RenderObject renderObject = gl::RenderObject<attributes::AssimpVertex>(
         config,
         mesh,
-        textures,
+        material,
         true
     );
 

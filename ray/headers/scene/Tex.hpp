@@ -5,6 +5,7 @@
 #include <functional>
 #include <filesystem>
 
+#include "scene/Identifiers.hpp"
 
 namespace scene {
 
@@ -19,8 +20,6 @@ struct TexData {
     int channels;
     TexDataPointer ptr;
 };
-
-using TexturePtr = std::shared_ptr<TexData>;
 
 TexData loadTextureData(
     std::filesystem::path path,

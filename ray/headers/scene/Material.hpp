@@ -1,6 +1,7 @@
 #pragma once
 
 #include "scene/Tex.hpp"
+#include "scene/Identifiers.hpp"
 
 namespace scene {
 
@@ -17,6 +18,4 @@ struct Material {
     std::vector<TexturePtr> specular;
     std::vector<TexturePtr> normals;
 };
-
-using MaterialPtr = std::shared_ptr<Material>;
 }

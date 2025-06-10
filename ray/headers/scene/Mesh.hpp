@@ -6,13 +6,10 @@
 #include <vector>
 
 #include "MathUtils.hpp"
-#include "Material.hpp"
+#include "scene/Material.hpp"
+#include "scene/Identifiers.hpp"
 
 namespace scene {
-
-struct MaterialIdentifier {
-    size_t id;
-};
 
 template <typename Attr, typename MaterialId = MaterialIdentifier>
 struct Mesh {
@@ -20,13 +17,13 @@ struct Mesh {
         std::vector<Attr> vertexArray,
         std::vector<unsigned int> vertexArrayIndices,
         std::optional<MaterialIdentifier> material,
-        size_t identifier
+        MeshId identifier
     );
 
     std::vector<Attr> vertexArray;
     std::vector<unsigned int> vertexArrayIndices;
     std::optional<MaterialIdentifier> material;
-    size_t const identifier;
+    MeshId const identifier;
 };
 
 template <typename Attr, typename TextureId>
@@ -34,7 +31,7 @@ Mesh<Attr, TextureId>::Mesh(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
     std::optional<MaterialIdentifier> material,
-    size_t identifier
+    MeshId identifier
 ) 
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))

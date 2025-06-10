@@ -28,12 +28,15 @@ struct Configuration {
     PolygonMode polygonMode;
 };
 
+void bindTextures(std::vector<gl::Texture> const &textures);
+void activateMaterial(Material const &material);
+
 template <typename Attribute>
 struct RenderObject {
     RenderObject(
         Configuration configuration,
         std::shared_ptr<scene::Mesh<Attribute>> meshNode,
-        std::shared_ptr<std::vector<Texture>> textures = nullptr,
+        Material& material,
         bool debug = false
     );
 
@@ -56,7 +59,7 @@ struct RenderObject {
     ID tex;
 
     std::shared_ptr<scene::Mesh<Attribute>> meshNode;
-    std::shared_ptr<std::vector<Texture>> textures;
+    Material& material;
 
     Configuration configuration;
 
@@ -67,12 +70,12 @@ template<typename Attribute>
 RenderObject<Attribute>::RenderObject(
     Configuration configuration,
     std::shared_ptr<scene::Mesh<Attribute>> meshNode,
-    std::shared_ptr<std::vector<Texture>> textures,
+    Material& material,
     bool debug
 ) 
     : configuration(configuration)
     , meshNode(meshNode)
-    , textures(textures) {
+    , material(material) {
     setDebug(debug);
 }
 
@@ -83,7 +86,7 @@ RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
     , vbo(other.vbo)
     , configuration(other.configuration)
     , meshNode(std::move(other.meshNode))
-    , textures(std::move(other.textures))
+    , material(other.material)
     , debug(other.debug)
 {
     other.vbo = 0;
@@ -95,7 +98,7 @@ template<typename Attribute>
 RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribute>&& other) {
     this->configuration = configuration;
     this->meshNode = std::move(other.meshNode);
-    this->textures = std::move(other.textures);
+    this->material = other.material;
     this->debug = debug;
     this->vao = other.vao;
     this->vbo = other.vbo;
@@ -114,39 +117,10 @@ RenderObject<Attribute>::~RenderObject() {
 
 template<typename Attribute>
 void RenderObject<Attribute>::prepare() {
-    std::for_each(
-        textures->begin(), 
-        textures->end(),
-        [](auto &texture) {
-            if (!texture.id)
-                glGenTextures(1, &(texture.id));
-        }
-    );
-
-    for (size_t i = 0; i < textures->size(); i++) {
-        auto const &tex = textures->at(i);
-        glBindTexture(GL_TEXTURE_2D, tex.id);
-        glTexImage2D(
-            GL_TEXTURE_2D, 
-            0, 
-            GL_RGB, 
-            tex.texData->width,
-            tex.texData->height,
-            0,
-            tex.mode.bitFormat,
-            GL_UNSIGNED_BYTE,
-            tex.texData->ptr.get()
-        );
-        if (tex.mode.mipmaps) {
-            glGenerateMipmap(GL_TEXTURE_2D);
-        }
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex.mode.border);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, tex.mode.wrapModeS);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tex.mode.wrapModeT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex.mode.minifyingFilter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex.mode.magnifyingFilter);
-    }
-    glBindTexture(GL_TEXTURE_2D, 0);
+    bindTextures(material.ambient);
+    bindTextures(material.diffuse);
+    bindTextures(material.specular);
+    bindTextures(material.normals);
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -182,10 +156,7 @@ void RenderObject<Attribute>::setDebug(bool debug) noexcept {
 
 template<typename Attribute>
 void RenderObject<Attribute>::render() noexcept {
-    for (size_t i = 0; i < textures->size(); i++) {
-        glActiveTexture(GL_TEXTURE0 + i);
-        glBindTexture(GL_TEXTURE_2D, textures->at(i).id);
-    }
+    activateMaterial(material);
     
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);

@@ -55,4 +55,11 @@ namespace gl {
     };
 
     using TexturePtr = std::shared_ptr<Texture>;
+    
+    struct Material {
+        std::vector<TexturePtr> ambient;
+        std::vector<TexturePtr> diffuse;
+        std::vector<TexturePtr> specular;
+        std::vector<TexturePtr> normals;
+    };
 }
