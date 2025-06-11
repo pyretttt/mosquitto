@@ -28,7 +28,7 @@ struct Configuration {
     PolygonMode polygonMode;
 };
 
-void bindTextures(std::vector<gl::Texture> const &textures);
+void bindTextures(std::vector<gl::TexturePtr> const &textures);
 void activateMaterial(Material const &material);
 
 template <typename Attribute>
@@ -36,7 +36,7 @@ struct RenderObject {
     RenderObject(
         Configuration configuration,
         std::shared_ptr<scene::Mesh<Attribute>> meshNode,
-        Material& material,
+        Material const &material,
         bool debug = false
     );
 
@@ -59,7 +59,7 @@ struct RenderObject {
     ID tex;
 
     std::shared_ptr<scene::Mesh<Attribute>> meshNode;
-    Material& material;
+    Material const &material;
 
     Configuration configuration;
 
@@ -70,7 +70,7 @@ template<typename Attribute>
 RenderObject<Attribute>::RenderObject(
     Configuration configuration,
     std::shared_ptr<scene::Mesh<Attribute>> meshNode,
-    Material& material,
+    Material const &material,
     bool debug
 ) 
     : configuration(configuration)

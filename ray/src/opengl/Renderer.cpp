@@ -262,9 +262,9 @@ namespace {
     //     })
     // );
     gl::Material material = gl::Material {
-        .ambient = modified(std::vector<gl::TexturePtr>(), [](std::vector<gl::Texture> &vec) {
+        .ambient = modified(std::vector<gl::TexturePtr>(), [](std::vector<gl::TexturePtr> &vec) {
             vec.emplace_back(
-                std::make_shared<gl::TexturePtr>(
+                std::make_shared<gl::Texture>(
                     gl::TextureMode(), 
                     std::make_unique<scene::TexData>(
                         scene::loadTextureData(
@@ -274,7 +274,7 @@ namespace {
                 )
             );
             vec.emplace_back(
-                std::make_shared<gl::TexturePtr>(
+                std::make_shared<gl::Texture>(
                     gl::TextureMode {.bitFormat = GL_RGBA}, 
                     std::make_unique<scene::TexData>(
                         scene::loadTextureData(
@@ -372,7 +372,7 @@ void gl::Renderer::prepareViewPort() {
 
     renderObject.prepare();
     shader.setup();
-    shader.setTextureSamplers(renderObject.textures->size());
+    shader.setMaterialSamplers(material);
 
     configureGl();
 }

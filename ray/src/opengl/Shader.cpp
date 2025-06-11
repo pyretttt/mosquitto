@@ -110,3 +110,36 @@ void gl::Shader::setTextureSamplers(size_t max) noexcept {
         glUseProgram(0);
     }
 }
+
+void gl::Shader::setMaterialSamplers(gl::Material const &material) noexcept {
+    if (!program) return;
+    glUseProgram(program);
+    for (size_t i = 0; i < material.ambient.size(); i++) {
+        auto key = "ambient" + std::to_string(i);
+        if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
+            glUniform1i(location, i);
+        }
+    }
+    for (size_t i = 0; i < material.diffuse.size(); i++) {
+        auto key = "diffuse" + std::to_string(i + material.ambient.size());
+        if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
+            glUniform1i(location, i);
+        }
+    }
+
+    for (size_t i = 0; i < material.specular.size(); i++) {
+        auto key = "specular" + std::to_string(i + material.ambient.size() + material.specular.size());
+        if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
+            glUniform1i(location, i);
+        }
+    }
+
+    for (size_t i = 0; i < material.specular.size(); i++) {
+        auto key = "normals" + std::to_string(i + material.ambient.size() + material.specular.size() + material.diffuse.size());
+        if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
+            glUniform1i(location, i);
+        }
+    }
+
+    glUseProgram(0);
+}

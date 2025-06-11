@@ -5,7 +5,8 @@
 
 #include "GL/glew.h"
 
-#include "glCommon.hpp"
+#include "opengl/glCommon.hpp"
+#include "opengl/glTexture.hpp"
 #include "Attributes.hpp"
 #include "Core.hpp"
 
@@ -25,6 +26,7 @@ public:
     ) noexcept;
 
     void setTextureSamplers(size_t max) noexcept;
+    void setMaterialSamplers(gl::Material const &material) noexcept;
 
     ~Shader();
 

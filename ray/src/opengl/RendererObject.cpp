@@ -1,37 +1,37 @@
 #include "opengl/RenderObject.hpp"
 
-void gl::bindTextures(std::vector<gl::Texture> const &textures) {
+void gl::bindTextures(std::vector<gl::TexturePtr> const &textures) {
     std::for_each(
         textures.begin(), 
         textures.end(),
         [](auto &texture) {
-            if (!texture.id)
-                glGenTextures(1, &(texture.id));
+            if (!texture->id)
+                glGenTextures(1, &(texture->id));
         }
     );
 
     for (size_t i = 0; i < textures.size(); i++) {
         auto const &tex = textures.at(i);
-        glBindTexture(GL_TEXTURE_2D, tex.id);
+        glBindTexture(GL_TEXTURE_2D, tex->id);
         glTexImage2D(
             GL_TEXTURE_2D, 
             0, 
             GL_RGB, 
-            tex.texturePtr->width,
-            tex.texturePtr->height,
+            tex->texturePtr->width,
+            tex->texturePtr->height,
             0,
-            tex.mode.bitFormat,
+            tex->mode.bitFormat,
             GL_UNSIGNED_BYTE,
-            tex.texturePtr->ptr.get()
+            tex->texturePtr->ptr.get()
         );
-        if (tex.mode.mipmaps) {
+        if (tex->mode.mipmaps) {
             glGenerateMipmap(GL_TEXTURE_2D);
         }
-        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex.mode.border);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, tex.mode.wrapModeS);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tex.mode.wrapModeT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex.mode.minifyingFilter);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex.mode.magnifyingFilter);
+        glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, tex->mode.border);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, tex->mode.wrapModeS);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, tex->mode.wrapModeT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->mode.minifyingFilter);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, tex->mode.magnifyingFilter);
     }
     glBindTexture(GL_TEXTURE_2D, 0);
 }

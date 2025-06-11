@@ -7,12 +7,16 @@ namespace {
         scene::ScenePtr scene,
         gl::Configuration configuration,
         std::unordered_map<scene::MaterialId, gl::Material> const &materials
-    ) noexcept -> decltype(auto) {
+    ) -> decltype(auto) {
         std::vector<gl::RenderObjectInfo> result;
 
         for (auto const &[id, node] : scene->nodes) {
             for (auto &mesh : node->meshes) {
-                if (!materials.contains(mesh->material)) {
+                if (!mesh->material.has_value()) {
+                    continue;
+                }
+                auto materialId = mesh->material.value().id;
+                if (!materials.contains(materialId)) {
                     throw "Material::NotFound";
                 }
                 result.emplace_back(
@@ -20,7 +24,7 @@ namespace {
                     gl::RenderObject<attributes::AssimpVertex>(
                         configuration,
                         mesh,
-                        materials.at(mesh->material)
+                        materials.at(materialId)
                     )
                 );
             }
