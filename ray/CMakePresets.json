@@ -53,6 +53,13 @@
         "configurePreset": "clang-debug",
         "description": "Clang build",
         "jobs": 8
+    },
+    {
+      "name": "gcc-debug-build",
+      "displayName": "gcc-debug",
+      "configurePreset": "gcc-debug",
+      "description": "GCC build",
+      "jobs": 8
     }
   ]
 }

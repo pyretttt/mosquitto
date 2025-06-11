@@ -1,8 +1,10 @@
 #include <memory>
 #include <algorithm>
 #include <iterator>
+#include <iostream>
 
 #include "assimp/Importer.hpp"
+#include "assimp/DefaultLogger.hpp"
 #include "assimp/scene.h"
 #include "assimp/postprocess.h"
 
@@ -119,8 +121,10 @@ Scene::Scene(
 
 Scene Scene::assimpImport(std::filesystem::path path) {
     Assimp::Importer importer;
+    Assimp::DefaultLogger::create();
+    
     auto scene = importer.ReadFile(
-        path.string(), 
+        path.string(),
         aiProcess_Triangulate
         | aiProcess_FlipUVs
         | aiProcess_GenNormals
