@@ -118,7 +118,6 @@ Scene::Scene(
 
 
 Scene Scene::assimpImport(std::filesystem::path path) {
-    // auto model = Model(path);
     Assimp::Importer importer;
     auto scene = importer.ReadFile(
         path.string(), 
@@ -148,10 +147,10 @@ Scene Scene::assimpImport(std::filesystem::path path) {
         aiMaterial *material = scene->mMaterials[i++];
 
         materialsMap[i] = std::make_shared<Material>(
-            loadTextures(path, material, aiTextureType_AMBIENT, texturesMap),
-            loadTextures(path, material, aiTextureType_DIFFUSE, texturesMap),
-            loadTextures(path, material, aiTextureType_SPECULAR, texturesMap),
-            loadTextures(path, material, aiTextureType_NORMALS, texturesMap)
+            loadTextures(path.parent_path(), material, aiTextureType_AMBIENT, texturesMap),
+            loadTextures(path.parent_path(), material, aiTextureType_DIFFUSE, texturesMap),
+            loadTextures(path.parent_path(), material, aiTextureType_SPECULAR, texturesMap),
+            loadTextures(path.parent_path(), material, aiTextureType_NORMALS, texturesMap)
         );
     }
 

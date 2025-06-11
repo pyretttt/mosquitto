@@ -22,6 +22,9 @@
 namespace fs = std::filesystem;
 
 namespace {
+    scene::ScenePtr scene = std::make_shared<scene::Scene>(
+        scene::Scene::assimpImport(fs::path("resources").append("backpack").append("backpack.obj"))
+    );
 
     scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({

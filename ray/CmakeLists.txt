@@ -47,8 +47,8 @@ foreach(file IN LISTS GL_SHADER_FILES)
   configure_file("${OPENGL_SRC_DIR}/${file}" "${CMAKE_BINARY_DIR}/${file}" COPYONLY)
 endforeach()
 
-file(GLOB_RECURSE TEXTURE_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "resources/textures/*")
-foreach(file IN LISTS TEXTURE_FILES) 
+file(GLOB_RECURSE RESOURCE_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "resources/*")
+foreach(file IN LISTS RESOURCE_FILES) 
   configure_file("${file}" "${CMAKE_BINARY_DIR}/${file}" COPYONLY)
 endforeach()
 
