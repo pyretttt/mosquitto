@@ -84,13 +84,29 @@ namespace {
 
 gl::RenderScene::RenderScene(
     scene::ScenePtr scene,
-    gl::Configuration configuration
+    gl::Configuration configuration,
+    ShaderPtr pbrShader
 )
     : scene(scene)
-    , configuration(configuration) {}
+    , configuration(configuration)
+    , pbrShader(pbrShader) {}
 
 
 void gl::RenderScene::prepare() {
     this->materials = makeMaterials(scene);
     this->pbrs = makePbrs(scene, configuration, materials);
+    pbrShader->setup();
+
+    std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderObjectInfo &renderObjectInfo) {
+        renderObjectInfo.renderObject.prepare();
+    });
+}
+
+void gl::RenderScene::render() const {
+    pbrShader->use();
+    for (auto const &renderObjectInfo : pbrs) {
+        auto const &material = renderObjectInfo.renderObject.material;
+        pbrShader->setMaterialSamplers(material);
+        renderObjectInfo.renderObject.render();
+    }
 }

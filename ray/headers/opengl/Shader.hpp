@@ -33,4 +33,6 @@ public:
     std::filesystem::path vertex;
     std::filesystem::path fragment;
 };
+
+using ShaderPtr = std::shared_ptr<Shader>;
 }

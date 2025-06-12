@@ -49,7 +49,7 @@ struct RenderObject {
     void setDebug(bool) noexcept;
     void setUniform(std::string const &key, attributes::UniformCases const &attr) noexcept;
     void prepare();
-    void render() noexcept;
+    void render() const noexcept;
 
     ~RenderObject();
 
@@ -155,7 +155,7 @@ void RenderObject<Attribute>::setDebug(bool debug) noexcept {
 }
 
 template<typename Attribute>
-void RenderObject<Attribute>::render() noexcept {
+void RenderObject<Attribute>::render() const noexcept {
     activateMaterial(material);
     
     glBindVertexArray(vao);

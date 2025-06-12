@@ -10,6 +10,7 @@
 #include "Attributes.hpp"
 #include "Core.hpp"
 #include "opengl/Renderer.hpp"
+#include "opengl/RenderScene.hpp"
 #include "scene/Mesh.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
@@ -239,9 +240,15 @@ namespace {
         }
     };
 
-    gl::Shader shader = gl::Shader(
+    gl::ShaderPtr shader = std::make_shared<gl::Shader>(gl::Shader(
         fs::path("shaders").append("vertex.vs"),
         fs::path("shaders").append("fragment.fs")       
+    ));
+
+    gl::RenderScene renderScene = gl::RenderScene(
+        scene,
+        config,
+        shader
     );
 
     // std::shared_ptr<std::vector<gl::Texture>> textures = std::make_shared<std::vector<gl::Texture>>(
@@ -264,6 +271,7 @@ namespace {
     //         );
     //     })
     // );
+    
     gl::Material material = gl::Material {
         .ambient = modified(std::vector<gl::TexturePtr>(), [](std::vector<gl::TexturePtr> &vec) {
             vec.emplace_back(
@@ -289,12 +297,12 @@ namespace {
         }),
     };
 
-    gl::RenderObject renderObject = gl::RenderObject<attributes::AssimpVertex>(
-        config,
-        mesh,
-        material,
-        true
-    );
+    // gl::RenderObject renderObject = gl::RenderObject<attributes::AssimpVertex>(
+    //     config,
+    //     mesh,
+    //     material,
+    //     true
+    // );
 
     void setTransformsUniform(
         std::string const& key, 
@@ -373,9 +381,10 @@ void gl::Renderer::prepareViewPort() {
     SDL_GL_MakeCurrent(config->window.get(), glContext);
     glViewport(0, 0, resolution.first, resolution.second);
 
-    renderObject.prepare();
-    shader.setup();
-    shader.setMaterialSamplers(material);
+    // renderObject.prepare();
+    // shader.setup();
+    // shader.setMaterialSamplers(material);
+    renderScene.prepare();
 
     configureGl();
 }
@@ -427,7 +436,7 @@ void gl::Renderer::processInput(Event event, float dt) {
 void gl::Renderer::update(MeshData const &data, float dt) {
     static float time = 0.f;
     time += dt / 10000;
-    shader.setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
+    shader->setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
     
     auto transformMatrix = ml::diagonal<ml::Matrix4f>(1);
     transformMatrix = ml::matMul(
@@ -441,15 +450,16 @@ void gl::Renderer::update(MeshData const &data, float dt) {
             camera()->getViewTransformation(),
             camera()->getScenePerspectiveProjectionMatrix()
         ),
-        shader
+        *shader
      );
 }
 
 void gl::Renderer::render() const {
     glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    shader.use();
-    renderObject.render();
+    // shader.use();
+    // renderObject.render();
+    renderScene.render();
 
     SDL_GL_SwapWindow(config->window.get());
 }

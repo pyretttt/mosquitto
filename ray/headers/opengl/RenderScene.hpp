@@ -4,6 +4,7 @@
 #include "scene/Identifiers.hpp"
 #include "opengl/RenderObject.hpp"
 #include "opengl/glCommon.hpp"
+#include "opengl/Shader.hpp"
 #include "Attributes.hpp"
 
 namespace gl {
@@ -15,7 +16,8 @@ struct RenderObjectInfo {
 struct RenderScene {
     RenderScene(
         scene::ScenePtr scene,
-        gl::Configuration configuration
+        gl::Configuration configuration,
+        ShaderPtr pbrShader
     );
 
     void render() const;
@@ -25,5 +27,7 @@ struct RenderScene {
     gl::Configuration configuration;
     std::vector<RenderObjectInfo> pbrs;
     std::unordered_map<scene::MaterialId, Material> materials;
+
+    ShaderPtr pbrShader;
 };
 }
