@@ -91,7 +91,6 @@ gl::RenderScene::RenderScene(
     , configuration(configuration)
     , pbrShader(pbrShader) {}
 
-
 void gl::RenderScene::prepare() {
     this->materials = makeMaterials(scene);
     this->pbrs = makePbrs(scene, configuration, materials);

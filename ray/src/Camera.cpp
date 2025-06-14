@@ -61,7 +61,7 @@ Camera::Camera(
     );
     connections.push_back(
         windowSize_->subscribe([this](std::pair<size_t, size_t> value) {
-            std::cout << this->windowSize_->value().first << " " << this->windowSize_->value().second << std::endl;
+            std::cout << value.first << " " << value.second << std::endl;
             auto newAspectRatio = static_cast<float>(value.first) / value.second;
             this->perspectiveProjectionMatrix = getPerspectiveMatrix(
                 this->rendererType_->value(),

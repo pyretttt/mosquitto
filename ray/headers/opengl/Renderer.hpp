@@ -22,8 +22,6 @@ struct Renderer: public ::Renderer {
     void update(MeshData const &data, float dt) override;
     void render() const override;
 
-    void prepareScene(scene::ScenePtr scene);
-
     ~Renderer() override;
 
     std::pair<size_t, size_t> resolution;

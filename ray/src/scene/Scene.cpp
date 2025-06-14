@@ -16,9 +16,13 @@
 using namespace scene;
 
 namespace {
+    constexpr size_t numVerticesInFace = 3;
+
     scene::MaterialMeshPtr makeMesh(aiMesh *mesh, aiScene const *scene) {
         std::vector<attributes::AssimpVertex> vertices;
+        vertices.reserve(mesh->mNumVertices);
         std::vector<unsigned int> verticesArrayIndices;
+        verticesArrayIndices.reserve(mesh->mNumFaces * numVerticesInFace);
 
         for (size_t i = 0; i < mesh->mNumVertices; i++) {
             auto pos = mesh->mVertices[i];
@@ -38,8 +42,8 @@ namespace {
         }
 
         for (size_t i = 0; i < mesh->mNumFaces; i++) {
-            auto face = mesh->mFaces[i];
-            for (size_t j = 0; j <face.mNumIndices; j++) {
+            auto &face = mesh->mFaces[i];
+            for (size_t j = 0; j < face.mNumIndices; j++) {
                 verticesArrayIndices.push_back(face.mIndices[j]);
             }
         }
@@ -59,7 +63,7 @@ namespace {
     scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
         std::vector<scene::MaterialMeshPtr> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
-            meshes.emplace_back(makeMesh(scene->mMeshes[i], scene));
+            meshes.emplace_back(makeMesh(scene->mMeshes[node->mMeshes[i]], scene));
         }
 
         return std::make_shared<scene::Node>(
@@ -92,6 +96,7 @@ std::vector<scene::TexturePtr> loadTextures(
     std::unordered_map<std::string, TexturePtr> &cache
 ) {
     std::vector<scene::TexturePtr> textures;
+
     for (size_t i = 0; i < material->GetTextureCount(type); i++) {
         aiString subPath;
         material->GetTexture(type, i, &subPath);
@@ -148,10 +153,10 @@ Scene Scene::assimpImport(std::filesystem::path path) {
 
     std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap;
     for (size_t i = 0; i < scene->mNumMaterials; i++) {
-        aiMaterial *material = scene->mMaterials[i++];
+        aiMaterial *material = scene->mMaterials[i];
 
         materialsMap[i] = std::make_shared<Material>(
-            loadTextures(path.parent_path(), material, aiTextureType_BASE_COLOR, texturesMap),
+            loadTextures(path.parent_path(), material, aiTextureType_AMBIENT, texturesMap),
             loadTextures(path.parent_path(), material, aiTextureType_DIFFUSE, texturesMap),
             loadTextures(path.parent_path(), material, aiTextureType_SPECULAR, texturesMap),
             loadTextures(path.parent_path(), material, aiTextureType_NORMALS, texturesMap)

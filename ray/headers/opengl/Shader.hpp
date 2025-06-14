@@ -13,7 +13,7 @@
 namespace gl {
 class Shader final {
 public:
-    ID program;
+    ID program = 0;
 
     Shader(std::filesystem::path vertex, std::filesystem::path fragment, bool eagerInit = false);
 
@@ -25,8 +25,8 @@ public:
         attributes::UniformCases const &attr
     ) noexcept;
 
-    void setTextureSamplers(size_t max) noexcept;
-    void setMaterialSamplers(gl::Material const &material) noexcept;
+    void setTextureSamplers(size_t max, bool unuseProgram = false) noexcept;
+    void setMaterialSamplers(gl::Material const &material, bool unuseProgram = false) noexcept;
 
     ~Shader();
 

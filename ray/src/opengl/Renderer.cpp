@@ -23,11 +23,42 @@
 namespace fs = std::filesystem;
 
 namespace {
-    scene::ScenePtr scene = std::make_shared<scene::Scene>(
-        scene::Scene::assimpImport(fs::path("resources").append("backpack").append("backpack.obj"))
-    );
+    gl::Configuration config = gl::Configuration {
+        .polygonMode = gl::Configuration::PolygonMode {
+            .face = GL_FRONT_FACE,
+            .mode = GL_FILL
+        }
+    };
 
-    scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
+    gl::ShaderPtr shader = std::make_shared<gl::Shader>(gl::Shader(
+        fs::path("shaders").append("vertex.vs"),
+        fs::path("shaders").append("fragment.fs")       
+    ));
+    
+    void setTransformsUniform(
+        std::string const& key, 
+        attributes::Transforms const &transforms,
+        gl::Shader &shader
+    ) noexcept {
+        shader.setUniform(key + ".worldMatrix", transforms.worldMatrix);
+        shader.setUniform(key + ".projectionMatrix", transforms.projectionMatrix);
+        shader.setUniform(key + ".viewMatrix", transforms.viewMatrix);
+    }
+
+    void configureGl() noexcept {
+        glEnable(GL_DEPTH_TEST);
+
+        glEnable(GL_CULL_FACE);
+        glCullFace(GL_BACK);
+        glFrontFace(GL_CCW);
+    
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+    }
+}
+
+namespace {
+       scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
         std::vector<attributes::AssimpVertex>({
             // 1
             attributes::AssimpVertex {
@@ -227,51 +258,12 @@ namespace {
         scene::MaterialIdentifier(),
         0
     );
-
+ 
     std::shared_ptr<scene::Node> node = std::make_shared<scene::Node>(
         InstanceIdGenerator<scene::Node>::getInstanceId(),
         std::vector<scene::MaterialMeshPtr>({mesh})
     );
 
-    gl::Configuration config = gl::Configuration {
-        .polygonMode = gl::Configuration::PolygonMode {
-            .face = GL_FRONT_FACE,
-            .mode = GL_FILL
-        }
-    };
-
-    gl::ShaderPtr shader = std::make_shared<gl::Shader>(gl::Shader(
-        fs::path("shaders").append("vertex.vs"),
-        fs::path("shaders").append("fragment.fs")       
-    ));
-
-    gl::RenderScene renderScene = gl::RenderScene(
-        scene,
-        config,
-        shader
-    );
-
-    // std::shared_ptr<std::vector<gl::Texture>> textures = std::make_shared<std::vector<gl::Texture>>(
-    //     modified(std::vector<gl::Texture>(), [](std::vector<gl::Texture> &vec) {
-    //         vec.emplace_back(
-    //             gl::TextureMode(), 
-    //             std::make_unique<scene::TexData>(
-    //                 scene::loadTextureData(
-    //                     fs::path("resources").append("textures").append("container.jpg")
-    //                 )
-    //             )
-    //         );
-    //         vec.emplace_back(
-    //             gl::TextureMode {.bitFormat = GL_RGBA}, 
-    //             std::make_unique<scene::TexData>(
-    //                 scene::loadTextureData(
-    //                     fs::path("resources").append("textures").append("awesomeface.png")
-    //                 )
-    //             )
-    //         );
-    //     })
-    // );
-    
     gl::Material material = gl::Material {
         .ambient = modified(std::vector<gl::TexturePtr>(), [](std::vector<gl::TexturePtr> &vec) {
             vec.emplace_back(
@@ -297,33 +289,81 @@ namespace {
         }),
     };
 
-    // gl::RenderObject renderObject = gl::RenderObject<attributes::AssimpVertex>(
-    //     config,
-    //     mesh,
-    //     material,
-    //     true
-    // );
+    scene::MaterialPtr mockMaterial = std::make_shared<scene::Material>(
+        std::vector({
+            std::make_shared<scene::TexData>(
+                scene::loadTextureData(
+                    fs::path("resources").append("textures").append("container.jpg")
+                )
+            )
+        }),
+        std::vector({
+            std::make_shared<scene::TexData>(
+                scene::loadTextureData(
+                    fs::path("resources").append("textures").append("awesomeface.png")
+                )
+            )
+        }),
+        std::vector<scene::TexturePtr>(),
+        std::vector<scene::TexturePtr>()
+    );
 
-    void setTransformsUniform(
-        std::string const& key, 
-        attributes::Transforms const &transforms,
-        gl::Shader &shader
-    ) noexcept {
-        shader.setUniform(key + ".worldMatrix", transforms.worldMatrix);
-        shader.setUniform(key + ".projectionMatrix", transforms.projectionMatrix);
-        shader.setUniform(key + ".viewMatrix", transforms.viewMatrix);
-    }
+    scene::ScenePtr mockScene = std::make_shared<scene::Scene>(
+        scene::Scene(
+            { std::make_pair(node->identifier, node) },
+            { std::make_pair(0, mockMaterial) },
+            { }
+        )
+    );
 
-    void configureGl() noexcept {
-        glEnable(GL_DEPTH_TEST);
+    gl::RenderScene mockRenderScene = gl::RenderScene(
+        mockScene,
+        config,
+        shader
+    );
+}
 
-        glEnable(GL_CULL_FACE);
-        glCullFace(GL_BACK);
-        glFrontFace(GL_CCW); // TODO: Change to GL_CCW
-    
-        glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
-    }
+namespace {
+    gl::Material glMockMaterial = modified(gl::Material(), [](gl::Material &material) {
+        material.diffuse.emplace_back<gl::TexturePtr>(
+            std::make_shared<gl::Texture>(
+                gl::TextureMode(), 
+                std::make_shared<scene::TexData>(
+                    scene::loadTextureData(
+                        fs::path("resources").append("textures").append("container.jpg")
+                    )
+                )
+            )
+        );
+        material.specular.emplace_back<gl::TexturePtr>(
+            std::make_shared<gl::Texture>(
+                gl::TextureMode {.bitFormat = GL_RGBA}, 
+                std::make_shared<scene::TexData>(
+                    scene::loadTextureData(
+                        fs::path("resources").append("textures").append("awesomeface.png")
+                    )
+                )
+            )
+        );
+    });
+
+    gl::RenderObject mockRenderObject = gl::RenderObject<attributes::AssimpVertex>(
+        gl::Configuration(),
+        mesh,
+        glMockMaterial
+    );
+}
+
+namespace {
+    scene::ScenePtr scene = std::make_shared<scene::Scene>(
+        scene::Scene::assimpImport(fs::path("resources").append("backpack").append("backpack.obj"))
+    );
+
+    gl::RenderScene renderScene = gl::RenderScene(
+        scene,
+        config,
+        shader
+    );
 }
 
 gl::Renderer::Renderer(
@@ -381,9 +421,10 @@ void gl::Renderer::prepareViewPort() {
     SDL_GL_MakeCurrent(config->window.get(), glContext);
     glViewport(0, 0, resolution.first, resolution.second);
 
-    // renderObject.prepare();
-    // shader.setup();
-    // shader.setMaterialSamplers(material);
+    // Switch for testing
+    // shader->setup();
+    // mockRenderObject.prepare();
+    // mockRenderScene.prepare();
     renderScene.prepare();
 
     configureGl();
@@ -436,11 +477,10 @@ void gl::Renderer::processInput(Event event, float dt) {
 void gl::Renderer::update(MeshData const &data, float dt) {
     static float time = 0.f;
     time += dt / 10000;
-    shader->setUniform("ourColor", attributes::Vec4 {.val = {time - static_cast<int>(time), 0.3f, 0.4f, 1.0f}});
-    
+
     auto transformMatrix = ml::diagonal<ml::Matrix4f>(1);
     transformMatrix = ml::matMul(
-        ml::translationMatrix(0, 0, -1),
+        ml::translationMatrix(0, 0, -2.f),
         transformMatrix
     );
     setTransformsUniform(
@@ -457,13 +497,12 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 void gl::Renderer::render() const {
     glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    // shader.use();
-    // renderObject.render();
+    
+    // Switches for testing
+    // shader->use();
+    // mockRenderObject.render();
+    // mockRenderScene.render();
     renderScene.render();
 
     SDL_GL_SwapWindow(config->window.get());
-}
-
-void gl::Renderer::prepareScene(scene::ScenePtr scene) {
-    this->scene = scene;
 }
