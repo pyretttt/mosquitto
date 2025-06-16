@@ -15,8 +15,14 @@ struct Transforms {
 uniform Transforms transforms;
 
 out vec2 TexCoord;
+out vec3 FragPosition;
+out vec3 Normal;
 
 void main() {
-    gl_Position = transforms.projectionMatrix * transforms.viewMatrix * transforms.worldMatrix * vec4(aPos, 1.0);
+    vec4 worldPosition = transforms.worldMatrix * vec4(aPos, 1.0);
+    FragPosition = vec3(worldPosition);
     TexCoord = texCoord;
+    Normal = normal;
+    
+    gl_Position = transforms.projectionMatrix * transforms.viewMatrix * worldPosition;
 }

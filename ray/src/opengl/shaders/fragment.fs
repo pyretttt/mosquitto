@@ -1,7 +1,9 @@
 #version 410 core
 
 in vec2 TexCoord;
-in vec4 Pos;
+in vec3 FragPos;
+in vec3 Normal;
+
 uniform sampler2D ambient0;
 uniform sampler2D specular0;
 uniform sampler2D diffuse0;
@@ -15,5 +17,5 @@ void main() {
     //     texture(diffuse0, TexCoord),
     //     0.8
     // );
-    FragColor = texture(specular0, TexCoord);
+    FragColor = texture(ambient0, TexCoord);
 }

@@ -9,6 +9,7 @@ namespace scene {
     using MaterialId = size_t;
     using MeshId = size_t;
     using TexturePath = std::string;
+    using ComponentId = size_t;
 
     struct Material;
     using MaterialPtr = std::shared_ptr<Material>;
@@ -25,4 +26,7 @@ namespace scene {
 
     struct Scene;
     using ScenePtr = std::shared_ptr<Scene>;
+
+    struct Component;
+    using ComponentPtr = std::shared_ptr<Component>;
 }

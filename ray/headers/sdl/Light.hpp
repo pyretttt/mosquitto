@@ -13,7 +13,3 @@ struct DirectionalLight {
 using Cases = std::variant<DirectionalLight>;
 } // namespace light
 }; // namespace sdl
-
-namespace light {
-    
-}
