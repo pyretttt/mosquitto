@@ -118,27 +118,27 @@ void gl::Shader::setMaterialSamplers(gl::Material const &material, bool unusePro
     for (size_t i = 0; i < material.ambient.size(); i++) {
         auto key = "ambient" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
-            glUniform1i(location, i);
+            glUniform1i(location, i + samplerLocationOffset);
         }
     }
     for (size_t i = 0; i < material.diffuse.size(); i++) {
         auto key = "diffuse" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
-            glUniform1i(location, i + material.ambient.size());
+            glUniform1i(location, i + material.ambient.size() + samplerLocationOffset);
         }
     }
 
     for (size_t i = 0; i < material.specular.size(); i++) {
         auto key = "specular" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
-            glUniform1i(location, i + material.ambient.size() + material.specular.size());
+            glUniform1i(location, i + material.ambient.size() + material.specular.size() + samplerLocationOffset);
         }
     }
 
     for (size_t i = 0; i < material.specular.size(); i++) {
         auto key = "normals" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
-            glUniform1i(location, i + material.ambient.size() + material.specular.size() + material.diffuse.size());
+            glUniform1i(location, i + material.ambient.size() + material.specular.size() + material.diffuse.size() + samplerLocationOffset);
         }
     }
 

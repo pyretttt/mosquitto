@@ -1,4 +1,5 @@
 #include "opengl/RenderObject.hpp"
+#include "opengl/glCommon.hpp"
 
 void gl::bindTextures(std::vector<gl::TexturePtr> const &textures) {
     std::for_each(
@@ -43,22 +44,22 @@ void gl::activateMaterial(Material const &material) {
     auto normalsCount = material.normals.size();
 
     for (size_t i = 0; i < ambientsCounts; i++) {
-        glActiveTexture(GL_TEXTURE0 + i);
+        glActiveTexture(GL_TEXTURE0 + i + samplerLocationOffset);
         glBindTexture(GL_TEXTURE_2D, material.ambient.at(i)->id);
     }
 
     for (size_t i = 0; i < diffuseCounts; i++) {
-        glActiveTexture(GL_TEXTURE0 + i + ambientsCounts);
+        glActiveTexture(GL_TEXTURE0 + i + ambientsCounts + samplerLocationOffset);
         glBindTexture(GL_TEXTURE_2D, material.diffuse.at(i)->id);
     }
 
     for (size_t i = 0; i < specularCounts; i++) {
-        glActiveTexture(GL_TEXTURE0 + i + ambientsCounts + diffuseCounts);
+        glActiveTexture(GL_TEXTURE0 + i + ambientsCounts + diffuseCounts + samplerLocationOffset);
         glBindTexture(GL_TEXTURE_2D, material.specular.at(i)->id);
     }
 
     for (size_t i = 0; i < normalsCount; i++) {
-        glActiveTexture(GL_TEXTURE0 + i + ambientsCounts + diffuseCounts + specularCounts);
+        glActiveTexture(GL_TEXTURE0 + i + ambientsCounts + diffuseCounts + specularCounts + samplerLocationOffset);
         glBindTexture(GL_TEXTURE_2D, material.normals.at(i)->id);
     }
 }

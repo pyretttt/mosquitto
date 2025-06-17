@@ -492,6 +492,11 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         ),
         *shader
      );
+
+     shader->setUniform(
+        "lightPos",
+        attributes::Vec3({0.f, 0.f, 0.f})
+     );
 }
 
 void gl::Renderer::render() const {

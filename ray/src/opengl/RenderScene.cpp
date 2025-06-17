@@ -1,6 +1,9 @@
+#include <memory>
+
 #include "opengl/RenderScene.hpp"
 #include "scene/Material.hpp"
 #include "scene/Node.hpp"
+#include "scene/ShaderInfoComponent.hpp"
 
 namespace {
     auto makePbrs(
@@ -104,6 +107,14 @@ void gl::RenderScene::prepare() {
 void gl::RenderScene::render() const {
     pbrShader->use();
     for (auto const &renderObjectInfo : pbrs) {
+        auto const &node = scene->nodes.at(renderObjectInfo.nodeId);
+        if (auto component = node->getComponent<scene::ShaderInfoComponent>()) {
+            auto shaderInfo = std::static_pointer_cast<scene::ShaderInfoComponent>(component.value());
+            for (auto const &[key, attribute] : shaderInfo->uniforms) {
+                pbrShader->setUniform(key, attribute);
+            }
+        }
+
         auto const &material = renderObjectInfo.renderObject.material;
         pbrShader->setMaterialSamplers(material);
         renderObjectInfo.renderObject.render();
