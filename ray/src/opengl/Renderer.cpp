@@ -476,13 +476,18 @@ void gl::Renderer::processInput(Event event, float dt) {
 
 void gl::Renderer::update(MeshData const &data, float dt) {
     static float time = 0.f;
-    time += dt / 10000;
+    time += dt / 10;
 
-    auto transformMatrix = ml::diagonal<ml::Matrix4f>(1);
+    auto transformMatrix = ml::scaleMatrix(1.f, 1.f, 1.f, 1.f);
     transformMatrix = ml::matMul(
-        ml::translationMatrix(0, 0, -2.f),
+        ml::rotateAroundPoint({0, 0, 0}, {0, 1, 0}, time),
         transformMatrix
     );
+    transformMatrix = ml::matMul(
+        ml::translationMatrix(0, 0, -5.f),
+        transformMatrix
+    );
+
     setTransformsUniform(
         "transforms",
         attributes::Transforms(

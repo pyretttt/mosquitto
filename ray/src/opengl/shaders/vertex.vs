@@ -24,7 +24,7 @@ void main() {
     vec4 worldPosition = transforms.worldMatrix * vec4(aPos, 1.0);
     FragPos = vec3(worldPosition);
     TexCoord = texCoord;
-    Normal = normalize(normal);
+    Normal = normalize(mat3(inverse(transpose(transforms.worldMatrix))) * normal);
     LightPos = lightPos;
     
     gl_Position = transforms.projectionMatrix * transforms.viewMatrix * worldPosition;

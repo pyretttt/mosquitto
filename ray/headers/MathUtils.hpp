@@ -187,8 +187,8 @@ Matrix4f inline rotateAroundPoint(
     reverseTranslation[1][3] = supportPoint[1];
     reverseTranslation[2][3] = supportPoint[2];
 
-    Matrix4f result = reverseTranslation * (rotation * translation);
-    return glm::transpose(result);
+    Matrix4f result = glm::transpose(reverseTranslation) * (rotation * glm::transpose(translation));
+    return result;
 }
 
 template <typename Vector>
