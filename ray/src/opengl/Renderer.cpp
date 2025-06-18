@@ -476,11 +476,11 @@ void gl::Renderer::processInput(Event event, float dt) {
 
 void gl::Renderer::update(MeshData const &data, float dt) {
     static float time = 0.f;
-    time += dt / 10;
+    time += dt;
 
     auto transformMatrix = ml::scaleMatrix(1.f, 1.f, 1.f, 1.f);
     transformMatrix = ml::matMul(
-        ml::rotateAroundPoint({0, 0, 0}, {0, 1, 0}, time),
+        ml::rotateAroundPoint({0, 0, -6}, {0, 1, 0}, time),
         transformMatrix
     );
     transformMatrix = ml::matMul(
