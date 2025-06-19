@@ -168,7 +168,7 @@ decltype(auto) inline translationMatrix(
     float tx, float ty, float tz
 ) {
     Matrix4f res = diagonal<Matrix4f>(1.f);
-    res[0][3] = tx;
+    res[0][3] = tx; // res[3][0] -> res[0][3]
     res[1][3] = ty;
     res[2][3] = tz;
     return glm::transpose(res);
