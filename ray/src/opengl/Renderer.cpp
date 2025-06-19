@@ -480,7 +480,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 
     auto transformMatrix = ml::scaleMatrix(1.f, 1.f, 1.f, 1.f);
     transformMatrix = ml::matMul(
-        ml::rotateAroundPoint({0, 0, -6}, {0, 1, 0}, time),
+        ml::rotateAroundPoint({0, 0, 0}, {0, 1, 0}, time / 10.f),
         transformMatrix
     );
     transformMatrix = ml::matMul(

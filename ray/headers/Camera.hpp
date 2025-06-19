@@ -69,7 +69,7 @@ public:
     void handleInput(CameraInput::Cases const &cameraInput, float dt) noexcept;
 
 private:
-    ml::Vector3f origin;
+    ml::Vector3f origin = {0, 0, 0};
     ml::Vector3f lookAt = {0, 0, -1};
     std::unique_ptr<ObservableObject<float>> fov_;
     std::unique_ptr<ObservableObject<std::pair<size_t, size_t>>> windowSize_;
