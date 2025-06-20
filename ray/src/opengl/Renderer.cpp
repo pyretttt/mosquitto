@@ -19,6 +19,7 @@
 #include "scene/Tex.hpp"
 #include "MathUtils.hpp"
 #include "scene/Node.hpp"
+#include "scene/ShaderInfoComponent.hpp"
 
 namespace fs = std::filesystem;
 
@@ -355,12 +356,12 @@ namespace {
 }
 
 namespace {
-    scene::ScenePtr scene = std::make_shared<scene::Scene>(
+    scene::ScenePtr scenePtr = std::make_shared<scene::Scene>(
         scene::Scene::assimpImport(fs::path("resources").append("backpack").append("backpack.obj"))
     );
 
     gl::RenderScene renderScene = gl::RenderScene(
-        scene,
+        scenePtr,
         config,
         shader
     );
@@ -372,7 +373,8 @@ gl::Renderer::Renderer(
 )
     : config(config)
     , camera(camera)
-    , resolution(config->windowSize.value()) {        
+    , resolution(config->windowSize.value())
+    , scene(scenePtr) {        
 }
 
 gl::Renderer::~Renderer() {
@@ -484,7 +486,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         transformMatrix
     );
     transformMatrix = ml::matMul(
-        ml::translationMatrix(0, 0, -5.f),
+        ml::translationMatrix(2, 0, -5.f),
         transformMatrix
     );
 
@@ -498,10 +500,19 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         *shader
      );
 
-     shader->setUniform(
-        "lightPos",
-        attributes::Vec3({0.f, 0.f, 0.f})
-     );
+     auto const &cameraPosition = camera()->getOrigin();
+     for (auto const &[nodeId, node] : scene->nodes) {
+        node->addComponent<scene::ShaderInfoComponent>(
+            InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
+            std::unordered_map<std::string, attributes::UniformCases>({
+                std::make_pair<std::string, attributes::UniformCases>("lightPos", attributes::Vec3({4.f, 0.f, 0.f})),
+                std::make_pair<std::string, attributes::UniformCases>(
+                    "cameraPos", 
+                    attributes::Vec3({cameraPosition.x, cameraPosition.y, cameraPosition.z})
+                )
+            })
+        );
+     }
 }
 
 void gl::Renderer::render() const {

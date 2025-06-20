@@ -17,7 +17,6 @@ struct Scene {
         std::unordered_map<TexturePath, TexturePtr> textures
     );
     
-
     std::unordered_map<NodeId, NodePtr> nodes;
     std::unordered_map<MaterialId, MaterialPtr> materials;
 

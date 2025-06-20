@@ -65,6 +65,7 @@ public:
     );
     ml::Matrix4f const &getScenePerspectiveProjectionMatrix() const noexcept;
     ml::Matrix4f const &getViewTransformation() const noexcept;
+    ml::Vector3f const &getOrigin() const noexcept;
 
     void handleInput(CameraInput::Cases const &cameraInput, float dt) noexcept;
 

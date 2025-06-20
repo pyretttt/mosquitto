@@ -38,7 +38,7 @@ struct Node {
 
 template <typename Comp, typename... Args>
 void Node::addComponent(Args... args) noexcept {
-    ComponentPtr component = std::make_unique<std::decay_t<Comp>>(std::forward(args)...);
+    ComponentPtr component = std::make_unique<std::decay_t<Comp>>(std::forward<Args>(args)...);
     auto &typeInfo = typeid(std::decay_t<Comp>);
     components[typeInfo.hash_code()] = component;
 }

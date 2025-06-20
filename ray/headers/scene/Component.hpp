@@ -10,6 +10,6 @@ struct Component {
 
     ComponentId id;
 
-    virtual ~Component() = 0;
+    virtual ~Component() {}
 };
 }

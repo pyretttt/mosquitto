@@ -117,3 +117,7 @@ ml::Matrix4f const &Camera::getViewTransformation() const noexcept {
 ml::Matrix4f const &Camera::getScenePerspectiveProjectionMatrix() const noexcept {
     return perspectiveProjectionMatrix;
 }
+
+ml::Vector3f const &Camera::getOrigin() const noexcept {
+    return origin;
+}

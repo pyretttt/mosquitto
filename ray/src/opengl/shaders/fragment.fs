@@ -17,13 +17,11 @@ void main() {
     vec3 viewDirection = normalize(CameraPos - FragPos);
     vec3 lightDirection = normalize(LightPos - FragPos);
     vec3 reflectedLightDirection = reflect(-lightDirection, Normal);
-    float spec = pow(max(dot(viewDirection, reflectedLightDirection), 0.0), 128.0);
+    float spec = pow(max(dot(viewDirection, reflectedLightDirection), 0.0), 16.0);
     
     float specularStrength = 0.5;
-    vec4 specular = vec4(specularStrength * spec);
-    // * texture(specular0, TexCoord);
+    vec4 specular = vec4(specularStrength * spec)* texture(specular0, TexCoord);
 
     float diffuseMagnitude = max(dot(lightDirection, Normal), 0);
-    // FragColor = (texture(diffuse0, TexCoord) * diffuseMagnitude) + specular;
-    FragColor = specular;
+    FragColor = (texture(diffuse0, TexCoord) * diffuseMagnitude) + specular;
 }

@@ -3,9 +3,7 @@
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec3 normal;
 layout (location = 2) in vec2 texCoord;
-layout (location = 3) in vec3 lightPos;
 
-uniform mat4 transform;
 
 struct Transforms {
     mat4 worldMatrix;
@@ -14,6 +12,8 @@ struct Transforms {
 };
 
 uniform Transforms transforms;
+uniform vec3 lightPos;
+uniform vec3 cameraPos;
 
 out vec2 TexCoord;
 out vec3 FragPos;
@@ -27,7 +27,7 @@ void main() {
     TexCoord = texCoord;
     Normal = normalize(mat3(inverse(transpose(transforms.worldMatrix))) * normal);
     LightPos = lightPos;
-    CameraPos = -vec3(transforms.viewMatrix[0][3], transforms.viewMatrix[1][3], transforms.viewMatrix[2][3]);
+    CameraPos = cameraPos;
     
     gl_Position = transforms.projectionMatrix * transforms.viewMatrix * worldPosition;
 }

@@ -3,7 +3,7 @@
 fov: 70
 
 # Meters in second
-camera_speed: 2.0
+camera_speed: 5.0
 
 mouse_speed: 0.01
 
