@@ -1,6 +1,7 @@
 #include "scene/Material.hpp"
 
 scene::Material::Material(
+    float shiness,
     std::vector<TexturePtr> ambient,
     std::vector<TexturePtr> diffuse,
     std::vector<TexturePtr> specular,

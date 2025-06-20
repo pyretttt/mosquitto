@@ -154,8 +154,11 @@ Scene Scene::assimpImport(std::filesystem::path path) {
     std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap;
     for (size_t i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial *material = scene->mMaterials[i];
+        float shiness;
+        material->Get(AI_MATKEY_SHININESS, shiness);
 
         materialsMap[i] = std::make_shared<Material>(
+            shiness,
             loadTextures(path.parent_path(), material, aiTextureType_AMBIENT, texturesMap),
             loadTextures(path.parent_path(), material, aiTextureType_DIFFUSE, texturesMap),
             loadTextures(path.parent_path(), material, aiTextureType_SPECULAR, texturesMap),

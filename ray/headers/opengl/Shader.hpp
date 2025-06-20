@@ -22,7 +22,8 @@ public:
 
     void setUniform(
         std::string const &key, 
-        attributes::UniformCases const &attr
+        attributes::UniformCases const &attr,
+        std::string const &prefix = ""
     ) noexcept;
 
     void setTextureSamplers(size_t max, bool unuseProgram = false) noexcept;

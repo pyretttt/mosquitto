@@ -57,6 +57,7 @@ namespace gl {
     using TexturePtr = std::shared_ptr<Texture>;
     
     struct Material {
+        float shiness = 0;
         std::vector<TexturePtr> ambient;
         std::vector<TexturePtr> diffuse;
         std::vector<TexturePtr> specular;

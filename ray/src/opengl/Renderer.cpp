@@ -37,13 +37,12 @@ namespace {
     ));
     
     void setTransformsUniform(
-        std::string const& key, 
         attributes::Transforms const &transforms,
         gl::Shader &shader
     ) noexcept {
-        shader.setUniform(key + ".worldMatrix", transforms.worldMatrix);
-        shader.setUniform(key + ".projectionMatrix", transforms.projectionMatrix);
-        shader.setUniform(key + ".viewMatrix", transforms.viewMatrix);
+        shader.setUniform("worldMatrix", transforms.worldMatrix, "transforms");
+        shader.setUniform("projectionMatrix", transforms.projectionMatrix, "transforms");
+        shader.setUniform("viewMatrix", transforms.viewMatrix, "transforms");
     }
 
     void configureGl() noexcept {
@@ -291,6 +290,7 @@ namespace {
     };
 
     scene::MaterialPtr mockMaterial = std::make_shared<scene::Material>(
+        0.f,
         std::vector({
             std::make_shared<scene::TexData>(
                 scene::loadTextureData(
@@ -491,7 +491,6 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     );
 
     setTransformsUniform(
-        "transforms",
         attributes::Transforms(
             transformMatrix,
             camera()->getViewTransformation(),
@@ -505,9 +504,9 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         node->addComponent<scene::ShaderInfoComponent>(
             InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
             std::unordered_map<std::string, attributes::UniformCases>({
-                std::make_pair<std::string, attributes::UniformCases>("lightPos", attributes::Vec3({4.f, 0.f, 0.f})),
+                std::make_pair<std::string, attributes::UniformCases>("light.position", attributes::Vec3({4.f, 0.f, 0.f})),
                 std::make_pair<std::string, attributes::UniformCases>(
-                    "cameraPos", 
+                    "cameraPos",
                     attributes::Vec3({cameraPosition.x, cameraPosition.y, cameraPosition.z})
                 )
             })

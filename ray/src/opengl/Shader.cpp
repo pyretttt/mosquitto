@@ -81,10 +81,12 @@ gl::Shader::~Shader() {
 
 void gl::Shader::setUniform(
     std::string const &key, 
-    attributes::UniformCases const &attr
+    attributes::UniformCases const &attr,
+    std::string const &prefix
 ) noexcept {
     if (!program) return;
-    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+    auto compoundKey = prefix.size() ? prefix + "." + key : key;
+    if (auto location = glGetUniformLocation(program, compoundKey.data()); location != -1) {
         glUseProgram(program);
         using namespace attributes;
         std::visit(overload {
@@ -115,6 +117,10 @@ void gl::Shader::setMaterialSamplers(gl::Material const &material, bool unusePro
     if (!program) return;
     
     glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, "shiness"); location != -1) {
+        glUniform1f(location, material.shiness);
+    }
+
     for (size_t i = 0; i < material.ambient.size(); i++) {
         auto key = "ambient" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
