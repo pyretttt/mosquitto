@@ -6,6 +6,7 @@
 
 #include "scene/Tex.hpp"
 #include "glCommon.hpp"
+#include "Attributes.hpp"
 
 namespace gl {
     using TexDeleter = std::function<void (ID *)>;
@@ -57,6 +58,7 @@ namespace gl {
     using TexturePtr = std::shared_ptr<Texture>;
     
     struct Material {
+        attributes::Vec3 ambientColor;
         float shiness = 0;
         std::vector<TexturePtr> ambient;
         std::vector<TexturePtr> diffuse;

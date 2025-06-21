@@ -290,6 +290,7 @@ namespace {
     };
 
     scene::MaterialPtr mockMaterial = std::make_shared<scene::Material>(
+        attributes::Vec3({0.1, 0.2, 0.3}),
         0.f,
         std::vector({
             std::make_shared<scene::TexData>(
@@ -482,7 +483,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 
     auto transformMatrix = ml::scaleMatrix(1.f, 1.f, 1.f, 1.f);
     transformMatrix = ml::matMul(
-        ml::rotateAroundPoint({0, 0, 0}, {0, 1, 0}, 0),
+        ml::rotateAroundPoint({0, 0, 0}, {0, 1, 0}, time),
         transformMatrix
     );
     transformMatrix = ml::matMul(
@@ -505,6 +506,10 @@ void gl::Renderer::update(MeshData const &data, float dt) {
             InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
             std::unordered_map<std::string, attributes::UniformCases>({
                 std::make_pair<std::string, attributes::UniformCases>("light.position", attributes::Vec3({4.f, 0.f, 0.f})),
+                std::make_pair<std::string, attributes::UniformCases>("light.color", attributes::Vec3({2.0f, 2.0f, 2.0f})),
+                std::make_pair<std::string, attributes::UniformCases>("light.ambient", attributes::Vec3({0.3f, 0.3f, 0.3f})),
+                std::make_pair<std::string, attributes::UniformCases>("light.diffuse", attributes::Vec3({0.35f, 0.35f, 0.35f})),
+                std::make_pair<std::string, attributes::UniformCases>("light.specular", attributes::Vec3({0.25f, 0.25f, 0.25f})),
                 std::make_pair<std::string, attributes::UniformCases>(
                     "cameraPos",
                     attributes::Vec3({cameraPosition.x, cameraPosition.y, cameraPosition.z})

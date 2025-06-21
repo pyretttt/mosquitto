@@ -4,31 +4,43 @@ in vec2 TexCoord;
 in vec3 FragWorldPos;
 in vec3 Normal;
 
-uniform sampler2D ambient0;
-uniform sampler2D specular0;
-uniform sampler2D diffuse0;
-uniform sampler2D normal0;
-
-
 uniform struct Light {
     vec3 position;
-    vec3 intensity;
+    vec3 color;
+
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
 } light;
 
-uniform float shiness;
+uniform struct Material {
+    sampler2D ambient0;
+    sampler2D specular0;
+    sampler2D diffuse0;
+    sampler2D normal0;
+    
+    float shiness;
+} material;
+
 uniform vec3 cameraPos;
 
 out vec4 FragColor;
 
 void main() {
-    vec3 viewDirection = normalize(cameraPos - FragWorldPos);
     vec3 lightDirection = normalize(light.position - FragWorldPos);
-    vec3 reflectedLightDirection = reflect(-lightDirection, Normal);
-    float spec = pow(max(dot(viewDirection, reflectedLightDirection), 0.0), min(shiness, 0.01) * 128.0);
-    
-    float specularStrength = 0.5;
-    vec4 specular = vec4(specularStrength * spec) * texture(specular0, TexCoord);
 
-    float diffuseMagnitude = max(dot(lightDirection, Normal), 0);
-    FragColor = (texture(diffuse0, TexCoord) * diffuseMagnitude) + specular;
+    // ambient
+    vec4 ambient = vec4(light.ambient, 1.0) * texture(material.ambient0, TexCoord);
+
+    // specular
+    vec3 viewDirection = normalize(cameraPos - FragWorldPos);
+    vec3 reflectedLightDirection = reflect(-lightDirection, Normal);
+    float spec = pow(max(dot(viewDirection, reflectedLightDirection), 0.0), material.shiness * 128.0);
+    vec4 specular = vec4(light.specular, 1.0) * spec * texture(material.specular0, TexCoord);
+
+    // diffuse
+    float diffuseMagnitude = max(dot(lightDirection, Normal), 0.0);
+    vec4 diffuse = vec4(light.diffuse, 1.0) * diffuseMagnitude * texture(material.diffuse0, TexCoord);
+
+    FragColor = ambient + diffuse + specular;
 }

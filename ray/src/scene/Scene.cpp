@@ -157,12 +157,21 @@ Scene Scene::assimpImport(std::filesystem::path path) {
         float shiness;
         material->Get(AI_MATKEY_SHININESS, shiness);
 
+        aiColor3D ambient;
+        material->Get(AI_MATKEY_COLOR_AMBIENT, ambient);
+
+        std::vector<TexturePtr> ambients = loadTextures(path.parent_path(), material, aiTextureType_AMBIENT, texturesMap);
+        std::vector<TexturePtr> diffuse = loadTextures(path.parent_path(), material, aiTextureType_DIFFUSE, texturesMap);
+        std::vector<TexturePtr> specular = loadTextures(path.parent_path(), material, aiTextureType_SPECULAR, texturesMap);
+        std::vector<TexturePtr> normals = loadTextures(path.parent_path(), material, aiTextureType_NORMALS, texturesMap);
+
         materialsMap[i] = std::make_shared<Material>(
-            shiness,
-            loadTextures(path.parent_path(), material, aiTextureType_AMBIENT, texturesMap),
-            loadTextures(path.parent_path(), material, aiTextureType_DIFFUSE, texturesMap),
-            loadTextures(path.parent_path(), material, aiTextureType_SPECULAR, texturesMap),
-            loadTextures(path.parent_path(), material, aiTextureType_NORMALS, texturesMap)
+            attributes::Vec3({ambient.r, ambient.g, ambient.b}),
+            0.5, //shiness,
+            ambients.size() > 0 ? ambients : diffuse,
+            diffuse,
+            specular,
+            normals
         );
     }
 

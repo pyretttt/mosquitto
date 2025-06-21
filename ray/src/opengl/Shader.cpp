@@ -82,7 +82,8 @@ gl::Shader::~Shader() {
 void gl::Shader::setUniform(
     std::string const &key, 
     attributes::UniformCases const &attr,
-    std::string const &prefix
+    std::string const &prefix,
+    bool unuseProgram
 ) noexcept {
     if (!program) return;
     auto compoundKey = prefix.size() ? prefix + "." + key : key;
@@ -97,7 +98,7 @@ void gl::Shader::setUniform(
             [&](iColor const &value) { glUniform1ui(location, value.val); },
             [&](Mat4 const &value) { glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value)); },
         }, attr);
-        glUseProgram(0);
+        if (unuseProgram) glUseProgram(0);
     }
 };
 
@@ -114,35 +115,42 @@ void gl::Shader::setTextureSamplers(size_t max, bool unuseProgram) noexcept {
 }
 
 void gl::Shader::setMaterialSamplers(gl::Material const &material, bool unuseProgram) noexcept {
+    static std::string const keyPrefix = "material.";
     if (!program) return;
     
     glUseProgram(program);
-    if (auto location = glGetUniformLocation(program, "shiness"); location != -1) {
+    auto shinessKey = keyPrefix + "shiness";
+    if (auto location = glGetUniformLocation(program, shinessKey.c_str()); location != -1) {
         glUniform1f(location, material.shiness);
     }
 
+    auto ambientColorKey = keyPrefix + "ambientColor";
+    setUniform(ambientColorKey, material.ambientColor, "", false);
+
     for (size_t i = 0; i < material.ambient.size(); i++) {
-        auto key = "ambient" + std::to_string(i);
+        auto key = keyPrefix + "ambient" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
             glUniform1i(location, i + samplerLocationOffset);
         }
     }
+
+
     for (size_t i = 0; i < material.diffuse.size(); i++) {
-        auto key = "diffuse" + std::to_string(i);
+        auto key = keyPrefix + "diffuse" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
             glUniform1i(location, i + material.ambient.size() + samplerLocationOffset);
         }
     }
 
     for (size_t i = 0; i < material.specular.size(); i++) {
-        auto key = "specular" + std::to_string(i);
+        auto key = keyPrefix + "specular" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
             glUniform1i(location, i + material.ambient.size() + material.specular.size() + samplerLocationOffset);
         }
     }
 
     for (size_t i = 0; i < material.specular.size(); i++) {
-        auto key = "normals" + std::to_string(i);
+        auto key = keyPrefix + "normals" + std::to_string(i);
         if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
             glUniform1i(location, i + material.ambient.size() + material.specular.size() + material.diffuse.size() + samplerLocationOffset);
         }

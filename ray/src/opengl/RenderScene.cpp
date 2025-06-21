@@ -72,6 +72,7 @@ namespace {
                 std::make_pair(
                     static_cast<scene::MaterialId>(id), 
                     gl::Material {
+                        .ambientColor = material->ambientColor,
                         .shiness = material->shiness,
                         .ambient = std::move(ambient),
                         .specular = std::move(specular),
