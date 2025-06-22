@@ -3,29 +3,19 @@
 #include <variant>
 
 #include "MathUtils.hpp"
-#include "Attributes.hpp"
 
-namespace light {
 
-struct LightSource final {
+struct LightSource {
     ml::Vector3f position;
-    ml::Vector4f color;
-};
-
-struct GlobalIlluminance {
-    LightSource lightSource;
-    float intensity;
-};
-
-struct DirectionalIlluminance {
-    LightSource lightSource;
-    float intensity;
     ml::Vector3f direction;
+    
+    ml::Vector3f ambient;
+    ml::Vector3f diffuse;
+    ml::Vector3f specular;
+    
+    float cutoffRadians;
+
+    float attenuanceConstant;
+    float attenuanceLinear;
+    float attenuanceQuadratic;
 };
-
-
-using LightCase = std::variant<
-    GlobalIlluminance
->;
-
-}

@@ -21,6 +21,7 @@
 #include "scene/Node.hpp"
 #include "scene/ShaderInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
+#include "Light.hpp"
 
 namespace fs = std::filesystem;
 
@@ -36,6 +37,18 @@ namespace {
         fs::path("shaders").append("vertex.vs"),
         fs::path("shaders").append("fragment.fs")       
     ));
+
+    LightSource light = LightSource {
+        .position = ml::Vector3f({ 0.f, 0.f, 0.f }),
+        .direction = ml::Vector3f({ 0.f, 0.f, -1.f }),
+        .ambient = ml::Vector3f({0.3f, 0.3f, 0.3f}),
+        .diffuse = ml::Vector3f({0.35f, 0.35f, 0.35f}),
+        .specular = ml::Vector3f({0.25f, 0.25f, 0.25f}),
+        .cutoffRadians = ml::toRadians(40.f),
+        .attenuanceConstant = 1.f,
+        .attenuanceLinear = 0.09f,
+        .attenuanceQuadratic = 0.032f
+    };
 
     void configureGl() noexcept {
         glEnable(GL_DEPTH_TEST);
@@ -492,23 +505,18 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         )
     );
 
+    light.position = camera()->getOrigin();
+    shader->setUniform("light", light);
+
      auto const &cameraPosition = camera()->getOrigin();
      for (auto const &[nodeId, node] : scene->nodes) {
         node->addComponent<scene::ShaderInfoComponent>(
             InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
             std::unordered_map<std::string, attributes::UniformCases>({
-                std::make_pair<std::string, attributes::UniformCases>("light.position", attributes::Vec3({cameraPosition.x, cameraPosition.y, cameraPosition.z})),
-                std::make_pair<std::string, attributes::UniformCases>("light.color", attributes::Vec3({2.0f, 2.0f, 2.0f})),
-                std::make_pair<std::string, attributes::UniformCases>("light.ambient", attributes::Vec3({0.3f, 0.3f, 0.3f})),
-                std::make_pair<std::string, attributes::UniformCases>("light.diffuse", attributes::Vec3({0.35f, 0.35f, 0.35f})),
-                std::make_pair<std::string, attributes::UniformCases>("light.specular", attributes::Vec3({0.25f, 0.25f, 0.25f})),
                 std::make_pair<std::string, attributes::UniformCases>(
                     "cameraPos",
                     attributes::Vec3({cameraPosition.x, cameraPosition.y, cameraPosition.z})
-                ),
-                std::make_pair<std::string, attributes::UniformCases>("light.consant", attributes::FloatAttr({.val = 1.f})),
-                std::make_pair<std::string, attributes::UniformCases>("light.linear", attributes::FloatAttr({.val = 0.09f})),
-                std::make_pair<std::string, attributes::UniformCases>("light.quadratic", attributes::FloatAttr({.val = 0.032f})),
+                )
             })
         );
      }

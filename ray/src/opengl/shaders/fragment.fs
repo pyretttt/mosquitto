@@ -6,15 +6,15 @@ in vec3 Normal;
 
 uniform struct Light {
     vec3 position;
-    vec3 color;
+    vec3 direction;
 
     vec3 ambient;
     vec3 diffuse;
     vec3 specular;
 
-    float constant;
-    float linear;
-    float quadratic;
+    float attenuanceConstant;
+    float attenuanceLinear;
+    float attenuanceQuadratic;
 } light;
 
 uniform struct Material {
@@ -34,7 +34,7 @@ void main() {
     vec3 lightDirection = normalize(light.position - FragWorldPos);
     float distance = length(light.position - FragWorldPos);
     float attenuation = 1.0 / (
-        light.constant + light.linear * distance + light.quadratic * distance * distance
+        light.attenuanceConstant + light.attenuanceLinear * distance + light.attenuanceQuadratic * distance * distance
     );
 
     // ambient

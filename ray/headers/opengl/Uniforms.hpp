@@ -3,6 +3,7 @@
 #include "opengl/Shader.hpp"
 #include "opengl/glTexture.hpp"
 #include "Attributes.hpp"
+#include "Light.hpp"
 #include "Core.hpp"
 
 template<>
@@ -86,4 +87,34 @@ void inline gl::Shader::setUniform<attributes::Transforms>(
     setUniform<attributes::UniformCases>(projectionKey, transforms.projectionMatrix);
     auto const viewKey = key + "." + "viewMatrix";
     setUniform<attributes::UniformCases>(viewKey, transforms.viewMatrix);
+}
+
+template<>
+void inline gl::Shader::setUniform<LightSource>(
+    std::string const &key,
+    LightSource const &light
+) const {
+    if (!program) return;
+    glUseProgram(program);
+
+    auto const positionKey = key + "." + "position";
+    setUniform<attributes::UniformCases>(positionKey, attributes::Vec3{ {light.position.x, light.position.y, light.position.z} });
+    auto const directionKey = key + "." + "direction";
+    setUniform<attributes::UniformCases>(directionKey, attributes::Vec3{ {light.direction.x, light.direction.y, light.direction.z} });
+
+    auto const ambientKey = key + "." + "ambient";
+    setUniform<attributes::UniformCases>(ambientKey, attributes::Vec3{ {light.ambient.x, light.ambient.y, light.ambient.z} });
+    auto const diffuseKey = key + "." + "diffuse";
+    setUniform<attributes::UniformCases>(diffuseKey, attributes::Vec3{ {light.diffuse.x, light.diffuse.y, light.diffuse.z} });
+    auto const specularKey = key + "." + "specular";
+    setUniform<attributes::UniformCases>(specularKey, attributes::Vec3{ {light.specular.x, light.specular.y, light.specular.z} });
+
+    auto const cutoffRadiansKey = key + "." + "cutoff";
+    setUniform<attributes::UniformCases>(cutoffRadiansKey, attributes::FloatAttr{ .val = light.cutoffRadians });
+    auto const attenuanceConstantKey = key + "." + "attenuanceConstant";
+    setUniform<attributes::UniformCases>(attenuanceConstantKey, attributes::FloatAttr{ .val = light.attenuanceConstant });
+    auto const attenuanceLinearKey = key + "." + "attenuanceLinear";
+    setUniform<attributes::UniformCases>(attenuanceLinearKey, attributes::FloatAttr{ .val = light.attenuanceLinear });
+    auto const attenuanceQuadraticKey = key + "." + "attenuanceQuadratic";
+    setUniform<attributes::UniformCases>(attenuanceQuadraticKey, attributes::FloatAttr{ .val = light.attenuanceQuadratic });
 }
