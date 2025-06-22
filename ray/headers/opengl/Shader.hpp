@@ -20,21 +20,25 @@ public:
     void use();
     void setup();
 
+    template<typename Value>
     void setUniform(
-        std::string const &key, 
-        attributes::UniformCases const &attr,
-        std::string const &prefix = "",
-        bool unuseProgram = false
-    ) noexcept;
-
-    void setTextureSamplers(size_t max, bool unuseProgram = false) noexcept;
-    void setMaterialSamplers(gl::Material const &material, bool unuseProgram = false) noexcept;
+        std::string const &key,
+        Value const &value
+    ) const;
 
     ~Shader();
 
     std::filesystem::path vertex;
     std::filesystem::path fragment;
 };
+
+template<typename Value>
+void Shader::setUniform(
+    std::string const &key,
+    Value const &value
+) const {
+    throw std::logic_error("Not implemented");
+}
 
 using ShaderPtr = std::shared_ptr<Shader>;
 }

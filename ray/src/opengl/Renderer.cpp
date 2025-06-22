@@ -20,6 +20,7 @@
 #include "MathUtils.hpp"
 #include "scene/Node.hpp"
 #include "scene/ShaderInfoComponent.hpp"
+#include "opengl/Uniforms.hpp"
 
 namespace fs = std::filesystem;
 
@@ -35,15 +36,6 @@ namespace {
         fs::path("shaders").append("vertex.vs"),
         fs::path("shaders").append("fragment.fs")       
     ));
-    
-    void setTransformsUniform(
-        attributes::Transforms const &transforms,
-        gl::Shader &shader
-    ) noexcept {
-        shader.setUniform("worldMatrix", transforms.worldMatrix, "transforms");
-        shader.setUniform("projectionMatrix", transforms.projectionMatrix, "transforms");
-        shader.setUniform("viewMatrix", transforms.viewMatrix, "transforms");
-    }
 
     void configureGl() noexcept {
         glEnable(GL_DEPTH_TEST);
@@ -491,14 +483,14 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         transformMatrix
     );
 
-    setTransformsUniform(
+    shader->setUniform(
+        "transforms", 
         attributes::Transforms(
             transformMatrix,
             camera()->getViewTransformation(),
             camera()->getScenePerspectiveProjectionMatrix()
-        ),
-        *shader
-     );
+        )
+    );
 
      auto const &cameraPosition = camera()->getOrigin();
      for (auto const &[nodeId, node] : scene->nodes) {
