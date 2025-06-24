@@ -12,6 +12,9 @@ uniform struct Light {
     vec3 diffuse;
     vec3 specular;
 
+    float cutoff;
+    float cutoffDecay;
+
     float attenuanceConstant;
     float attenuanceLinear;
     float attenuanceQuadratic;
@@ -37,6 +40,10 @@ void main() {
         light.attenuanceConstant + light.attenuanceLinear * distance + light.attenuanceQuadratic * distance * distance
     );
 
+    float lightCosSim = dot(lightDirection, -light.direction);
+    float lightAngle = acos(lightCosSim);
+    float cutoff = 1.0 - clamp((lightAngle - light.cutoff) / light.cutoffDecay, 0.0, 1.0);
+
     // ambient
     vec4 ambient = vec4(light.ambient, 1.0) * texture(material.ambient0, TexCoord);
 
@@ -44,11 +51,11 @@ void main() {
     vec3 viewDirection = normalize(cameraPos - FragWorldPos);
     vec3 reflectedLightDirection = reflect(-lightDirection, Normal);
     float spec = pow(max(dot(viewDirection, reflectedLightDirection), 0.0), material.shiness * 128.0);
-    vec4 specular = vec4(light.specular, 1.0) * spec * texture(material.specular0, TexCoord);
+    vec4 specular = vec4(light.specular, 1.0) * cutoff * spec * texture(material.specular0, TexCoord);
 
     // diffuse
     float diffuseMagnitude = max(dot(lightDirection, Normal), 0.0);
-    vec4 diffuse = vec4(light.diffuse, 1.0) * diffuseMagnitude * texture(material.diffuse0, TexCoord);
+    vec4 diffuse = vec4(light.diffuse, 1.0) * cutoff * diffuseMagnitude * texture(material.diffuse0, TexCoord);
 
     ambient *= attenuation;
     specular *= attenuation;

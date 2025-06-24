@@ -111,6 +111,9 @@ void inline gl::Shader::setUniform<LightSource>(
 
     auto const cutoffRadiansKey = key + "." + "cutoff";
     setUniform<attributes::UniformCases>(cutoffRadiansKey, attributes::FloatAttr{ .val = light.cutoffRadians });
+    auto const cutoffDecayRadiansKey = key + "." + "cutoffDecay";
+    setUniform<attributes::UniformCases>(cutoffDecayRadiansKey, attributes::FloatAttr{ .val = light.cutoffDecayRadians });
+ 
     auto const attenuanceConstantKey = key + "." + "attenuanceConstant";
     setUniform<attributes::UniformCases>(attenuanceConstantKey, attributes::FloatAttr{ .val = light.attenuanceConstant });
     auto const attenuanceLinearKey = key + "." + "attenuanceLinear";

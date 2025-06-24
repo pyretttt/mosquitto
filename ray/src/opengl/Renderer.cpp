@@ -44,7 +44,8 @@ namespace {
         .ambient = ml::Vector3f({0.3f, 0.3f, 0.3f}),
         .diffuse = ml::Vector3f({0.35f, 0.35f, 0.35f}),
         .specular = ml::Vector3f({0.25f, 0.25f, 0.25f}),
-        .cutoffRadians = ml::toRadians(40.f),
+        .cutoffRadians = ml::toRadians(20.f),
+        .cutoffDecayRadians = ml::toRadians(12.5f),
         .attenuanceConstant = 1.f,
         .attenuanceLinear = 0.09f,
         .attenuanceQuadratic = 0.032f

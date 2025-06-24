@@ -14,6 +14,7 @@ struct LightSource {
     ml::Vector3f specular;
     
     float cutoffRadians;
+    float cutoffDecayRadians;
 
     float attenuanceConstant;
     float attenuanceLinear;
