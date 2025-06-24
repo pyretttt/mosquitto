@@ -9,5 +9,3 @@ class RCNN(nn.Module):
     ):
         super().__init__()
         self.encoder = encoder
-        
-        
