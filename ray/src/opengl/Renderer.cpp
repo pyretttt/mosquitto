@@ -38,18 +38,32 @@ namespace {
         fs::path("shaders").append("fragment.fs")       
     ));
 
-    LightSource light = LightSource {
-        .position = ml::Vector3f({ 0.f, 0.f, 0.f }),
-        .direction = ml::Vector3f({ 0.f, 0.f, -1.f }),
-        .ambient = ml::Vector3f({0.3f, 0.3f, 0.3f}),
-        .diffuse = ml::Vector3f({0.35f, 0.35f, 0.35f}),
-        .specular = ml::Vector3f({0.25f, 0.25f, 0.25f}),
-        .cutoffRadians = ml::toRadians(20.f),
-        .cutoffDecayRadians = ml::toRadians(12.5f),
-        .attenuanceConstant = 1.f,
-        .attenuanceLinear = 0.09f,
-        .attenuanceQuadratic = 0.032f
-    };
+    std::vector<LightSource> light = std::vector({
+        LightSource {
+            .position = ml::Vector3f({ 0.f, 0.f, 0.f }),
+            .spotDirection = ml::Vector3f({ 0.f, 0.f, -1.f }),
+            .ambient = ml::Vector3f({0.3f, 0.3f, 0.3f}),
+            .diffuse = ml::Vector3f({0.35f, 0.35f, 0.35f}),
+            .specular = ml::Vector3f({0.25f, 0.25f, 0.25f}),
+            .cutoffRadians = ml::toRadians(20.f),
+            .cutoffDecayRadians = ml::toRadians(12.5f),
+            .attenuanceConstant = 1.f,
+            .attenuanceLinear = 0.09f,
+            .attenuanceQuadratic = 0.032f
+        },
+        LightSource {
+            .position = ml::Vector3f({ -2.f, 1.f, -4.f }),
+            .spotDirection = ml::Vector3f({ 2.f, -0.5f, -1.f }),
+            .ambient = ml::Vector3f({0.3f, 0.3f, 0.3f}),
+            .diffuse = ml::Vector3f({0.35f, 0.35f, 0.35f}),
+            .specular = ml::Vector3f({0.25f, 0.25f, 0.25f}),
+            .cutoffRadians = ml::toRadians(180.f),
+            .cutoffDecayRadians = ml::toRadians(0.1f),
+            .attenuanceConstant = 1.f,
+            .attenuanceLinear = 0.09f,
+            .attenuanceQuadratic = 0.032f
+        }
+    });
 
     void configureGl() noexcept {
         glEnable(GL_DEPTH_TEST);
@@ -506,7 +520,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         )
     );
 
-    light.position = camera()->getOrigin();
+    light[0].position = camera()->getOrigin();
     shader->setUniform("light", light);
 
      auto const &cameraPosition = camera()->getOrigin();

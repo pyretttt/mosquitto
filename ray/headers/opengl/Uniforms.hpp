@@ -99,8 +99,8 @@ void inline gl::Shader::setUniform<LightSource>(
 
     auto const positionKey = key + "." + "position";
     setUniform<attributes::UniformCases>(positionKey, attributes::Vec3{ {light.position.x, light.position.y, light.position.z} });
-    auto const directionKey = key + "." + "direction";
-    setUniform<attributes::UniformCases>(directionKey, attributes::Vec3{ {light.direction.x, light.direction.y, light.direction.z} });
+    auto const spotDirectionKey = key + "." + "spotDirection";
+    setUniform<attributes::UniformCases>(spotDirectionKey, attributes::Vec3{ {light.spotDirection.x, light.spotDirection.y, light.spotDirection.z} });
 
     auto const ambientKey = key + "." + "ambient";
     setUniform<attributes::UniformCases>(ambientKey, attributes::Vec3{ {light.ambient.x, light.ambient.y, light.ambient.z} });
@@ -121,3 +121,20 @@ void inline gl::Shader::setUniform<LightSource>(
     auto const attenuanceQuadraticKey = key + "." + "attenuanceQuadratic";
     setUniform<attributes::UniformCases>(attenuanceQuadraticKey, attributes::FloatAttr{ .val = light.attenuanceQuadratic });
 }
+
+template<>
+void inline gl::Shader::setUniform<std::vector<LightSource>>(
+    std::string const &key,
+    std::vector<LightSource> const &lights
+) const {
+    if (!program) return;
+    glUseProgram(program);
+    for (size_t i = 0; i < lights.size(); i++) {
+        setUniform<LightSource>(key + "[" + std::to_string(i) + "]", lights[i]);
+    }
+    std::string numLightsKey = "numLights";
+    if (auto location = glGetUniformLocation(program, numLightsKey.c_str()); location != -1) {
+        glUniform1i(location, lights.size());
+    }
+}
+

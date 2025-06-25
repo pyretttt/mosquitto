@@ -7,7 +7,7 @@
 
 struct LightSource {
     ml::Vector3f position;
-    ml::Vector3f direction;
+    ml::Vector3f spotDirection;
     
     ml::Vector3f ambient;
     ml::Vector3f diffuse;
