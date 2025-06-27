@@ -25,7 +25,17 @@ struct Configuration {
         GLenum mode = GL_FILL;
     };
 
+    struct Stencil {
+        GLenum stencilFunc = GL_ALWAYS;
+        GLint ref = 1;
+        GLuint mask = 0xff;
+        GLenum stencilFailOp = GL_KEEP;
+        GLenum zFailOp = GL_KEEP;
+        GLenum zPassOp = GL_REPLACE;
+    };
+
     PolygonMode polygonMode;
+    Stencil stencil;
 };
 
 void bindTextures(std::vector<gl::TexturePtr> const &textures);
@@ -157,6 +167,9 @@ void RenderObject<Attribute>::setDebug(bool debug) noexcept {
 template<typename Attribute>
 void RenderObject<Attribute>::render() const noexcept {
     activateMaterial(material);
+
+    glStencilFunc(configuration.stencil.stencilFunc, configuration.stencil.ref, configuration.stencil.mask);
+    glStencilOp(configuration.stencil.stencilFailOp, configuration.stencil.zFailOp, configuration.stencil.zPassOp);
     
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);

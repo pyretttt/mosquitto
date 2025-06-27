@@ -67,6 +67,11 @@ namespace {
 
     void configureGl() noexcept {
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_STENCIL_TEST);
+
+        glStencilMask(0xFF);
+        glStencilFunc(GL_ALWAYS, 1, 0xFF);
+        glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
         glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
@@ -539,7 +544,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 
 void gl::Renderer::render() const {
     glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
     
     // Switches for testing
     // shader->use();
