@@ -57,7 +57,6 @@ struct RenderObject {
     RenderObject<Attribute>& operator=(RenderObject<Attribute>&& other);
 
     void setDebug(bool) noexcept;
-    void setUniform(std::string const &key, attributes::UniformCases const &attr) noexcept;
     void prepare();
     void render() const noexcept;
 
@@ -168,8 +167,16 @@ template<typename Attribute>
 void RenderObject<Attribute>::render() const noexcept {
     activateMaterial(material);
 
-    glStencilFunc(configuration.stencil.stencilFunc, configuration.stencil.ref, configuration.stencil.mask);
-    glStencilOp(configuration.stencil.stencilFailOp, configuration.stencil.zFailOp, configuration.stencil.zPassOp);
+    glStencilFunc(
+        configuration.stencil.stencilFunc, 
+        configuration.stencil.ref, 
+        configuration.stencil.mask
+    );
+    glStencilOp(
+        configuration.stencil.stencilFailOp, 
+        configuration.stencil.zFailOp, 
+        configuration.stencil.zPassOp
+    );
     
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);

@@ -21,7 +21,7 @@ void inline gl::Shader::setUniform<attributes::UniformCases>(
             [&](Vec3 const &value) { glUniform3f(location, value.val[0], value.val[1], value.val[2]); },
             [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
             [&](iColor const &value) { glUniform1ui(location, value.val); },
-            [&](Mat4 const &value) { glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value)); },
+            [&](Mat4 const &value) { glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value)); }
         }, attr);
     }
 }

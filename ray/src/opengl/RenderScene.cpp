@@ -1,10 +1,19 @@
 #include <memory>
+#include <filesystem>
+#include <variant>
 
 #include "opengl/RenderScene.hpp"
 #include "scene/Material.hpp"
 #include "scene/Node.hpp"
 #include "scene/ShaderInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
+
+namespace {
+    gl::ShaderPtr outlineShader = std::make_shared<gl::Shader>(gl::Shader(
+        std::filesystem::path("shaders").append("outline.vs"),
+        std::filesystem::path("shaders").append("outline.fs")       
+    ));
+}
 
 namespace {
     auto makePbrs(
@@ -105,11 +114,13 @@ void gl::RenderScene::prepare() {
     std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderObjectInfo &renderObjectInfo) {
         renderObjectInfo.renderObject.prepare();
     });
+
+    outlineShader->setup();
 }
 
 void gl::RenderScene::render() const {
-    pbrShader->use();
     for (auto const &renderObjectInfo : pbrs) {
+        pbrShader->use();
         auto const &node = scene->nodes.at(renderObjectInfo.nodeId);
         if (auto component = node->getComponent<scene::ShaderInfoComponent>()) {
             auto shaderInfo = std::static_pointer_cast<scene::ShaderInfoComponent>(component.value());
@@ -120,6 +131,24 @@ void gl::RenderScene::render() const {
 
         auto const &material = renderObjectInfo.renderObject.material;
         pbrShader->setUniform("material", material);
+        renderObjectInfo.renderObject.render();
+
+        // Todo: Add transforms to outline shader
+
+        glDisable(GL_DEPTH_TEST);
+        glStencilMask(0x00);
+        glStencilFunc(GL_GREATER, 2, 0xFF);
+        outlineShader->use();
+        outlineShader->setUniform<attributes::UniformCases>(
+            "scaleMatrix",
+            attributes::UniformCases(ml::scaleMatrix(1.05f, 1.05f, 1.05f, 1))
+        );
+        if (auto component = node->getComponent<scene::ShaderInfoComponent>()) {
+            auto shaderInfo = std::static_pointer_cast<scene::ShaderInfoComponent>(component.value());
+            for (auto const &[key, attribute] : shaderInfo->uniforms) {
+                outlineShader->setUniform(key, attributes::UniformCases(attribute));
+            }
+        }
         renderObjectInfo.renderObject.render();
     }
 }
