@@ -154,7 +154,7 @@ decltype(auto) inline rodriguezRotationMatrix(
 }
 
 Matrix4f inline scaleMatrix(
-    float x, float y, float z = 1, float w = 1
+    float x, float y, float z = 1.f, float w = 1.f
 ) {
     auto m = uniform<Matrix4f>(0.f);
     m[0][0] = x;

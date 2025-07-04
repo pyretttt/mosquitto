@@ -11,13 +11,11 @@ uniform struct Transforms {
     mat4 projectionMatrix;
 } transforms;
 
-uniform mat4 scaleMatrix;
-
 // Outputs
 out vec3 FragWorldPos;
 
 void main() {
-    vec4 worldPosition = transforms.worldMatrix * scaleMatrix * vec4(aPos, 1.0);
+    vec4 worldPosition = transforms.worldMatrix * vec4(aPos, 1.0);
     FragWorldPos = vec3(worldPosition);
     
     gl_Position = transforms.projectionMatrix * transforms.viewMatrix * worldPosition;

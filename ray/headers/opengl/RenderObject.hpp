@@ -28,7 +28,7 @@ struct Configuration {
     struct Stencil {
         GLenum stencilFunc = GL_ALWAYS;
         GLint ref = 1;
-        GLuint mask = 0xff;
+        GLuint mask = 0xFF;
         GLenum stencilFailOp = GL_KEEP;
         GLenum zFailOp = GL_KEEP;
         GLenum zPassOp = GL_REPLACE;
@@ -105,10 +105,10 @@ RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
 
 template<typename Attribute>
 RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribute>&& other) {
-    this->configuration = configuration;
+    this->configuration = other.configuration;
     this->meshNode = std::move(other.meshNode);
     this->material = other.material;
-    this->debug = debug;
+    this->debug = other.debug;
     this->vao = other.vao;
     this->vbo = other.vbo;
     this->ebo = other.ebo;
@@ -177,7 +177,7 @@ void RenderObject<Attribute>::render() const noexcept {
         configuration.stencil.zFailOp, 
         configuration.stencil.zPassOp
     );
-    
+
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
     // TODO: For test

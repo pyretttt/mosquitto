@@ -31,5 +31,5 @@ inline constexpr uint32_t interpolateRGBAColor(
 }
 
 constexpr inline bool isApproximatelyEqual(float value, float test, float delta = 1e-8f) {
-    return ((test - delta) < value < (test + delta));
+    return (test - delta) < value && value < (test + delta);
 }

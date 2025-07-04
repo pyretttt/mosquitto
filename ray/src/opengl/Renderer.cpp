@@ -33,11 +33,6 @@ namespace {
         }
     };
 
-    gl::ShaderPtr shader = std::make_shared<gl::Shader>(gl::Shader(
-        fs::path("shaders").append("vertex.vs"),
-        fs::path("shaders").append("fragment.fs")       
-    ));
-
     std::vector<LightSource> light = std::vector({
         LightSource {
             .position = ml::Vector3f({ 0.f, 0.f, 0.f }),
@@ -346,7 +341,7 @@ namespace {
     gl::RenderScene mockRenderScene = gl::RenderScene(
         mockScene,
         config,
-        shader
+        gl::materialShader
     );
 }
 
@@ -389,7 +384,7 @@ namespace {
     gl::RenderScene renderScene = gl::RenderScene(
         scenePtr,
         config,
-        shader
+        gl::materialShader
     );
 }
 
@@ -516,7 +511,7 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         transformMatrix
     );
 
-    shader->setUniform(
+    gl::materialShader->setUniform(
         "transforms", 
         attributes::Transforms(
             transformMatrix,
@@ -525,8 +520,17 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         )
     );
 
+    gl::outlineShader->setUniform(
+        "transforms", 
+        attributes::Transforms(
+            ml::matMul(transformMatrix, ml::scaleMatrix(1.1f, 1.1f, 1.1f)),
+            camera()->getViewTransformation(),
+            camera()->getScenePerspectiveProjectionMatrix()
+        )
+    );
+
     light[0].position = camera()->getOrigin();
-    shader->setUniform("light", light);
+    gl::materialShader->setUniform("light", light);
 
      auto const &cameraPosition = camera()->getOrigin();
      for (auto const &[nodeId, node] : scene->nodes) {
@@ -544,7 +548,9 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 
 void gl::Renderer::render() const {
     glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
+    glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+
     
     // Switches for testing
     // shader->use();
