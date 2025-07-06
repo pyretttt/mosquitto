@@ -8,6 +8,11 @@
 
 namespace scene {
 
+enum class SceneType {
+    material,
+    postBuffer
+};
+
 struct Scene {
     Scene static assimpImport(std::filesystem::path path);
 
@@ -19,7 +24,6 @@ struct Scene {
     
     std::unordered_map<NodeId, NodePtr> nodes;
     std::unordered_map<MaterialId, MaterialPtr> materials;
-private:
     std::unordered_map<TexturePath, TexturePtr> textures;
 };
 }

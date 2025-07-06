@@ -7,6 +7,7 @@
 #include "scene/Node.hpp"
 #include "scene/ShaderInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
+#include "opengl/glCommon.hpp"
 
 namespace {
     auto makePbrs(
@@ -39,38 +40,48 @@ namespace {
         return result;
     }
 
-    auto toGlTexture(scene::TexturePtr texture) -> decltype(auto) {
-        return std::make_shared<gl::Texture>(texture);
+    auto toGlTexture(scene::TexturePtr texture, size_t unitIndex) -> decltype(auto) {
+        return std::make_shared<gl::Texture>(texture, unitIndex);
     }
 
     auto makeMaterials(scene::ScenePtr scene) -> decltype(auto) {
         std::unordered_map<scene::MaterialId, gl::Material> result;
         for (auto const &[id, material] : scene->materials) {
             std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
+            auto unitIndex = gl::samplerLocationOffset;
             std::transform(
                 material->ambient.begin(), 
                 material->ambient.end(), 
                 std::back_inserter(ambient),
-                toGlTexture
+                [&unitIndex](scene::TexturePtr &ptr) {
+                    return toGlTexture(ptr, unitIndex++);
+                }
             );
             std::transform(
                 material->specular.begin(), 
                 material->specular.end(), 
                 std::back_inserter(specular),
-                toGlTexture
+                [&unitIndex](scene::TexturePtr &ptr) {
+                    return toGlTexture(ptr, unitIndex++);
+                }
             );
             std::transform(
                 material->diffuse.begin(), 
                 material->diffuse.end(), 
                 std::back_inserter(diffuse),
-                toGlTexture
+                [&unitIndex](scene::TexturePtr &ptr) {
+                    return toGlTexture(ptr, unitIndex++);
+                }
             );
             std::transform(
                 material->normals.begin(), 
                 material->normals.end(), 
                 std::back_inserter(normals),
-                toGlTexture
+                [&unitIndex](scene::TexturePtr &ptr) {
+                    return toGlTexture(ptr, unitIndex++);
+                }
             );
+
             result.emplace(
                 std::make_pair(
                     static_cast<scene::MaterialId>(id), 

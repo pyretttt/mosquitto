@@ -26,19 +26,22 @@ namespace gl {
         TextureMode mode = TextureMode();
         scene::TexturePtr texturePtr;
         ID id = 0;
+        size_t unitIndex = 0;
 
         Texture(
-            scene::TexturePtr texturePtr
-        ) : texturePtr(texturePtr) {}
+            scene::TexturePtr texturePtr,
+            size_t unitIndex
+        ) : texturePtr(texturePtr), unitIndex(unitIndex) {}
 
         Texture(
             TextureMode mode,
-            scene::TexturePtr texturePtr
-        ) : mode(mode), texturePtr(texturePtr) {}
+            scene::TexturePtr texturePtr,
+            size_t unitIndex
+        ) : mode(mode), texturePtr(texturePtr), unitIndex(unitIndex) {}
 
         Texture(
             Texture &&other
-        ) : mode(other.mode), texturePtr(std::move(other.texturePtr)), id(other.id) {
+        ) : mode(other.mode), texturePtr(std::move(other.texturePtr)), id(other.id), unitIndex(other.unitIndex) {
             other.id = 0;
         }
 
@@ -46,6 +49,7 @@ namespace gl {
             this->id = other.id;
             this->mode = other.mode;
             this->texturePtr = std::move(other.texturePtr);
+            this->unitIndex = other.unitIndex;
             other.id = 0;
             return *this;
         }
