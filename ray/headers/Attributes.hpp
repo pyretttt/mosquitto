@@ -9,6 +9,10 @@ namespace attributes {
         float val;
     };
 
+    struct IntegerAttr {
+        int val;
+    };
+
     template<size_t size>
     struct Vec {
         float val[size];

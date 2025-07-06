@@ -17,7 +17,8 @@ struct RenderScene {
     RenderScene(
         scene::ScenePtr scene,
         gl::Configuration configuration,
-        ShaderPtr pbrShader
+        ShaderPtr shader,
+        FramebufferInfo framebuffer
     );
 
     void render() const;
@@ -28,6 +29,7 @@ struct RenderScene {
     std::vector<RenderObjectInfo> pbrs;
     std::unordered_map<scene::MaterialId, Material> materials;
 
-    ShaderPtr pbrShader;
+    ShaderPtr shader;
+    FramebufferInfo framebufferInfo;
 };
 }

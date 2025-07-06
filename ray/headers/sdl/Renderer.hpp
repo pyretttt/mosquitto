@@ -21,7 +21,7 @@ struct Renderer : public ::Renderer {
     Renderer(Renderer const &other) = delete;
     Renderer operator=(Renderer &&other) = delete;
     Renderer operator=(Renderer const &other) = delete;
-    Renderer(std::shared_ptr<GlobalConfig> config, Lazy<Camera> camera);
+    Renderer(std::shared_ptr<GlobalConfig> config, Lazy<std::shared_ptr<Camera>> camera);
     void prepareViewPort() override;
     void processInput(Event, float dt) override;
     void update(MeshData const &data, float dt) override;
@@ -34,7 +34,7 @@ private:
     void drawLine(ml::Vector2i from, ml::Vector2i to, uint32_t color) noexcept;
     void fillTriangle(Triangle t, float z0, float z1, float z2, uint32_t color) noexcept;
 
-    Lazy<Camera> camera;
+    Lazy<std::shared_ptr<Camera>> camera;
     std::unique_ptr<uint32_t[]> colorBuffer;
     std::unique_ptr<float[]> zBuffer;
     ml::Matrix4f screenSpaceProjection_;

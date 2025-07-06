@@ -27,7 +27,7 @@ Controller::Controller(
 Controller::~Controller() {}
 
 void Controller::prepare(std::shared_ptr<GlobalConfig> config) {
-    auto camera = Lazy<Camera>([config = this->config]() {
+    auto camera = Lazy<std::shared_ptr<Camera>>([config = this->config]() {
         return std::make_shared<Camera>(
             config->fov.asObservableObject(),
             config->windowSize.asObservableObject(),

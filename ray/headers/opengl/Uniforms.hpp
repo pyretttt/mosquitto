@@ -17,6 +17,7 @@ void inline gl::Shader::setUniform<attributes::UniformCases>(
         using namespace attributes;
         std::visit(overload {
             [&](FloatAttr const &value) { glUniform1f(location, value.val); },
+            [&](IntegerAttr const &value) { glUniform1i(location, value.val); },
             [&](Vec2 const &value) { glUniform2f(location, value.val[0], value.val[1]); },
             [&](Vec3 const &value) { glUniform3f(location, value.val[0], value.val[1], value.val[2]); },
             [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
@@ -137,4 +138,3 @@ void inline gl::Shader::setUniform<std::vector<LightSource>>(
         glUniform1i(location, lights.size());
     }
 }
-

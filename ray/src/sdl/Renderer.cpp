@@ -22,7 +22,7 @@ static void safeMemorySet(
 
 sdl::Renderer::Renderer(
     std::shared_ptr<GlobalConfig> config,
-    Lazy<Camera> camera
+    Lazy<std::shared_ptr<Camera>> camera
 ) 
     : camera(camera)
     , config(config)

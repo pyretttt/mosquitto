@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include <memory>
+#include <optional>
 
 #include "GL/glew.h"
 #include "SDL_opengl.h"
@@ -63,317 +64,18 @@ namespace {
     void configureGl() noexcept {
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_STENCIL_TEST);
+        glEnable(GL_BLEND);
+        glEnable(GL_CULL_FACE);
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
         glStencilMask(0xFF);
         glStencilFunc(GL_ALWAYS, 1, 0xFF);
         glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
 
-        glEnable(GL_CULL_FACE);
         glCullFace(GL_BACK);
         glFrontFace(GL_CCW);
-    
-        glEnable(GL_DEBUG_OUTPUT);
-        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
     }
-}
-
-namespace {
-       scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
-        std::vector<attributes::AssimpVertex>({
-            // 1
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, -0.5f,}, 
-                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-
-            // 2
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-
-            // 3
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {-1.f, 0.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {-1.f, 0.f, 0.f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {-1.f, 0.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {-1.f, 0.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {-1.f, 0.f, 0.f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {-1.f, 0.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-
-            // 4
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {1.f, 0.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {1.f, 0.f, 0.f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {1.f, 0.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {1.f, 0.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {1.f, 0.f, 0.f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {1.f, 0.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            // 5
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {0.f, -1.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {0.f, -1.f, 0.f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {0.f, -1.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {0.f, -1.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
-                attributes::Vec3 {0.f, -1.f, 0.f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
-                attributes::Vec3 {0.f, -1.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            // 6
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {0.f, 1.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {0.f, 1.f, 0.f}, 
-                attributes::Vec2 {1.0f, 1.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {0.f, 1.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {0.f, 1.f, 0.f}, 
-                attributes::Vec2 {1.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
-                attributes::Vec3 {0.f, 1.f, 0.f}, 
-                attributes::Vec2 {0.0f, 0.0f}
-            },
-            attributes::AssimpVertex {
-                attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
-                attributes::Vec3 {0.f, 1.f, 0.f}, 
-                attributes::Vec2 {0.0f, 1.0f}
-            },
-            
-        }),
-        std::vector<unsigned int>({/*{
-            0, 1, 3,
-            1, 2, 3 
-        }*/}),
-        scene::MaterialIdentifier(),
-        0
-    );
- 
-    std::shared_ptr<scene::Node> node = std::make_shared<scene::Node>(
-        InstanceIdGenerator<scene::Node>::getInstanceId(),
-        std::vector<scene::MaterialMeshPtr>({mesh})
-    );
-
-    gl::Material material = gl::Material {
-        .ambient = modified(std::vector<gl::TexturePtr>(), [](std::vector<gl::TexturePtr> &vec) {
-            vec.emplace_back(
-                std::make_shared<gl::Texture>(
-                    gl::TextureMode(), 
-                    std::make_unique<scene::TexData>(
-                        scene::loadTextureData(
-                            fs::path("resources").append("textures").append("container.jpg")
-                        )
-                    )
-                )
-            );
-            vec.emplace_back(
-                std::make_shared<gl::Texture>(
-                    gl::TextureMode {.bitFormat = GL_RGBA}, 
-                    std::make_unique<scene::TexData>(
-                        scene::loadTextureData(
-                            fs::path("resources").append("textures").append("awesomeface.png")
-                        )
-                    )
-                )
-            );
-        }),
-    };
-
-    scene::MaterialPtr mockMaterial = std::make_shared<scene::Material>(
-        attributes::Vec3({0.1, 0.2, 0.3}),
-        0.f,
-        std::vector({
-            std::make_shared<scene::TexData>(
-                scene::loadTextureData(
-                    fs::path("resources").append("textures").append("container.jpg")
-                )
-            )
-        }),
-        std::vector({
-            std::make_shared<scene::TexData>(
-                scene::loadTextureData(
-                    fs::path("resources").append("textures").append("awesomeface.png")
-                )
-            )
-        }),
-        std::vector<scene::TexturePtr>(),
-        std::vector<scene::TexturePtr>()
-    );
-
-    scene::ScenePtr mockScene = std::make_shared<scene::Scene>(
-        scene::Scene(
-            { std::make_pair(node->identifier, node) },
-            { std::make_pair(0, mockMaterial) },
-            { }
-        )
-    );
-
-    gl::RenderScene mockRenderScene = gl::RenderScene(
-        mockScene,
-        config,
-        gl::materialShader
-    );
-}
-
-namespace {
-    gl::Material glMockMaterial = modified(gl::Material(), [](gl::Material &material) {
-        material.diffuse.emplace_back<gl::TexturePtr>(
-            std::make_shared<gl::Texture>(
-                gl::TextureMode(), 
-                std::make_shared<scene::TexData>(
-                    scene::loadTextureData(
-                        fs::path("resources").append("textures").append("container.jpg")
-                    )
-                )
-            )
-        );
-        material.specular.emplace_back<gl::TexturePtr>(
-            std::make_shared<gl::Texture>(
-                gl::TextureMode {.bitFormat = GL_RGBA}, 
-                std::make_shared<scene::TexData>(
-                    scene::loadTextureData(
-                        fs::path("resources").append("textures").append("awesomeface.png")
-                    )
-                )
-            )
-        );
-    });
-
-    gl::RenderObject mockRenderObject = gl::RenderObject<attributes::AssimpVertex>(
-        gl::Configuration(),
-        mesh,
-        glMockMaterial
-    );
 }
 
 namespace {
@@ -381,24 +83,92 @@ namespace {
         scene::Scene::assimpImport(fs::path("resources").append("backpack").append("backpack.obj"))
     );
 
-    gl::RenderScene renderScene = gl::RenderScene(
-        scenePtr,
-        config,
-        gl::materialShader
+    gl::RenderScene makeRenderScene() {
+        return gl::RenderScene(
+            scenePtr,
+            config,
+            gl::materialShader,
+            gl::FramebufferInfo {
+                .framebuffer = gl::makeFullFrameBuffer({800, 600}), // TODO: From window
+                .useDepth = true,
+                .useStencil = true
+            }
+        );
+    }
+
+    Lazy<gl::RenderScene> renderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeRenderScene));
+
+    scene::MaterialMeshPtr quadMesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
+        std::vector<attributes::AssimpVertex>({
+            attributes::AssimpVertex {
+                .position = attributes::Vec3 { -1.f, 1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 0.f, 1.f }
+            },
+            attributes::AssimpVertex {
+                .position = attributes::Vec3 { -1.f, -1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 0.f, 0.f }
+            },
+            attributes::AssimpVertex {
+                .position = attributes::Vec3 { 1.f, -1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 1.f, 0.f }
+            },
+            attributes::AssimpVertex {
+                .position = attributes::Vec3 { 1.f, 1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 1.f, 1.f }
+            },
+        }),
+        std::vector<unsigned int>({
+            0, 1, 2, 1, 2, 3
+        }),
+        std::optional<scene::MaterialIdentifier>(std::nullopt),
+        InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId()
     );
+
+    scene::NodePtr quadNode = std::make_shared<scene::Node>(
+        InstanceIdGenerator<scene::Node>::getInstanceId(),
+        std::vector<scene::MaterialMeshPtr>({quadMesh})
+    );
+
+    scene::ScenePtr textureScene = std::make_shared<scene::Scene>(
+        std::unordered_map<scene::NodeId, scene::NodePtr>({
+            std::make_pair(quadNode->identifier, quadNode)
+        }),
+        std::unordered_map<scene::MaterialId, scene::MaterialPtr>({}),
+        std::unordered_map<scene::TexturePath, scene::TexturePtr>({})
+    );
+
+    gl::RenderScene makeTextureRenderScene() {
+        return gl::RenderScene(
+            textureScene,
+            config,
+            gl::textureShader,
+            gl::FramebufferInfo {
+                .framebuffer = gl::defaultFrameBuffer(), // TODO: From window
+                .useDepth = false,
+                .useStencil = false
+            }
+        );
+    }
+    
+    Lazy<gl::RenderScene> quadRenderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeTextureRenderScene));
 }
 
 gl::Renderer::Renderer(
     std::shared_ptr<GlobalConfig> config,
-    Lazy<Camera> camera
+    Lazy<std::shared_ptr<Camera>> camera
 )
     : config(config)
     , camera(camera)
     , resolution(config->windowSize.value())
-    , scene(scenePtr) {        
+    , scene(scenePtr) {     
 }
 
 gl::Renderer::~Renderer() {
+    if(fbo) glDeleteFramebuffers(1, &fbo);
     SDL_GL_DeleteContext(glContext);
 }
 
@@ -448,7 +218,8 @@ void gl::Renderer::prepareViewPort() {
     // shader->setup();
     // mockRenderObject.prepare();
     // mockRenderScene.prepare();
-    renderScene.prepare();
+    renderScene().prepare();
+    quadRenderScene().prepare();
 
     configureGl();
 }
@@ -532,8 +303,8 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     light[0].position = camera()->getOrigin();
     gl::materialShader->setUniform("light", light);
 
-     auto const &cameraPosition = camera()->getOrigin();
-     for (auto const &[nodeId, node] : scene->nodes) {
+    auto const &cameraPosition = camera()->getOrigin();
+    for (auto const &[nodeId, node] : scene->nodes) {
         node->addComponent<scene::ShaderInfoComponent>(
             InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
             std::unordered_map<std::string, attributes::UniformCases>({
@@ -543,7 +314,8 @@ void gl::Renderer::update(MeshData const &data, float dt) {
                 )
             })
         );
-     }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo);
 }
 
 void gl::Renderer::render() const {
@@ -556,7 +328,19 @@ void gl::Renderer::render() const {
     // shader->use();
     // mockRenderObject.render();
     // mockRenderScene.render();
-    renderScene.render();
+    renderScene().render();
+
+    std::visit(overload {
+         [&](gl::FullFramebuffer const &frame) {
+            glBindTexture(GL_TEXTURE_2D, frame.framebufferTexture);
+            // quadRenderScene().shader->setUniform("texture0", );
+        },
+        [&](gl::FramebufferOnly const &frame) {
+            return;
+        }
+    }, renderScene().framebufferInfo.framebuffer);
+
+    quadRenderScene().render();
 
     SDL_GL_SwapWindow(config->window.get());
 }

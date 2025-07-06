@@ -7,6 +7,7 @@
 #include "scene/Node.hpp"
 #include "scene/ShaderInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
+
 namespace {
     auto makePbrs(
         scene::ScenePtr scene,
@@ -92,37 +93,50 @@ namespace {
 gl::RenderScene::RenderScene(
     scene::ScenePtr scene,
     gl::Configuration configuration,
-    ShaderPtr pbrShader
+    ShaderPtr shader,
+    gl::FramebufferInfo framebufferInfo
 )
     : scene(scene)
     , configuration(configuration)
-    , pbrShader(pbrShader) {}
+    , shader(shader)
+    , framebufferInfo(framebufferInfo) {}
 
 void gl::RenderScene::prepare() {
     this->materials = makeMaterials(scene);
     this->pbrs = makePbrs(scene, configuration, materials);
-    pbrShader->setup();
+    shader->setup();
 
     std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderObjectInfo &renderObjectInfo) {
         renderObjectInfo.renderObject.prepare();
     });
-
-    outlineShader->setup();
 }
 
 void gl::RenderScene::render() const {
+    glBindFramebuffer(GL_FRAMEBUFFER, framebufferInfo.fbo());
+    if (framebufferInfo.useStencil) {
+        glEnable(GL_STENCIL_TEST);
+    } else {
+        glDisable(GL_STENCIL_TEST);
+    }
+
+    if (framebufferInfo.useDepth) {
+        glEnable(GL_DEPTH_TEST);
+    } else {
+        glDisable(GL_DEPTH_TEST);
+    }
+
     for (auto const &renderObjectInfo : pbrs) {
-        pbrShader->use();
+        shader->use();
         auto const &node = scene->nodes.at(renderObjectInfo.nodeId);
         if (auto component = node->getComponent<scene::ShaderInfoComponent>()) {
             auto shaderInfo = std::static_pointer_cast<scene::ShaderInfoComponent>(component.value());
             for (auto const &[key, attribute] : shaderInfo->uniforms) {
-                pbrShader->setUniform(key, attributes::UniformCases(attribute));
+                shader->setUniform(key, attributes::UniformCases(attribute));
             }
         }
 
         auto const &material = renderObjectInfo.renderObject.material;
-        pbrShader->setUniform("material", material);
+        shader->setUniform("material", material);
         renderObjectInfo.renderObject.render();
     }
 }

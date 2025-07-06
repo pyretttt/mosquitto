@@ -2,21 +2,22 @@
 
 #include <memory>
 #include <functional>
+#include <optional>
 
 template<typename T>
 struct Lazy final {
     Lazy() = default;
-    explicit Lazy(std::function<std::shared_ptr<T>()> &&factory) : factory(std::move(factory)) {}
+    explicit Lazy(std::function<T ()> &&factory) : factory(std::move(factory)) {}
 
-    std::shared_ptr<T> &operator()() {
+    T &operator()() {
         if (instance) {
-            return instance;
+            return instance.value();
         }
         instance = factory();
-        return instance;
+        return instance.value();
     }
 
 private:
-    std::shared_ptr<T> instance;
-    std::function<std::shared_ptr<T>()> factory;
+    std::optional<T> instance = std::nullopt;
+    std::function<T ()> factory;
 };
