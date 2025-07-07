@@ -16,7 +16,6 @@ struct Node {
 
     Node(
         NodeId identifier,
-        std::vector<MaterialMeshPtr> meshes,
         ml::Matrix4f transform = ml::diagonal<ml::Matrix4f>(1)
     );
 

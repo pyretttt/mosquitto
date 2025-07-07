@@ -12,4 +12,7 @@ struct Component {
 
     virtual ~Component() {}
 };
+
+template<typename >
+struct MeshInfo
 }
