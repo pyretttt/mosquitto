@@ -5,14 +5,11 @@
 #include "scene/Identifiers.hpp"
 
 namespace scene {
-struct Component {
-    Component(ComponentId id) : id(id) {}
+    struct Component {
+        Component(ComponentId id) : id(id) {}
 
-    ComponentId id;
+        ComponentId id;
 
-    virtual ~Component() {}
-};
-
-template<typename >
-struct MeshInfo
+        virtual ~Component() {}
+    };
 }
