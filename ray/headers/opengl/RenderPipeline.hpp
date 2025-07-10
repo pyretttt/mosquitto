@@ -13,6 +13,7 @@
 #include "Core.hpp"
 #include "glCommon.hpp"
 #include "opengl/glTexture.hpp"
+#include "opengl/glAttachment.hpp"
 #include "scene/Mesh.hpp"
 
 namespace gl {
@@ -45,7 +46,7 @@ template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attribute>> meshNode
+        std::shared_ptr<scene::Mesh<Attachment, Attribute>> meshNode
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;
@@ -116,12 +117,14 @@ RenderPipeline<Attribute>::~RenderPipeline() {
 template<typename Attribute>
 void RenderPipeline<Attribute>::prepare() {
     std::visit(overload {
-        [&](gl::Material)
+        [&](MaterialPtr const &material) {
+            bindTextures(material.ambient);
+            bindTextures(material.diffuse);
+            bindTextures(material.specular);
+            bindTextures(material.normals);
+        },
+        [&](std::monostate &)
     }, meshNode->attachment);
-    bindTextures(material.ambient);
-    bindTextures(material.diffuse);
-    bindTextures(material.specular);
-    bindTextures(material.normals);
 
     glGenVertexArrays(1, &vao);
     glGenBuffers(1, &vbo);
@@ -135,7 +138,7 @@ void RenderPipeline<Attribute>::prepare() {
         meshNode->vertexArray.data(), 
         GL_STATIC_DRAW
     );
-    bindAttributes<Attribute>();
+    bindAttributes<Attribute>(meshNode->vertexArray[0]);
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(
@@ -152,7 +155,12 @@ void RenderPipeline<Attribute>::prepare() {
 
 template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
-    activateMaterial(material);
+        std::visit(overload {
+        [&](Material const &material) {
+            activateMaterial(material);        
+        },
+        [&](std::monostate &)
+    }, meshNode->attachment);
 
     glStencilFunc(
         configuration.stencil.stencilFunc, 

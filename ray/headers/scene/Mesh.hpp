@@ -13,23 +13,18 @@
 
 namespace scene {
 
-using MeshAttachment = std::variant< // Make GL Attachment somehow
-    MaterialPtr,
-    std::monostate
->;
-
-template <typename Attr = attributes::Cases, typename Attachment = MeshAttachment>
+template <typename Attachment, typename Attr = attributes::Cases>
 struct Mesh {
     Mesh(
         std::vector<Attr> vertexArray,
         std::vector<unsigned int> vertexArrayIndices,
-        MeshAttachment attachment,
+        Attachment attachment,
         MeshId identifier
     );
 
     std::vector<Attr> vertexArray;
     std::vector<unsigned int> vertexArrayIndices;
-    MeshAttachment attachment;
+    Attachment attachment;
     MeshId const identifier;
 };
 
@@ -37,12 +32,12 @@ template <typename Attr, typename TextureId>
 Mesh<Attr, TextureId>::Mesh(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
-    MeshAttachment attachment,
+    Attachment attachment,
     MeshId identifier
 ) 
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))
-    , material(std::move(material))
+    , attachment(std::move(attachment))
     , identifier(identifier) {
     if (this->vertexArrayIndices.empty()) {
         this->vertexArrayIndices = std::vector<unsigned int>(this->vertexArray.size());
