@@ -12,10 +12,10 @@
 namespace {
     auto makePbrs(
         scene::ScenePtr scene,
-        gl::Configuration configuration,
+        gl::PipelineConfiguration configuration,
         std::unordered_map<scene::MaterialId, gl::Material> const &materials
     ) -> decltype(auto) {
-        std::vector<gl::RenderObjectInfo> result;
+        std::vector<gl::RenderPipelineInfo> result;
 
         for (auto const &[id, node] : scene->nodes) {
             for (auto &mesh : node->meshes) {
@@ -28,7 +28,7 @@ namespace {
                 }
                 result.emplace_back(
                     static_cast<size_t>(id),
-                    gl::RenderObject<attributes::AssimpVertex>(
+                    gl::RenderPipeline<attributes::MaterialVertex>(
                         configuration,
                         mesh,
                         materials.at(materialId)
@@ -103,7 +103,7 @@ namespace {
 
 gl::RenderScene::RenderScene(
     scene::ScenePtr scene,
-    gl::Configuration configuration,
+    gl::PipelineConfiguration configuration,
     ShaderPtr shader,
     gl::FramebufferInfo framebufferInfo
 )
@@ -117,8 +117,8 @@ void gl::RenderScene::prepare() {
     this->pbrs = makePbrs(scene, configuration, materials);
     shader->setup();
 
-    std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderObjectInfo &renderObjectInfo) {
-        renderObjectInfo.renderObject.prepare();
+    std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderPipelineInfo &RenderPipelineInfo) {
+        RenderPipelineInfo.RenderPipeline.prepare();
     });
 }
 
@@ -136,18 +136,18 @@ void gl::RenderScene::render() const {
         glDisable(GL_DEPTH_TEST);
     }
 
-    for (auto const &renderObjectInfo : pbrs) {
+    for (auto const &RenderPipelineInfo : pbrs) {
         shader->use();
-        auto const &node = scene->nodes.at(renderObjectInfo.nodeId);
+        auto const &node = scene->nodes.at(RenderPipelineInfo.nodeId);
         if (auto component = node->getComponent<scene::ShaderInfoComponent>()) {
             auto shaderInfo = std::static_pointer_cast<scene::ShaderInfoComponent>(component.value());
             for (auto const &[key, attribute] : shaderInfo->uniforms) {
-                shader->setUniform(key, attributes::UniformCases(attribute));
+                shader->setUniform(key, attributes::Cases(attribute));
             }
         }
 
-        auto const &material = renderObjectInfo.renderObject.material;
+        auto const &material = RenderPipelineInfo.RenderPipeline.material;
         shader->setUniform("material", material);
-        renderObjectInfo.renderObject.render();
+        RenderPipelineInfo.RenderPipeline.render();
     }
 }

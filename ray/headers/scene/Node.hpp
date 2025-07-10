@@ -10,7 +10,7 @@
 #include "Core.hpp"
 
 namespace scene {
-using MaterialMeshPtr = std::shared_ptr<Mesh<attributes::AssimpVertex>>;
+using MaterialMeshPtr = std::shared_ptr<Mesh<attributes::MaterialVertex>>;
 
 struct Node {
 

@@ -1,31 +1,167 @@
 #pragma once
 
 #include "opengl/Shader.hpp"
+#include "opengl/glMath.hpp"
 #include "opengl/glTexture.hpp"
 #include "Attributes.hpp"
 #include "Light.hpp"
 #include "Core.hpp"
 
 template<>
-void inline gl::Shader::setUniform<attributes::UniformCases>(
+void inline gl::Shader::setUniform<attributes::FloatAttr>(
     std::string const &key,
-    attributes::UniformCases const &attr
+    attributes::FloatAttr const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniform1f(location, attr.val);
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::IntegerAttr>(
+    std::string const &key,
+    attributes::IntegerAttr const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniform1f(location, attr.val);
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::Vec2>(
+    std::string const &key,
+    attributes::Vec2 const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniform2f(location, value.val[0], value.val[1]);
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::Vec3>(
+    std::string const &key,
+    attributes::Vec3 const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniform3f(location, value.val[0], value.val[1], value.val[2]);
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::Vec4>(
+    std::string const &key,
+    attributes::Vec4 const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]);
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::iColor>(
+    std::string const &key,
+    attributes::iColor const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniform1ui(location, value.val);
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::PositionWithColor>(
+    std::string const &key,
+    attributes::PositionWithColor const &attr
+) const {
+    glUseProgram(program);
+    auto const positionKey = key + "." + "position";
+    setUniform<attributes::Vec3>(positionKey, attr.position);
+    auto const colorKey = key + "." + "color";
+    setUniform<attributes::Vec4>(colorKey, attr.color);
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::PositionWithTex>(
+    std::string const &key,
+    attributes::PositionWithTex const &attr
+) const {
+    glUseProgram(program);
+    auto const positionKey = key + "." + "position";
+    setUniform<attributes::Vec3>(positionKey, attr.position);
+    auto const colorKey = key + "." + "texture";
+    setUniform<attributes::Vec2>(colorKey, attr.tex);
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::Mat4>(
+    std::string const &key,
+    attributes::Mat4 const &attr
+) const {
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
+        glUniformMatrix4fv(location, 1, GL_FALSE, gl::getPtr(attr));
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::Transforms>(
+    std::string const &key,
+    attributes::Transforms const &attr
+) const {
+    glUseProgram(program);
+    auto const worldKey = key + "." + "worldMatrix";
+    setUniform<attributes::Mat4>(worldKey, attr.worldMatrix);
+    auto const projectionKey = key + "." + "projectionMatrix";
+    setUniform<attributes::Mat4>(projectionKey, attr.projectionMatrix);
+    auto const viewKey = key + "." + "viewMatrix";
+    setUniform<attributes::Mat4>(viewKey, attr.viewMatrix);
+}
+
+
+template<>
+void inline gl::Shader::setUniform<attributes::MaterialVertex>(
+    std::string const &key,
+    attributes::MaterialVertex const &attr
+) const {
+    glUseProgram(program);
+    auto const positionKey = key + "." + "position";
+    setUniform<attributes::Vec3>(positionKey, attr.position);
+    auto const normalKey = key + "." + "normal";
+    setUniform<attributes::Vec3>(normalKey, attr.normal);
+    auto const texKey = key + "." + "tex";
+    setUniform<attributes::Vec2>(texKey, attr.tex);
+}
+
+template<>
+void inline gl::Shader::setUniform<attributes::Cases>(
+    std::string const &key,
+    attributes::Cases const &attr
 ) const {
     if (!program) return;
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
-        glUseProgram(program);
         using namespace attributes;
         std::visit(overload {
-            [&](FloatAttr const &value) { glUniform1f(location, value.val); },
-            [&](IntegerAttr const &value) { glUniform1i(location, value.val); },
-            [&](Vec2 const &value) { glUniform2f(location, value.val[0], value.val[1]); },
-            [&](Vec3 const &value) { glUniform3f(location, value.val[0], value.val[1], value.val[2]); },
-            [&](Vec4 const &value) { glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]); },
-            [&](iColor const &value) { glUniform1ui(location, value.val); },
-            [&](Mat4 const &value) { glUniformMatrix4fv(location, 1, GL_FALSE, ml::getPtr(value)); }
+            // [&](FloatAttr const &value) { setUniform(value); },
+            // [&](IntegerAttr const &value) { setUniform(value); },
+            // [&](Vec2 const &value) { setUniform(value); },
+            // [&](Vec3 const &value) { setUniform(value); },
+            // [&](Vec4 const &value) { setUniform(value); },
+            // [&](iColor const &value) { setUniform(value); },
+            // [&](PositionWithColor const &value) { setUniform(value); }
+            // [&](PositionWithTex const &value) { setUniform(value); }
+            // [&](Mat4 const &value) { setUniform(value); },
+            // [&](Transforms const &value) { setUniform(value); },
+            // [&](MaterialVertex const &value) { setUniform(value); },
+            [&](auto const &value) { setUniform(value); }
         }, attr);
     }
 }
+
 
 template<>
 void inline gl::Shader::setUniform<gl::Material>(
@@ -42,7 +178,7 @@ void inline gl::Shader::setUniform<gl::Material>(
     }
 
     auto ambientColorKey = keyPrefix + "ambientColor";
-    this->setUniform<attributes::UniformCases>(ambientColorKey, material.ambientColor);
+    this->setUniform<attributes::Cases>(ambientColorKey, material.ambientColor);
 
     for (size_t i = 0; i < material.ambient.size(); i++) {
         auto key = keyPrefix + "ambient" + std::to_string(i);
@@ -74,21 +210,6 @@ void inline gl::Shader::setUniform<gl::Material>(
     }
 }
 
-template<>
-void inline gl::Shader::setUniform<attributes::Transforms>(
-    std::string const &key,
-    attributes::Transforms const &transforms
-) const {
-    if (!program) return;
-    glUseProgram(program);
-
-    auto const worldKey = key + "." + "worldMatrix";
-    setUniform<attributes::UniformCases>(worldKey, transforms.worldMatrix);
-    auto const projectionKey = key + "." + "projectionMatrix";
-    setUniform<attributes::UniformCases>(projectionKey, transforms.projectionMatrix);
-    auto const viewKey = key + "." + "viewMatrix";
-    setUniform<attributes::UniformCases>(viewKey, transforms.viewMatrix);
-}
 
 template<>
 void inline gl::Shader::setUniform<LightSource>(
@@ -99,28 +220,28 @@ void inline gl::Shader::setUniform<LightSource>(
     glUseProgram(program);
 
     auto const positionKey = key + "." + "position";
-    setUniform<attributes::UniformCases>(positionKey, attributes::Vec3{ {light.position.x, light.position.y, light.position.z} });
+    setUniform<attributes::Cases>(positionKey, attributes::Vec3{ {light.position.x, light.position.y, light.position.z} });
     auto const spotDirectionKey = key + "." + "spotDirection";
-    setUniform<attributes::UniformCases>(spotDirectionKey, attributes::Vec3{ {light.spotDirection.x, light.spotDirection.y, light.spotDirection.z} });
+    setUniform<attributes::Cases>(spotDirectionKey, attributes::Vec3{ {light.spotDirection.x, light.spotDirection.y, light.spotDirection.z} });
 
     auto const ambientKey = key + "." + "ambient";
-    setUniform<attributes::UniformCases>(ambientKey, attributes::Vec3{ {light.ambient.x, light.ambient.y, light.ambient.z} });
+    setUniform<attributes::Cases>(ambientKey, attributes::Vec3{ {light.ambient.x, light.ambient.y, light.ambient.z} });
     auto const diffuseKey = key + "." + "diffuse";
-    setUniform<attributes::UniformCases>(diffuseKey, attributes::Vec3{ {light.diffuse.x, light.diffuse.y, light.diffuse.z} });
+    setUniform<attributes::Cases>(diffuseKey, attributes::Vec3{ {light.diffuse.x, light.diffuse.y, light.diffuse.z} });
     auto const specularKey = key + "." + "specular";
-    setUniform<attributes::UniformCases>(specularKey, attributes::Vec3{ {light.specular.x, light.specular.y, light.specular.z} });
+    setUniform<attributes::Cases>(specularKey, attributes::Vec3{ {light.specular.x, light.specular.y, light.specular.z} });
 
     auto const cutoffRadiansKey = key + "." + "cutoff";
-    setUniform<attributes::UniformCases>(cutoffRadiansKey, attributes::FloatAttr{ .val = light.cutoffRadians });
+    setUniform<attributes::Cases>(cutoffRadiansKey, attributes::FloatAttr{ .val = light.cutoffRadians });
     auto const cutoffDecayRadiansKey = key + "." + "cutoffDecay";
-    setUniform<attributes::UniformCases>(cutoffDecayRadiansKey, attributes::FloatAttr{ .val = light.cutoffDecayRadians });
+    setUniform<attributes::Cases>(cutoffDecayRadiansKey, attributes::FloatAttr{ .val = light.cutoffDecayRadians });
  
     auto const attenuanceConstantKey = key + "." + "attenuanceConstant";
-    setUniform<attributes::UniformCases>(attenuanceConstantKey, attributes::FloatAttr{ .val = light.attenuanceConstant });
+    setUniform<attributes::Cases>(attenuanceConstantKey, attributes::FloatAttr{ .val = light.attenuanceConstant });
     auto const attenuanceLinearKey = key + "." + "attenuanceLinear";
-    setUniform<attributes::UniformCases>(attenuanceLinearKey, attributes::FloatAttr{ .val = light.attenuanceLinear });
+    setUniform<attributes::Cases>(attenuanceLinearKey, attributes::FloatAttr{ .val = light.attenuanceLinear });
     auto const attenuanceQuadraticKey = key + "." + "attenuanceQuadratic";
-    setUniform<attributes::UniformCases>(attenuanceQuadraticKey, attributes::FloatAttr{ .val = light.attenuanceQuadratic });
+    setUniform<attributes::Cases>(attenuanceQuadraticKey, attributes::FloatAttr{ .val = light.attenuanceQuadratic });
 }
 
 template<>

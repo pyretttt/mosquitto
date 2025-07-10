@@ -24,6 +24,19 @@ namespace gl {
     }
 
     template<>
+    void inline bindAttributes<attributes::Vec2>() {
+        glVertexAttribPointer(
+            0,
+            2,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(decltype(attributes::Vec2::val)),
+            (void *)0
+        );
+        glEnableVertexAttribArray(0);
+    }
+
+    template<>
     void inline bindAttributes<attributes::Vec3>() {
         glVertexAttribPointer(
             0,
@@ -31,6 +44,19 @@ namespace gl {
             GL_FLOAT, 
             GL_FALSE, 
             sizeof(decltype(attributes::Vec3::val)),
+            (void *)0
+        );
+        glEnableVertexAttribArray(0);
+    }
+
+    template<>
+    void inline bindAttributes<attributes::Vec4>() {
+        glVertexAttribPointer(
+            0,
+            4,
+            GL_FLOAT, 
+            GL_FALSE, 
+            sizeof(decltype(attributes::Vec4::val)),
             (void *)0
         );
         glEnableVertexAttribArray(0);
@@ -82,13 +108,13 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::AssimpVertex>() {
+    void inline bindAttributes<attributes::MaterialVertex>() {
         glVertexAttribPointer(
             0,
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::AssimpVertex),
+            sizeof(attributes::MaterialVertex),
             (void *)0
         );
 
@@ -97,8 +123,8 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::AssimpVertex),
-            (void *)offsetof(attributes::AssimpVertex, normal)
+            sizeof(attributes::MaterialVertex),
+            (void *)offsetof(attributes::MaterialVertex, normal)
         );
 
         glVertexAttribPointer(
@@ -106,8 +132,8 @@ namespace gl {
             2,
             GL_FLOAT, 
             GL_FALSE, 
-            sizeof(attributes::AssimpVertex),
-            (void *)offsetof(attributes::AssimpVertex, tex)
+            sizeof(attributes::MaterialVertex),
+            (void *)offsetof(attributes::MaterialVertex, tex)
         );
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);

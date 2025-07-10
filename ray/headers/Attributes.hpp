@@ -10,7 +10,7 @@ namespace attributes {
     };
 
     struct IntegerAttr {
-        int val;
+        int32_t val;
     };
 
     template<size_t size>
@@ -53,18 +53,23 @@ namespace attributes {
             , projectionMatrix(projectionMatrix) {}
     };
 
-    struct AssimpVertex {
+    struct MaterialVertex {
         Vec3 position;
         Vec3 normal;
         Vec2 tex;
     };
 
-    using UniformCases = std::variant<
+    using Cases = std::variant<
         FloatAttr,
+        IntegerAttr,
         Vec2,
         Vec3,
         Vec4,
         iColor,
-        Mat4
+        PositionWithColor,
+        PositionWithTex,
+        Mat4,
+        Transforms,
+        MaterialVertex
     >;
 }

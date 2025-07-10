@@ -4,25 +4,32 @@
 #include <numeric>
 #include <unordered_map>
 #include <vector>
+#include <variant>
 
 #include "MathUtils.hpp"
 #include "scene/Material.hpp"
 #include "scene/Identifiers.hpp"
+#include "Attributes.hpp"
 
 namespace scene {
 
-template <typename Attr, typename MaterialId = MaterialIdentifier>
+using MeshAttachment = std::variant< // Make GL Attachment somehow
+    MaterialPtr,
+    std::monostate
+>;
+
+template <typename Attr = attributes::Cases, typename Attachment = MeshAttachment>
 struct Mesh {
     Mesh(
         std::vector<Attr> vertexArray,
         std::vector<unsigned int> vertexArrayIndices,
-        std::optional<MaterialIdentifier> material,
+        MeshAttachment attachment,
         MeshId identifier
     );
 
     std::vector<Attr> vertexArray;
     std::vector<unsigned int> vertexArrayIndices;
-    std::optional<MaterialIdentifier> material;
+    MeshAttachment attachment;
     MeshId const identifier;
 };
 
@@ -30,7 +37,7 @@ template <typename Attr, typename TextureId>
 Mesh<Attr, TextureId>::Mesh(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
-    std::optional<MaterialIdentifier> material,
+    MeshAttachment attachment,
     MeshId identifier
 ) 
     : vertexArray(std::move(vertexArray))

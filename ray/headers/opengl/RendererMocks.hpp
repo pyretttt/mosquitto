@@ -11,7 +11,7 @@
 #include "scene/Mesh.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
-#include "opengl/RenderObject.hpp"
+#include "opengl/RenderPipeline.hpp"
 #include "opengl/Shader.hpp"
 #include "scene/Tex.hpp"
 #include "MathUtils.hpp"
@@ -21,193 +21,193 @@
 #include "Light.hpp"
 
 namespace {
-       scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
-        std::vector<attributes::AssimpVertex>({
+       scene::MaterialMeshPtr mesh = std::make_shared<scene::Mesh<attributes::MaterialVertex>>(
+        std::vector<attributes::MaterialVertex>({
             // 1
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f,}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, -1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
 
             // 2
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.0f, 0.0f, 1.0f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
 
             // 3
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {-1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
 
             // 4
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {1.f, 0.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
             // 5
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, -0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, -1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
             // 6
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 1.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {1.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, 0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 0.0f}
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 attributes::Vec3 {-0.5f, 0.5f, -0.5f}, 
                 attributes::Vec3 {0.f, 1.f, 0.f}, 
                 attributes::Vec2 {0.0f, 1.0f}
@@ -312,8 +312,8 @@ namespace {
         );
     });
 
-    gl::RenderObject mockRenderObject = gl::RenderObject<attributes::AssimpVertex>(
-        gl::Configuration(),
+    gl::RenderPipeline mockRenderPipeline = gl::RenderPipeline<attributes::MaterialVertex>(
+        gl::PipelineConfiguration(),
         mesh,
         glMockMaterial
     );

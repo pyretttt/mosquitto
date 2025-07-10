@@ -15,7 +15,7 @@
 #include "scene/Mesh.hpp"
 #include "sdlUtils.hpp"
 #include "LoadTextFile.hpp"
-#include "opengl/RenderObject.hpp"
+#include "opengl/RenderPipeline.hpp"
 #include "opengl/Shader.hpp"
 #include "scene/Tex.hpp"
 #include "MathUtils.hpp"
@@ -27,8 +27,8 @@
 namespace fs = std::filesystem;
 
 namespace {
-    gl::Configuration config = gl::Configuration {
-        .polygonMode = gl::Configuration::PolygonMode {
+    gl::PipelineConfiguration config = gl::PipelineConfiguration {
+        .polygonMode = gl::PipelineConfiguration::PolygonMode {
             .face = GL_FRONT_FACE,
             .mode = GL_FILL
         }
@@ -98,24 +98,24 @@ namespace {
 
     Lazy<gl::RenderScene> renderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeRenderScene));
 
-    scene::MaterialMeshPtr quadMesh = std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
-        std::vector<attributes::AssimpVertex>({
-            attributes::AssimpVertex {
+    scene::MaterialMeshPtr quadMesh = std::make_shared<scene::Mesh<attributes::MaterialVertex>>(
+        std::vector<attributes::MaterialVertex>({
+            attributes::MaterialVertex {
                 .position = attributes::Vec3 { -1.f, 1.f, 0.f },
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 0.f, 1.f }
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 .position = attributes::Vec3 { -1.f, -1.f, 0.f },
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 0.f, 0.f }
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 .position = attributes::Vec3 { 1.f, -1.f, 0.f },
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 1.f, 0.f }
             },
-            attributes::AssimpVertex {
+            attributes::MaterialVertex {
                 .position = attributes::Vec3 { 1.f, 1.f, 0.f },
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 1.f, 1.f }
@@ -125,7 +125,7 @@ namespace {
             0, 1, 2, 1, 2, 3
         }),
         std::optional<scene::MaterialIdentifier>(std::nullopt),
-        InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId()
+        InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId()
     );
 
     scene::NodePtr quadNode = std::make_shared<scene::Node>(
@@ -216,7 +216,7 @@ void gl::Renderer::prepareViewPort() {
 
     // Switch for testing
     // shader->setup();
-    // mockRenderObject.prepare();
+    // mockRenderPipeline.prepare();
     // mockRenderScene.prepare();
     renderScene().prepare();
     quadRenderScene().prepare();
@@ -307,8 +307,8 @@ void gl::Renderer::update(MeshData const &data, float dt) {
     for (auto const &[nodeId, node] : scene->nodes) {
         node->addComponent<scene::ShaderInfoComponent>(
             InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
-            std::unordered_map<std::string, attributes::UniformCases>({
-                std::make_pair<std::string, attributes::UniformCases>(
+            std::unordered_map<std::string, attributes::Cases>({
+                std::make_pair<std::string, attributes::Cases>(
                     "cameraPos",
                     attributes::Vec3({cameraPosition.x, cameraPosition.y, cameraPosition.z})
                 )
@@ -326,7 +326,7 @@ void gl::Renderer::render() const {
     
     // Switches for testing
     // shader->use();
-    // mockRenderObject.render();
+    // mockRenderPipeline.render();
     // mockRenderScene.render();
     renderScene().render();
 

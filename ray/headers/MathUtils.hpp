@@ -294,11 +294,6 @@ Vector inline lerp(
     return res;
 }
 
-template <typename Vector>
-auto inline getPtr(Vector const &vec) -> decltype(glm::value_ptr(vec)) {
-    return glm::value_ptr(vec);
-}
-
 float inline toRadians(float degrees) {
     return degrees / 180 * glm::pi<float>();
 }

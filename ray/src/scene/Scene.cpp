@@ -19,7 +19,7 @@ namespace {
     constexpr size_t numVerticesInFace = 3;
 
     scene::MaterialMeshPtr makeMesh(aiMesh *mesh, aiScene const *scene) {
-        std::vector<attributes::AssimpVertex> vertices;
+        std::vector<attributes::MaterialVertex> vertices;
         vertices.reserve(mesh->mNumVertices);
         std::vector<unsigned int> verticesArrayIndices;
         verticesArrayIndices.reserve(mesh->mNumFaces * numVerticesInFace);
@@ -33,7 +33,7 @@ namespace {
                 tex = mesh->mTextureCoords[0][i];
             }
             vertices.push_back(
-                attributes::AssimpVertex { 
+                attributes::MaterialVertex { 
                     .position = {pos.x, pos.y, pos.z},
                     .normal = {normal.x, normal.y, normal.z},
                     .tex = {tex.x, tex.y}
@@ -52,11 +52,11 @@ namespace {
             ? std::optional(scene::MaterialIdentifier {.id = mesh->mMaterialIndex})
             : std::nullopt;
         
-        return std::make_shared<scene::Mesh<attributes::AssimpVertex>>(
+        return std::make_shared<scene::Mesh<attributes::MaterialVertex>>(
             std::move(vertices),
             std::move(verticesArrayIndices),
             materialId,
-            static_cast<MeshId>(InstanceIdGenerator<scene::Mesh<attributes::AssimpVertex>>::getInstanceId())
+            static_cast<MeshId>(InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId())
         );
     }
 

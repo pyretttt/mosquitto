@@ -1,4 +1,4 @@
-#include "opengl/RenderObject.hpp"
+#include "opengl/RenderPipeline.hpp"
 #include "opengl/glCommon.hpp"
 
 void gl::bindTextures(std::vector<gl::TexturePtr> const &textures) {

@@ -3,29 +3,29 @@
 #include "scene/Component.hpp"
 
 namespace scene {
-    template<typename RenderObject>
+    template<typename RenderPipeline>
     struct RenderComponent final : public Component {
 
        RenderComponent(
-            RenderObject renderObject,
+            RenderPipeline RenderPipeline,
             ComponentId id
        ) 
        : Component(id)
-       , renderObject(std::move(renderObject)) {}
+       , RenderPipeline(std::move(RenderPipeline)) {}
 
         void prepare();
         void render() const noexcept;
 
-        RenderObject renderObject;
+        RenderPipeline RenderPipeline;
     };
 
-    template<typename RenderObject>
-    void RenderComponent<RenderObject>::prepare() {
-        renderObject.prepare();
+    template<typename RenderPipeline>
+    void RenderComponent<RenderPipeline>::prepare() {
+        RenderPipeline.prepare();
     }
 
-    template<typename RenderObject>
-    void RenderComponent<RenderObject>::render() const noexcept {
-        renderObject.render();
+    template<typename RenderPipeline>
+    void RenderComponent<RenderPipeline>::render() const noexcept {
+        RenderPipeline.render();
     }
 }

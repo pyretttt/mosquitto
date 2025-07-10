@@ -19,7 +19,7 @@ namespace gl {
 
 using EBO = std::vector<unsigned int>;
 
-struct Configuration {
+struct PipelineConfiguration {
     struct PolygonMode {
         GLenum face = GL_FRONT;
         GLenum mode = GL_FILL;
@@ -41,26 +41,23 @@ struct Configuration {
 void bindTextures(std::vector<gl::TexturePtr> const &textures);
 void activateMaterial(Material const &material);
 
-template <typename Attribute>
-struct RenderObject {
-    RenderObject(
-        Configuration configuration,
-        std::shared_ptr<scene::Mesh<Attribute>> meshNode,
-        Material const &material,
-        bool debug = false
+template <typename Attribute = attributes::Cases>
+struct RenderPipeline {
+    RenderPipeline(
+        PipelineConfiguration configuration,
+        std::shared_ptr<scene::Mesh<Attribute>> meshNode
     );
 
-    RenderObject(RenderObject<Attribute> const &) = delete;
-    RenderObject<Attribute>& operator=(RenderObject<Attribute> const&) = delete;
+    RenderPipeline(RenderPipeline<Attribute> const &) = delete;
+    RenderPipeline<Attribute>& operator=(RenderPipeline<Attribute> const&) = delete;
 
-    RenderObject(RenderObject<Attribute> &&);
-    RenderObject<Attribute>& operator=(RenderObject<Attribute>&& other);
+    RenderPipeline(RenderPipeline<Attribute> &&);
+    RenderPipeline<Attribute>& operator=(RenderPipeline<Attribute>&& other);
 
-    void setDebug(bool) noexcept;
     void prepare();
     void render() const noexcept;
 
-    ~RenderObject();
+    ~RenderPipeline();
 
     ID vbo = 0;
     ID vao = 0;
@@ -70,33 +67,27 @@ struct RenderObject {
     std::shared_ptr<scene::Mesh<Attribute>> meshNode;
     Material const &material;
 
-    Configuration configuration;
+    PipelineConfiguration configuration;
 
     bool debug;
 };
 
 template<typename Attribute>
-RenderObject<Attribute>::RenderObject(
-    Configuration configuration,
-    std::shared_ptr<scene::Mesh<Attribute>> meshNode,
-    Material const &material,
-    bool debug
+RenderPipeline<Attribute>::RenderPipeline(
+    PipelineConfiguration configuration,
+    std::shared_ptr<scene::Mesh<Attribute>> meshNode
 ) 
     : configuration(configuration)
-    , meshNode(meshNode)
-    , material(material) {
-    setDebug(debug);
+    , meshNode(meshNode) {
 }
 
 template<typename Attribute>
-RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
+RenderPipeline<Attribute>::RenderPipeline(RenderPipeline<Attribute> &&other)
     : vao(other.vao)
     , ebo(other.ebo)
     , vbo(other.vbo)
     , configuration(other.configuration)
     , meshNode(std::move(other.meshNode))
-    , material(other.material)
-    , debug(other.debug)
 {
     other.vbo = 0;
     other.ebo = 0;
@@ -104,11 +95,9 @@ RenderObject<Attribute>::RenderObject(RenderObject<Attribute> &&other)
 }
 
 template<typename Attribute>
-RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribute>&& other) {
+RenderPipeline<Attribute>& RenderPipeline<Attribute>::operator=(RenderPipeline<Attribute>&& other) {
     this->configuration = other.configuration;
     this->meshNode = std::move(other.meshNode);
-    this->material = other.material;
-    this->debug = other.debug;
     this->vao = other.vao;
     this->vbo = other.vbo;
     this->ebo = other.ebo;
@@ -118,14 +107,17 @@ RenderObject<Attribute>& RenderObject<Attribute>::operator=(RenderObject<Attribu
 }
 
 template<typename Attribute>
-RenderObject<Attribute>::~RenderObject() {
+RenderPipeline<Attribute>::~RenderPipeline() {
     if (vbo) glDeleteBuffers(1, &vbo);
     if (ebo) glDeleteBuffers(1, &ebo);
     if (vao) glDeleteVertexArrays(1, &vao);
 }
 
 template<typename Attribute>
-void RenderObject<Attribute>::prepare() {
+void RenderPipeline<Attribute>::prepare() {
+    std::visit(overload {
+        [&](gl::Material)
+    }, meshNode->attachment);
     bindTextures(material.ambient);
     bindTextures(material.diffuse);
     bindTextures(material.specular);
@@ -159,12 +151,7 @@ void RenderObject<Attribute>::prepare() {
 }
 
 template<typename Attribute>
-void RenderObject<Attribute>::setDebug(bool debug) noexcept {
-    this->debug = debug;
-}
-
-template<typename Attribute>
-void RenderObject<Attribute>::render() const noexcept {
+void RenderPipeline<Attribute>::render() const noexcept {
     activateMaterial(material);
 
     glStencilFunc(
