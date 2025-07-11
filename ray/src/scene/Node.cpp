@@ -4,11 +4,9 @@ using namespace scene;
 
 Node::Node(
     NodeId identifier,
-    std::vector<MaterialMeshPtr> meshes,
     ml::Matrix4f transform
 ) 
     : identifier(identifier)
-    , meshes(std::move(meshes)) 
     , localTransform(transform)
     {}
 

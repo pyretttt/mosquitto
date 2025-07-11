@@ -8,11 +8,6 @@
 
 namespace scene {
 
-enum class SceneType {
-    material,
-    postBuffer
-};
-
 struct Scene {
     Scene static assimpImport(std::filesystem::path path);
 

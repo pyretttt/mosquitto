@@ -10,10 +10,7 @@
 #include "Core.hpp"
 
 namespace scene {
-using MaterialMeshPtr = std::shared_ptr<Mesh<attributes::MaterialVertex>>;
-
 struct Node {
-
     Node(
         NodeId identifier,
         ml::Matrix4f transform = ml::diagonal<ml::Matrix4f>(1)
@@ -28,7 +25,6 @@ struct Node {
     ml::Matrix4f getTransform() const noexcept;
 
     NodeId identifier;
-    std::vector<MaterialMeshPtr> meshes;
     ml::Matrix4f localTransform;
     std::weak_ptr<Node> parent;
 

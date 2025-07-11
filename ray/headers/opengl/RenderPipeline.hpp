@@ -40,13 +40,13 @@ struct PipelineConfiguration {
 };
 
 void bindTextures(std::vector<gl::TexturePtr> const &textures);
-void activateMaterial(Material const &material);
+void activateMaterial(scene::Material const &material);
 
 template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attachment, Attribute>> meshNode
+        std::shared_ptr<scene::Mesh<Attribute, gl::Attachment>> meshNode
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;
@@ -65,18 +65,14 @@ struct RenderPipeline {
     ID ebo = 0;
     ID tex;
 
-    std::shared_ptr<scene::Mesh<Attribute>> meshNode;
-    Material const &material;
-
+    std::shared_ptr<scene::Mesh<Attribute, gl::Attachment>> meshNode;
     PipelineConfiguration configuration;
-
-    bool debug;
 };
 
 template<typename Attribute>
 RenderPipeline<Attribute>::RenderPipeline(
     PipelineConfiguration configuration,
-    std::shared_ptr<scene::Mesh<Attribute>> meshNode
+    std::shared_ptr<scene::Mesh<Attribute, gl::Attachment>> meshNode
 ) 
     : configuration(configuration)
     , meshNode(meshNode) {
@@ -118,12 +114,12 @@ template<typename Attribute>
 void RenderPipeline<Attribute>::prepare() {
     std::visit(overload {
         [&](MaterialPtr const &material) {
-            bindTextures(material.ambient);
-            bindTextures(material.diffuse);
-            bindTextures(material.specular);
-            bindTextures(material.normals);
+            bindTextures(material->ambient);
+            bindTextures(material->diffuse);
+            bindTextures(material->specular);
+            bindTextures(material->normals);
         },
-        [&](std::monostate &)
+        [&](std::monostate &) {}
     }, meshNode->attachment);
 
     glGenVertexArrays(1, &vao);
@@ -138,7 +134,11 @@ void RenderPipeline<Attribute>::prepare() {
         meshNode->vertexArray.data(), 
         GL_STATIC_DRAW
     );
-    bindAttributes<Attribute>(meshNode->vertexArray[0]);
+    if (meshNode->vertexArray.size()) {
+        bindAttributes<Attribute>(meshNode->vertexArray[0]);
+    } else {
+        throw "EMPTY::MESH";
+    }
 
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
     glBufferData(
@@ -156,10 +156,10 @@ void RenderPipeline<Attribute>::prepare() {
 template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
         std::visit(overload {
-        [&](Material const &material) {
-            activateMaterial(material);        
+        [&](MaterialPtr const &material) {
+            activateMaterial(*material);        
         },
-        [&](std::monostate &)
+        [&](std::monostate &) {}
     }, meshNode->attachment);
 
     glStencilFunc(

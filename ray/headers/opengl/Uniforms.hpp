@@ -36,7 +36,7 @@ void inline gl::Shader::setUniform<attributes::Vec2>(
 ) const {
     glUseProgram(program);
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
-        glUniform2f(location, value.val[0], value.val[1]);
+        glUniform2f(location, attr.val[0], attr.val[1]);
     }
 }
 
@@ -47,7 +47,7 @@ void inline gl::Shader::setUniform<attributes::Vec3>(
 ) const {
     glUseProgram(program);
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
-        glUniform3f(location, value.val[0], value.val[1], value.val[2]);
+        glUniform3f(location, attr.val[0], attr.val[1], attr.val[2]);
     }
 }
 
@@ -58,7 +58,7 @@ void inline gl::Shader::setUniform<attributes::Vec4>(
 ) const {
     glUseProgram(program);
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
-        glUniform4f(location, value.val[0], value.val[1], value.val[2], value.val[3]);
+        glUniform4f(location, attr.val[0], attr.val[1], attr.val[2], attr.val[3]);
     }
 }
 
@@ -69,7 +69,7 @@ void inline gl::Shader::setUniform<attributes::iColor>(
 ) const {
     glUseProgram(program);
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
-        glUniform1ui(location, value.val);
+        glUniform1ui(location, attr.val);
     }
 }
 
@@ -157,7 +157,7 @@ void inline gl::Shader::setUniform<attributes::Cases>(
             // [&](Mat4 const &value) { setUniform(value); },
             // [&](Transforms const &value) { setUniform(value); },
             // [&](MaterialVertex const &value) { setUniform(value); },
-            [&](auto const &value) { setUniform(value); }
+            [&](auto const &value) { setUniform(key, value); }
         }, attr);
     }
 }

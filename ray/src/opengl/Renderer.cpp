@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <optional>
+#include <variant>
 
 #include "GL/glew.h"
 #include "SDL_opengl.h"
@@ -98,8 +99,8 @@ namespace {
 
     Lazy<gl::RenderScene> renderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeRenderScene));
 
-    scene::MaterialMeshPtr quadMesh = std::make_shared<scene::Mesh<attributes::MaterialVertex>>(
-        std::vector<attributes::MaterialVertex>({
+    auto quadMesh = std::make_shared<scene::Mesh<attributes::Cases>>(
+        std::vector<attributes::Cases>({
             attributes::MaterialVertex {
                 .position = attributes::Vec3 { -1.f, 1.f, 0.f },
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
@@ -124,13 +125,12 @@ namespace {
         std::vector<unsigned int>({
             0, 1, 2, 1, 2, 3
         }),
-        std::optional<scene::MaterialIdentifier>(std::nullopt),
+        std::monostate(),
         InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId()
     );
 
     scene::NodePtr quadNode = std::make_shared<scene::Node>(
-        InstanceIdGenerator<scene::Node>::getInstanceId(),
-        std::vector<scene::MaterialMeshPtr>({quadMesh})
+        InstanceIdGenerator<scene::Node>::getInstanceId()
     );
 
     scene::ScenePtr textureScene = std::make_shared<scene::Scene>(

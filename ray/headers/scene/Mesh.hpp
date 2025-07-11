@@ -9,11 +9,12 @@
 #include "MathUtils.hpp"
 #include "scene/Material.hpp"
 #include "scene/Identifiers.hpp"
+#include "scene/Attachment.hpp"
 #include "Attributes.hpp"
 
 namespace scene {
 
-template <typename Attachment, typename Attr = attributes::Cases>
+template <typename Attr = attributes::Cases, typename Attachment = CommonAttachment>
 struct Mesh {
     Mesh(
         std::vector<Attr> vertexArray,
@@ -28,8 +29,8 @@ struct Mesh {
     MeshId const identifier;
 };
 
-template <typename Attr, typename TextureId>
-Mesh<Attr, TextureId>::Mesh(
+template <typename Attr, typename Attachment>
+Mesh<Attr, Attachment>::Mesh(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
     Attachment attachment,
