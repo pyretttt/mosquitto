@@ -1,17 +1,3 @@
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Ray debug",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/RAY",
-            "cwd": "${workspaceFolder}/build",
-            "MIMode": "lldb",
-            "preLaunchTask": "cmake_build"
-        },
-    ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:bb7a03c4e88431e7028c7ed72d5fc8accd986eca736078b19497ed5383e5c7a7
+size 550

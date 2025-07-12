@@ -1,20 +1,3 @@
-# OS specific
-.DS_Store
-
-# build artifacts and another no index things
-**/build/
-**/no_index/
-
-# Python specific
-**/__pycache__/
-**/env/
-
-3drenderer/3rd_party/
-3drenderer/3drenderer
-
-# Godot specific
-**/.godot/
-godot_playground/**/android/
-
-## vcpkg
-**/vcpkg_installed
+version https://git-lfs.github.com/spec/v1
+oid sha256:bc8be31f9e234b01a73b3742e52a16504b90e799ec5af64734e76074dcd64f0f
+size 268

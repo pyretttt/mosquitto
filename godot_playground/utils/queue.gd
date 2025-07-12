@@ -1,23 +1,3 @@
-class_name Queue
-
-extends RefCounted
-
-var _elements: Array[Variant]
-
-var is_empty: bool:
-	get: return _elements.is_empty()
-
-func _init(elements: Array[Variant] = []):
-	self._elements = elements
-	
-func enque(element: Variant) -> void:
-	self._elements.append(element)
-	
-func deque() -> Variant:
-	if _elements.is_empty():
-		return null
-	
-	return _elements.pop_front()
-	
-func clear() -> void:
-	_elements = []
+version https://git-lfs.github.com/spec/v1
+oid sha256:ceb738f83d3e1ca746440deacd4dbb633b20283e7b534822ea9f1789108b4fd2
+size 405

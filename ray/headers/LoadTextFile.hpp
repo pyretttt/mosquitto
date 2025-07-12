@@ -1,22 +1,3 @@
-#pragma once
-
-#include <string>
-#include <filesystem>
-#include <fstream>
-#include <sstream>
-#include <stdexcept>
-
-namespace utils {
-
-inline std::string loadTextFile(std::filesystem::path path) {
-     std::ifstream file = std::ifstream(path.string());
-     if (!file.is_open()) {
-        throw std::runtime_error("Failed to open file: " + path.string());
-     }
-
-     std::stringstream buffer;
-     buffer << file.rdbuf();
-     return buffer.str();
-}
-
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:fc8cba908aa002785948cc6837aa56706b7d4fd47ca2f7efa9dd40f87fcc9239
+size 452

@@ -1,17 +1,3 @@
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "3drenderer debug",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/3drenderer",
-            "cwd": "${workspaceFolder}",
-            "MIMode": "lldb",
-            "preLaunchTask": "cmake_build"
-        },
-    ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:715d90a7e1955e090976d8d4ff2621f90aedbd80fce154db81db1e334a42e100
+size 558

@@ -1,25 +1,3 @@
-import socket as sock
-import struct
-
-
-def main():
-    fd = sock.socket(sock.AF_INET, sock.SOCK_STREAM)
-    fd.connect((str(sock.INADDR_LOOPBACK), 8000))
-    
-    buffer = bytearray()
-    message = bytes("hey there", encoding='utf-8')
-    msg = struct.pack('!{}s'.format(len(message)), message)
-    buffer += struct.pack("!I", len(msg))
-    buffer += msg
-    fd.send(buffer)
-    
-    data_response = fd.recv(4096)
-
-def process_request(connection_sock):
-    buffer = bytearray()
-    connection_sock.recv_into(buffer, 4)
-    
-    print('message len: ', int.from_bytes(buffer[:4]))
-
-if __name__ == '__main__':
-    main()
+version https://git-lfs.github.com/spec/v1
+oid sha256:a0d3dc6b3c3a232e4cb90d46eb931937032fddd3541aefd0dc5d3f84c2533d3e
+size 616

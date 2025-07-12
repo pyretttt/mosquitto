@@ -1,18 +1,3 @@
-#include "scene/Node.hpp"
-
-using namespace scene;
-
-Node::Node(
-    NodeId identifier,
-    ml::Matrix4f transform
-) 
-    : identifier(identifier)
-    , localTransform(transform)
-    {}
-
-ml::Matrix4f Node::getTransform() const noexcept {
-    if (auto strongPtr = parent.lock()) {
-        return ml::matMul(strongPtr->getTransform(), localTransform);
-    }
-    return localTransform;
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:b4377c6834c3a879a58cca8e25162f9914f6cf2f7b335dece545c6c5cb322fcd
+size 382

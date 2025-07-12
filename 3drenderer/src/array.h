@@ -1,14 +1,3 @@
-#ifndef ARRAY_H
-#define ARRAY_H
-
-#define array_push(array, value)                                              \
-    do {                                                                      \
-        (array) = array_hold((array), 1, sizeof(*(array)));                   \
-        (array)[array_length(array) - 1] = (value);                           \
-    } while (0);
-
-void* array_hold(void* array, int count, int item_size);
-int array_length(void* array);
-void array_free(void* array);
-
-#endif
+version https://git-lfs.github.com/spec/v1
+oid sha256:3ca3ea5b23ec916a5a61a964ef5b9483c4026ded1a70b98eb09612b9992e39b4
+size 496

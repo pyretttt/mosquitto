@@ -1,23 +1,3 @@
-#pragma once
-
-#include <memory>
-#include <functional>
-#include <optional>
-
-template<typename T>
-struct Lazy final {
-    Lazy() = default;
-    explicit Lazy(std::function<T ()> &&factory) : factory(std::move(factory)) {}
-
-    T &operator()() {
-        if (instance) {
-            return instance.value();
-        }
-        instance = factory();
-        return instance.value();
-    }
-
-private:
-    std::optional<T> instance = std::nullopt;
-    std::function<T ()> factory;
-};
+version https://git-lfs.github.com/spec/v1
+oid sha256:f7a11e8791651ef018f90c42aa35f681737f3d3df4bb1a8bc1e6605ba8d56fa2
+size 474

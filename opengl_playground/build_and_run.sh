@@ -1,5 +1,3 @@
-#!/usr/bin/env sh
-(cmake -S . -B ./build -DCMAKE_BUILD_TYPE=Debug &&
-cmake --build ./build -j 4 &&
-cd build && 
-./opengl_playground)
+version https://git-lfs.github.com/spec/v1
+oid sha256:81ce2bea6678b1464e5d300fb934cb8f227291a305634a15854fc30f654a260a
+size 132

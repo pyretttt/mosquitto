@@ -1,20 +1,3 @@
-#pragma once
-
-#include "scene/Component.hpp"
-
-namespace scene {
-    template <typename Attribute>
-    using MeshPtr = std::shared_ptr<Mesh<Attribute>>;
-
-    template<typename Attribute> 
-    struct MeshComponent final : public Component {
-        MeshComponent(
-            std::vector<MeshPtr<Attribute>> meshes,
-            ComponentId id
-        ) 
-        : Component(id)
-        , meshes(std::move(meshes)) {}
-
-        std::vector<MeshPtr<Attribute>> meshes;
-    };
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:4d0a17fb595cde7dad2d8866a88656a24e5dd69550e63ef3046e2e5a225dcff6
+size 472

@@ -1,17 +1,3 @@
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "http debug",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/build/http",
-            "cwd": "${workspaceFolder}",
-            "MIMode": "lldb",
-            "preLaunchTask": "cmake_build"
-        },
-    ]
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:06abfd5d349711caba09f8fba92773905f9ac2863b139ad75054a004d1545588
+size 546

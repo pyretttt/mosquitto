@@ -1,14 +1,3 @@
-#version 410 core
-
-in vec4 ourColor;
-in vec2 TexCoord;
-
-uniform sampler2D texture0;
-uniform sampler2D texture1;
-uniform float uMix;
-
-out vec4 FragColor;
-
-void main() {
-    FragColor = mix(texture(texture0, TexCoord), texture(texture1, TexCoord), uMix);
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:500dfb84dace7e34ee1dddac6150faad4c2b087865e0718137f6fea9f90364a9
+size 254

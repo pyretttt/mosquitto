@@ -1,22 +1,3 @@
-#version 410 core
-
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec3 normal;
-layout (location = 2) in vec2 texCoord;
-
-// Uniforms
-uniform struct Transforms {
-    mat4 worldMatrix;
-    mat4 viewMatrix;
-    mat4 projectionMatrix;
-} transforms;
-
-// Outputs
-out vec3 FragWorldPos;
-
-void main() {
-    vec4 worldPosition = transforms.worldMatrix * vec4(aPos, 1.0);
-    FragWorldPos = vec3(worldPosition);
-    
-    gl_Position = transforms.projectionMatrix * transforms.viewMatrix * worldPosition;
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:140d51145911d6b451db89c08915b6bcbbd322f84d200c68c092b6a98c888f5d
+size 508

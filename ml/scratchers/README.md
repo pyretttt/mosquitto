@@ -1,11 +1,3 @@
-There're a list of components implemented from scratch
-
-Transformers:
-- vanilla transformer is just vanilla attention + transformer layer. Also implements multihead attention
-- transformer - is vanilla transfomer with cache above it.
-- rotary_transformer - is cached transformer with rotary embeddings in between.
-
-- Rotary Embedding is mostly pytorch implementation for single plain attention (not multihead)
-- PositionEmbeggins - is sinusoidal absolute position transformer
-
-- Encoder Decoder Transformer - is seq 2 seq transformer encoder decoder implementation
+version https://git-lfs.github.com/spec/v1
+oid sha256:fc43032c031f269ec901017c8439dba510966b1141d5fba7321a62cf51a3dec0
+size 564

@@ -1,20 +1,3 @@
-#!/usr/bin/env bash
-
-## Pass directory as first argument and optionally pass python version (for scripts/make_venv.sh venv_example 3.12)
-
-if [[ $# -lt 1 ]]; then
-    >&2 echo "Wrong number of arguments " $@
-    exit 1;
-fi
-
-if [ -f ${1} ]; then
-    >&2 echo "Path specifies file, instead of directory"
-    exit 1;
-fi
-
-if [ ! -d ${1} ]; then
-    echo "Directory ${1} does not exist. Creating..."
-    mkdir ${1}
-fi
-echo "Creating venv"
-(cd ${1} && /usr/bin/env "python${2:-3}" -m venv env)
+version https://git-lfs.github.com/spec/v1
+oid sha256:999569efd70199a57fbc1bdab6cfccc1d852c22f44080794e3edd2e8a290fd24
+size 487

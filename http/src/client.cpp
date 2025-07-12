@@ -1,10 +1,3 @@
-#include "client.h"
-
-HttpClient::HttpClient(std::string schema, std::string host, std::optional<int> port) 
-    : schema(schema), 
-    host(host), 
-    port(port.value_or(schema == "https" ? 443 : 80)) {}
-
-void HttpClient::send(Request request, ResponseCompletion completion) {
-    
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:763f95fa4db8cf8a0083d878285329e4a4efccccbb0b53fa42f6b329bfbc2672
+size 284

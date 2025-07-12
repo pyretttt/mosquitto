@@ -1,15 +1,3 @@
-
-# degrees
-fov: 70
-
-# Meters in second
-camera_speed: 5.0
-
-mouse_speed: 0.01
-
-# renderer gl or cpu
-renderer: gl
-
-window:
-  width: 800
-  height: 600
+version https://git-lfs.github.com/spec/v1
+oid sha256:f7f3fa8af9c13397353556e7a19731e3e5163327a8ffb3009e2af90ba64878f5
+size 146

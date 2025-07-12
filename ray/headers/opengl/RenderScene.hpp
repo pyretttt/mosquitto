@@ -1,35 +1,3 @@
-#pragma once
-
-#include "scene/Scene.hpp"
-#include "scene/Identifiers.hpp"
-#include "opengl/RenderPipeline.hpp"
-#include "opengl/glCommon.hpp"
-#include "opengl/Shader.hpp"
-#include "Attributes.hpp"
-
-namespace gl {
-struct RenderPipelineInfo {
-    size_t nodeId;
-    gl::RenderPipeline<> RenderPipeline;
-};
-
-struct RenderScene {
-    RenderScene(
-        scene::ScenePtr scene,
-        gl::PipelineConfiguration configuration,
-        ShaderPtr shader,
-        FramebufferInfo framebuffer
-    );
-
-    void render() const;
-    void prepare();
-
-    scene::ScenePtr scene;
-    gl::PipelineConfiguration configuration;
-    std::vector<RenderPipelineInfo> pbrs;
-    std::unordered_map<scene::MaterialId, Material> materials;
-
-    ShaderPtr shader;
-    FramebufferInfo framebufferInfo;
-};
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:ef63085201091bb81c93066b67db45d58d873ea8f9b308f24bf604ed9b1aace9
+size 780
