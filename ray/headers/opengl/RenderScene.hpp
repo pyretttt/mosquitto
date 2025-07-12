@@ -10,7 +10,7 @@
 namespace gl {
 struct RenderPipelineInfo {
     size_t nodeId;
-    gl::RenderPipeline<attributes::MaterialVertex> RenderPipeline;
+    gl::RenderPipeline<> RenderPipeline;
 };
 
 struct RenderScene {

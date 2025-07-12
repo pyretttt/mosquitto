@@ -37,7 +37,7 @@ void gl::bindTextures(std::vector<gl::TexturePtr> const &textures) {
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-void gl::activateMaterial(scene::Material const &material) {
+void gl::activateMaterial(gl::Material const &material) {
     auto ambientsCounts = material.ambient.size();
     auto diffuseCounts = material.diffuse.size();
     auto specularCounts = material.specular.size();

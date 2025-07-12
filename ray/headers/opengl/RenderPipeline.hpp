@@ -40,13 +40,13 @@ struct PipelineConfiguration {
 };
 
 void bindTextures(std::vector<gl::TexturePtr> const &textures);
-void activateMaterial(scene::Material const &material);
+void activateMaterial(gl::Material const &material);
 
 template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attribute, gl::Attachment>> meshNode
+        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;
@@ -65,14 +65,14 @@ struct RenderPipeline {
     ID ebo = 0;
     ID tex;
 
-    std::shared_ptr<scene::Mesh<Attribute, gl::Attachment>> meshNode;
+    std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode;
     PipelineConfiguration configuration;
 };
 
 template<typename Attribute>
 RenderPipeline<Attribute>::RenderPipeline(
     PipelineConfiguration configuration,
-    std::shared_ptr<scene::Mesh<Attribute, gl::Attachment>> meshNode
+    std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode
 ) 
     : configuration(configuration)
     , meshNode(meshNode) {
@@ -113,11 +113,11 @@ RenderPipeline<Attribute>::~RenderPipeline() {
 template<typename Attribute>
 void RenderPipeline<Attribute>::prepare() {
     std::visit(overload {
-        [&](MaterialPtr const &material) {
-            bindTextures(material->ambient);
-            bindTextures(material->diffuse);
-            bindTextures(material->specular);
-            bindTextures(material->normals);
+        [&](Attachment const &attachment) {
+            bindTextures(attachment.material->ambient);
+            bindTextures(attachment.material->diffuse);
+            bindTextures(attachment.material->specular);
+            bindTextures(attachment.material->normals);
         },
         [&](std::monostate &) {}
     }, meshNode->attachment);
@@ -156,8 +156,8 @@ void RenderPipeline<Attribute>::prepare() {
 template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
         std::visit(overload {
-        [&](MaterialPtr const &material) {
-            activateMaterial(*material);        
+        [&](Attachment const &attachemnt) {
+            activateMaterial(*attachemnt.material);        
         },
         [&](std::monostate &) {}
     }, meshNode->attachment);

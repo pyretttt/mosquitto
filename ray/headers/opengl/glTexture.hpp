@@ -62,6 +62,7 @@ namespace gl {
     using TexturePtr = std::shared_ptr<Texture>;
     
     struct Material {
+        size_t id;
         attributes::Vec3 ambientColor;
         float shiness = 0;
         std::vector<TexturePtr> ambient;

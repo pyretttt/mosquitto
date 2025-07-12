@@ -10,7 +10,7 @@
 #include "opengl/glCommon.hpp"
 
 namespace {
-    auto makePbrs(
+    auto makeRenderPipelines(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
         std::unordered_map<scene::MaterialId, gl::Material> const &materials
@@ -86,6 +86,7 @@ namespace {
                 std::make_pair(
                     static_cast<scene::MaterialId>(id), 
                     gl::Material {
+                        .id = static_cast<scene::MaterialId>(id),
                         .ambientColor = material->ambientColor,
                         .shiness = material->shiness,
                         .ambient = std::move(ambient),
@@ -112,9 +113,10 @@ gl::RenderScene::RenderScene(
     , shader(shader)
     , framebufferInfo(framebufferInfo) {}
 
+
 void gl::RenderScene::prepare() {
     this->materials = makeMaterials(scene);
-    this->pbrs = makePbrs(scene, configuration, materials);
+    this->pbrs = makeRenderPipelines(scene, configuration, materials);
     shader->setup();
 
     std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderPipelineInfo &RenderPipelineInfo) {

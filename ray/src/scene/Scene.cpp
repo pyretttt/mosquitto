@@ -18,8 +18,12 @@ using namespace scene;
 namespace {
     constexpr size_t numVerticesInFace = 3;
 
-    scene::MaterialMeshPtr makeMesh(aiMesh *mesh, aiScene const *scene) {
-        std::vector<attributes::MaterialVertex> vertices;
+    scene::Mesh<> makeMesh(
+        aiMesh *mesh, 
+        aiScene const *scene, 
+        std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap
+    ) {
+        std::vector<attributes::Cases> vertices;
         vertices.reserve(mesh->mNumVertices);
         std::vector<unsigned int> verticesArrayIndices;
         verticesArrayIndices.reserve(mesh->mNumFaces * numVerticesInFace);
@@ -33,11 +37,13 @@ namespace {
                 tex = mesh->mTextureCoords[0][i];
             }
             vertices.push_back(
-                attributes::MaterialVertex { 
-                    .position = {pos.x, pos.y, pos.z},
-                    .normal = {normal.x, normal.y, normal.z},
-                    .tex = {tex.x, tex.y}
-                }
+                attributes::Cases(
+                    attributes::MaterialVertex { 
+                        .position = {pos.x, pos.y, pos.z},
+                        .normal = {normal.x, normal.y, normal.z},
+                        .tex = {tex.x, tex.y}
+                    }
+                )
             );
         }
 
@@ -48,11 +54,11 @@ namespace {
             }
         }
 
-        std::optional<scene::MaterialIdentifier> materialId = mesh->mMaterialIndex >= 0
-            ? std::optional(scene::MaterialIdentifier {.id = mesh->mMaterialIndex})
+        CommonAttachment attachment = mesh->mMaterialIndex >= 0
+            ? 
             : std::nullopt;
         
-        return std::make_shared<scene::Mesh<attributes::MaterialVertex>>(
+        return std::make_shared<scene::Mesh<>>(
             std::move(vertices),
             std::move(verticesArrayIndices),
             materialId,
@@ -143,12 +149,6 @@ Scene Scene::assimpImport(std::filesystem::path path) {
         throw "Failed to load scene";
     }
 
-    auto nodes = genNodes(scene->mRootNode, scene);
-    std::unordered_map<NodeId, scene::NodePtr> nodesMap;
-    std::transform(nodes.begin(), nodes.end(), std::inserter(nodesMap, nodesMap.end()), [](NodePtr &node) {
-        return std::make_pair(node->identifier, node);
-    });
-
     std::unordered_map<TexturePath, TexturePtr> texturesMap;
 
     std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap;
@@ -174,6 +174,12 @@ Scene Scene::assimpImport(std::filesystem::path path) {
             normals
         );
     }
+
+    auto nodes = genNodes(scene->mRootNode, scene, materialsMap);
+    std::unordered_map<NodeId, scene::NodePtr> nodesMap;
+    std::transform(nodes.begin(), nodes.end(), std::inserter(nodesMap, nodesMap.end()), [](NodePtr &node) {
+        return std::make_pair(node->identifier, node);
+    });
 
     return Scene(
         std::move(nodesMap),

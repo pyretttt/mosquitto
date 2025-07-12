@@ -11,11 +11,17 @@ namespace gl {
         scene::CommonAttachment commonAttachment;
         std::shared_ptr<gl::Material> material;
 
-        Attachment(scene::CommonAttachment commonAttachment);
+        Attachment(
+            scene::CommonAttachment commonAttachment,
+            std::shared_ptr<gl::Material> material
+        ) 
+            : commonAttachment(commonAttachment)
+            , material(std::move(material)) {
+        }
     };
 
-using AttachmentCases = std::variant<
-    scene::CommonAttachment,
-    std::monostate
->;
+    using AttachmentCases = std::variant<
+        Attachment,
+        std::monostate
+    >;
 }
