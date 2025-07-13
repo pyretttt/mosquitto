@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:60e87da3becbba1ed5426ab99a50f096399b6e716c5822e715cb36acc472f115
-size 388
+## Usefull links
+
+[OpenCV course](https://github.com/Safe-bet/OpenCV_course.git) 
+
+[Stanford CV Course](https://github.com/StanfordVL/cs131_release)
+
+[CV course youtube](https://www.youtube.com/playlist?list=PLhwIOYE-ldwL6h-peJADfNm8bbO3GlKEy)
+
+[Stanford DeepLearning in CV](https://youtu.be/vT1JzLTH4G4?si=46t74VmAv9R4qDAX)
+
+[Jeremy Jordan website about ML](https://www.jeremyjordan.me)

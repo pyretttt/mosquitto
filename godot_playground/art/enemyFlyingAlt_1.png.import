@@ -1,3 +1,34 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f7d3b9ba52d992e01a3541d0bbb194f6030af0ce3f8c2d71de08b942cf769d93
-size 785
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://d7x2cdmxbcby"
+path="res://.godot/imported/enemyFlyingAlt_1.png-559f599b16c69b112c1b53f6332e9489.ctex"
+metadata={
+"vram_texture": false
+}
+
+[deps]
+
+source_file="res://art/enemyFlyingAlt_1.png"
+dest_files=["res://.godot/imported/enemyFlyingAlt_1.png-559f599b16c69b112c1b53f6332e9489.ctex"]
+
+[params]
+
+compress/mode=0
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=false
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=1

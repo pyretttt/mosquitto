@@ -1,3 +1,17 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2c8dfb1219be9d8dad06bca0b4407d8fb2243711edd6237aa484270970b3858f
-size 377
+#pragma once
+
+#include <functional>
+#include <optional>
+
+#include "common.h"
+
+using ResponseCompletion = std::function<void(Response)>;
+
+struct HttpClient {
+    HttpClient(std::string schema, std::string host, std::optional<int> port = std::nullopt);
+    void send(Request request, ResponseCompletion completion);
+
+    std::string schema;
+    std::string host;
+    int port;
+};

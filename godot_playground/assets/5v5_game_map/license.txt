@@ -1,3 +1,11 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2d3b74dd2eaa6e9775df0bb1d7b18f7d31f5a9f175b71c5b6eaf50065e1403cf
-size 662
+Model Information:
+* title:	5v5 game map
+* source:	https://sketchfab.com/3d-models/5v5-game-map-24c2a1468ef44df0925b5c84fc7587c0
+* author:	noyou (https://sketchfab.com/zsm123)
+
+Model License:
+* license type:	CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)
+* requirements:	Author must be credited. No commercial use.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "5v5 game map" (https://sketchfab.com/3d-models/5v5-game-map-24c2a1468ef44df0925b5c84fc7587c0) by noyou (https://sketchfab.com/zsm123) licensed under CC-BY-NC-4.0 (http://creativecommons.org/licenses/by-nc/4.0/)

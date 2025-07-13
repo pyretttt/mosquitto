@@ -1,3 +1,23 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:f0267fd36f9e4238f2bcade6150191ec5525bcfe1f84e38eb894e56f4e19eb4c
-size 660
+{
+    "version": "1.0.0",
+    "configurations": [
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Launch Server",
+            "program": "${workspaceRoot}/build/redis_server",
+            "MIMode": "lldb",
+            "preLaunchTask": "cmake_build_root",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "cppdbg",
+            "request": "launch",
+            "name": "Launch Client",
+            "program": "${workspaceRoot}/build/redis_client",
+            "MIMode": "lldb",
+            "preLaunchTask": "cmake_build_root",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

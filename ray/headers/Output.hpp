@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:4169951209fb243fd5668ab091fa813f643efd9d8a0097564144becf01457f34
-size 342
+#include <ostream>
+
+#include "MathUtils.hpp"
+
+std::ostream& operator<<(std::ostream& os, ml::Vector3f const &vec)
+{
+      os << vec.x << " " << vec.y << " " << vec.z;
+      return os;
+}
+
+std::ostream& operator<<(std::ostream& os, ml::Vector4f const &vec)
+{
+      os << vec.x << " " << vec.y << " " << vec.z << " " << vec.w;
+      return os;
+}

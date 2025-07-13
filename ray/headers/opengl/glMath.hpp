@@ -1,3 +1,21 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:09cf192fb21bca76c0b40fff9df40ac3f005b82bd0004ce66294c8fdffc7dbd3
-size 445
+#pragma once
+
+#include "glm/common.hpp"
+
+#include "MathUtils.hpp"
+
+namespace gl {
+    ml::Matrix4f glPerspectiveMatrix(
+        float fovRadians,
+        float aspect,
+        float near,
+        float far
+    ) noexcept {
+        return glm::perspective(fovRadians, aspect, near, far);
+    }
+
+    template <typename Vector>
+    auto inline getPtr(Vector const &vec) -> decltype(glm::value_ptr(vec)) {
+        return glm::value_ptr(vec);
+    }
+}

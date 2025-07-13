@@ -1,3 +1,64 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:045671fe0b9b92ad7c759ec72f711fab9f3af6b697940c08c0063c09c0e40ca1
-size 1567
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cmake_build",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "./build",
+                "-j",
+                "4"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Runs make"
+        },
+        {
+            "type": "shell",
+            "label": "CppCheck",
+            "command": "cppcheck",
+            "args": [
+                "-q",
+                "-j",
+                "4",
+                "-Iheaders",
+                "--std=c++23",
+                "--enable=all",
+                "./src",
+                "./headers"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "none",
+                "isDefault": false
+            },
+            "detail": "Runs static analysis",
+            "problemMatcher": []
+        },
+        {
+            "type": "shell",
+            "label": "CTest",
+            "command": "ctest",
+            "args": [
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/build"
+            },
+            "group": {
+                "kind": "none",
+                "isDefault": false
+            },
+            "detail": "Runs tests",
+            "problemMatcher": []
+        }
+    ],
+    "version": "2.0.0"
+}

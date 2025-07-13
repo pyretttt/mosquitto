@@ -1,3 +1,26 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:acf21661b6f3fdffeda7c0dd1ba8122d7bee44eef5fb5c4daadbab2c8257b321
-size 595
+#pragma once
+
+#include "scene/Tex.hpp"
+#include "scene/Identifiers.hpp"
+#include "Attributes.hpp"
+
+namespace scene {
+
+struct Material {
+    Material(
+        attributes::Vec3 ambientColor,
+        float shiness,
+        std::vector<TexturePtr> ambient,
+        std::vector<TexturePtr> diffuse,
+        std::vector<TexturePtr> specular,
+        std::vector<TexturePtr> normals
+    );
+
+    attributes::Vec3 ambientColor;
+    float shiness = 0;
+    std::vector<TexturePtr> ambient;
+    std::vector<TexturePtr> diffuse;
+    std::vector<TexturePtr> specular;
+    std::vector<TexturePtr> normals;
+};
+}

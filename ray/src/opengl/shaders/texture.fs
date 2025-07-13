@@ -1,3 +1,12 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:aa7788c946f23d4ebe798aebb6e14ebc249a0579fd89e6472dde75fa34eb46b6
-size 170
+#version 410 core
+
+in vec3 FragWorldPos;
+in vec2 TexCoord;
+
+out vec4 FragColor;
+
+uniform sampler2D texture0;
+
+void main() {
+    FragColor = texture(texture0, TexCoord);
+}

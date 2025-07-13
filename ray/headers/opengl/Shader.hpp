@@ -1,3 +1,57 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:634b776a6c0924af3663e1e96d777f9af95d4c94b33d8df6fc4a6f87c6cd4722
-size 1414
+#pragma once
+
+#include <string>
+#include <filesystem>
+
+#include "GL/glew.h"
+
+#include "opengl/glCommon.hpp"
+#include "opengl/glTexture.hpp"
+#include "Attributes.hpp"
+#include "Core.hpp"
+
+namespace gl {
+class Shader final {
+public:
+    ID program = 0;
+
+    Shader(std::filesystem::path vertex, std::filesystem::path fragment, bool eagerInit = false);
+
+    void use();
+    void setup();
+
+    template<typename Value>
+    void setUniform(
+        std::string const &key,
+        Value const &value
+    ) const;
+
+    ~Shader();
+
+    std::filesystem::path vertex;
+    std::filesystem::path fragment;
+};
+
+template<typename Value>
+void Shader::setUniform(
+    std::string const &key,
+    Value const &value
+) const {
+    throw std::logic_error("Not implemented");
+}
+
+using ShaderPtr = std::shared_ptr<Shader>;
+
+inline ShaderPtr materialShader = std::make_shared<gl::Shader>(gl::Shader(
+    std::filesystem::path("shaders").append("material.vs"),
+    std::filesystem::path("shaders").append("material.fs")       
+));
+inline ShaderPtr outlineShader = std::make_shared<gl::Shader>(gl::Shader(
+    std::filesystem::path("shaders").append("outline.vs"),
+    std::filesystem::path("shaders").append("outline.fs")       
+));
+inline ShaderPtr textureShader = std::make_shared<gl::Shader>(gl::Shader(
+    std::filesystem::path("shaders").append("texture.vs"),
+    std::filesystem::path("shaders").append("texture.fs")       
+));
+}

@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:93d4720fa791abbfa0bbafba36b32d014084d013569b24d8ca2e6304d751c739
-size 918
+[gd_scene load_steps=5 format=3 uid="uid://bqcjylgvilwoc"]
+
+[ext_resource type="Script" path="res://flight_camera.gd" id="1_o5orp"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w40nb"]
+albedo_color = Color(0.729167, 0.35, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_dyhga"]
+material = SubResource("StandardMaterial3D_w40nb")
+height = 1.0
+radial_segments = 16
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_rbvus"]
+radius = 1.0
+
+[node name="FlightCamera" type="MeshInstance3D"]
+cast_shadow = 0
+mesh = SubResource("CapsuleMesh_dyhga")
+script = ExtResource("1_o5orp")
+
+[node name="Area3D" type="Area3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Area3D"]
+shape = SubResource("SphereShape3D_rbvus")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.5)
+current = true
+fov = 60.0
+near = 0.001

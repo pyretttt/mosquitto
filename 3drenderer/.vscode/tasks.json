@@ -1,3 +1,24 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:48099b18aafd16428deea341948482cfb3b8175d39fcb71d35c5ab058cc5ad72
-size 521
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cmake_build",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "./build",
+                "-j",
+                "4"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "detail": "Runs make"
+        }
+    ],
+    "version": "2.0.0"
+}

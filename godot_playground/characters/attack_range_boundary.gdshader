@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e345fd87f333a3256e98cbc9b84e12f0acc576bdddf96096ad178028815db445
-size 267
+shader_type canvas_item;
+
+void vertex() {
+}
+
+void fragment() {
+	COLOR = vec4(0.5, 0.5, 0.5, 1.0);
+}
+
+//void light() {
+	// Called for every pixel for every light affecting the material.
+	// Uncomment to replace the default light processing function with this one.
+//}

@@ -1,3 +1,16 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:37afab029a74e7c92c6b84614392b7fc5767474948e7513c9770237433eddcfb
-size 307
+#version 410 core
+
+layout (location = 0) in vec3 aPos;
+layout (location = 1) in vec3 normal;
+layout (location = 2) in vec2 texCoord;
+
+// Outputs
+out vec3 FragWorldPos;
+out vec2 TexCoord;
+
+void main() {
+    FragWorldPos = vec3(aPos);
+    TexCoord = texCoord;
+    
+    gl_Position = vec4(FragWorldPos, 1.0);
+}

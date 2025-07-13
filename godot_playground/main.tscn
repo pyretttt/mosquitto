@@ -1,3 +1,62 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:40ffaf801454eeb92be037f87f1a2e036f1e01ade623166b780b7f5b41424e67
-size 2417
+[gd_scene load_steps=9 format=3 uid="uid://iq35gkf582qc"]
+
+[ext_resource type="PackedScene" uid="uid://bxidlfroi48fk" path="res://game_map.tscn" id="1_3ghbh"]
+[ext_resource type="Script" path="res://main.gd" id="1_ex88s"]
+[ext_resource type="Script" path="res://flight_camera.gd" id="3_l7wv8"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w40nb"]
+albedo_color = Color(0.729167, 0.35, 1, 1)
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_dyhga"]
+material = SubResource("StandardMaterial3D_w40nb")
+height = 1.0
+radial_segments = 16
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_rbvus"]
+radius = 1.0
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_vv0yd"]
+albedo_color = Color(0.454902, 0.0941176, 0.792157, 1)
+
+[sub_resource type="BoxMesh" id="BoxMesh_3farh"]
+material = SubResource("StandardMaterial3D_vv0yd")
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_ex88s")
+
+[node name="Sketchfab_Scene" parent="." instance=ExtResource("1_3ghbh")]
+transform = Transform3D(0.00707107, 0, -0.00707107, 0, 0.01, 0, 0.00707107, 0, 0.00707107, -12, 0, -5)
+
+[node name="FlightCamera" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.573576, 0.819152, 0, -0.819152, 0.573576, 0, 27, 27)
+cast_shadow = 0
+mesh = SubResource("CapsuleMesh_dyhga")
+script = ExtResource("3_l7wv8")
+
+[node name="Area3D" type="Area3D" parent="FlightCamera"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="FlightCamera/Area3D"]
+shape = SubResource("SphereShape3D_rbvus")
+
+[node name="Camera3D" type="Camera3D" parent="FlightCamera"]
+transform = Transform3D(1, -5.96046e-08, 3.72529e-08, 1.49012e-08, 1, 1.19209e-07, -7.45058e-09, 2.98023e-08, 1, 0, 0, 0)
+current = true
+fov = 70.0
+near = 0.001
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.898017, -0.418319, 0.136288, 0, 0.309773, 0.95081, -0.439961, -0.853844, 0.278181, 42.574, 159.971, 61.8239)
+light_color = Color(0.93, 1, 0.972, 1)
+light_energy = 3.5
+shadow_enabled = true
+shadow_opacity = 0.8
+shadow_blur = 4.0
+directional_shadow_max_distance = 400.0
+
+[node name="RotationPoint" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 30, 10)
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 19.56, 52.9, 14.654)
+visible = false
+mesh = SubResource("BoxMesh_3farh")

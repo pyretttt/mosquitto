@@ -1,3 +1,36 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e52141b4104a7ee739a74b4cdd0a714969bd15a8c3526fcf14a1dafe872809c9
-size 1054
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://cca4iugbubpse"
+path.s3tc="res://.godot/imported/-buff_baseColor.png-31594e7f25367fde25a1e3219518500b.s3tc.ctex"
+path.etc2="res://.godot/imported/-buff_baseColor.png-31594e7f25367fde25a1e3219518500b.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+
+[deps]
+
+source_file="res://assets/5v5_game_map/textures/-buff_baseColor.png"
+dest_files=["res://.godot/imported/-buff_baseColor.png-31594e7f25367fde25a1e3219518500b.s3tc.ctex", "res://.godot/imported/-buff_baseColor.png-31594e7f25367fde25a1e3219518500b.etc2.ctex"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

@@ -1,3 +1,27 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:d7bc50e395aba32ea9109da7302db9cd92c2f137f31b1896a6a837e97bf5e31c
-size 543
+#include <exception>
+#include <iostream>
+#include <memory>
+
+#include "SDL.h"
+
+#include "Lazy.hpp"
+#include "ReactivePrimitives.hpp"
+#include "RunLoop.cpp"
+#include "Controller.hpp"
+#include "opengl/Renderer.hpp"
+#include "Camera.hpp"
+#include "Plane.hpp"
+
+int main() {
+    if (SDL_Init(SDL_INIT_EVERYTHING)) {
+        std::cerr << "Failed to initialize SDL: " << SDL_GetError() << std::endl;
+        return -1;
+    }
+
+    ml::Vector3f a = {0, 0, 0};
+    ml::Vector3f b = {10, 15, 20};
+
+    RunLoop::instance()
+        .start();
+    return 0;
+}

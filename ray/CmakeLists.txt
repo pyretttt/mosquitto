@@ -1,3 +1,81 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:68c667ec304b98a04daf459580602607b95e807459ee41b74a5ab15e096a0b02
-size 2487
+cmake_minimum_required(VERSION 3.23)
+
+set(PROJ_NAME RAY)
+project(${PROJ_NAME} VERSION 1.0 LANGUAGES C CXX)
+
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+### Target Declaration
+
+set(OPENGL_SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src/opengl)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src SRC_FILES)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/sdl SDL_FILES)
+aux_source_directory(${OPENGL_SRC_DIR} OPENGL_FILES)
+aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/scene SCENE_FILES)
+add_executable(${PROJ_NAME} ${SRC_FILES} ${SDL_FILES} ${OPENGL_FILES} ${SCENE_FILES})
+
+message("SCENE_FILES ARE: ${SCENE_FILES}")
+
+find_package(OpenGL REQUIRED)
+find_package(glew CONFIG REQUIRED)
+find_package(yaml-cpp CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
+find_package(SDL2 CONFIG REQUIRED)
+
+target_compile_features(${PROJ_NAME} PRIVATE cxx_std_23)
+target_link_libraries(
+  ${PROJ_NAME} 
+  PRIVATE 
+  ${OPENGL_gl_LIBRARY} 
+  glm::glm 
+  GLEW::GLEW 
+  yaml-cpp::yaml-cpp 
+  assimp::assimp
+)
+target_link_libraries(${PROJ_NAME}
+    PRIVATE
+    $<TARGET_NAME_IF_EXISTS:SDL2::SDL2main>
+    $<IF:$<TARGET_EXISTS:SDL2::SDL2>,SDL2::SDL2,SDL2::SDL2-static>
+)
+target_include_directories(${PROJ_NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers ${OPENGL_INCLUDE_DIR})
+
+### File configuration
+
+file(GLOB_RECURSE GL_SHADER_FILES RELATIVE "${OPENGL_SRC_DIR}" "${OPENGL_SRC_DIR}/shaders/*")
+foreach(file IN LISTS GL_SHADER_FILES) 
+  configure_file("${OPENGL_SRC_DIR}/${file}" "${CMAKE_BINARY_DIR}/${file}" COPYONLY)
+endforeach()
+
+file(GLOB_RECURSE RESOURCE_FILES RELATIVE "${CMAKE_CURRENT_LIST_DIR}" "resources/*")
+foreach(file IN LISTS RESOURCE_FILES) 
+  configure_file("${file}" "${CMAKE_BINARY_DIR}/${file}" COPYONLY)
+endforeach()
+
+configure_file("${CMAKE_CURRENT_LIST_DIR}/Config.yml" "${CMAKE_BINARY_DIR}/Config.yml" COPYONLY)
+
+### TESTS
+
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    GIT_REPOSITORY https://github.com/google/googletest.git
+    GIT_TAG b514bdc898e2951020cbdca1304b75f5950d1f59
+    GIT_SHALLOW TRUE
+)
+FetchContent_MakeAvailable(googletest)
+
+enable_testing()
+
+add_executable(
+  ReactivePrimitivesTests
+  tests/ReactivePrimitivesTests.cpp
+)
+target_link_libraries(
+  ReactivePrimitivesTests
+  GTest::gtest_main
+)
+target_compile_features(ReactivePrimitivesTests PRIVATE cxx_std_23)
+target_include_directories(ReactivePrimitivesTests PRIVATE ${CMAKE_CURRENT_LIST_DIR}/headers)
+include(GoogleTest)
+gtest_discover_tests(ReactivePrimitivesTests)

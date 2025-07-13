@@ -1,3 +1,14 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0c73ac64e85fffb99cee9d4499c6bb6b2c5c9ad71ab8ca67a19a1c9686ef434a
-size 280
+from dataclasses import dataclass
+
+@dataclass
+class TransformerConfig:
+    input_size: int
+    attn_d_k: int
+    transformer_proj_dim: int
+    dropout: float
+    nlayers: int
+    is_self_attn: bool
+    max_seq_len: int
+    nheads: int
+    pre_layer_norm: bool
+    use_cache: bool

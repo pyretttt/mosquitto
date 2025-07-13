@@ -1,3 +1,13 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:bdb40cfcdfad4172d00a1d5d913eea566a1738ea93e45fb46db22f952e545e17
-size 307
+Just a http demo server. Uses **kqueue** as socket management tool.
+Implementation is very basic and doesn't satisfy rfc standarts.
+
+It certainly contains a lot of bugs, but it works. 
+
+TODO: 
+- Http client
+- Http multipartdata
+- Http encoding
+- Http streaming
+- TLS
+- Http chunking
+- Correct error handling

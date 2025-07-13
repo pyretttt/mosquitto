@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:b595acf42ea22c18441d45c1a68c274acbc145f3837f8594e449b7ee9f5f55b9
-size 624
+[gd_resource type="JSON" format=3 uid="uid://bjh7tg2566huc"]
+
+[resource]
+data = {
+"abilities": [],
+"armor": 0.0,
+"attack_damage": 1.1,
+"attack_range": 1.0,
+"attack_speed": 0.5,
+"class": "warrior",
+"crit_odds": 0.0,
+"fight_anims": ["hit"],
+"hp": 1.0,
+"level_up": {
+"armor_update": 0.05,
+"attack_damage_update": 0.1,
+"attack_range_update": 0.0,
+"attack_speed_update": 0.1,
+"crit_odds_update": 0.05,
+"hp_update": 0.1,
+"magic_resistance_update": 0.05,
+"move_speed_update": 0.1
+},
+"magic_resistance": 0.0,
+"move_speed": 1.0,
+"name": "Kaila",
+"run_anim": "run",
+"scene_path": "characters/kaila.tscn",
+"stance_anims": ["stance"]
+}

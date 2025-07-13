@@ -1,3 +1,31 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e00134caf32aa6255f81e7e8409ca923f82c7e9a35556cf6068a5623964d34f6
-size 728
+#pragma once
+
+#include "scene/Component.hpp"
+
+namespace scene {
+    template<typename RenderPipeline>
+    struct RenderComponent final : public Component {
+
+       RenderComponent(
+            RenderPipeline RenderPipeline,
+            ComponentId id
+       ) 
+       : Component(id)
+       , RenderPipeline(std::move(RenderPipeline)) {}
+
+        void prepare();
+        void render() const noexcept;
+
+        RenderPipeline RenderPipeline;
+    };
+
+    template<typename RenderPipeline>
+    void RenderComponent<RenderPipeline>::prepare() {
+        RenderPipeline.prepare();
+    }
+
+    template<typename RenderPipeline>
+    void RenderComponent<RenderPipeline>::render() const noexcept {
+        RenderPipeline.render();
+    }
+}

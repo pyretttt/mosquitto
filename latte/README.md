@@ -1,3 +1,5 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:0f46878e3ba2e23c65d64caef5b1227f0a9ace2a94f0fa520439a30bd562834a
-size 183
+## WIFI
+To get wifi working go with
+`sudo apt-get upgrade linux-generic-hwe-20.04`
+
+[More](https://askubuntu.com/questions/1398392/ubuntu-20-04-lts-driver-intel-wi-fi-6e-ax211-160mhz)

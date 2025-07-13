@@ -1,3 +1,30 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:00f90f1581c6e21751f47e934702fb3d2a92a17636d12bb8ee606f80c0e1b40e
-size 547
+#pragma once
+
+#include <memory>
+#include <utility>
+#include <any>
+
+#include "Mesh.hpp"
+#include "GlobalConfig.hpp"
+#include "Events.hpp"
+
+enum class RendererType {
+    CPU,
+    OpenGL
+};
+
+enum class RenderMethod {
+    vertices,
+    wireframe,
+    fill
+};
+
+class Renderer {
+public:
+    using MeshData = std::vector<MeshNode>;
+    virtual void prepareViewPort() = 0;
+    virtual void processInput(Event, float dt) = 0;
+    virtual void update(MeshData const &data, float dt) = 0;
+    virtual void render() const = 0;
+    virtual ~Renderer() = 0;
+};

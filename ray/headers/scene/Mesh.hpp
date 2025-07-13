@@ -1,3 +1,48 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:1ba221a6ac7c8bdea8a7270a240d0444b0a47a6cb0cac951335137baab53b7d7
-size 1326
+#pragma once
+
+#include <memory>
+#include <numeric>
+#include <unordered_map>
+#include <vector>
+#include <variant>
+
+#include "MathUtils.hpp"
+#include "scene/Material.hpp"
+#include "scene/Identifiers.hpp"
+#include "scene/Attachment.hpp"
+#include "Attributes.hpp"
+
+namespace scene {
+
+template <typename Attr = attributes::Cases, typename Attachment = CommonAttachment>
+struct Mesh {
+    Mesh(
+        std::vector<Attr> vertexArray,
+        std::vector<unsigned int> vertexArrayIndices,
+        Attachment attachment,
+        MeshId identifier
+    );
+
+    std::vector<Attr> vertexArray;
+    std::vector<unsigned int> vertexArrayIndices;
+    Attachment attachment;
+    MeshId const identifier;
+};
+
+template <typename Attr, typename Attachment>
+Mesh<Attr, Attachment>::Mesh(
+    std::vector<Attr> vertexArray,
+    std::vector<unsigned int> vertexArrayIndices,
+    Attachment attachment,
+    MeshId identifier
+) 
+    : vertexArray(std::move(vertexArray))
+    , vertexArrayIndices(std::move(vertexArrayIndices))
+    , attachment(std::move(attachment))
+    , identifier(identifier) {
+    if (this->vertexArrayIndices.empty()) {
+        this->vertexArrayIndices = std::vector<unsigned int>(this->vertexArray.size());
+        std::iota(this->vertexArrayIndices.begin(), this->vertexArrayIndices.end(), this->vertexArray.size());
+    }
+}
+}

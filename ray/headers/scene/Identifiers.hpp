@@ -1,3 +1,32 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:35d415072f05f0a750b6b9c83b3e5309c329b177f477578054f0ec5af99c9a66
-size 619
+#pragma once
+
+#include <string>
+
+namespace scene {
+
+
+    using NodeId = size_t;
+    using MaterialId = size_t;
+    using MeshId = size_t;
+    using TexturePath = std::string;
+    using ComponentId = size_t;
+
+    struct Material;
+    using MaterialPtr = std::shared_ptr<Material>;
+
+    struct MaterialIdentifier {
+        MaterialId id = 0;
+    };
+
+    struct Node;
+    using NodePtr = std::shared_ptr<Node>;
+
+    struct TexData;
+    using TexturePtr = std::shared_ptr<TexData>;
+
+    struct Scene;
+    using ScenePtr = std::shared_ptr<Scene>;
+
+    struct Component;
+    using ComponentPtr = std::shared_ptr<Component>;
+}

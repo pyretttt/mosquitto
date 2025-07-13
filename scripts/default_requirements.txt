@@ -1,3 +1,15 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:2886d61b643f62ef7248ad8b88e9394d7f1fbdea819b7b80f9799309a5dfaff0
-size 130
+jupyter
+matplotlib
+numexpr
+numpy
+pandas
+Pillow
+protobuf
+psutil
+scikit-learn
+scipy
+sympy
+opencv-python
+torch 
+torchvision
+lightning
