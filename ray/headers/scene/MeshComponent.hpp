@@ -1,20 +1,13 @@
 #pragma once
 
 #include "scene/Component.hpp"
+#include "Attributes.hpp"
+#include "scene/Attachment.hpp"
 
 namespace scene {
-    template <typename Attribute>
-    using MeshPtr = std::shared_ptr<Mesh<Attribute>>;
+    template <typename Attribute, typename Attachment>
+    using MeshPtr = std::shared_ptr<Mesh<Attribute, Attachment>>;
 
-    template<typename Attribute> 
-    struct MeshComponent final : public Component {
-        MeshComponent(
-            std::vector<MeshPtr<Attribute>> meshes,
-            ComponentId id
-        ) 
-        : Component(id)
-        , meshes(std::move(meshes)) {}
-
-        std::vector<MeshPtr<Attribute>> meshes;
-    };
+    template<typename Attribute = attributes::Cases, typename Attachment = CommonAttachment>
+    using MeshComponent = ContainerComponent<std::vector<MeshPtr<Attribute, Attachment>>;
 }

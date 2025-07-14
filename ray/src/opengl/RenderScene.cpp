@@ -5,7 +5,7 @@
 #include "opengl/RenderScene.hpp"
 #include "scene/Material.hpp"
 #include "scene/Node.hpp"
-#include "scene/ShaderInfoComponent.hpp"
+#include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
 #include "opengl/glCommon.hpp"
 
@@ -141,8 +141,8 @@ void gl::RenderScene::render() const {
     for (auto const &RenderPipelineInfo : pbrs) {
         shader->use();
         auto const &node = scene->nodes.at(RenderPipelineInfo.nodeId);
-        if (auto component = node->getComponent<scene::ShaderInfoComponent>()) {
-            auto shaderInfo = std::static_pointer_cast<scene::ShaderInfoComponent>(component.value());
+        if (auto component = node->getComponent<scene::AttributesInfoComponent>()) {
+            auto shaderInfo = std::static_pointer_cast<scene::AttributesInfoComponent>(component.value());
             for (auto const &[key, attribute] : shaderInfo->uniforms) {
                 shader->setUniform(key, attributes::Cases(attribute));
             }

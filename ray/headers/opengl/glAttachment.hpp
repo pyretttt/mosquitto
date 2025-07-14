@@ -3,22 +3,17 @@
 #include <variant>
 
 #include "opengl/glTexture.hpp"
-#include "scene/Attachment.hpp"
+#include "scene/Component.hpp"
 
 namespace gl {
-
     struct Attachment final {
-        scene::CommonAttachment commonAttachment;
         std::shared_ptr<gl::Material> material;
 
-        Attachment(
-            scene::CommonAttachment commonAttachment,
-            std::shared_ptr<gl::Material> material
-        ) 
-            : commonAttachment(commonAttachment)
-            , material(std::move(material)) {
-        }
+        Attachment(std::shared_ptr<gl::Material> material) 
+            : material(std::move(material)) {}
     };
+
+    using AttachmentComponent = scene::ContainerComponent<Attachment>;
 
     using AttachmentCases = std::variant<
         Attachment,

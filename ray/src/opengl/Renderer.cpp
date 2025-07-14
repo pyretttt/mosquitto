@@ -21,7 +21,7 @@
 #include "scene/Tex.hpp"
 #include "MathUtils.hpp"
 #include "scene/Node.hpp"
-#include "scene/ShaderInfoComponent.hpp"
+#include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
 #include "Light.hpp"
 
@@ -99,62 +99,62 @@ namespace {
 
     Lazy<gl::RenderScene> renderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeRenderScene));
 
-    auto quadMesh = std::make_shared<scene::Mesh<attributes::Cases>>(
-        std::vector<attributes::Cases>({
-            attributes::MaterialVertex {
-                .position = attributes::Vec3 { -1.f, 1.f, 0.f },
-                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-                .tex = attributes::Vec2 { 0.f, 1.f }
-            },
-            attributes::MaterialVertex {
-                .position = attributes::Vec3 { -1.f, -1.f, 0.f },
-                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-                .tex = attributes::Vec2 { 0.f, 0.f }
-            },
-            attributes::MaterialVertex {
-                .position = attributes::Vec3 { 1.f, -1.f, 0.f },
-                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-                .tex = attributes::Vec2 { 1.f, 0.f }
-            },
-            attributes::MaterialVertex {
-                .position = attributes::Vec3 { 1.f, 1.f, 0.f },
-                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-                .tex = attributes::Vec2 { 1.f, 1.f }
-            },
-        }),
-        std::vector<unsigned int>({
-            0, 1, 2, 1, 2, 3
-        }),
-        std::monostate(),
-        InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId()
-    );
+    // auto quadMesh = std::make_shared<scene::Mesh<attributes::Cases>>(
+    //     std::vector<attributes::Cases>({
+    //         attributes::MaterialVertex {
+    //             .position = attributes::Vec3 { -1.f, 1.f, 0.f },
+    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+    //             .tex = attributes::Vec2 { 0.f, 1.f }
+    //         },
+    //         attributes::MaterialVertex {
+    //             .position = attributes::Vec3 { -1.f, -1.f, 0.f },
+    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+    //             .tex = attributes::Vec2 { 0.f, 0.f }
+    //         },
+    //         attributes::MaterialVertex {
+    //             .position = attributes::Vec3 { 1.f, -1.f, 0.f },
+    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+    //             .tex = attributes::Vec2 { 1.f, 0.f }
+    //         },
+    //         attributes::MaterialVertex {
+    //             .position = attributes::Vec3 { 1.f, 1.f, 0.f },
+    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+    //             .tex = attributes::Vec2 { 1.f, 1.f }
+    //         },
+    //     }),
+    //     std::vector<unsigned int>({
+    //         0, 1, 2, 1, 2, 3
+    //     }),
+    //     std::monostate(),
+    //     InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId()
+    // );
 
-    scene::NodePtr quadNode = std::make_shared<scene::Node>(
-        InstanceIdGenerator<scene::Node>::getInstanceId()
-    );
+    // scene::NodePtr quadNode = std::make_shared<scene::Node>(
+    //     InstanceIdGenerator<scene::Node>::getInstanceId()
+    // );
 
-    scene::ScenePtr textureScene = std::make_shared<scene::Scene>(
-        std::unordered_map<scene::NodeId, scene::NodePtr>({
-            std::make_pair(quadNode->identifier, quadNode)
-        }),
-        std::unordered_map<scene::MaterialId, scene::MaterialPtr>({}),
-        std::unordered_map<scene::TexturePath, scene::TexturePtr>({})
-    );
+    // scene::ScenePtr textureScene = std::make_shared<scene::Scene>(
+    //     std::unordered_map<scene::NodeId, scene::NodePtr>({
+    //         std::make_pair(quadNode->identifier, quadNode)
+    //     }),
+    //     std::unordered_map<scene::MaterialId, scene::MaterialPtr>({}),
+    //     std::unordered_map<scene::TexturePath, scene::TexturePtr>({})
+    // );
 
-    gl::RenderScene makeTextureRenderScene() {
-        return gl::RenderScene(
-            textureScene,
-            config,
-            gl::textureShader,
-            gl::FramebufferInfo {
-                .framebuffer = gl::defaultFrameBuffer(), // TODO: From window
-                .useDepth = false,
-                .useStencil = false
-            }
-        );
-    }
+    // gl::RenderScene makeTextureRenderScene() {
+    //     return gl::RenderScene(
+    //         textureScene,
+    //         config,
+    //         gl::textureShader,
+    //         gl::FramebufferInfo {
+    //             .framebuffer = gl::defaultFrameBuffer(), // TODO: From window
+    //             .useDepth = false,
+    //             .useStencil = false
+    //         }
+    //     );
+    // }
     
-    Lazy<gl::RenderScene> quadRenderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeTextureRenderScene));
+    // Lazy<gl::RenderScene> quadRenderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeTextureRenderScene));
 }
 
 gl::Renderer::Renderer(
@@ -219,7 +219,7 @@ void gl::Renderer::prepareViewPort() {
     // mockRenderPipeline.prepare();
     // mockRenderScene.prepare();
     renderScene().prepare();
-    quadRenderScene().prepare();
+    // quadRenderScene().prepare();
 
     configureGl();
 }
@@ -305,8 +305,8 @@ void gl::Renderer::update(MeshData const &data, float dt) {
 
     auto const &cameraPosition = camera()->getOrigin();
     for (auto const &[nodeId, node] : scene->nodes) {
-        node->addComponent<scene::ShaderInfoComponent>(
-            InstanceIdGenerator<scene::ShaderInfoComponent>::getInstanceId(),
+        node->addComponent<scene::AttributesInfoComponent>(
+            InstanceIdGenerator<scene::AttributesInfoComponent>::getInstanceId(),
             std::unordered_map<std::string, attributes::Cases>({
                 std::make_pair<std::string, attributes::Cases>(
                     "cameraPos",
@@ -340,7 +340,7 @@ void gl::Renderer::render() const {
         }
     }, renderScene().framebufferInfo.framebuffer);
 
-    quadRenderScene().render();
+    // quadRenderScene().render();
 
     SDL_GL_SwapWindow(config->window.get());
 }

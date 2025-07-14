@@ -16,7 +16,7 @@
 #include "scene/Tex.hpp"
 #include "MathUtils.hpp"
 #include "scene/Node.hpp"
-#include "scene/ShaderInfoComponent.hpp"
+#include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
 #include "Light.hpp"
 
