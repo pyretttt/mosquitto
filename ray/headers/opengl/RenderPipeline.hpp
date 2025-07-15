@@ -46,7 +46,7 @@ template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode
+        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode,
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;
@@ -156,7 +156,7 @@ void RenderPipeline<Attribute>::prepare() {
 template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
         std::visit(overload {
-        [&](Attachment const &attachemnt) {
+        [&](MaterialAttachment const &attachemnt) {
             activateMaterial(*attachemnt.material);        
         },
         [&](std::monostate &) {}

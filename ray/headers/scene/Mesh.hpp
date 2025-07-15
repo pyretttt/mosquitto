@@ -14,7 +14,7 @@
 
 namespace scene {
 
-template <typename Attr = attributes::Cases, typename Attachment = CommonAttachment>
+template <typename Attr = attributes::Cases, typename Attachment = AttachmentCases>
 struct Mesh {
     Mesh(
         std::vector<Attr> vertexArray,

@@ -28,5 +28,5 @@ namespace scene {
     using ScenePtr = std::shared_ptr<Scene>;
 
     struct Component;
-    using ComponentPtr = std::shared_ptr<Component>;
+    using ComponentPtr = std::unique_ptr<Component>;
 }

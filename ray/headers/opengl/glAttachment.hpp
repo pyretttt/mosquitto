@@ -3,20 +3,22 @@
 #include <variant>
 
 #include "opengl/glTexture.hpp"
+#include "scene/Identifiers.hpp"
 #include "scene/Component.hpp"
 
 namespace gl {
-    struct Attachment final {
+    struct MaterialAttachment final {
+        scene::MaterialId id;
         std::shared_ptr<gl::Material> material;
 
-        Attachment(std::shared_ptr<gl::Material> material) 
-            : material(std::move(material)) {}
+        MaterialAttachment(std::shared_ptr<gl::Material> material, scene::MaterialId id) 
+            : material(std::move(material))
+            , id(id) {}
     };
 
-    using AttachmentComponent = scene::ContainerComponent<Attachment>;
-
+    
     using AttachmentCases = std::variant<
-        Attachment,
+        MaterialAttachment,
         std::monostate
     >;
 }

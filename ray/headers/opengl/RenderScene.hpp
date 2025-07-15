@@ -10,7 +10,7 @@
 namespace gl {
 struct RenderPipelineInfo {
     size_t nodeId;
-    gl::RenderPipeline<> RenderPipeline;
+    gl::RenderPipeline<> renderPipeline;
 };
 
 struct RenderScene {
@@ -26,8 +26,8 @@ struct RenderScene {
 
     scene::ScenePtr scene;
     gl::PipelineConfiguration configuration;
-    std::vector<RenderPipelineInfo> pbrs;
-    std::unordered_map<scene::MaterialId, Material> materials;
+    std::vector<RenderPipelineInfo> renderPipelines;
+    std::unordered_map<scene::MaterialId, std::shared_ptr<Material>> materials;
 
     ShaderPtr shader;
     FramebufferInfo framebufferInfo;

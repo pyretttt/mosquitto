@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <variant>
 
 #include "assimp/Importer.hpp"
 #include "assimp/DefaultLogger.hpp"
@@ -11,14 +12,16 @@
 #include "scene/Scene.hpp"
 #include "scene/Node.hpp"
 #include "scene/Mesh.hpp"
+#include "scene/Attachment.hpp"
 #include "Core.hpp"
+#include "scene/MeshComponent.hpp"
 
 using namespace scene;
 
 namespace {
     constexpr size_t numVerticesInFace = 3;
 
-    scene::Mesh<> makeMesh(
+    std::shared_ptr<scene::Mesh<>> makeMesh(
         aiMesh *mesh, 
         aiScene const *scene, 
         std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap
@@ -54,28 +57,35 @@ namespace {
             }
         }
 
-        CommonAttachment attachment = mesh->mMaterialIndex >= 0
-            ? 
-            : std::nullopt;
+        AttachmentCases attachment = mesh->mMaterialIndex >= 0
+            ? AttachmentCases(scene::MaterialAttachment {
+                .material = materialsMap.at(mesh->mMaterialIndex), 
+                .id = mesh->mMaterialIndex
+            })
+            : AttachmentCases(std::monostate());
         
         return std::make_shared<scene::Mesh<>>(
             std::move(vertices),
             std::move(verticesArrayIndices),
-            materialId,
-            static_cast<MeshId>(InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId())
+            attachment,
+            static_cast<MeshId>(InstanceIdGenerator<scene::Mesh<>>::getInstanceId())
         );
     }
 
     scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
-        std::vector<scene::MaterialMeshPtr> meshes;
+        std::vector<std::shared_ptr<scene::Mesh<>>> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
             meshes.emplace_back(makeMesh(scene->mMeshes[node->mMeshes[i]], scene));
         }
 
-        return std::make_shared<scene::Node>(
-            static_cast<NodeId>(InstanceIdGenerator<scene::Node>::getInstanceId()),
-            std::move(meshes)
+        auto nodePtr = std::make_shared<scene::Node>(
+            static_cast<NodeId>(InstanceIdGenerator<scene::Node>::getInstanceId())
         );
+        nodePtr->addComponent<scene::MeshComponent<>>(
+            std::move(meshes),
+            InstanceIdGenerator<scene::MeshComponent<>>::getInstanceId()
+        );
+        return nodePtr;
     }
 
     std::vector<scene::NodePtr> genNodes(aiNode *node, aiScene const *scene) {

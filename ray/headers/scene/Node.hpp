@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <typeinfo>
+#include <optional>
 
 #include "MathUtils.hpp"
 #include "scene/Mesh.hpp"

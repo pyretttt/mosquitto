@@ -2,14 +2,37 @@
 #include <filesystem>
 #include <variant>
 
+#include "Core.hpp"
 #include "opengl/RenderScene.hpp"
 #include "scene/Material.hpp"
 #include "scene/Node.hpp"
+#include "scene/Mesh.hpp"
 #include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
 #include "opengl/glCommon.hpp"
 
 namespace {
+    auto toGlMesh(
+        std::shared_ptr<scene::Mesh<>> nativeMesh,
+        std::unordered_map<scene::MaterialId, gl::Material> const &materials
+    ) -> decltype(auto) {
+        gl::AttachmentCases attachment = std::visit(overload {
+            [&](scene::MaterialAttachment &attachment) {
+                return gl::AttachmentCases(gl::MaterialAttachment(materials.at(attachment.id), attachment.id));
+            },
+            [&](std::monostate) {
+                return std::monostate();
+            }
+        }, nativeMesh->attachment);
+
+        return std::make_shared<scene::Mesh<attributes::Cases, gl::AttachmentCases>>(
+            nativeMesh->vertexArray,
+            nativeMesh->vertexArrayIndices,
+            attachment,
+            InstanceIdGenerator<scene::Mesh<attributes::Cases, gl::AttachmentCases>>::getInstanceId()
+        );
+    }
+
     auto makeRenderPipelines(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
@@ -18,20 +41,18 @@ namespace {
         std::vector<gl::RenderPipelineInfo> result;
 
         for (auto const &[id, node] : scene->nodes) {
-            for (auto &mesh : node->meshes) {
-                if (!mesh->material.has_value()) {
-                    continue;
-                }
-                auto materialId = mesh->material.value().id;
-                if (!materials.contains(materialId)) {
-                    throw "Material::NotFound";
-                }
+            auto meshComponent = node->getComponent<scene::Mesh<>>();
+            if (!meshComponent.has_value()) {
+                assert("No mesh associated");
+            }
+            auto const &meshes = meshComponent.value().value();
+            for (auto &mesh : meshes) {
+                auto glMesh = toGlMesh(mesh, materials);
                 result.emplace_back(
                     static_cast<size_t>(id),
-                    gl::RenderPipeline<attributes::MaterialVertex>(
+                    gl::RenderPipeline<>(
                         configuration,
-                        mesh,
-                        materials.at(materialId)
+                        glMesh
                     )
                 );
             }
@@ -45,7 +66,7 @@ namespace {
     }
 
     auto makeMaterials(scene::ScenePtr scene) -> decltype(auto) {
-        std::unordered_map<scene::MaterialId, gl::Material> result;
+        std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> result;
         for (auto const &[id, material] : scene->materials) {
             std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
             auto unitIndex = gl::samplerLocationOffset;
@@ -85,15 +106,15 @@ namespace {
             result.emplace(
                 std::make_pair(
                     static_cast<scene::MaterialId>(id), 
-                    gl::Material {
-                        .id = static_cast<scene::MaterialId>(id),
-                        .ambientColor = material->ambientColor,
-                        .shiness = material->shiness,
-                        .ambient = std::move(ambient),
-                        .specular = std::move(specular),
-                        .diffuse = std::move(diffuse),
-                        .normals = std::move(normals)
-                    }
+                    std::make_shared<gl::Material>(
+                        static_cast<scene::MaterialId>(id),
+                        material->ambientColor,
+                        material->shiness,
+                        std::move(ambient),
+                        std::move(specular),
+                        std::move(diffuse),
+                        std::move(normals)
+                    )
                 )
             );
         }
@@ -116,11 +137,11 @@ gl::RenderScene::RenderScene(
 
 void gl::RenderScene::prepare() {
     this->materials = makeMaterials(scene);
-    this->pbrs = makeRenderPipelines(scene, configuration, materials);
+    this->renderPipelines = makeRenderPipelines(scene, configuration, materials);
     shader->setup();
 
-    std::for_each(pbrs.begin(), pbrs.end(), [](gl::RenderPipelineInfo &RenderPipelineInfo) {
-        RenderPipelineInfo.RenderPipeline.prepare();
+    std::for_each(renderPipelines.begin(), renderPipelines.end(), [](gl::RenderPipelineInfo &RenderPipelineInfo) {
+        RenderPipelineInfo.renderPipeline.prepare();
     });
 }
 
@@ -138,18 +159,18 @@ void gl::RenderScene::render() const {
         glDisable(GL_DEPTH_TEST);
     }
 
-    for (auto const &RenderPipelineInfo : pbrs) {
+    for (auto const &pipelineInfo : renderPipelines) {
         shader->use();
-        auto const &node = scene->nodes.at(RenderPipelineInfo.nodeId);
+        auto const &node = scene->nodes.at(pipelineInfo.nodeId);
         if (auto component = node->getComponent<scene::AttributesInfoComponent>()) {
             auto shaderInfo = std::static_pointer_cast<scene::AttributesInfoComponent>(component.value());
-            for (auto const &[key, attribute] : shaderInfo->uniforms) {
+            for (auto const &[key, attribute] : shaderInfo.value()) {
                 shader->setUniform(key, attributes::Cases(attribute));
             }
         }
 
-        auto const &material = RenderPipelineInfo.RenderPipeline.material;
+        auto const &material = pipelineInfo.renderPipeline;
         shader->setUniform("material", material);
-        RenderPipelineInfo.RenderPipeline.render();
+        pipelineInfo.renderPipeline.render();
     }
 }
