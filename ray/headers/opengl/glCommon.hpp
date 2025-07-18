@@ -7,6 +7,8 @@
 #include "GL/glew.h"
 
 #include "Core.hpp"
+#include "scene/MeshComponent.hpp"
+#include "opengl/glAttachment.hpp"
 
 namespace gl {
     using ID = unsigned int;
@@ -80,4 +82,6 @@ namespace gl {
     FramebufferOnly inline defaultFrameBuffer() {
         return FramebufferOnly {};
     }
+
+    using MeshComponent = scene::MeshComponent<attributes::Cases, gl::AttachmentCases>;
 }

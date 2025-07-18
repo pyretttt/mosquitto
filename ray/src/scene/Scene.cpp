@@ -72,10 +72,20 @@ namespace {
         );
     }
 
-    scene::NodePtr makeNode(aiScene const *scene, aiNode *node) {
+    scene::NodePtr makeNode(
+        aiScene const *scene,
+        aiNode *node,
+        std::unordered_map<MaterialId, scene::MaterialPtr> const &materialsMap 
+    ) {
         std::vector<std::shared_ptr<scene::Mesh<>>> meshes;
         for (size_t i = 0; i < node->mNumMeshes; i++) {
-            meshes.emplace_back(makeMesh(scene->mMeshes[node->mMeshes[i]], scene));
+            meshes.emplace_back(
+                makeMesh(
+                    scene->mMeshes[node->mMeshes[i]],
+                    scene,
+
+                )
+            );
         }
 
         auto nodePtr = std::make_shared<scene::Node>(
@@ -88,11 +98,15 @@ namespace {
         return nodePtr;
     }
 
-    std::vector<scene::NodePtr> genNodes(aiNode *node, aiScene const *scene) {
-        auto rootNode = makeNode(scene, node);
+    std::vector<scene::NodePtr> genNodes(
+        aiNode *node,
+        aiScene const *scene, 
+        std::unordered_map<MaterialId, scene::MaterialPtr> const &materialsMap
+    ) {
+        auto rootNode = makeNode(scene, node, materialsMap);
         std::vector<scene::NodePtr> children;
         for (size_t i = 0; i < node->mNumChildren; i++) {
-            auto childNodes = genNodes(node->mChildren[i], scene);
+            auto childNodes = genNodes(node->mChildren[i], scene, materialsMap);
             std::for_each(childNodes.begin(), childNodes.end(), [&rootNode, &children](scene::NodePtr &child){
                 child->parent = rootNode;
                 children.push_back(child);

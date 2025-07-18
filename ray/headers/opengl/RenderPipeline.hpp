@@ -46,7 +46,7 @@ template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode,
+        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNod,
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;

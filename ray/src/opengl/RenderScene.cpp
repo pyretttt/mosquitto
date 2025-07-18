@@ -41,11 +41,11 @@ namespace {
         std::vector<gl::RenderPipelineInfo> result;
 
         for (auto const &[id, node] : scene->nodes) {
-            auto meshComponent = node->getComponent<scene::Mesh<>>();
-            if (!meshComponent.has_value()) {
+            std::shared_ptr<scene::MeshComponent<>> meshComponent = node->getComponent<scene::MeshComponent<>>();
+            if (meshComponent == nullptr) {
                 assert("No mesh associated");
             }
-            auto const &meshes = meshComponent.value().value();
+            auto const &meshes = meshComponent->;
             for (auto &mesh : meshes) {
                 auto glMesh = toGlMesh(mesh, materials);
                 result.emplace_back(
