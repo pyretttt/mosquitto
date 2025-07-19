@@ -7,6 +7,7 @@ To get wifi working go with
 
 ## Setup Static IP for ethernet
 Paste:
+
 ```
 network:
   version: 2
