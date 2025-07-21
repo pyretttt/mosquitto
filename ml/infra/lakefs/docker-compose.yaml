@@ -3,8 +3,8 @@ version: "3.5"
 services:
   lakefs:
     image: treeverse/lakefs:1
-    depends_on:
-      - minio-setup
+    # depends_on:
+    #   - minio-setup
     ports:
       - "8000:8000"
     environment:
@@ -17,7 +17,7 @@ services:
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=minioadmin
       - LAKEFS_LOGGING_LEVEL=INFO
       - LAKEFS_STATS_ENABLED=${LAKEFS_STATS_ENABLED:-1}
-      - LAKEFS_INSTALLATION_USER_NAME=rename
+      - LAKEFS_INSTALLATION_USER_NAME=bob
       - LAKEFS_INSTALLATION_ACCESS_KEY_ID=AKIAIOSFOLKFSSAMPLES
       - LAKEFS_INSTALLATION_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
       - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFOLKFSSAMPLES
@@ -27,9 +27,7 @@ services:
     command:
       - |
         lakefs run --local-settings &
-        echo "---- Creating repository ----"
-        wait-for -t 60 lakefs:8000 -- lakectl repo create lakefs://quickstart s3://quickstart --sample-data || true
-        # wait-for -t 60 lakefs:8000 -- lakectl repo create lakefs://example s3://example || true
+        wait-for -t 60 lakefs:8000
         echo ""
         wait-for -t 60 minio:9000 && echo '------------------------------------------------
 
@@ -37,12 +35,7 @@ services:
               
                               Username : minioadmin
                               Password : minioadmin
-              '
-        echo "------------------------------------------------"
-        wait-for -t 60 jupyter-notebook:8888 && echo '
-
-              Jupyter:       http://127.0.0.1:8888/
-              '
+        '
         echo "------------------------------------------------"
         echo ""
         echo "lakeFS Web UI: http://127.0.0.1:8000/      >(.＿.)<"
@@ -55,18 +48,18 @@ services:
         echo ""
         wait
 
-  minio-setup:
-    image: minio/mc:latest
-    environment:
-      - MC_HOST_lakefs=http://minioadmin:minioadmin@minio:9000
-    depends_on:
-      - minio
-    volumes:
-      - /opt/lakefs/data:/data
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-        - |
-          mc mb lakefs/quickstart lakefs/example lakefs/sample-data
+  # minio-setup:
+  #   image: minio/mc:latest
+  #   environment:
+  #     - MC_HOST_lakefs=http://minioadmin:minioadmin@minio:9000
+  #   depends_on:
+  #     - minio
+  #   volumes:
+  #     - /opt/lakefs/data:/data
+  #   entrypoint: ["/bin/sh", "-c"]
+  #   command:
+  #       - |
+  #         mc mb lakefs/quickstart lakefs/example lakefs/sample-data
 
   minio:
     image: minio/minio:latest
