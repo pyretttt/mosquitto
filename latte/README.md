@@ -37,3 +37,6 @@ On connecting device for example Mac ethernet should be configured as gateway ab
 
 ![ether_setup|480](ether_setup.png)
 
+# External ssd for data
+
+Copied `configs/extssd.mount` into `/etc/systemd/system/extssd.mount` and enabled through `systemctl enable extssd.mount` it mounts disk to `/mnt/data_storage`
