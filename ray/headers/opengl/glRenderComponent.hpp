@@ -6,5 +6,5 @@
 namespace gl {
  
     template <typename Attributes = attributes::Cases>
-    using RenderComponent = ContainerComponent<RenderPipeline<Attributes>>;
+    using RenderComponent = scene::ContainerComponent<RenderPipeline<Attributes>>;
 }

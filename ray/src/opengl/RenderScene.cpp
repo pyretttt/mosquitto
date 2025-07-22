@@ -7,6 +7,7 @@
 #include "scene/Material.hpp"
 #include "scene/Node.hpp"
 #include "scene/Mesh.hpp"
+#include "scene/Tex.hpp"
 #include "scene/MeshComponent.hpp"
 #include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
@@ -20,7 +21,7 @@ namespace {
         std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> const &materials
     ) -> decltype(auto) {
         gl::AttachmentCases attachment = std::visit(overload {
-            [&](scene::MaterialAttachment &attachment) {
+            [&](scene::MaterialAttachment const &attachment) {
                 return gl::AttachmentCases(
                     gl::MaterialAttachment(
                         materials.at(attachment.id), 
@@ -28,8 +29,8 @@ namespace {
                     )
                 );
             },
-            [&](std::monostate) {
-                return std::monostate();
+            [&](std::monostate _) {
+                return gl::AttachmentCases(std::monostate());
             }
         }, nativeMesh->attachment);
 
@@ -61,6 +62,7 @@ namespace {
                     glMesh
                 );
                 node->addComponent<gl::RenderComponent<>>(
+                    InstanceIdGenerator<gl::RenderComponent<>>::getInstanceId(),
                     std::move(renderPipeline)
                 );
             }

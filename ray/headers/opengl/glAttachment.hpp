@@ -2,9 +2,9 @@
 
 #include <variant>
 
-#include "opengl/glTexture.hpp"
 #include "scene/Identifiers.hpp"
 #include "scene/Component.hpp"
+#include "opengl/glTexture.hpp"
 
 namespace gl {
     struct MaterialAttachment final {
