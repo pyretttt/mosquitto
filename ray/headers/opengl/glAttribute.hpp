@@ -12,13 +12,6 @@ namespace gl {
     void bindAttributes(Attr const &test);
 
     template<>
-    void bindAttributes(attributes::Cases const &test) {
-        std::visit(overload {
-            [&](auto const &attr) { bindAttributes(attr); }
-        });
-    };
-
-    template<>
     void inline bindAttributes<attributes::FloatAttr>(attributes::FloatAttr const &test) {
         glVertexAttribPointer(
             0,
@@ -147,4 +140,11 @@ namespace gl {
         glEnableVertexAttribArray(1);
         glEnableVertexAttribArray(2);
     }
+
+    template<>
+    void bindAttributes<attributes::Cases>(attributes::Cases const &test) {
+        std::visit(overload {
+            [&]<typename T>(T const &attr) { bindAttributes<T>(attr); }
+        }, test);
+    };
 }

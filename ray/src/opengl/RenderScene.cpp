@@ -12,6 +12,7 @@
 #include "opengl/Uniforms.hpp"
 #include "opengl/glCommon.hpp"
 #include "opengl/glRenderComponent.hpp"
+#include "opengl/glTexture.hpp"
 
 namespace {
     auto toGlMesh(

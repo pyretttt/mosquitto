@@ -18,10 +18,10 @@ struct Node {
     );
 
     template <typename Comp, typename... Args>
-    void Node::addComponent(Args... args) noexcept;
+    void addComponent(Args... args) noexcept;
 
     template <typename Comp>
-    std::shared_ptr<std::decay_t<Comp>> Node::getComponent() const noexcept;
+    std::shared_ptr<std::decay_t<Comp>> getComponent() const noexcept;
 
     ml::Matrix4f getTransform() const noexcept;
 
@@ -43,7 +43,7 @@ template <typename Comp>
 std::shared_ptr<std::decay_t<Comp>> Node::getComponent() const noexcept {
     auto &typeInfo = typeid(std::decay_t<Comp>);
     if (components.find(typeInfo.hash_code()) != components.end()) {
-        return static_cast<std::shared_ptr<std::decay_t<Comp>>>(components.at(typeInfo.hash_code()));
+        return static_pointer_cast<std::decay_t<Comp>>(components.at(typeInfo.hash_code()));
     }
     return std::shared_ptr<std::decay_t<Comp>>();
 }
