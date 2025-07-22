@@ -63,6 +63,8 @@ services:
 
   minio:
     image: minio/minio:latest
+    volumes:
+      - ${LAKEFS_MINIO_VOLUME:-/opt/lakefs/data}:/data
     ports:
       - "9000:9000"
       - "9001:9001"
