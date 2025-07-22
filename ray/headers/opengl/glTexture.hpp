@@ -5,11 +5,10 @@
 #include "GL/glew.h"
 
 #include "scene/Tex.hpp"
-#include "glCommon.hpp"
+#include "opengl/glCommon.hpp"
 #include "Attributes.hpp"
 
 namespace gl {
-    using TexDeleter = std::function<void (ID *)>;
 
     struct TextureMode {
         GLenum wrapModeS = GL_REPEAT;

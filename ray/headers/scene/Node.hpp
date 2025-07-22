@@ -18,7 +18,7 @@ struct Node {
     );
 
     template <typename Comp, typename... Args>
-    void addComponent(Args... args) noexcept;
+    void Node::addComponent(Args... args) noexcept;
 
     template <typename Comp>
     std::shared_ptr<std::decay_t<Comp>> Node::getComponent() const noexcept;
@@ -45,6 +45,6 @@ std::shared_ptr<std::decay_t<Comp>> Node::getComponent() const noexcept {
     if (components.find(typeInfo.hash_code()) != components.end()) {
         return static_cast<std::shared_ptr<std::decay_t<Comp>>>(components.at(typeInfo.hash_code()));
     }
-    return std::shared_ptr<std::decay_t<Comp>>>();
+    return std::shared_ptr<std::decay_t<Comp>>();
 }
 }

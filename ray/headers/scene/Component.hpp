@@ -18,7 +18,7 @@ namespace scene {
         ContainerComponent(ComponentId id, Type value);
         
         Type value;
-        ~ContainerComponent();
+        ~ContainerComponent() override;
     };
 
     template<typename Type>

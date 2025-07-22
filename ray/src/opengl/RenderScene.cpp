@@ -7,18 +7,25 @@
 #include "scene/Material.hpp"
 #include "scene/Node.hpp"
 #include "scene/Mesh.hpp"
+#include "scene/MeshComponent.hpp"
 #include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
 #include "opengl/glCommon.hpp"
+#include "opengl/glRenderComponent.hpp"
 
 namespace {
     auto toGlMesh(
         std::shared_ptr<scene::Mesh<>> nativeMesh,
-        std::unordered_map<scene::MaterialId, gl::Material> const &materials
+        std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> const &materials
     ) -> decltype(auto) {
         gl::AttachmentCases attachment = std::visit(overload {
             [&](scene::MaterialAttachment &attachment) {
-                return gl::AttachmentCases(gl::MaterialAttachment(materials.at(attachment.id), attachment.id));
+                return gl::AttachmentCases(
+                    gl::MaterialAttachment(
+                        materials.at(attachment.id), 
+                        attachment.id
+                    )
+                );
             },
             [&](std::monostate) {
                 return std::monostate();
@@ -36,7 +43,7 @@ namespace {
     auto makeRenderPipelines(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
-        std::unordered_map<scene::MaterialId, gl::Material> const &materials
+        std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> const &materials
     ) -> decltype(auto) {
         std::vector<gl::RenderPipelineInfo> result;
 
@@ -45,15 +52,15 @@ namespace {
             if (meshComponent == nullptr) {
                 assert("No mesh associated");
             }
-            auto const &meshes = meshComponent->;
+            std::vector<scene::MeshPtr<>> &meshes = meshComponent->value;
             for (auto &mesh : meshes) {
                 auto glMesh = toGlMesh(mesh, materials);
-                result.emplace_back(
-                    static_cast<size_t>(id),
-                    gl::RenderPipeline<>(
-                        configuration,
-                        glMesh
-                    )
+                auto renderPipeline = gl::RenderPipeline<>(
+                    configuration,
+                    glMesh
+                );
+                node->addComponent<gl::RenderComponent<>>(
+                    std::move(renderPipeline)
                 );
             }
         }
@@ -163,8 +170,7 @@ void gl::RenderScene::render() const {
         shader->use();
         auto const &node = scene->nodes.at(pipelineInfo.nodeId);
         if (auto component = node->getComponent<scene::AttributesInfoComponent>()) {
-            auto shaderInfo = std::static_pointer_cast<scene::AttributesInfoComponent>(component.value());
-            for (auto const &[key, attribute] : shaderInfo.value()) {
+            for (auto const &[key, attribute] : component->value) {
                 shader->setUniform(key, attributes::Cases(attribute));
             }
         }

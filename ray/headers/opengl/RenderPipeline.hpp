@@ -11,7 +11,7 @@
 #include "LoadTextFile.hpp"
 #include "glAttribute.hpp"
 #include "Core.hpp"
-#include "glCommon.hpp"
+#include "opengl/glCommon.hpp"
 #include "opengl/glTexture.hpp"
 #include "opengl/glAttachment.hpp"
 #include "scene/Mesh.hpp"
@@ -46,7 +46,7 @@ template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNod,
+        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;
@@ -63,7 +63,6 @@ struct RenderPipeline {
     ID vbo = 0;
     ID vao = 0;
     ID ebo = 0;
-    ID tex;
 
     std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode;
     PipelineConfiguration configuration;
@@ -113,7 +112,7 @@ RenderPipeline<Attribute>::~RenderPipeline() {
 template<typename Attribute>
 void RenderPipeline<Attribute>::prepare() {
     std::visit(overload {
-        [&](Attachment const &attachment) {
+        [&](MaterialAttachment const &attachment) {
             bindTextures(attachment.material->ambient);
             bindTextures(attachment.material->diffuse);
             bindTextures(attachment.material->specular);

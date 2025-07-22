@@ -83,7 +83,7 @@ namespace {
                 makeMesh(
                     scene->mMeshes[node->mMeshes[i]],
                     scene,
-
+                    materialsMap
                 )
             );
         }
