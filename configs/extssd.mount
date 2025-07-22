@@ -1,0 +1,13 @@
+[Unit]
+Description=Mount ADATA SSD when plugged in
+After=udisks2.service
+
+[Mount]
+What=/dev/disk/by-uuid/0C6A-F586
+Where=/mnt/data_storage
+Type=exfat
+Options=uid=1000,gid=1000,dmask=777,fmask=777,nofail
+TimeoutSec=30
+
+[Install]
+WantedBy=multi-user.target
