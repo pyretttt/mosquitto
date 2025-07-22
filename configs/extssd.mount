@@ -1,6 +1,6 @@
 [Unit]
 Description=Mount ADATA SSD when plugged in
-After=udisks2.service
+After=local-fs.target
 
 [Mount]
 What=/dev/disk/by-uuid/0C6A-F586
