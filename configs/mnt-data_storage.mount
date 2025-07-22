@@ -6,7 +6,7 @@ After=local-fs.target
 What=/dev/disk/by-uuid/0C6A-F586
 Where=/mnt/data_storage
 Type=exfat
-Options=uid=1000,gid=1000,dmask=777,fmask=777,nofail
+Options=uid=1000,gid=1000,dmask=022,fmask=133,nofail
 TimeoutSec=30
 
 [Install]
