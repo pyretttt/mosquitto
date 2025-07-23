@@ -3,8 +3,12 @@ version: "3.5"
 services:
   lakefs:
     image: treeverse/lakefs:1
-    # depends_on:
-    #   - minio-setup
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
     ports:
       - "8000:8000"
     environment:
@@ -23,6 +27,8 @@ services:
       - LAKECTL_CREDENTIALS_ACCESS_KEY_ID=AKIAIOSFOLKFSSAMPLES
       - LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
       - LAKECTL_SERVER_ENDPOINT_URL=http://localhost:8000
+      - LAKEFS_DATABASE_TYPE=postgres
+      - LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |
@@ -69,6 +75,24 @@ services:
       - "9000:9000"
       - "9001:9001"
     entrypoint: ["minio", "server", "/data", "--console-address", ":9001"]
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 15s
+      timeout: 15s
+      retries: 5
+
+  postgres:
+    image: postgres:latest
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: lakefs
+      POSTGRES_PASSWORD: lakefs
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "lakefs"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
 
 networks:
   default:
