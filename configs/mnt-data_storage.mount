@@ -3,10 +3,10 @@ Description=Mount ADATA SSD when plugged in
 After=local-fs.target
 
 [Mount]
-What=/dev/disk/by-uuid/0C6A-F586
+What=/dev/disk/by-uuid/0520b2a2-c684-4743-b01e-b42ed6f3b027
 Where=/mnt/data_storage
-Type=exfat
-Options=uid=1000,gid=1000,dmask=022,fmask=133,nofail
+Type=ext4
+Options=defaults,nofail
 TimeoutSec=30
 
 [Install]
