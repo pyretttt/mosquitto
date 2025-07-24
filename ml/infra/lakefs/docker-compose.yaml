@@ -3,16 +3,15 @@ version: "3.5"
 services:
   lakefs:
     image: treeverse/lakefs:1
-    user: "1000:1000"
     depends_on:
-      minio:
-        condition: service_healthy
+      - minio
     volumes:
       - ${LAKEFS_VOLUME}/metadata:/metadata
+      - ${LAKEFS_VOLUME}/lakefs:/lakefs
+    user: "1000:1000"
     ports:
       - "8000:8000"
     environment:
-      - LAKEFS_DATABASE_TYPE=local
       - LAKEFS_BLOCKSTORE_TYPE=s3
       - LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE=true
       - LAKEFS_BLOCKSTORE_S3_ENDPOINT=http://minio:9000
