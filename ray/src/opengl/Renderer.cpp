@@ -23,6 +23,7 @@
 #include "scene/Node.hpp"
 #include "scene/AttributesInfoComponent.hpp"
 #include "opengl/Uniforms.hpp"
+#include "opengl/glFramebuffers.hpp"
 #include "Light.hpp"
 
 namespace fs = std::filesystem;
@@ -90,7 +91,8 @@ namespace {
             config,
             gl::materialShader,
             gl::FramebufferInfo {
-                .framebuffer = gl::makeFullFrameBuffer({800, 600}), // TODO: From window
+                // .framebuffer = gl::makeFullFrameBuffer({800, 600}), // TODO: From window
+                .framebuffer = gl::defaultFrameBuffer(),
                 .useDepth = true,
                 .useStencil = true
             }

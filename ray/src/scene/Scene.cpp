@@ -92,8 +92,8 @@ namespace {
             static_cast<NodeId>(InstanceIdGenerator<scene::Node>::getInstanceId())
         );
         nodePtr->addComponent<scene::MeshComponent<>>(
-            std::move(meshes),
-            InstanceIdGenerator<scene::MeshComponent<>>::getInstanceId()
+            InstanceIdGenerator<scene::MeshComponent<>>::getInstanceId(),
+            std::move(meshes)
         );
         return nodePtr;
     }

@@ -142,8 +142,12 @@ namespace gl {
     }
 
     template<>
-    void bindAttributes<attributes::Cases>(attributes::Cases const &test) {
+    void inline bindAttributes<attributes::Cases>(attributes::Cases const &test) {
         std::visit(overload {
+            [&](attributes::Mat4 const &) { throw std::logic_error("attributes::iColor as vertex attributes is nonsense"); },
+            [&](attributes::iColor const &) { throw std::logic_error("attributes::iColor as vertex attributes is nonsense"); },
+            [&](attributes::Transforms const &) { throw std::logic_error("attributes::Transforms as vertex attributes is nonsense"); },
+            [&](attributes::IntegerAttr const &) { throw std::logic_error("attributes::IntegerAttr as vertex attributes is nonsense"); },
             [&]<typename T>(T const &attr) { bindAttributes<T>(attr); }
         }, test);
     };

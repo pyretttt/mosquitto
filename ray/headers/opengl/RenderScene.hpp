@@ -4,6 +4,7 @@
 #include "scene/Identifiers.hpp"
 #include "opengl/RenderPipeline.hpp"
 #include "opengl/glCommon.hpp"
+#include "opengl/glFramebuffers.hpp"
 #include "opengl/Shader.hpp"
 #include "Attributes.hpp"
 
@@ -26,7 +27,6 @@ struct RenderScene {
 
     scene::ScenePtr scene;
     gl::PipelineConfiguration configuration;
-    std::vector<RenderPipelineInfo> renderPipelines;
     std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> materials;
 
     ShaderPtr shader;

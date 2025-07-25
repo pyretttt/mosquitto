@@ -5,7 +5,7 @@
 #include "MathUtils.hpp"
 
 namespace gl {
-    ml::Matrix4f glPerspectiveMatrix(
+    ml::Matrix4f inline glPerspectiveMatrix(
         float fovRadians,
         float aspect,
         float near,

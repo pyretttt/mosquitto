@@ -154,7 +154,7 @@ void RenderPipeline<Attribute>::prepare() {
 
 template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
-        std::visit(overload {
+    std::visit(overload {
         [&](MaterialAttachment const &attachemnt) {
             activateMaterial(*attachemnt.material);        
         },

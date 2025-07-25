@@ -3,8 +3,6 @@
 #include <string>
 
 namespace scene {
-
-
     using NodeId = size_t;
     using MaterialId = size_t;
     using MeshId = size_t;
