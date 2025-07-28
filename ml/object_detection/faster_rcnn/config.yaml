@@ -1,0 +1,3 @@
+train_path: "/mnt/data_storage/datasets/voc/train_val"
+test_path: "/mnt/data_storage/datasets/voc/test"
+
