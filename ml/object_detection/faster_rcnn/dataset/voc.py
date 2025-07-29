@@ -98,7 +98,33 @@ class VocDataset(Dataset):
         }
         
         
+class AugmentedVocDataset(Dataset):
+    def __init__(
+        self, 
+        base_dataset: Dataset, 
+        p: float = 0.5
+    ):
+        self.p = p
+        self.base_dataset = base_dataset
+        self.transforms = torchvision.transforms.Compose([
+            torchvision.transforms.ToTensor(),
+            torchvision.transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            )
+        ])
+
+
+    def __len__(self):
+        return len(self.base_dataset)
         
+
+    def __getitem__(self, index):
+        sample = self.base_dataset[index]
+        sample["im"] = self.transforms(sample["im"])
+        return sample
+
+
 if __name__ == "__main__":
     import yaml
     with open("object_detection/faster_rcnn/config.yaml") as file:
