@@ -62,4 +62,5 @@ void gl::activateMaterial(gl::Material const &material) {
         glActiveTexture(GL_TEXTURE0 + material.ambient.at(i)->unitIndex);
         glBindTexture(GL_TEXTURE_2D, material.normals.at(i)->id);
     }
+    glActiveTexture(GL_TEXTURE0);
 }

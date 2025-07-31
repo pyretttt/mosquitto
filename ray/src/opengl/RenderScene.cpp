@@ -15,6 +15,7 @@
 #include "opengl/glRenderComponent.hpp"
 #include "opengl/glTexture.hpp"
 #include "opengl/glFramebuffers.hpp"
+#include "opengl/Shader.hpp"
 
 namespace {
     auto toGlMesh(
@@ -49,6 +50,8 @@ namespace {
         std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> const &materials
     ) -> decltype(auto) {
         for (auto const &[id, node] : scene->nodes) {
+            std::vector<gl::RenderPipeline<>> renderPipelines;
+
             std::shared_ptr<scene::MeshComponent<>> meshComponent = node->getComponent<scene::MeshComponent<>>();
             if (meshComponent == nullptr) {
                 assert("No mesh associated");
@@ -58,13 +61,15 @@ namespace {
                 auto glMesh = toGlMesh(mesh, materials);
                 auto renderPipeline = gl::RenderPipeline<>(
                     configuration,
-                    glMesh
+                    std::move(glMesh),
+                    gl::materialShader
                 );
-                node->addComponent<gl::RenderComponent<>>(
-                    InstanceIdGenerator<gl::RenderComponent<>>::getInstanceId(),
-                    std::move(renderPipeline)
-                );
+                renderPipelines.emplace_back(std::move(renderPipeline));
             }
+            node->addComponent<gl::RenderComponent<>>(
+                InstanceIdGenerator<gl::RenderComponent<>>::getInstanceId(),
+                std::move(renderPipelines)
+            );
         }
     }
 
@@ -148,11 +153,13 @@ void gl::RenderScene::prepare() {
     shader->setup();
 
     for (auto const &[nodeId, node] : scene->nodes) {
-        auto const renderComponent = node->getComponent<gl::RenderComponent<>>();
+        auto const &renderComponent = node->getComponent<gl::RenderComponent<>>();
         if (renderComponent) {
-            renderComponent->value.prepare();
+            for (auto &renderPipeline : renderComponent->value) {
+                renderPipeline.prepare();
+            }
         } else {
-            std::cout << "Skipping node renderer preparation for node: " << nodeId << std::endl;
+            std::cout << "Skipping render preparation of node with (ID) " << nodeId << std::endl;
         }
     }
 }
@@ -172,20 +179,20 @@ void gl::RenderScene::render() const {
     }
 
     for (auto const &[nodeId, node] : scene->nodes) {
-        shader->use();
-        if (auto component = node->getComponent<scene::AttributesInfoComponent>()) {
-            for (auto const &[key, attribute] : component->value) {
-                shader->setUniform(key, attributes::Cases(attribute));
+        ShaderPtr shader;
+        auto component = node->getComponent<scene::AttributesInfoComponent>();
+        auto const &renderComponent = node->getComponent<gl::RenderComponent<>>();
+        if (renderComponent) {
+            for (auto const &renderPipeline : renderComponent->value) {
+                if (component && renderPipeline.shader != shader) {
+                    shader = renderPipeline.shader;
+                    for (auto const &[key, attribute] : component->value) {
+                        shader->setUniform(key, attributes::Cases(attribute));
+                    }
+                }
+
+                renderPipeline.render();
             }
         }
-        auto mesh = node->getComponent<scene::MeshComponent<attributes::Cases, gl::AttachmentCases>>();
-        if (mesh) {
-            std::visit(overload {
-
-            }, mesh->value)
-        }
-        // auto const &material = pipelineInfo.renderPipeline;
-        // shader->setUniform("material", material);
-        // pipelineInfo.renderPipeline.render();
     }
 }

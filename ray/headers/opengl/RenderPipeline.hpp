@@ -15,6 +15,7 @@
 #include "opengl/glTexture.hpp"
 #include "opengl/glAttachment.hpp"
 #include "scene/Mesh.hpp"
+#include "opengl/Shader.hpp"
 
 namespace gl {
 
@@ -46,7 +47,8 @@ template <typename Attribute = attributes::Cases>
 struct RenderPipeline {
     RenderPipeline(
         PipelineConfiguration configuration,
-        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode
+        std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode,
+        ShaderPtr shader
     );
 
     RenderPipeline(RenderPipeline<Attribute> const &) = delete;
@@ -66,15 +68,18 @@ struct RenderPipeline {
 
     std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode;
     PipelineConfiguration configuration;
+    ShaderPtr shader;
 };
 
 template<typename Attribute>
 RenderPipeline<Attribute>::RenderPipeline(
     PipelineConfiguration configuration,
-    std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode
+    std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode,
+    ShaderPtr shader
 ) 
     : configuration(configuration)
-    , meshNode(meshNode) {
+    , meshNode(meshNode)
+    , shader(std::move(shader)) {
 }
 
 template<typename Attribute>
@@ -84,6 +89,7 @@ RenderPipeline<Attribute>::RenderPipeline(RenderPipeline<Attribute> &&other)
     , vbo(other.vbo)
     , configuration(other.configuration)
     , meshNode(std::move(other.meshNode))
+    , shader(std::move(other.shader))
 {
     other.vbo = 0;
     other.ebo = 0;
@@ -94,6 +100,7 @@ template<typename Attribute>
 RenderPipeline<Attribute>& RenderPipeline<Attribute>::operator=(RenderPipeline<Attribute>&& other) {
     this->configuration = other.configuration;
     this->meshNode = std::move(other.meshNode);
+    this->shader = std::move(other.shader);
     this->vao = other.vao;
     this->vbo = other.vbo;
     this->ebo = other.ebo;
@@ -156,7 +163,8 @@ template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
     std::visit(overload {
         [&](MaterialAttachment const &attachemnt) {
-            activateMaterial(*attachemnt.material);        
+            activateMaterial(*attachemnt.material);
+            shader->setUniform("material", *attachemnt.material);
         },
         [&](std::monostate &) {}
     }, meshNode->attachment);

@@ -332,15 +332,15 @@ void gl::Renderer::render() const {
     // mockRenderScene.render();
     renderScene().render();
 
-    std::visit(overload {
-         [&](gl::FullFramebuffer const &frame) {
-            glBindTexture(GL_TEXTURE_2D, frame.framebufferTexture);
-            // quadRenderScene().shader->setUniform("texture0", );
-        },
-        [&](gl::FramebufferOnly const &frame) {
-            return;
-        }
-    }, renderScene().framebufferInfo.framebuffer);
+    // std::visit(overload {
+    //      [&](gl::FullFramebuffer const &frame) {
+    //         glBindTexture(GL_TEXTURE_2D, frame.framebufferTexture);
+    //         // quadRenderScene().shader->setUniform("texture0", );
+    //     },
+    //     [&](gl::FramebufferOnly const &frame) {
+    //         return;
+    //     }
+    // }, renderScene().framebufferInfo.framebuffer);
 
     // quadRenderScene().render();
 

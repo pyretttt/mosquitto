@@ -88,6 +88,9 @@ void main() {
             ambientTexel,
             diffuseTexel,
             specularTexel
+            // vec4(0.2, 0.3, 0.4, 1.0),
+            // vec4(0.8, 0.3, 0.3, 1.0),
+            // vec4(0.2, 0.6, 0.1, 1.0)
         );
     }
 
