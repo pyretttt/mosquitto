@@ -49,17 +49,17 @@ void gl::activateMaterial(gl::Material const &material) {
     }
 
     for (size_t i = 0; i < diffuseCounts; i++) {
-        glActiveTexture(GL_TEXTURE0 + material.ambient.at(i)->unitIndex);
+        glActiveTexture(GL_TEXTURE0 + material.diffuse.at(i)->unitIndex);
         glBindTexture(GL_TEXTURE_2D, material.diffuse.at(i)->id);
     }
 
     for (size_t i = 0; i < specularCounts; i++) {
-        glActiveTexture(GL_TEXTURE0 + material.ambient.at(i)->unitIndex);
+        glActiveTexture(GL_TEXTURE0 + material.specular.at(i)->unitIndex);
         glBindTexture(GL_TEXTURE_2D, material.specular.at(i)->id);
     }
 
     for (size_t i = 0; i < normalsCount; i++) {
-        glActiveTexture(GL_TEXTURE0 + material.ambient.at(i)->unitIndex);
+        glActiveTexture(GL_TEXTURE0 + material.normals.at(i)->unitIndex);
         glBindTexture(GL_TEXTURE_2D, material.normals.at(i)->id);
     }
     glActiveTexture(GL_TEXTURE0);

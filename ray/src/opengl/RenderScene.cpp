@@ -58,10 +58,9 @@ namespace {
             }
             std::vector<scene::MeshPtr<>> &meshes = meshComponent->value;
             for (auto &mesh : meshes) {
-                auto glMesh = toGlMesh(mesh, materials);
                 auto renderPipeline = gl::RenderPipeline<>(
                     configuration,
-                    std::move(glMesh),
+                    toGlMesh(mesh, materials),
                     gl::materialShader
                 );
                 renderPipelines.emplace_back(std::move(renderPipeline));

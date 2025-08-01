@@ -174,7 +174,6 @@ Scene Scene::assimpImport(std::filesystem::path path) {
     }
 
     std::unordered_map<TexturePath, TexturePtr> texturesMap;
-
     std::unordered_map<MaterialId, scene::MaterialPtr> materialsMap;
     for (size_t i = 0; i < scene->mNumMaterials; i++) {
         aiMaterial *material = scene->mMaterials[i];
