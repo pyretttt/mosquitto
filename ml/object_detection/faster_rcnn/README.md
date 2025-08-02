@@ -15,6 +15,7 @@ Anchors are predefined rectangles of different aspect ratio and scale. Different
 
 
 ### RPN Training
+***
 
 For each window position on convolution feature map there're WxHx{Anchors} predictions (binary label or softmax over all anchors?).
 RPN can be trained separetely from rcnn, so that we must define loss function. We want to maximize iou between predicted regions and bounding boxes on image.
@@ -30,3 +31,39 @@ Negative region proposals are:
 - Any region proposal that has iou <= 0.3 for all ground truth boxes
 
 Non negative and non-positive anchors are ignored.
+
+
+#### RPN bounding box regression
+***
+
+Regression problem is not scale invariant by definition, becuase images have different shape. But we can turn it into scale invariant problem with simple parametrization trick. 
+Instead of predicting absolute values of proposal region or absolute displacement we can use parametrization
+```
+t_x = (x - x_a) / w_a
+t^*_x = (x^* - x_a) / w_a
+```
+where `x`, `x_a` and `x^*` are for predicted, anchor, and ground truth bounding box.
+
+It follows from equation
+```
+x = t_x * w_a + x_a
+```
+so our aim to predict `t_x` that is equivalent to some fraction of width. This `t` parameter is defined with respect to some anchor. As soon as there definite number of anchors it is not hard for model to learn some scale of `t`.
+
+For width and height there's an interesting trick, we use logarithm scale.
+```
+t_w = log(w/w_a) = log(w) - log(w_a)
+```
+so that
+```
+e^{t_w} * w_a = w
+```
+0 < t_w < 1 will result in w in range [w_a, e * w_a]
+-\infty < t_w < 0 will result in w in range [0, 1 * w_a] 
+t_w > 1 will result in w in range [w_a, \infty]
+
+But why not just use absolute ratios? 
+It is possible to use just ratio w/w_a, but log ratio is good normalization term.
+Consider w = 600 and w_a = 20 then t_w = 30, the same parameter t_w is equal to 3.4 in log ratio.
+
+It also prevents from predicting negative width and heights.
