@@ -6,7 +6,7 @@
         {
             "label": "run current python file",
             "type": "shell",
-            "command": "source env/bin/activate && python3 ${file}",
+            "command": "poetry run python ${file}",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
