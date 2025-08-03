@@ -76,61 +76,68 @@ namespace {
         return std::make_shared<gl::Texture>(texture, unitIndex);
     }
 
-    auto makeMaterials(scene::ScenePtr scene) -> decltype(auto) {
-        std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> result;
-        for (auto const &[id, material] : scene->materials) {
-            std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
-            auto unitIndex = gl::samplerLocationOffset;
-            std::transform(
-                material->ambient.begin(), 
-                material->ambient.end(), 
-                std::back_inserter(ambient),
-                [&unitIndex](scene::TexturePtr &ptr) {
-                    return toGlTexture(ptr, unitIndex++);
-                }
-            );
-            std::transform(
-                material->specular.begin(), 
-                material->specular.end(), 
-                std::back_inserter(specular),
-                [&unitIndex](scene::TexturePtr &ptr) {
-                    return toGlTexture(ptr, unitIndex++);
-                }
-            );
-            std::transform(
-                material->diffuse.begin(), 
-                material->diffuse.end(), 
-                std::back_inserter(diffuse),
-                [&unitIndex](scene::TexturePtr &ptr) {
-                    return toGlTexture(ptr, unitIndex++);
-                }
-            );
-            std::transform(
-                material->normals.begin(), 
-                material->normals.end(), 
-                std::back_inserter(normals),
-                [&unitIndex](scene::TexturePtr &ptr) {
-                    return toGlTexture(ptr, unitIndex++);
-                }
-            );
+    auto deriveAttachments(scene::ScenePtr scene) -> decltype(auto) {
+        std::unordered_map<scene::ID, gl::AttachmentCases> glAttachments;
+        for (auto const &[id, attachment] : scene->attachments) {
+            std::visit(overload {
+                [&](scene::MaterialAttachment const &materialAttachment){
+                    auto material = materialAttachment.material;
+                    std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
+                    auto unitIndex = gl::samplerLocationOffset;
+                    std::transform(
+                        material->ambient.begin(), 
+                        material->ambient.end(), 
+                        std::back_inserter(ambient),
+                        [&unitIndex](scene::TexturePtr &ptr) {
+                            return toGlTexture(ptr, unitIndex++);
+                        }
+                    );
+                    std::transform(
+                        material->specular.begin(), 
+                        material->specular.end(), 
+                        std::back_inserter(specular),
+                        [&unitIndex](scene::TexturePtr &ptr) {
+                            return toGlTexture(ptr, unitIndex++);
+                        }
+                    );
+                    std::transform(
+                        material->diffuse.begin(), 
+                        material->diffuse.end(), 
+                        std::back_inserter(diffuse),
+                        [&unitIndex](scene::TexturePtr &ptr) {
+                            return toGlTexture(ptr, unitIndex++);
+                        }
+                    );
+                    std::transform(
+                        material->normals.begin(), 
+                        material->normals.end(), 
+                        std::back_inserter(normals),
+                        [&unitIndex](scene::TexturePtr &ptr) {
+                            return toGlTexture(ptr, unitIndex++);
+                        }
+                    );
 
-            result.emplace(
-                std::make_pair(
-                    static_cast<scene::ID>(id), 
-                    std::make_shared<gl::Material>(
-                        static_cast<scene::ID>(id),
-                        material->ambientColor,
-                        material->shiness,
-                        std::move(ambient),
-                        std::move(specular),
-                        std::move(diffuse),
-                        std::move(normals)
-                    )
-                )
-            );
+                    glAttachments.emplace(
+                        std::make_pair(
+                            static_cast<scene::ID>(materialAttachment.id), 
+                            std::make_shared<gl::Material>(
+                                static_cast<scene::ID>(materialAttachment.id),
+                                material->ambientColor,
+                                material->shiness,
+                                std::move(ambient),
+                                std::move(specular),
+                                std::move(diffuse),
+                                std::move(normals)
+                            )
+                        )
+                    );
+                },
+                [](std::monostate) {}
+            },
+            attachment);
         }
 
-        return result;
+        return glAttachments;
     }
 }
 
@@ -145,7 +152,7 @@ gl::RenderScene::RenderScene(
 
 
 void gl::RenderScene::prepare() {
-    this->materials = makeMaterials(scene);
+    auto attachments = deriveAttachments(scene); // Stop point
     attachRenderPipelines(scene, configuration, materials);
 
     for (auto const &[nodeId, node] : scene->nodes) {
