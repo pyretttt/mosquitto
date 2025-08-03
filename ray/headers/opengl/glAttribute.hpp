@@ -9,38 +9,36 @@
 
 namespace gl {
     template<typename Attr>
-    void bindAttributes(Attr const &test);
+    void bindAttributes(Attr const &test, unsigned long stride = sizeof(Attr));
 
     template<>
-    void inline bindAttributes<attributes::FloatAttr>(attributes::FloatAttr const &test) {
+    void inline bindAttributes<attributes::FloatAttr>(attributes::FloatAttr const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             1,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(decltype(attributes::FloatAttr::val)),
-            sizeof(attributes::Cases),
+            stride,
             (void *)0
         );
         glEnableVertexAttribArray(0);
     }
 
     template<>
-    void inline bindAttributes<attributes::Vec2>(attributes::Vec2 const &test) {
+    void inline bindAttributes<attributes::Vec2>(attributes::Vec2 const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             2,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(decltype(attributes::Vec2::val)),
-            sizeof(attributes::Cases),
+            stride,
             (void *)0
         );
         glEnableVertexAttribArray(0);
     }
 
     template<>
-    void inline bindAttributes<attributes::Vec3>(attributes::Vec3 const &test) {
+    void inline bindAttributes<attributes::Vec3>(attributes::Vec3 const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             3,
@@ -54,7 +52,7 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::Vec4>(attributes::Vec4 const &test) {
+    void inline bindAttributes<attributes::Vec4>(attributes::Vec4 const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             4,
@@ -68,7 +66,7 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::PositionWithColor>(attributes::PositionWithColor const &test) {
+    void inline bindAttributes<attributes::PositionWithColor>(attributes::PositionWithColor const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             3,
@@ -92,7 +90,7 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::PositionWithTex>(attributes::PositionWithTex const &test) {
+    void inline bindAttributes<attributes::PositionWithTex>(attributes::PositionWithTex const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             3,
@@ -117,7 +115,7 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::MaterialVertex>(attributes::MaterialVertex const &test) {
+    void inline bindAttributes<attributes::MaterialVertex>(attributes::MaterialVertex const &test, unsigned long stride) {
         glVertexAttribPointer(
             0,
             3,
@@ -153,13 +151,13 @@ namespace gl {
     }
 
     template<>
-    void inline bindAttributes<attributes::Cases>(attributes::Cases const &test) {
+    void inline bindAttributes<attributes::Cases>(attributes::Cases const &test, unsigned long stride) {
         std::visit(overload {
             [&](attributes::Mat4 const &) { throw std::logic_error("attributes::iColor as vertex attributes is nonsense"); },
             [&](attributes::iColor const &) { throw std::logic_error("attributes::iColor as vertex attributes is nonsense"); },
             [&](attributes::Transforms const &) { throw std::logic_error("attributes::Transforms as vertex attributes is nonsense"); },
             [&](attributes::IntegerAttr const &) { throw std::logic_error("attributes::IntegerAttr as vertex attributes is nonsense"); },
-            [&]<typename T>(T const &attr) { bindAttributes<T>(attr); }
+            [&]<typename T>(T const &attr) { bindAttributes<T>(attr, stride); }
         }, test);
     };
 }
