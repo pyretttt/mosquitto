@@ -68,8 +68,6 @@ namespace attributes {
         iColor,
         PositionWithColor,
         PositionWithTex,
-        Mat4,
-        Transforms,
         MaterialVertex
-    >;
+    >; // Removed Transforms, Mat4
 }
