@@ -20,7 +20,7 @@
 namespace {
     auto toGlMesh(
         std::shared_ptr<scene::Mesh<>> nativeMesh,
-        std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> const &materials
+        std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> const &materials
     ) -> decltype(auto) {
         gl::AttachmentCases attachment = std::visit(overload {
             [&](scene::MaterialAttachment const &attachment) {
@@ -47,7 +47,7 @@ namespace {
     auto attachRenderPipelines(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
-        std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> const &materials
+        std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> const &materials
     ) -> decltype(auto) {
         for (auto const &[id, node] : scene->nodes) {
             std::vector<gl::RenderPipeline<>> renderPipelines;
@@ -77,7 +77,7 @@ namespace {
     }
 
     auto makeMaterials(scene::ScenePtr scene) -> decltype(auto) {
-        std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> result;
+        std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> result;
         for (auto const &[id, material] : scene->materials) {
             std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
             auto unitIndex = gl::samplerLocationOffset;
@@ -116,9 +116,9 @@ namespace {
 
             result.emplace(
                 std::make_pair(
-                    static_cast<scene::MaterialId>(id), 
+                    static_cast<scene::ID>(id), 
                     std::make_shared<gl::Material>(
-                        static_cast<scene::MaterialId>(id),
+                        static_cast<scene::ID>(id),
                         material->ambientColor,
                         material->shiness,
                         std::move(ambient),
@@ -137,19 +137,16 @@ namespace {
 gl::RenderScene::RenderScene(
     scene::ScenePtr scene,
     gl::PipelineConfiguration configuration,
-    ShaderPtr shader,
     gl::FramebufferInfo framebufferInfo
 )
     : scene(scene)
     , configuration(configuration)
-    , shader(shader)
     , framebufferInfo(framebufferInfo) {}
 
 
 void gl::RenderScene::prepare() {
     this->materials = makeMaterials(scene);
     attachRenderPipelines(scene, configuration, materials);
-    shader->setup();
 
     for (auto const &[nodeId, node] : scene->nodes) {
         auto const &renderComponent = node->getComponent<gl::RenderComponent<>>();

@@ -89,10 +89,8 @@ namespace {
         return gl::RenderScene(
             scenePtr,
             config,
-            gl::materialShader,
             gl::FramebufferInfo {
-                // .framebuffer = gl::makeFullFrameBuffer({800, 600}), // TODO: From window
-                .framebuffer = gl::defaultFrameBuffer(),
+                .framebuffer = gl::makeFullFrameBuffer({800, 600}), // TODO: From window
                 .useDepth = true,
                 .useStencil = true
             }
@@ -101,62 +99,61 @@ namespace {
 
     Lazy<gl::RenderScene> renderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeRenderScene));
 
-    // auto quadMesh = std::make_shared<scene::Mesh<attributes::Cases>>(
-    //     std::vector<attributes::Cases>({
-    //         attributes::MaterialVertex {
-    //             .position = attributes::Vec3 { -1.f, 1.f, 0.f },
-    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-    //             .tex = attributes::Vec2 { 0.f, 1.f }
-    //         },
-    //         attributes::MaterialVertex {
-    //             .position = attributes::Vec3 { -1.f, -1.f, 0.f },
-    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-    //             .tex = attributes::Vec2 { 0.f, 0.f }
-    //         },
-    //         attributes::MaterialVertex {
-    //             .position = attributes::Vec3 { 1.f, -1.f, 0.f },
-    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-    //             .tex = attributes::Vec2 { 1.f, 0.f }
-    //         },
-    //         attributes::MaterialVertex {
-    //             .position = attributes::Vec3 { 1.f, 1.f, 0.f },
-    //             .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-    //             .tex = attributes::Vec2 { 1.f, 1.f }
-    //         },
-    //     }),
-    //     std::vector<unsigned int>({
-    //         0, 1, 2, 1, 2, 3
-    //     }),
-    //     std::monostate(),
-    //     InstanceIdGenerator<scene::Mesh<attributes::MaterialVertex>>::getInstanceId()
-    // );
+    auto quadMesh = std::make_shared<scene::Mesh<attributes::Cases>>(
+        std::vector<attributes::Cases>({
+            attributes::MaterialVertex {
+                .position = attributes::Vec3 { -1.f, 1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 0.f, 1.f }
+            },
+            attributes::MaterialVertex {
+                .position = attributes::Vec3 { -1.f, -1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 0.f, 0.f }
+            },
+            attributes::MaterialVertex {
+                .position = attributes::Vec3 { 1.f, -1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 1.f, 0.f }
+            },
+            attributes::MaterialVertex {
+                .position = attributes::Vec3 { 1.f, 1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 1.f, 1.f }
+            },
+        }),
+        std::vector<unsigned int>({
+            0, 1, 2, 1, 2, 3
+        }),
+        std::monostate(),
+        InstanceIdGenerator<scene::Mesh<attributes::Cases>>::getInstanceId()
+    );
 
-    // scene::NodePtr quadNode = std::make_shared<scene::Node>(
-    //     InstanceIdGenerator<scene::Node>::getInstanceId()
-    // );
+    scene::NodePtr quadNode = std::make_shared<scene::Node>(
+        InstanceIdGenerator<scene::Node>::getInstanceId()
+    );
 
-    // scene::ScenePtr textureScene = std::make_shared<scene::Scene>(
-    //     std::unordered_map<scene::NodeId, scene::NodePtr>({
-    //         std::make_pair(quadNode->identifier, quadNode)
-    //     }),
-    //     std::unordered_map<scene::MaterialId, scene::MaterialPtr>({}),
-    //     std::unordered_map<scene::TexturePath, scene::TexturePtr>({})
-    // );
+    scene::ScenePtr textureScene = std::make_shared<scene::Scene>(
+        std::unordered_map<scene::ID, scene::NodePtr>({
+            std::make_pair(quadNode->identifier, quadNode)
+        }),
+        std::unordered_map<scene::ID, scene::MaterialPtr>({}),
+        std::unordered_map<scene::TexturePath, scene::TexturePtr>({})
+    );
 
-    // gl::RenderScene makeTextureRenderScene() {
-    //     return gl::RenderScene(
-    //         textureScene,
-    //         config,
-    //         gl::textureShader,
-    //         gl::FramebufferInfo {
-    //             .framebuffer = gl::defaultFrameBuffer(), // TODO: From window
-    //             .useDepth = false,
-    //             .useStencil = false
-    //         }
-    //     );
-    // }
+    gl::RenderScene makeTextureRenderScene() {
+        return gl::RenderScene(
+            textureScene,
+            config,
+            gl::FramebufferInfo {
+                .framebuffer = gl::defaultFrameBuffer(), // TODO: From window
+                .useDepth = false,
+                .useStencil = false
+            }
+        );
+    }
     
-    // Lazy<gl::RenderScene> quadRenderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeTextureRenderScene));
+    Lazy<gl::RenderScene> quadRenderScene = Lazy<gl::RenderScene>(std::function<gl::RenderScene ()>(makeTextureRenderScene));
 }
 
 gl::Renderer::Renderer(
@@ -217,13 +214,16 @@ void gl::Renderer::prepareViewPort() {
     glViewport(0, 0, resolution.first, resolution.second);
 
     // Switch for testing
-    // shader->setup();
     // mockRenderPipeline.prepare();
     // mockRenderScene.prepare();
     renderScene().prepare();
-    // quadRenderScene().prepare();
+    quadRenderScene().prepare();
 
     configureGl();
+
+    gl::materialShader->setup();
+    gl::outlineShader->setup();
+    gl::textureShader->setup();
 }
 
 void gl::Renderer::processInput(Event event, float dt) {
@@ -332,17 +332,17 @@ void gl::Renderer::render() const {
     // mockRenderScene.render();
     renderScene().render();
 
-    // std::visit(overload {
-    //      [&](gl::FullFramebuffer const &frame) {
-    //         glBindTexture(GL_TEXTURE_2D, frame.framebufferTexture);
-    //         // quadRenderScene().shader->setUniform("texture0", );
-    //     },
-    //     [&](gl::FramebufferOnly const &frame) {
-    //         return;
-    //     }
-    // }, renderScene().framebufferInfo.framebuffer);
+    std::visit(overload {
+         [&](gl::FullFramebuffer const &frame) {
+            glBindTexture(GL_TEXTURE_2D, frame.framebufferTexture);
+            // quadRenderScene().shader->setUniform("texture0", );
+        },
+        [&](gl::FramebufferOnly const &frame) {
+            return;
+        }
+    }, renderScene().framebufferInfo.framebuffer);
 
-    // quadRenderScene().render();
+    quadRenderScene().render();
 
     SDL_GL_SwapWindow(config->window.get());
 }

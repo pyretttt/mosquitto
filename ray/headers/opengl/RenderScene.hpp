@@ -18,7 +18,6 @@ struct RenderScene {
     RenderScene(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
-        ShaderPtr shader,
         FramebufferInfo framebuffer
     );
 
@@ -27,9 +26,8 @@ struct RenderScene {
 
     scene::ScenePtr scene;
     gl::PipelineConfiguration configuration;
-    std::unordered_map<scene::MaterialId, std::shared_ptr<gl::Material>> materials;
+    std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> materials;
 
-    ShaderPtr shader;
     FramebufferInfo framebufferInfo;
 };
 }

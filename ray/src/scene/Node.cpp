@@ -3,7 +3,7 @@
 using namespace scene;
 
 Node::Node(
-    NodeId identifier,
+    ID identifier,
     ml::Matrix4f transform
 ) 
     : identifier(identifier)

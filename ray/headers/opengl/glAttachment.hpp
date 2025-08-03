@@ -8,10 +8,10 @@
 
 namespace gl {
     struct MaterialAttachment final {
-        scene::MaterialId id;
+        scene::ID id;
         std::shared_ptr<gl::Material> material;
 
-        MaterialAttachment(std::shared_ptr<gl::Material> material, scene::MaterialId id) 
+        MaterialAttachment(std::shared_ptr<gl::Material> material, scene::ID id) 
             : material(std::move(material))
             , id(id) {}
     };

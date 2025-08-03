@@ -7,7 +7,7 @@
 
 namespace scene {
 struct MaterialAttachment final {
-    MaterialId id;
+    ID id;
     MaterialPtr material;
 };
 

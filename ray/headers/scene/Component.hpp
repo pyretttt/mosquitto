@@ -6,23 +6,23 @@
 
 namespace scene {
     struct Component {
-        Component(ComponentId id) : id(id) {}
+        Component(ID id) : id(id) {}
 
-        ComponentId id;
+        ID id;
 
         virtual ~Component() {}
     };
 
     template<typename Type>
     struct ContainerComponent final : public Component {
-        ContainerComponent(ComponentId id, Type value);
+        ContainerComponent(ID id, Type value);
         
         Type value;
         ~ContainerComponent() override;
     };
 
     template<typename Type>
-    ContainerComponent<Type>::ContainerComponent(ComponentId id, Type value)
+    ContainerComponent<Type>::ContainerComponent(ID id, Type value)
         : Component(id)
         , value(std::move(value)) {}
 

@@ -20,13 +20,13 @@ struct Mesh {
         std::vector<Attr> vertexArray,
         std::vector<unsigned int> vertexArrayIndices,
         Attachment attachment,
-        MeshId identifier
+        ID identifier
     );
 
     std::vector<Attr> vertexArray;
     std::vector<unsigned int> vertexArrayIndices;
     Attachment attachment;
-    MeshId const identifier;
+    ID const identifier;
 };
 
 template <typename Attr, typename Attachment>
@@ -34,7 +34,7 @@ Mesh<Attr, Attachment>::Mesh(
     std::vector<Attr> vertexArray,
     std::vector<unsigned int> vertexArrayIndices,
     Attachment attachment,
-    MeshId identifier
+    ID identifier
 ) 
     : vertexArray(std::move(vertexArray))
     , vertexArrayIndices(std::move(vertexArrayIndices))

@@ -13,7 +13,7 @@
 namespace scene {
 struct Node {
     Node(
-        NodeId identifier,
+        ID identifier,
         ml::Matrix4f transform = ml::diagonal<ml::Matrix4f>(1)
     );
 
@@ -25,7 +25,7 @@ struct Node {
 
     ml::Matrix4f getTransform() const noexcept;
 
-    NodeId identifier;
+    ID identifier;
     ml::Matrix4f localTransform;
     std::weak_ptr<Node> parent;
 
