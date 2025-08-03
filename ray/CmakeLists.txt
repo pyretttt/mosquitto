@@ -14,8 +14,6 @@ aux_source_directory(${OPENGL_SRC_DIR} OPENGL_FILES)
 aux_source_directory(${CMAKE_CURRENT_LIST_DIR}/src/scene SCENE_FILES)
 add_executable(${PROJ_NAME} ${SRC_FILES} ${SDL_FILES} ${OPENGL_FILES} ${SCENE_FILES})
 
-message("SCENE_FILES ARE: ${SCENE_FILES}")
-
 find_package(OpenGL REQUIRED)
 find_package(glew CONFIG REQUIRED)
 find_package(yaml-cpp CONFIG REQUIRED)

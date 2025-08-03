@@ -4,6 +4,7 @@
 #include <unordered_map>
 
 #include "scene/Identifiers.hpp"
+#include "scene/Attachment.hpp"
 #include "Attributes.hpp"
 
 namespace scene {
@@ -14,10 +15,12 @@ struct Scene {
     Scene(
         std::unordered_map<ID, NodePtr> nodes,
         std::unordered_map<ID, MaterialPtr> materials,
-        std::unordered_map<TexturePath, TexturePtr> textures
+        std::unordered_map<TexturePath, TexturePtr> textures,
+        std::unordered_map<ID, AttachmentCases> attachments
     );
     
     std::unordered_map<ID, NodePtr> nodes;
+    std::unordered_map<ID, AttachmentCases> attachments;
     std::unordered_map<ID, MaterialPtr> materials;
     std::unordered_map<TexturePath, TexturePtr> textures;
 };

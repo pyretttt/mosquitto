@@ -138,7 +138,8 @@ namespace {
             std::make_pair(quadNode->identifier, quadNode)
         }),
         std::unordered_map<scene::ID, scene::MaterialPtr>({}),
-        std::unordered_map<scene::TexturePath, scene::TexturePtr>({})
+        std::unordered_map<scene::TexturePath, scene::TexturePtr>({}),
+        std::unordered_map<scene::ID, scene::AttachmentCases>({})
     );
 
     gl::RenderScene makeTextureRenderScene() {

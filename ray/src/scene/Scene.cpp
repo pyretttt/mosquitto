@@ -147,11 +147,13 @@ std::vector<scene::TexturePtr> loadTextures(
 Scene::Scene(
     std::unordered_map<scene::ID, NodePtr> nodes,
     std::unordered_map<scene::ID, MaterialPtr> materials,
-    std::unordered_map<TexturePath, TexturePtr> textures
+    std::unordered_map<TexturePath, TexturePtr> textures,
+    std::unordered_map<ID, AttachmentCases> attachments
 ) 
     : nodes(std::move(nodes))
     , materials(std::move(materials))
-    , textures(std::move(textures)) {}
+    , textures(std::move(textures))
+    , attachments(std::move(attachments)) {}
 
 
 Scene Scene::assimpImport(std::filesystem::path path) {
@@ -204,10 +206,20 @@ Scene Scene::assimpImport(std::filesystem::path path) {
         return std::make_pair(node->identifier, node);
     });
 
+    std::unordered_map<scene::ID, scene::AttachmentCases> attachments;
+    std::transform(
+        materialsMap.begin(), 
+        materialsMap.end(), 
+        std::inserter(attachments, attachments.end()), 
+        [](auto &entry) {
+            return std::make_pair(entry.first, AttachmentCases(MaterialAttachment { .id = entry.first, entry.second} ));
+    });
+
     return Scene(
         std::move(nodesMap),
         std::move(materialsMap),
-        std::move(texturesMap)
+        std::move(texturesMap),
+        std::move(attachments)
     );
 }
 
