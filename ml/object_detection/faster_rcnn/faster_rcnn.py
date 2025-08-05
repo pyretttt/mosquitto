@@ -79,7 +79,9 @@ class RPN(nn.Module):
         stride_w = torch.tensor(W_image // W_feat, dtype=torch.int64, device=image.device)
 
         scales = torch.as_tensor(self.scales, dtype=feat.dtype, device=feat.device) # (num_scales)
-        aspect_ratios = torch.as_tensor(self.aspect_ratios, dtype=feat.dtype, device=feat.device)
+        assert scales.shape == (len(self.scales),)
+        aspect_ratios = torch.as_tensor(self.aspect_ratios, dtype=feat.dtype, device=feat.device) # (num_ratios)
+        assert aspect_ratios.shape == (len(self.aspect_ratios),)
         
         # Assuming anchors of scale 128 sq pixels
         # For 1:1 it would be (128, 128) -> area=16384
@@ -93,15 +95,32 @@ class RPN(nn.Module):
         # Compute actual side scales
         h_scales = (h_ratios[:, None] * scales[None, :]).view(-1) # (num_ratios * num_scales)
         w_scales = (w_ratios[:, None] * scales[None, :]).view(-1) # (num_ratios * num_scales)
+        assert h_scales.shape == (len(self.scales) * len(self.aspect_ratios),)
+        assert w_scales.shape == (len(self.scales) * len(self.aspect_ratios),)
         
         ## Anchor displacements about it center in image coordinates
-        anchor_coords_about_center = torch.stack([-w_scales, -h_scales, w_scales, h_scales]) / 2
-        anchor_coords_about_center = anchor_coords_about_center.round()
+        anchor_coords_about_center = torch.stack([-w_scales, -h_scales, w_scales, h_scales], dim=1) / 2 # (num_ratios * num_scales x 4)
+        anchor_coords_about_center = anchor_coords_about_center.round() # (num_ratios * num_scales x 4)
+        assert anchor_coords_about_center.shape == (len(self.scales) * len(self.aspect_ratios), 4)
         
-        # Computes anchor 
-        shift_x = torch.arange(0, W_feat, dtype=torch.int32, device=feat.device) * stride_w
-        shift_y = torch.arange(0, H_feat, dtype=torch.int32, device=feat.device) * stride_h
+        # Computes anchor centers in image coordinates
+        shift_x = torch.arange(0, W_feat, dtype=torch.int32, device=feat.device) * stride_w # (W_feat)
+        shift_y = torch.arange(0, H_feat, dtype=torch.int32, device=feat.device) * stride_h # (H_feat)
+        assert shift_x.shape == (W_feat, ) and shift_y.shape == (H_feat, )
 
+        shift_y, shift_x = torch.meshgrid(shift_y, shift_x, indexing="ij") 
+        # both (H_feat, W_feat)
+        assert shift_x.shape == (W_feat, W_feat) and shift_y.shape == (H_feat, W_feat)
+        shift_y = shift_y.reshape(-1)
+        shift_x = shift_x.reshape(-1)
+        assert shift_x.shape == (W_feat * W_feat) and shift_y.shape == (H_feat * W_feat)
+        shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=0) # (H_feat * W_feat x 4)
+        assert shifts.shape == (W_feat * W_feat, 4)
+        anchor_coordinates = shifts[:, None, :] + anchor_coords_about_center[None, :, :]
+        assert anchor_coordinates.shape == (W_feat * W_feat, len(self.scales) * len(self.aspect_ratios), 4)
+        anchor_coordinates = anchor_coordinates.reshape(-1, 4)
+        assert anchor_coordinates.shape == (W_feat * W_feat * len(self.scales) * len(self.aspect_ratios), 4)
+        return anchor_coordinates
 
 class RCNN(nn.Module):
     def __init__(
@@ -123,4 +142,8 @@ if __name__ == "__main__":
     vgg = torchvision.models.vgg16(pretrained=False)
     print(vgg)
     out = vgg.features[:-1](img)
-    print(out.shape)    
+    print(out.shape)
+    
+    x, y, z, w = torch.randn(4, 4)
+    print(x, y, z, w)
+    print(torch.stack((x, y, z, w), dim=0).shape)
