@@ -67,3 +67,26 @@ It is possible to use just ratio w/w_a, but log ratio is good normalization term
 Consider w = 600 and w_a = 20 then t_w = 30, the same parameter t_w is equal to 3.4 in log ratio.
 
 It also prevents from predicting negative width and heights.
+
+
+### RPN-Params
+***
+
+1. Anchors scales. It represents square root of anchor square in image dimension. 
+For example if scale=128, then are of anchor rectangle is 16384
+
+2. Aspect ratios (by contract `a = h/w = H/W` and `HW = 1`). It represents ratios of anchor rectangle. Where `h,w` actual sides of anchor, and `H, W` are normalized sizes.
+To compute actual size of sides, solve:
+```
+1. HW = 1 => W = 1/H
+2. (Use substitution from (1)) h/w = H^2    => a = H^2
+                                            => H = sqrt(a)
+                                            => W = 1 / H = 1 / sqrt(a)
+```
+Now let's note that we have following relation:
+```
+1. S*H * S*W = S^2
+2. S*H / S*W = h/w = H/W
+```
+because `H*W = 1`, and also `SH` equal to desirable height and `SW` equal to desirable width. 
+These height and width preserve given scale and given aspect ratio.
