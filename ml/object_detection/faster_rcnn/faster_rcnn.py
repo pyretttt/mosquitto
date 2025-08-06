@@ -57,7 +57,7 @@ class RPN(nn.Module):
         self.conv1 = nn.Conv2d(input_channels, input_channels, kernel_size=3, stride=1, padding=1)
         self.regression_head = nn.Conv2d(input_channels, self.num_anchors * 4, kernel_size=1)
         self.classification_head = nn.Conv2d(input_channels, self.num_anchors, kernel_size=1)
-        
+        self.relu = nn.ReLU()
         
     def init_weights(self):
         for layer in [self.conv1, self.regression_head, self.classification_head]:
@@ -65,7 +65,7 @@ class RPN(nn.Module):
             torch.nn.init.constant_(layer.bias, 0)
     
 
-    def generate_anchors(self, image, feat):
+    def generate_anchors(self, image, feat) -> torch.Tensor:
         """Computes anchors for each sliding window inside feature map
         For each sliding window inside feature map there're num_scales * num_ratios anchors generated
 
@@ -122,6 +122,11 @@ class RPN(nn.Module):
         anchor_coordinates = anchor_coordinates.reshape(-1, 4)
         assert anchor_coordinates.shape == (H_feat * W_feat * len(self.scales) * len(self.aspect_ratios), 4)
         return anchor_coordinates
+
+    
+    def apply_transformations_to_anchors(self, anchors, transformations) -> torch.Tensor:
+        pass
+
 
     def generate_anchors_(self, image, feat):
         r"""
@@ -192,6 +197,32 @@ class RPN(nn.Module):
         anchors = anchors.reshape(-1, 4)
         # anchors -> (H_feat * W_feat * num_anchors_per_location, 4)
         return anchors
+
+        
+    def forward(self, image, feat, target=None):
+        rpn_feat = self.conv1(feat)
+        rpn_feat = self.relu(rpn_feat)
+        cls_scores = self.classification_head(rpn_feat) # N x Num_achors x H_feat x H_head
+        cls_scores = cls_scores.permute(0, 2, 3, 1)  # N x H_feat x H_head x Num_achors
+        cls_scores = cls_scores.reshape(-1, 1) # N * H_feat * H_head * Num_achors x 1
+        box_tranform_pred = self.regression_head(rpn_feat) # N x Num_achors * 4 x H_feat x H_head
+        assert box_tranform_pred.shape == (image.shape[0], self.num_anchors, 4, feat.shape[-2], feat.shape[-1])
+        box_tranform_pred = box_tranform_pred.view(
+            box_tranform_pred.size(dim=0),
+            self.num_anchors,
+            4,
+            rpn_feat.shape[-2], 
+            rpn_feat.shape[-1]
+        ) # N x Num_achors x 4 x H_feat x H_head
+        box_tranform_pred = box_tranform_pred.permute(0, 3, 4, 1, 2) # N x H_feat x H_head x Num_achors x 4
+        box_tranform_pred = box_tranform_pred.view(-1, 4) # N * H_feat * H_head * Num_achors x 4
+        
+        anchors = self.generate_anchors(image, feat) # H_feat * W_feat * Num_achors x 4
+        
+        proposals = self.apply_transformations_to_anchors(
+            anchors,
+            box_tranform_pred.detach()[None, :, :]
+        )
 
 class RCNN(nn.Module):
     def __init__(
