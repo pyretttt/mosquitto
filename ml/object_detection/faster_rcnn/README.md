@@ -90,3 +90,13 @@ Now let's note that we have following relation:
 ```
 because `H*W = 1`, and also `SH` equal to desirable height and `SW` equal to desirable width. 
 These height and width preserve given scale and given aspect ratio.
+
+
+## Open questions
+***
+
+Faster RCNN paper computes transformation targets w.r.t. to center of the screen. 
+It looks like parameterization described above will also work.
+But will it suffer from numerical instability?
+
+- Yes it will work, but may include some biasness, so center coordinates are better.

@@ -16,6 +16,106 @@ class Config:
     rpn_nms_threshold: float
 
 
+def apply_transformations_to_anchors(
+    anchors: torch.Tensor, 
+    transformations: torch.Tensor
+) -> torch.Tensor:
+    r"""Applies transformation computed by regression head to generated anchors.
+    Read README.md for calculation explanation
+    
+    Args:
+        anchors (torch.Tensor): H_feat * W_feat * Num_achors x 4
+        transformations (torch.Tensor): N * H_feat * W_feat * Num_achors x 4
+
+    Returns:
+        torch.Tensor: N * H_feat * W_feat * Num_achors x 4
+    """
+    batch_size = transformations.size(0) // anchors.size(0)
+    transformations = transformations.reshape(batch_size, -1, 4)
+    assert transformations.shape == (batch_size, anchors.size(0), 4)
+    t_x = transformations[..., 0]
+    t_y = transformations[..., 2]
+    t_w = transformations[..., 1]
+    t_h = transformations[..., 3]
+    # t_h -> (N x H_feat * W_feat * Num_achors x 1)
+    
+    # Prevents super big exponentials
+    t_w = torch.clamp(t_w, max=math.log(1000.0, math.e))
+    t_h = torch.clamp(t_h, max=math.log(1000.0, math.e))
+    
+    anchor_widths = anchors[..., 2] - anchors[..., 0]
+    anchor_heights = anchors[..., 3] - anchors[..., 1]
+    anchor_center_x = anchors[..., 0] + anchor_widths / 2.0
+    anchor_center_y = anchors[..., 1] + anchor_heights / 2.0
+    assert (
+        anchor_widths.shape == (anchors.size(0), ) 
+        and anchor_heights.shape == (anchors.size(0), )
+        and anchor_center_x == (anchors.size(0), )
+        and anchor_center_y == (anchors.size(0), )
+    )
+    x_0 = t_x * (anchor_widths + anchor_center_x)[None, ...]
+    y_0 = t_y * (anchor_heights + anchor_center_y)[None, ...]
+    
+    w = torch.exp(t_w) * anchor_widths[None, ...]
+    h = torch.exp(t_h) * anchor_heights[None, ...]
+    ## xy wh -> (N x H_feat * W_feat * Num_achors x 1)
+    x_1 = x_0 + w
+    y_1 = y_0 + h
+    
+    assert (
+        x_0.shape == (batch_size, anchors.size(0), )
+        and y_0.shape == (batch_size, anchors.size(0), )
+        and x_1.shape == (batch_size, anchors.size(0), )
+        and y_1.shape == (batch_size, anchors.size(0), )
+    )
+    
+    return torch.stack((x_0, y_0, x_1, y_1), dim=-1) # (N x anchors.size(0) x 4)
+
+
+def boxes_to_transformations(boxes: torch.Tensor, anchors: torch.Tensor) -> torch.Tensor:
+    r"""Applies transformation computed by regression head to generated anchors
+    Read README.md for calculation explanation
+    
+    Args:
+        boxes (torch.Tensor): N x 4
+        anchors (torch.Tensor): N x 4
+
+    Returns:
+        torch.Tensor: N * H_feat * W_feat * Num_achors x 4
+    """    
+    widths = anchors[..., 2] - anchors[..., 0]
+    heights = anchors[..., 3] - anchors[..., 1]
+    anchor_center_x = anchors[..., 0] + widths / 2.0
+    anchor_center_y = anchors[..., 1] + heights / 2.0
+    assert (
+        widths.shape == (anchors.size(0), ) 
+        and heights.shape == (anchors.size(0), )
+        and anchor_center_x.shape == (anchors.size(0), )
+        and anchor_center_y.shape == (anchors.size(0), )
+    )
+
+    gt_widths = boxes[..., 2] - boxes[..., 0]
+    gt_heights = boxes[..., 3] - boxes[..., 1]
+    gt_anchor_center_x = boxes[..., 0] + gt_widths / 2.0
+    gt_anchor_center_y = boxes[..., 1] + gt_heights / 2.0
+    assert (
+        gt_widths.shape == (anchors.size(0), ) 
+        and gt_heights.shape == (anchors.size(0), )
+        and gt_anchor_center_x.shape == (anchors.size(0), )
+        and gt_anchor_center_y.shape == (anchors.size(0), )
+    )
+    
+    t_x = (gt_anchor_center_x - anchor_center_x) / widths
+    t_y = (gt_anchor_center_y - anchor_center_y) / heights
+    t_w = torch.log(gt_widths) - torch.log(widths)
+    t_h = torch.log(gt_heights) - torch.log(heights)
+
+    return torch.stack(
+        [t_x, t_y, t_w, t_h],
+        dim=-1
+    )
+
+
 class Backbone(nn.Module):
     def __init__(self):
         super().__init__()
@@ -58,15 +158,16 @@ class RPN(nn.Module):
         self.regression_head = nn.Conv2d(input_channels, self.num_anchors * 4, kernel_size=1)
         self.classification_head = nn.Conv2d(input_channels, self.num_anchors, kernel_size=1)
         self.relu = nn.ReLU()
-        
+
+
     def init_weights(self):
         for layer in [self.conv1, self.regression_head, self.classification_head]:
             torch.nn.init.normal_(layer.weight, std=0.01)
             torch.nn.init.constant_(layer.bias, 0)
-    
+
 
     def generate_anchors(self, image, feat) -> torch.Tensor:
-        """Computes anchors for each sliding window inside feature map
+        r"""Computes anchors for each sliding window inside feature map
         For each sliding window inside feature map there're num_scales * num_ratios anchors generated
 
         Args:
@@ -122,53 +223,7 @@ class RPN(nn.Module):
         anchor_coordinates = anchor_coordinates.reshape(-1, 4)
         assert anchor_coordinates.shape == (H_feat * W_feat * len(self.scales) * len(self.aspect_ratios), 4)
         return anchor_coordinates
-
     
-    def apply_transformations_to_anchors(
-        self, 
-        anchors: torch.Tensor, 
-        transformations: torch.Tensor
-    ) -> torch.Tensor:
-        """Applies transformation computed by regression head to generated anchors
-
-        Args:
-            anchors (torch.Tensor): H_feat * W_feat * Num_achors x 4
-            transformations (torch.Tensor): N * H_feat * W_feat * Num_achors x 4
-
-        Returns:
-            torch.Tensor: N * H_feat * W_feat * Num_achors x 4
-        """
-        batch_size = transformations.size(0) // anchors.size(0)
-        transformations = transformations.reshape(batch_size, -1, 4)
-        assert transformations.shape == (batch_size, anchors.size(0), 4)
-        t_x = transformations[..., 0]
-        t_y = transformations[..., 2]
-        t_w = transformations[..., 1]
-        t_h = transformations[..., 3]
-        # t_h -> (N x H_feat * W_feat * Num_achors x 1)
-        
-        # Prevents super big exponentials
-        t_w = torch.clamp(t_w, max=math.log(1000.0, math.e))
-        t_h = torch.clamp(t_h, max=math.log(1000.0, math.e))
-        
-        anchor_widths = anchors[..., 2] - anchors[..., 0]
-        anchor_heights = anchors[..., 3] - anchors[..., 1]
-        assert anchor_widths.shape == (anchors.size(0), 1) and anchor_heights.shape == (anchors.size(0), 1)
-        x = t_x * (anchor_widths + anchors[..., 0])[None, ...]
-        y = t_y * (anchor_heights + anchors[..., 1])[None, ...]
-        
-        w = torch.exp(t_w) * anchor_widths[None, ...]
-        h = torch.exp(t_h) * anchor_heights[None, ...]
-        ## xy wh -> (N x H_feat * W_feat * Num_achors x 1)
-        
-        assert (
-            x.shape == (batch_size, anchors.size(0), 1)
-            and y.shape == (batch_size, anchors.size(0), 1)
-            and w.shape == (batch_size, anchors.size(0), 1)
-            and h.shape == (batch_size, anchors.size(0), 1)
-        )
-        
-        return torch.stack((x, y, w, h), dim=-1) # (N x anchors.size(0) x 4)
 
 
     def generate_anchors_(self, image, feat):
@@ -241,6 +296,9 @@ class RPN(nn.Module):
         # anchors -> (H_feat * W_feat * num_anchors_per_location, 4)
         return anchors
 
+    
+    def filter_proposals(self, proposals, cls_scores, ):
+        return proposals
         
     def forward(self, image, feat, target=None):
         rpn_feat = self.conv1(feat)
@@ -248,8 +306,9 @@ class RPN(nn.Module):
         cls_scores = self.classification_head(rpn_feat) # N x Num_achors x H_feat x H_head
         cls_scores = cls_scores.permute(0, 2, 3, 1)  # N x H_feat x H_head x Num_achors
         cls_scores = cls_scores.reshape(-1, 1) # N * H_feat * H_head * Num_achors x 1
+        
         box_tranform_pred = self.regression_head(rpn_feat) # N x Num_achors * 4 x H_feat x H_head
-        assert box_tranform_pred.shape == (image.shape[0], self.num_anchors, 4, feat.shape[-2], feat.shape[-1])
+        assert box_tranform_pred.shape == (image.shape[0], self.num_anchors * 4, feat.shape[-2], feat.shape[-1])
         box_tranform_pred = box_tranform_pred.view(
             box_tranform_pred.size(dim=0),
             self.num_anchors,
@@ -258,14 +317,16 @@ class RPN(nn.Module):
             rpn_feat.shape[-1]
         ) # N x Num_achors x 4 x H_feat x H_head
         box_tranform_pred = box_tranform_pred.permute(0, 3, 4, 1, 2) # N x H_feat x H_head x Num_achors x 4
-        box_tranform_pred = box_tranform_pred.view(-1, 4) # N * H_feat * H_head * Num_achors x 4
+        box_tranform_pred = box_tranform_pred.reshape(-1, 4) # N * H_feat * H_head * Num_achors x 4
         
         anchors = self.generate_anchors(image, feat) # H_feat * W_feat * Num_achors x 4
         
         proposals = self.apply_transformations_to_anchors(
             anchors,
             box_tranform_pred.detach()
-        )
+        ) # N x anchor.size(0) x 4
+        proposals = self.filter_proposals(proposals)
+
 
 class RCNN(nn.Module):
     def __init__(
@@ -291,9 +352,17 @@ if __name__ == "__main__":
     
     # Check region proposals
     rpn = RPN(400, (128, 256), (1, 2), 0, 0, 0)
-    image = torch.randn((3, 2560, 2560))
-    feat = torch.randn((3, 160, 160))
-    my_regions = rpn.generate_anchors(image, feat)
-    orig_regions = rpn.generate_anchors(image, feat)
+    image = torch.randn((2, 400, 256, 256))
+    feat = torch.randn((2, 400, 16, 16))
+    my_regions = rpn.generate_anchors(image[0], feat)
+    orig_regions = rpn.generate_anchors_(image[0], feat)
     
-    assert my_regions == orig_regions
+    assert my_regions.equal(orig_regions)
+    
+    # out = rpn(image, feat)
+    orig_out = rpn
+    
+    ## Other Tests
+    print("Other Tests")
+    a = torch.randn((4, 4))
+    print(a[None, ..., 0:1].shape)
