@@ -108,33 +108,23 @@ namespace {
                 .tex = attributes::Vec2 { 0.f, 1.f }
             },
             attributes::MaterialVertex {
-                .position = attributes::Vec3 { -1.f, -1.f, 0.f },
+                .position = attributes::Vec3 { -1.f, -1.f, 0.f }, // Top Left
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 0.f, 0.f }
             },
             attributes::MaterialVertex {
-                .position = attributes::Vec3 { 1.f, -1.f, 0.f },
+                .position = attributes::Vec3 { 1.f, -1.f, 0.f }, // Top Right
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 1.f, 0.f }
             },
             attributes::MaterialVertex {
-                .position = attributes::Vec3 { -1.f, 1.f, 0.f }, // Bottom - left
-                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-                .tex = attributes::Vec2 { 0.f, 1.f }
-            },
-            attributes::MaterialVertex {
-                .position = attributes::Vec3 { 1.f, -1.f, 0.f },
-                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
-                .tex = attributes::Vec2 { 1.f, 0.f }
-            },
-            attributes::MaterialVertex {
-                .position = attributes::Vec3 { 1.f, 1.f, 0.f },
+                .position = attributes::Vec3 { 1.f, 1.f, 0.f }, // Bottom Right
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 1.f, 1.f }
             },
         }),
         std::vector<unsigned int>({
-            0, 1, 2, 3, 4, 5
+           0, 1, 2, 0, 2, 3
         }),
         std::monostate(),
         InstanceIdGenerator<scene::Mesh<attributes::Cases>>::getInstanceId()

@@ -7,6 +7,8 @@ out vec4 FragColor;
 
 uniform sampler2D texture0;
 
+const float offset = 1.0 / 600.0;
+
 void main() {
     FragColor = texture(texture0, TexCoord);
 }
