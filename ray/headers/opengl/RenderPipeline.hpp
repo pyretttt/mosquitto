@@ -40,6 +40,11 @@ struct PipelineConfiguration {
     Stencil stencil;
 };
 
+struct RenderPipelineStageAction {
+    std::function<void ()> preRender;
+    std::function<void ()> postRender;
+};
+
 void bindTextures(std::vector<gl::TexturePtr> const &textures);
 void activateMaterial(gl::Material const &material);
 
@@ -69,6 +74,7 @@ struct RenderPipeline {
     std::shared_ptr<scene::Mesh<Attribute, gl::AttachmentCases>> meshNode;
     PipelineConfiguration configuration;
     ShaderPtr shader;
+    RenderPipelineStageAction actions;
 };
 
 template<typename Attribute>
@@ -161,6 +167,10 @@ void RenderPipeline<Attribute>::prepare() {
 
 template<typename Attribute>
 void RenderPipeline<Attribute>::render() const noexcept {
+    if (actions.preRender) {
+        actions.preRender();
+    }
+
     std::visit(overload {
         [&](MaterialAttachment const &attachemnt) {
             activateMaterial(*attachemnt.material);
@@ -186,5 +196,9 @@ void RenderPipeline<Attribute>::render() const noexcept {
     // glDrawArrays(GL_TRIANGLES, 0, 36);
     glDrawElements(GL_TRIANGLES, meshNode->vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
+
+    if (actions.postRender) {
+        actions.postRender();
+    }
 }
 }

@@ -5,7 +5,7 @@
 #include "opengl/RenderPipeline.hpp"
 #include "opengl/glCommon.hpp"
 #include "opengl/glFramebuffers.hpp"
-#include "opengl/Shader.hpp"
+#include "opengl/Shading.hpp"
 #include "Attributes.hpp"
 
 namespace gl {
@@ -14,18 +14,26 @@ struct RenderPipelineInfo {
     gl::RenderPipeline<> renderPipeline;
 };
 
+struct RenderSceneStageAction {
+    std::function<void ()> preRender;
+    std::function<void ()> postRender;
+};
+
 struct RenderScene {
     RenderScene(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
-        FramebufferInfo framebuffer
+        FramebufferInfo framebuffer,
+        gl::Shading shading
     );
 
     void render() const;
     void prepare();
 
     scene::ScenePtr scene;
+    gl::Shading shading;
     gl::PipelineConfiguration configuration;
     FramebufferInfo framebufferInfo;
+    RenderSceneStageAction actions;
 };
 }

@@ -146,17 +146,6 @@ void inline gl::Shader::setUniform<attributes::Cases>(
     if (auto location = glGetUniformLocation(program, key.data()); location != -1) {
         using namespace attributes;
         std::visit(overload {
-            // [&](FloatAttr const &value) { setUniform(value); },
-            // [&](IntegerAttr const &value) { setUniform(value); },
-            // [&](Vec2 const &value) { setUniform(value); },
-            // [&](Vec3 const &value) { setUniform(value); },
-            // [&](Vec4 const &value) { setUniform(value); },
-            // [&](iColor const &value) { setUniform(value); },
-            // [&](PositionWithColor const &value) { setUniform(value); }
-            // [&](PositionWithTex const &value) { setUniform(value); }
-            // [&](Mat4 const &value) { setUniform(value); },
-            // [&](Transforms const &value) { setUniform(value); },
-            // [&](MaterialVertex const &value) { setUniform(value); },
             [&](auto const &value) { setUniform(key, value); }
         }, attr);
     }
@@ -257,5 +246,17 @@ void inline gl::Shader::setUniform<std::vector<LightSource>>(
     std::string numLightsKey = "numLights";
     if (auto location = glGetUniformLocation(program, numLightsKey.c_str()); location != -1) {
         glUniform1i(location, lights.size());
+    }
+}
+
+template<>
+void inline gl::Shader::setUniform<std::array<size_t, 1>>(
+    std::string const &key,
+    std::array<size_t, 1> const &value
+) const {
+    if (!program) return;
+    glUseProgram(program);
+    if (auto location = glGetUniformLocation(program, key.c_str()); location != -1) {
+        glUniform1i(location, value.at(0));
     }
 }

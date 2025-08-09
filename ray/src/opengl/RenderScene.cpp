@@ -16,20 +16,16 @@
 #include "opengl/glTexture.hpp"
 #include "opengl/glFramebuffers.hpp"
 #include "opengl/Shader.hpp"
+#include "opengl/Shading.hpp"
 
 namespace {
     auto toGlMesh(
         std::shared_ptr<scene::Mesh<>> nativeMesh,
-        std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> const &materials
+        std::unordered_map<scene::ID, gl::AttachmentCases> const &attachments
     ) -> decltype(auto) {
         gl::AttachmentCases attachment = std::visit(overload {
             [&](scene::MaterialAttachment const &attachment) {
-                return gl::AttachmentCases(
-                    gl::MaterialAttachment(
-                        materials.at(attachment.id), 
-                        attachment.id
-                    )
-                );
+                return attachments.at(attachment.id);
             },
             [&](std::monostate _) {
                 return gl::AttachmentCases(std::monostate());
@@ -47,7 +43,8 @@ namespace {
     auto attachRenderPipelines(
         scene::ScenePtr scene,
         gl::PipelineConfiguration configuration,
-        std::unordered_map<scene::ID, std::shared_ptr<gl::Material>> const &materials
+        std::unordered_map<scene::ID, gl::AttachmentCases> const &attachments,
+        gl::Shading shading
     ) -> decltype(auto) {
         for (auto const &[id, node] : scene->nodes) {
             std::vector<gl::RenderPipeline<>> renderPipelines;
@@ -55,13 +52,14 @@ namespace {
             std::shared_ptr<scene::MeshComponent<>> meshComponent = node->getComponent<scene::MeshComponent<>>();
             if (meshComponent == nullptr) {
                 assert("No mesh associated");
+                continue;
             }
             std::vector<scene::MeshPtr<>> &meshes = meshComponent->value;
             for (auto &mesh : meshes) {
                 auto renderPipeline = gl::RenderPipeline<>(
                     configuration,
-                    toGlMesh(mesh, materials),
-                    gl::materialShader
+                    toGlMesh(mesh, attachments),
+                    gl::shaders.at(shading)
                 );
                 renderPipelines.emplace_back(std::move(renderPipeline));
             }
@@ -76,11 +74,11 @@ namespace {
         return std::make_shared<gl::Texture>(texture, unitIndex);
     }
 
-    auto deriveAttachments(scene::ScenePtr scene) -> decltype(auto) {
+    auto makeGlAttachments(scene::ScenePtr scene) -> decltype(auto) {
         std::unordered_map<scene::ID, gl::AttachmentCases> glAttachments;
         for (auto const &[id, attachment] : scene->attachments) {
-            std::visit(overload {
-                [&](scene::MaterialAttachment const &materialAttachment){
+            gl::AttachmentCases glAttachment = std::visit(overload {
+                [&](scene::MaterialAttachment const &materialAttachment) {
                     auto material = materialAttachment.material;
                     std::vector<gl::TexturePtr> ambient, specular, diffuse, normals;
                     auto unitIndex = gl::samplerLocationOffset;
@@ -116,25 +114,24 @@ namespace {
                             return toGlTexture(ptr, unitIndex++);
                         }
                     );
-
-                    glAttachments.emplace(
-                        std::make_pair(
-                            static_cast<scene::ID>(materialAttachment.id), 
-                            std::make_shared<gl::Material>(
-                                static_cast<scene::ID>(materialAttachment.id),
-                                material->ambientColor,
-                                material->shiness,
-                                std::move(ambient),
-                                std::move(specular),
-                                std::move(diffuse),
-                                std::move(normals)
-                            )
-                        )
-                    );
+                    return gl::AttachmentCases(gl::MaterialAttachment(
+                        std::make_shared<gl::Material>(
+                            id,
+                            material->ambientColor,
+                            material->shiness,
+                            std::move(ambient),
+                            std::move(specular),
+                            std::move(diffuse),
+                            std::move(normals)
+                        ),
+                        id
+                    ));
                 },
-                [](std::monostate) {}
-            },
-            attachment);
+                [](std::monostate) { return gl::AttachmentCases(std::monostate()); }
+            }, attachment);
+            glAttachments.emplace(
+                std::make_pair(id, glAttachment)
+            );
         }
 
         return glAttachments;
@@ -144,16 +141,18 @@ namespace {
 gl::RenderScene::RenderScene(
     scene::ScenePtr scene,
     gl::PipelineConfiguration configuration,
-    gl::FramebufferInfo framebufferInfo
+    gl::FramebufferInfo framebufferInfo,
+    gl::Shading shading
 )
     : scene(scene)
     , configuration(configuration)
-    , framebufferInfo(framebufferInfo) {}
+    , framebufferInfo(framebufferInfo)
+    , shading(shading) {}
 
 
 void gl::RenderScene::prepare() {
-    auto attachments = deriveAttachments(scene); // Stop point
-    attachRenderPipelines(scene, configuration, materials);
+    auto attachments = makeGlAttachments(scene);
+    attachRenderPipelines(scene, configuration, attachments, shading);
 
     for (auto const &[nodeId, node] : scene->nodes) {
         auto const &renderComponent = node->getComponent<gl::RenderComponent<>>();
@@ -169,6 +168,10 @@ void gl::RenderScene::prepare() {
 
 void gl::RenderScene::render() const {
     glBindFramebuffer(GL_FRAMEBUFFER, framebufferInfo.fbo());
+
+    if (actions.preRender) 
+        actions.preRender();
+
     if (framebufferInfo.useStencil) {
         glEnable(GL_STENCIL_TEST);
     } else {
@@ -198,4 +201,7 @@ void gl::RenderScene::render() const {
             }
         }
     }
+
+    if (actions.postRender) 
+        actions.postRender();
 }

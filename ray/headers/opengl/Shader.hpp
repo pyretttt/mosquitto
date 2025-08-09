@@ -42,16 +42,4 @@ void Shader::setUniform(
 
 using ShaderPtr = std::shared_ptr<Shader>;
 
-inline ShaderPtr materialShader = std::make_shared<gl::Shader>(gl::Shader(
-    std::filesystem::path("shaders").append("material.vs"),
-    std::filesystem::path("shaders").append("material.fs")
-));
-inline ShaderPtr outlineShader = std::make_shared<gl::Shader>(gl::Shader(
-    std::filesystem::path("shaders").append("outline.vs"),
-    std::filesystem::path("shaders").append("outline.fs")       
-));
-inline ShaderPtr textureShader = std::make_shared<gl::Shader>(gl::Shader(
-    std::filesystem::path("shaders").append("texture.vs"),
-    std::filesystem::path("shaders").append("texture.fs")       
-));
 }

@@ -93,7 +93,8 @@ namespace {
                 .framebuffer = gl::makeFullFrameBuffer({800, 600}), // TODO: From window
                 .useDepth = true,
                 .useStencil = true
-            }
+            },
+            gl::Shading::Material
         );
     }
 
@@ -102,7 +103,7 @@ namespace {
     auto quadMesh = std::make_shared<scene::Mesh<attributes::Cases>>(
         std::vector<attributes::Cases>({
             attributes::MaterialVertex {
-                .position = attributes::Vec3 { -1.f, 1.f, 0.f },
+                .position = attributes::Vec3 { -1.f, 1.f, 0.f }, // Bottom - left
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 0.f, 1.f }
             },
@@ -117,21 +118,36 @@ namespace {
                 .tex = attributes::Vec2 { 1.f, 0.f }
             },
             attributes::MaterialVertex {
+                .position = attributes::Vec3 { -1.f, 1.f, 0.f }, // Bottom - left
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 0.f, 1.f }
+            },
+            attributes::MaterialVertex {
+                .position = attributes::Vec3 { 1.f, -1.f, 0.f },
+                .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
+                .tex = attributes::Vec2 { 1.f, 0.f }
+            },
+            attributes::MaterialVertex {
                 .position = attributes::Vec3 { 1.f, 1.f, 0.f },
                 .normal = attributes::Vec3 { 0.f, 0.f, 1.f },
                 .tex = attributes::Vec2 { 1.f, 1.f }
             },
         }),
         std::vector<unsigned int>({
-            0, 1, 2, 1, 2, 3
+            0, 1, 2, 3, 4, 5
         }),
         std::monostate(),
         InstanceIdGenerator<scene::Mesh<attributes::Cases>>::getInstanceId()
     );
 
-    scene::NodePtr quadNode = std::make_shared<scene::Node>(
+    scene::NodePtr quadNode = modified(std::make_shared<scene::Node>(
         InstanceIdGenerator<scene::Node>::getInstanceId()
-    );
+    ), [](std::shared_ptr<scene::Node> const &node) {
+        node->addComponent<scene::MeshComponent<>>(
+            InstanceIdGenerator<scene::MeshComponent<>>::getInstanceId(),
+            std::vector<decltype(quadMesh)>({quadMesh})
+        );
+    });
 
     scene::ScenePtr textureScene = std::make_shared<scene::Scene>(
         std::unordered_map<scene::ID, scene::NodePtr>({
@@ -150,7 +166,8 @@ namespace {
                 .framebuffer = gl::defaultFrameBuffer(), // TODO: From window
                 .useDepth = false,
                 .useStencil = false
-            }
+            },
+            gl::Shading::Texturing
         );
     }
     
@@ -218,7 +235,16 @@ void gl::Renderer::prepareViewPort() {
     // mockRenderPipeline.prepare();
     // mockRenderScene.prepare();
     renderScene().prepare();
+    renderScene().actions.preRender = []() {
+        glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
+        glClearStencil(0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    };
     quadRenderScene().prepare();
+    quadRenderScene().actions.preRender = []() {
+        glClearColor(0.2f, 0.2f, 0.5f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+    };
 
     configureGl();
 
@@ -326,7 +352,6 @@ void gl::Renderer::render() const {
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    
     // Switches for testing
     // shader->use();
     // mockRenderPipeline.render();
@@ -335,8 +360,9 @@ void gl::Renderer::render() const {
 
     std::visit(overload {
          [&](gl::FullFramebuffer const &frame) {
+            glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, frame.framebufferTexture);
-            // quadRenderScene().shader->setUniform("texture0", );
+            shaders.at(gl::Shading::Texturing)->setUniform("texture0", std::array<size_t, 1>({0}));
         },
         [&](gl::FramebufferOnly const &frame) {
             return;
