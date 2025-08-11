@@ -48,3 +48,23 @@ def get_iou_many_to_many(bbox1, bbox2) -> float:
     return iou
 
 
+def sample_positive_negative(
+    labels: torch.Tensor, 
+    pos_count: int,
+    total_count: int
+) -> torch.Tensor:
+    positive = torch.where(labels >= 1)[0]
+    negative = torch.where(labels == 0)[0]
+    num_positive = min(pos_count, positive.numel())
+    num_negative = min(total_count - num_positive, negative.numel())
+    
+    perm_positive_idx = torch.randnperm(positive.numel(), device=positive.device)[:num_positive]
+    perm_negative_idx = torch.randnperm(negative.numel(), device=num_negative.device)[:num_negative]
+    pos_idx, neg_idx = positive[perm_positive_idx], negative[perm_negative_idx]
+    sampled_pos_idx_mask = torch.zeros_like(labels, dtype=torch.bool)
+    sampled_neg_idx_mask = sampled_pos_idx_mask.copy()
+    
+    
+    sampled_pos_idx_mask[pos_idx] = True
+    sampled_neg_idx_mask[neg_idx] = True
+    return sampled_pos_idx_mask, sampled_neg_idx_mask
