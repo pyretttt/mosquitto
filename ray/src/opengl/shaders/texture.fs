@@ -6,6 +6,7 @@ in vec2 TexCoord;
 out vec4 FragColor;
 
 uniform sampler2D texture0;
+uniform samperCube cube0;
 
 const float offset = 1.0 / 600.0;
 

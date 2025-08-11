@@ -6,6 +6,8 @@ import torchvision
 from torchvision.models import resnet50
 import math
 
+from utils.functions import get_iou_many_to_many
+
 @dataclass
 class Config:
     iou_neg_threshold: float
@@ -116,6 +118,46 @@ def boxes_to_transformations(boxes: torch.Tensor, anchors: torch.Tensor) -> torc
     )
 
 
+def assign_targets_to_anchors(
+    anchors: torch.Tensor,
+    bbox: torch.Tensor,
+    low_iou_threshold: float,
+    high_iou_threshold: float
+) -> tuple[torch.Tensor, torch.Tensor]:
+    r"""For each anchor assigns a ground truth box based on IOU
+
+    Args:
+        anchors (torch.Tensor): N_achors x 4
+        bbox (_type_): N_box x 4
+
+    Returns:
+        tuple[torch.Tensor, torch.Tensor]: (N_anchors, N_achors x 4)
+    """
+    iou_matrix = get_iou_many_to_many(anchors, bbox)
+    best_match_iou, best_match_iou_idx = iou_matrix.max(dim=0) # (N_anchors)
+    best_match_iou_idx_pre_thresholding = best_match_iou_idx.copy()
+    
+    below_low_threshold = best_match_iou < low_iou_threshold
+    between_threshold = (best_match_iou < high_iou_threshold and best_match_iou > low_iou_threshold)
+    best_match_iou_idx[below_low_threshold] = -1
+    best_match_iou_idx[between_threshold] = -2
+    
+    best_anchor_iou_for_gt, _ = iou_matrix.max(dim=0) # N_box
+    gt_pred_pair_with_highest_iou = torch.where(iou_matrix == best_anchor_iou_for_gt[:, None])
+    pred_idxs_to_update = gt_pred_pair_with_highest_iou[1]
+
+    best_match_iou_idx[pred_idxs_to_update]= best_match_iou_idx_pre_thresholding[pred_idxs_to_update]
+    
+    matched_gt_boxes = bbox[best_match_iou_idx.clamp(min=0)]
+    labels = (best_match_iou_idx >= 0).to(dtype=torch.float32)
+    background_anchors = best_match_iou_idx == -1
+    labels[background_anchors] = 0.0
+    ignored_anchors = best_match_iou_idx == -2
+    labels[ignored_anchors] = -1
+    
+    return labels, matched_gt_boxes
+    
+    
 class Backbone(nn.Module):
     def __init__(self):
         super().__init__()
@@ -297,7 +339,7 @@ class RPN(nn.Module):
         return anchors
 
     
-    def filter_proposals(self, proposals, cls_scores, ):
+    def filter_proposals(self, proposals, cls_scores, image_shape):
         return proposals
         
     def forward(self, image, feat, target=None):
@@ -325,8 +367,13 @@ class RPN(nn.Module):
             anchors,
             box_tranform_pred.detach()
         ) # N x anchor.size(0) x 4
-        proposals = self.filter_proposals(proposals)
+        proposals = self.filter_proposals(proposals, cls_scores, image.shape)
+        out = {
+            "proposals": proposals,
+            "scores": cls_scores
+        }
 
+        return out
 
 class RCNN(nn.Module):
     def __init__(
