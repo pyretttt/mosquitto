@@ -1,7 +1,7 @@
 [gd_scene load_steps=14 format=4 uid="uid://g1butl7n4i81"]
 
 [ext_resource type="Texture2D" uid="uid://ci14ofp4gm7g5" path="res://assets/kaila/kaila_r2u_tex.png" id="1_drp24"]
-[ext_resource type="Shader" path="res://characters/attack_range_boundary.gdshader" id="2_af845"]
+[ext_resource type="Shader" uid="uid://b71hai6wbtatu" path="res://characters/attack_range_boundary.gdshader" id="2_af845"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rpeat"]
 resource_name = "DiffuseBSDF"
@@ -4511,11 +4511,11 @@ tracks/104/keys = PackedFloat32Array(0, 1, 0.0145259, 0.928835, -0.035961, 0.368
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_myp4b"]
 _data = {
-"Action Stash]": SubResource("Animation_28nie"),
-"Action Stash]_001": SubResource("Animation_udno3"),
-"hit": SubResource("Animation_jy5n5"),
-"run": SubResource("Animation_4sw64"),
-"stance": SubResource("Animation_7lc1m")
+&"Action Stash]": SubResource("Animation_28nie"),
+&"Action Stash]_001": SubResource("Animation_udno3"),
+&"hit": SubResource("Animation_jy5n5"),
+&"run": SubResource("Animation_4sw64"),
+&"stance": SubResource("Animation_7lc1m")
 }
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_ricx7"]

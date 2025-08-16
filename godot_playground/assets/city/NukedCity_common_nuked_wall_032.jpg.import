@@ -1,0 +1,39 @@
+[remap]
+
+importer="texture"
+type="CompressedTexture2D"
+uid="uid://dhlupaajbhvom"
+path.s3tc="res://.godot/imported/NukedCity_common_nuked_wall_032.jpg-8242fafc3baf80c394be6284a00ff229.s3tc.ctex"
+path.etc2="res://.godot/imported/NukedCity_common_nuked_wall_032.jpg-8242fafc3baf80c394be6284a00ff229.etc2.ctex"
+metadata={
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "90fc5e7cdaffde52be98802a017bb0ce"
+}
+
+[deps]
+
+source_file="res://assets/city/NukedCity_common_nuked_wall_032.jpg"
+dest_files=["res://.godot/imported/NukedCity_common_nuked_wall_032.jpg-8242fafc3baf80c394be6284a00ff229.s3tc.ctex", "res://.godot/imported/NukedCity_common_nuked_wall_032.jpg-8242fafc3baf80c394be6284a00ff229.etc2.ctex"]
+
+[params]
+
+compress/mode=2
+compress/high_quality=false
+compress/lossy_quality=0.7
+compress/hdr_compression=1
+compress/normal_map=0
+compress/channel_pack=0
+mipmaps/generate=true
+mipmaps/limit=-1
+roughness/mode=0
+roughness/src_normal=""
+process/fix_alpha_border=true
+process/premult_alpha=false
+process/normal_map_invert_y=false
+process/hdr_as_srgb=false
+process/hdr_clamp_exposure=false
+process/size_limit=0
+detect_3d/compress_to=0

@@ -1,0 +1,5 @@
+[gd_scene load_steps=2 format=3 uid="uid://l8ka2i87raea"]
+
+[ext_resource type="PackedScene" uid="uid://cfakx0ed2e6ao" path="res://assets/city/NukedCity.glb" id="1_xhix0"]
+
+[node name="NukedCity" instance=ExtResource("1_xhix0")]
