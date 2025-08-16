@@ -6,7 +6,8 @@ namespace gl {
     enum class Shading {
         Material,
         Outlining,
-        Texturing
+        Texturing,
+        Cube
     }; 
 
     inline auto const shaderDirectory = std::filesystem::path("shaders");
@@ -23,10 +24,15 @@ namespace gl {
         shaderDirectory / "texture.vs",
         shaderDirectory / "texture.fs"       
     ));
+    inline ShaderPtr const cubeShader = std::make_shared<gl::Shader>(gl::Shader(
+        shaderDirectory / "cube.vs",
+        shaderDirectory / "cube.fs"       
+    ));
 
     inline auto const shaders = std::unordered_map<Shading, ShaderPtr>({
         std::make_pair(Shading::Material, materialShader),
         std::make_pair(Shading::Outlining, outlineShader),
         std::make_pair(Shading::Texturing, textureShader),
+        std::make_pair(Shading::Cube, cubeShader),
     });
 }

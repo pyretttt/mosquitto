@@ -40,9 +40,5 @@ Mesh<Attr, Attachment>::Mesh(
     , vertexArrayIndices(std::move(vertexArrayIndices))
     , attachment(std::move(attachment))
     , identifier(identifier) {
-    if (this->vertexArrayIndices.empty()) {
-        this->vertexArrayIndices = std::vector<unsigned int>(this->vertexArray.size());
-        std::iota(this->vertexArrayIndices.begin(), this->vertexArrayIndices.end(), this->vertexArray.size());
-    }
 }
 }

@@ -26,6 +26,8 @@
 #include "opengl/glFramebuffers.hpp"
 #include "Light.hpp"
 
+#include "opengl/Renderer+Skybox.hpp"
+
 namespace fs = std::filesystem;
 
 namespace {
@@ -222,8 +224,6 @@ void gl::Renderer::prepareViewPort() {
     glViewport(0, 0, resolution.first, resolution.second);
 
     // Switch for testing
-    // mockRenderPipeline.prepare();
-    // mockRenderScene.prepare();
     renderScene().prepare();
     renderScene().actions.preRender = []() {
         glClearColor(0.5f, 0.1f, 0.3f, 1.0f);
@@ -236,11 +236,13 @@ void gl::Renderer::prepareViewPort() {
         glClear(GL_COLOR_BUFFER_BIT);
     };
 
+    cubeRenderScene().prepare();
+
     configureGl();
 
-    gl::materialShader->setup();
-    gl::outlineShader->setup();
-    gl::textureShader->setup();
+    for (auto const &[key, value] : shaders) {
+        value->setup();
+    }
 }
 
 void gl::Renderer::processInput(Event event, float dt) {
@@ -319,6 +321,15 @@ void gl::Renderer::update(MeshData const &data, float dt) {
         )
     );
 
+    gl::cubeShader->setUniform(
+        "transforms", 
+        attributes::Transforms(
+            transformMatrix,
+            camera()->getViewTransformation(),
+            camera()->getScenePerspectiveProjectionMatrix()
+        )
+    );
+
     light[0].position = camera()->getOrigin();
     gl::materialShader->setUniform("light", light);
 
@@ -342,10 +353,6 @@ void gl::Renderer::render() const {
     glClearStencil(0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 
-    // Switches for testing
-    // shader->use();
-    // mockRenderPipeline.render();
-    // mockRenderScene.render();
     renderScene().render();
 
     std::visit(overload {
@@ -360,6 +367,12 @@ void gl::Renderer::render() const {
     }, renderScene().framebufferInfo.framebuffer);
 
     quadRenderScene().render();
+
+    // gl::shaders.at(gl::Shading::Cube)->use();
+    // glActiveTexture(GL_TEXTURE0);
+    // glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMapTextureId);
+    // shaders.at(gl::Shading::Cube)->setUniform("cubeMap", std::array<size_t, 1>({0}));
+    // cubeRenderScene().render();
 
     SDL_GL_SwapWindow(config->window.get());
 }

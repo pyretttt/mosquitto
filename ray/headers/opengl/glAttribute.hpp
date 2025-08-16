@@ -44,8 +44,7 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(decltype(attributes::Vec3::val)),
-            sizeof(attributes::Cases),
+            stride,
             (void *)0
         );
         glEnableVertexAttribArray(0);
@@ -58,8 +57,7 @@ namespace gl {
             4,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(decltype(attributes::Vec4::val)),
-            sizeof(attributes::Cases),
+            stride,
             (void *)0
         );
         glEnableVertexAttribArray(0);
@@ -72,8 +70,7 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(attributes::PositionWithColor),
-            sizeof(attributes::Cases),
+            stride,
             (void *)0
         );
         glVertexAttribPointer(
@@ -81,8 +78,7 @@ namespace gl {
             4,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(attributes::PositionWithColor),
-            sizeof(attributes::Cases),
+            stride,
             (void *)offsetof(attributes::PositionWithColor, color)
         );
         glEnableVertexAttribArray(0);
@@ -95,9 +91,8 @@ namespace gl {
             0,
             3,
             GL_FLOAT, 
-            GL_FALSE, 
-            // sizeof(attributes::PositionWithTex),
-            sizeof(attributes::Cases),
+            GL_FALSE,
+            stride,
             (void *)0
         );
 
@@ -106,8 +101,7 @@ namespace gl {
             2,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(attributes::PositionWithTex),
-            sizeof(attributes::Cases),
+            stride,
             (void *)offsetof(attributes::PositionWithTex, tex)
         );
         glEnableVertexAttribArray(0);
@@ -121,8 +115,7 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(attributes::MaterialVertex),
-            sizeof(attributes::Cases),
+            stride,
             (void *)0
         );
 
@@ -131,8 +124,7 @@ namespace gl {
             3,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(attributes::MaterialVertex),
-            sizeof(attributes::Cases),
+            stride,
             (void *)offsetof(attributes::MaterialVertex, normal)
         );
 
@@ -141,8 +133,7 @@ namespace gl {
             2,
             GL_FLOAT, 
             GL_FALSE, 
-            // sizeof(attributes::MaterialVertex),
-            sizeof(attributes::Cases),
+            stride,
             (void *)offsetof(attributes::MaterialVertex, tex)
         );
         glEnableVertexAttribArray(0);

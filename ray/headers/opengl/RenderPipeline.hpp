@@ -170,6 +170,7 @@ void RenderPipeline<Attribute>::render() const noexcept {
     if (actions.preRender) {
         actions.preRender();
     }
+    shader->use();
 
     std::visit(overload {
         [&](MaterialAttachment const &attachemnt) {
@@ -193,8 +194,11 @@ void RenderPipeline<Attribute>::render() const noexcept {
     glBindVertexArray(vao);
     glPolygonMode(configuration.polygonMode.face, configuration.polygonMode.mode);
     // TODO: For test
-    // glDrawArrays(GL_TRIANGLES, 0, 36);
-    glDrawElements(GL_TRIANGLES, meshNode->vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
+    if (meshNode->vertexArrayIndices.size()) {
+        glDrawElements(GL_TRIANGLES, meshNode->vertexArrayIndices.size(), GL_UNSIGNED_INT, 0);
+    } else {
+        glDrawArrays(GL_TRIANGLES, 0, meshNode->vertexArray.size());
+    }
     glBindVertexArray(0);
 
     if (actions.postRender) {
