@@ -55,8 +55,8 @@ def apply_transformations_to_anchors(
         and anchor_center_x == (anchors.size(0), )
         and anchor_center_y == (anchors.size(0), )
     )
-    x_0 = t_x * (anchor_widths + anchor_center_x)[None, ...]
-    y_0 = t_y * (anchor_heights + anchor_center_y)[None, ...]
+    x_0 = t_x * anchor_widths[None, ...] + anchor_center_x[None, ...]
+    y_0 = t_y * anchor_heights[None, ...] + anchor_center_y[None, ...]
     
     w = torch.exp(t_w) * anchor_widths[None, ...]
     h = torch.exp(t_h) * anchor_heights[None, ...]
@@ -133,7 +133,7 @@ def assign_targets_to_anchors(
     Returns:
         tuple[torch.Tensor, torch.Tensor]: (N_anchors, N_achors x 4)
     """
-    iou_matrix = get_iou_many_to_many(anchors, bbox)
+    iou_matrix = get_iou_many_to_many(anchors, bbox) # (N_achors, N_box)
     best_match_iou, best_match_iou_idx = iou_matrix.max(dim=0) # (N_anchors)
     best_match_iou_idx_pre_thresholding = best_match_iou_idx.copy()
     
@@ -142,11 +142,11 @@ def assign_targets_to_anchors(
     best_match_iou_idx[below_low_threshold] = -1
     best_match_iou_idx[between_threshold] = -2
     
-    best_anchor_iou_for_gt, _ = iou_matrix.max(dim=0) # N_box
+    best_anchor_iou_for_gt, _ = iou_matrix.max(dim=1) # N_box
     gt_pred_pair_with_highest_iou = torch.where(iou_matrix == best_anchor_iou_for_gt[:, None])
     pred_idxs_to_update = gt_pred_pair_with_highest_iou[1]
 
-    best_match_iou_idx[pred_idxs_to_update]= best_match_iou_idx_pre_thresholding[pred_idxs_to_update]
+    best_match_iou_idx[pred_idxs_to_update] = best_match_iou_idx_pre_thresholding[pred_idxs_to_update]
     
     matched_gt_boxes = bbox[best_match_iou_idx.clamp(min=0)]
     labels = (best_match_iou_idx >= 0).to(dtype=torch.float32)

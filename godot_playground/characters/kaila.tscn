@@ -1,7 +1,6 @@
-[gd_scene load_steps=14 format=4 uid="uid://g1butl7n4i81"]
+[gd_scene load_steps=11 format=4 uid="uid://g1butl7n4i81"]
 
 [ext_resource type="Texture2D" uid="uid://ci14ofp4gm7g5" path="res://assets/kaila/kaila_r2u_tex.png" id="1_drp24"]
-[ext_resource type="Shader" uid="uid://b71hai6wbtatu" path="res://characters/attack_range_boundary.gdshader" id="2_af845"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_rpeat"]
 resource_name = "DiffuseBSDF"
@@ -4518,23 +4517,9 @@ _data = {
 &"stance": SubResource("Animation_7lc1m")
 }
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_ricx7"]
-shader = ExtResource("2_af845")
-
-[sub_resource type="CylinderMesh" id="CylinderMesh_rbt66"]
-material = SubResource("ShaderMaterial_ricx7")
-top_radius = 0.1
-bottom_radius = 0.1
-height = 0.1
-radial_segments = 8
-rings = 1
-cap_top = false
-cap_bottom = false
-
 [node name="Kaila" type="Node3D"]
 
 [node name="kaila_r2u" type="Node3D" parent="."]
-visible = false
 
 [node name="Armature" type="Node3D" parent="kaila_r2u"]
 transform = Transform3D(-0.999381, -0.0349749, 0.00393546, -0.0323692, 0.957264, 0.287399, -0.013819, 0.287093, -0.957802, 0.00580706, -0.131822, -0.343665)
@@ -6367,9 +6352,6 @@ skin = SubResource("Skin_qxkni")
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="kaila_r2u"]
 libraries = {
-"": SubResource("AnimationLibrary_myp4b")
+&"": SubResource("AnimationLibrary_myp4b")
 }
 blend_times = [&"hit", &"run", 0.2, &"hit", &"stance", 0.3, &"run", &"hit", 0.5, &"run", &"stance", 0.5, &"stance", &"hit", 0.5, &"stance", &"run", 0.5]
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
-mesh = SubResource("CylinderMesh_rbt66")

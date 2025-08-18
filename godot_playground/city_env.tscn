@@ -1,12 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://cfkvg3x3ed5u6"]
+[gd_scene load_steps=3 format=3 uid="uid://cfkvg3x3ed5u6"]
 
 [ext_resource type="PackedScene" uid="uid://l8ka2i87raea" path="res://city.tscn" id="1_2sigh"]
+
+[sub_resource type="Environment" id="Environment_2sigh"]
+background_mode = 2
+ambient_light_color = Color(0.33, 0.33, 0.33, 1)
 
 [node name="root" type="Node3D"]
 
 [node name="NukedCity" parent="." instance=ExtResource("1_2sigh")]
 
-[node name="SpotLight3D" type="SpotLight3D" parent="."]
+[node name="SpotLight3D_bulding_1" type="SpotLight3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, -0.149794, 0.988717, 0, -0.988717, -0.149794, 1.71046, 1.41745, 1.59647)
 light_color = Color(0.95953, 0.967967, 0.97973, 1)
 light_energy = 0.275
@@ -15,7 +19,10 @@ spot_attenuation = 3.24
 spot_angle = 69.17
 spot_angle_attenuation = 2.0
 
-[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
-transform = Transform3D(0.927027, 0.167703, -0.335406, 0, 0.894428, 0.447213, 0.374995, -0.414578, 0.829159, 0, 3.86805, 0)
+[node name="DirectionalLight3D_sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.883403, -0.0544126, -0.465445, 0.467384, 0.174234, 0.866715, 0.0339362, -0.9832, 0.17935, 0, 3.86805, 0.0349558)
 light_color = Color(0.797181, 0.897903, 0.999141, 1)
-light_energy = 0.6
+light_energy = 0.8
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_2sigh")

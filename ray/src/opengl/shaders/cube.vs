@@ -13,4 +13,5 @@ uniform struct Transforms {
 void main() {
     TexCoords = aPos;
     gl_Position = transforms.projectionMatrix * transforms.viewMatrix * vec4(aPos, 1.0);
+    gl_Position = gl_Position.xyww;
 }
