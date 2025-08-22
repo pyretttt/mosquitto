@@ -1,5 +1,6 @@
 import torch
 
+
 def get_iou(bbox1, bbox2):
     """Computes bounding intersection over union between two boxes
 
@@ -64,7 +65,56 @@ def sample_positive_negative(
     sampled_pos_idx_mask = torch.zeros_like(labels, dtype=torch.bool)
     sampled_neg_idx_mask = sampled_pos_idx_mask.copy()
     
-    
     sampled_pos_idx_mask[pos_idx] = True
     sampled_neg_idx_mask[neg_idx] = True
     return sampled_pos_idx_mask, sampled_neg_idx_mask
+
+
+def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
+    """Clamps boxes to shape of image
+
+    Args:
+        boxes (torch.Tensor): (N x 4)
+        shape (tuple[int, int]): width x height
+
+    Returns:
+        torch.Tensor: clamped boxes (N x 4)
+    """
+    width, height = shape
+    x_1, y_1, x_2, y_2 = (
+        boxes[..., 0],
+        boxes[..., 1],
+        boxes[..., 2],
+        boxes[..., 3],
+    )
+    x_1 = x_1.clamp(min=0, max=width)
+    y_1 = y_1.clamp(min=0, max=height)
+    x_2 = x_2.clamp(min=0, max=width)
+    y_2 = y_2.clamp(min=0, max=height)
+    return torch.cat([x_1, y_2, x_2, y_2], dim=-1)
+
+
+def scale_boxes_by_aspect_ratio(
+    boxes: torch.Tensor, 
+    after_scale_size: tuple[int, int], 
+    original_size: tuple[int, int]
+) -> torch.Tensor:
+    """Applies aspect ratio scale to boxes
+
+    Args:
+        boxes (torch.Tensor): (N x 4)
+        after_scale_size (tuple[int, int]): Size after scale
+        original_size (tuple[int, int]): Size before scale
+
+    Returns:
+        torch.Tensor: Boxes scaled according to original size
+    """
+    width_scale = original_size[0] / after_scale_size[0]
+    height_scale = original_size[1] / after_scale_size[1]
+    
+    x_1 = boxes[..., 0] * width_scale
+    y_1 = boxes[..., 1] * height_scale
+    x_2 = boxes[..., 2] * width_scale
+    y_2 = boxes[..., 3] * height_scale
+    
+    return torch.cat([x_1, y_1, x_2, y_2], dim=-1)

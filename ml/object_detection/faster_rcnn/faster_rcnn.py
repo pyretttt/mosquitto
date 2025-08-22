@@ -6,7 +6,7 @@ import torchvision
 from torchvision.models import resnet50
 import math
 
-from utils.functions import get_iou_many_to_many
+from functions import get_iou_many_to_many
 
 @dataclass
 class Config:
