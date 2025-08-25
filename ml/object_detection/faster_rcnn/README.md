@@ -14,7 +14,7 @@ It slides over entire conv feature map and for each window position it computes 
 Anchors are predefined rectangles of different aspect ratio and scale. Different scales allow model to be scale invariant.
 
 
-### RPN Training
+### RPN-Training
 ***
 
 For each window position on convolution feature map there're WxHx{Anchors} predictions (binary label or softmax over all anchors?).
@@ -92,11 +92,13 @@ because `H*W = 1`, and also `SH` equal to desirable height and `SW` equal to des
 These height and width preserve given scale and given aspect ratio.
 
 
-## Open questions
+# Dataflow
 ***
+It starts with RPN. RPN for each feature map coordinate generates N_anchors * 4 coordinates and N_anchors classification scores. 
+These proposals are excessive, we need only part of it:
+1. As soon as each proposal has associated score, let's pick top_k out of it.
+2. Then each proposals must be clamped to image boundary, and also clamped by minimum size
+3. Use non-maximum-supression
+4. Get top_k after non-maximum-supression
 
-Faster RCNN paper computes transformation targets w.r.t. to center of the screen. 
-It looks like parameterization described above will also work.
-But will it suffer from numerical instability?
-
-- Yes it will work, but may include some biasness, so center coordinates are better.
+Once we got mapped proposals, we need to assign targets to proposals according to [training stage](#RPN-Training). It's done based on boxes of image.

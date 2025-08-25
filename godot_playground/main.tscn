@@ -1,9 +1,8 @@
-[gd_scene load_steps=8 format=3 uid="uid://iq35gkf582qc"]
+[gd_scene load_steps=7 format=3 uid="uid://iq35gkf582qc"]
 
 [ext_resource type="Script" uid="uid://dxxkvo6058rxh" path="res://main.gd" id="1_ex88s"]
 [ext_resource type="PackedScene" uid="uid://cfkvg3x3ed5u6" path="res://city_env.tscn" id="3_h2yge"]
 [ext_resource type="Script" uid="uid://cbptcbsip3qk1" path="res://flight_camera.gd" id="3_l7wv8"]
-[ext_resource type="PackedScene" uid="uid://bvy2e0k35siqy" path="res://assets/kaila/kaila_r2u.glb" id="4_1bvp3"]
 
 [sub_resource type="StandardMaterial3D" id="StandardMaterial3D_w40nb"]
 albedo_color = Color(0.729167, 0.35, 1, 1)
@@ -39,11 +38,5 @@ fov = 70.0
 near = 0.5
 far = 100.0
 
-[node name="RotationPoint" type="Marker3D" parent="."]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 30, 10)
-
 [node name="Map" parent="." instance=ExtResource("3_h2yge")]
 transform = Transform3D(6, 0, 0, 0, 6, 0, 0, 0, 6, 0, 0, 0)
-
-[node name="kaila_r2u" parent="." instance=ExtResource("4_1bvp3")]
-transform = Transform3D(0.0818167, -0.186804, 0.978984, -8.88178e-16, 0.982277, 0.187433, -0.996647, -0.0153351, 0.0803667, -3.37947, 0.303007, -4.63368)

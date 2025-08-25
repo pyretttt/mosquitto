@@ -6,7 +6,7 @@ import torchvision
 from torchvision.models import resnet50
 import math
 
-from functions import get_iou_many_to_many
+import functions as fn
 
 @dataclass
 class Config:
@@ -133,7 +133,7 @@ def assign_targets_to_anchors(
     Returns:
         tuple[torch.Tensor, torch.Tensor]: (N_anchors, N_achors x 4)
     """
-    iou_matrix = get_iou_many_to_many(anchors, bbox) # (N_achors, N_box)
+    iou_matrix = fn.get_iou_many_to_many(anchors, bbox) # (N_achors, N_box)
     best_match_iou, best_match_iou_idx = iou_matrix.max(dim=0) # (N_anchors)
     best_match_iou_idx_pre_thresholding = best_match_iou_idx.copy()
     
@@ -187,6 +187,7 @@ class RPN(nn.Module):
         iou_pos_threshold: float,
         iou_neg_threshold: float,
         rpn_nms_threshold: float,
+        rpn_prenms_topk: int,
         **kwargs
     ):
         super().__init__()
@@ -195,6 +196,7 @@ class RPN(nn.Module):
         self.iou_pos_threshold = iou_pos_threshold
         self.iou_neg_threshold = iou_neg_threshold
         self.rpn_nms_threshold = rpn_nms_threshold
+        self.rpn_prenms_topk = rpn_prenms_topk
         self.num_anchors = len(scales) * len(aspect_ratios)
         self.conv1 = nn.Conv2d(input_channels, input_channels, kernel_size=3, stride=1, padding=1)
         self.regression_head = nn.Conv2d(input_channels, self.num_anchors * 4, kernel_size=1)
@@ -339,17 +341,60 @@ class RPN(nn.Module):
         return anchors
 
     
-    def filter_proposals(self, proposals, cls_scores, image_shape):
-        return proposals
+    def map_proposals(
+        self, 
+        proposals: torch.Tensor, 
+        cls_scores: torch.Tensor, 
+        image_shape: tuple[int, int]
+    ) -> torch.Tensor:
+        """Maps proposals
+
+        Args:
+            proposals (torch.Tensor): N x anchor.size(0) x 4
+            cls_scores (torch.Tensor):  N * anchor.size(0) x 1
+            image_shape (tuple[int, int]): width x height
+
+        Returns:
+            torch.Tensor: _description_
+        """
+        cls_scores = cls_scores.reshape(-1)
+        cls_scores = torch.sigmoid(cls_scores)
+        _, top_n_idx = cls_scores.topk(min(self.rpn_prenms_topk, len(cls_scores)))
+        cls_scores = cls_scores[top_n_idx]
+        proposals = proposals[..., top_n_idx]
+        proposals = fn.clamp_boxes_to_shape(proposals, image_shape)
         
+        min_size = 16
+        ws, hs = proposals[:, 2] - proposals[:, 0], proposals[:, 3] - proposals[:, 1]
+        keep = (ws >= min_size) & (hs >= min_size)
+        keep_idx = torch.where(keep)[0]
+        proposals = proposals[keep_idx]
+        cls_scores = cls_scores[keep_idx]
+
+        # NMS
+        keep_mask = torch.zeros_like(cls_scores, dtype=torch.bool)
+        keep_indices = torch.ops.torchvision.nms(proposals, cls_scores, self.rpn_nms_threshold)
+        keep_mask[keep_indices] = True
+        keep_indices = torch.where(keep_mask)[0]
+
+        post_nms_keep_indices = keep_indices[cls_scores[keep_indices].sort(descending=True)[1]]
+        
+        proposals, cls_scores = (
+            proposals[post_nms_keep_indices[:self.rpn_topk]]
+            cls_scores[post_nms_keep_indices[:self.rpn_topk]],
+        )
+
+        return proposals, cls_scores
+
+
     def forward(self, image, feat, target=None):
         rpn_feat = self.conv1(feat)
         rpn_feat = self.relu(rpn_feat)
-        cls_scores = self.classification_head(rpn_feat) # N x Num_achors x H_feat x H_head
-        cls_scores = cls_scores.permute(0, 2, 3, 1)  # N x H_feat x H_head x Num_achors
-        cls_scores = cls_scores.reshape(-1, 1) # N * H_feat * H_head * Num_achors x 1
+        cls_scores = self.classification_head(rpn_feat) # N x Num_achors x H_feat x W_feat
+        cls_scores = cls_scores.permute(0, 2, 3, 1)  # N x H_feat x W_feat x Num_achors
+        cls_scores = cls_scores.reshape(-1, 1) # N * H_feat * W_feat * Num_achors x 1
         
-        box_tranform_pred = self.regression_head(rpn_feat) # N x Num_achors * 4 x H_feat x H_head
+        box_tranform_pred = self.regression_head(rpn_feat) # N x Num_achors * 4 x H_feat x W_feat
         assert box_tranform_pred.shape == (image.shape[0], self.num_anchors * 4, feat.shape[-2], feat.shape[-1])
         box_tranform_pred = box_tranform_pred.view(
             box_tranform_pred.size(dim=0),
@@ -367,7 +412,7 @@ class RPN(nn.Module):
             anchors,
             box_tranform_pred.detach()
         ) # N x anchor.size(0) x 4
-        proposals = self.filter_proposals(proposals, cls_scores, image.shape)
+        proposals, cls_scores = self.map_proposals(proposals, cls_scores, image.shape)
         out = {
             "proposals": proposals,
             "scores": cls_scores
