@@ -1,6 +1,7 @@
 import torch
 import math
 
+from functions.detections import get_iou_many_to_many
 
 def apply_transformations_to_anchors(
     anchors: torch.Tensor, 
@@ -117,7 +118,7 @@ def assign_targets_to_anchors(
     Returns:
         tuple[torch.Tensor, torch.Tensor]: (N_anchors, N_achors x 4)
     """
-    iou_matrix = fn.get_iou_many_to_many(anchors, bbox) # (N_achors, N_box)
+    iou_matrix = get_iou_many_to_many(anchors, bbox) # (N_achors, N_box)
     best_match_iou, best_match_iou_idx = iou_matrix.max(dim=0) # (N_anchors)
     best_match_iou_idx_pre_thresholding = best_match_iou_idx.copy()
     
@@ -140,3 +141,65 @@ def assign_targets_to_anchors(
     labels[ignored_anchors] = -1
     
     return labels, matched_gt_boxes
+
+
+
+def generate_anchors(image, feat, scales, aspect_ratios) -> torch.Tensor:
+    r"""Computes anchors for each sliding window inside feature map
+    For each sliding window inside feature map there're num_scales * num_ratios anchors generated
+
+    Args:
+        image (torch.Tensor): (N x C x H x W) 
+        feat (torch.Tensor): (N x C_feat x H_feat x W_feat) feature map from backbone
+        scales (list[int]): scales of anchors in sq pixels
+        aspect_ratios (list[int]): aspect ratios of anchors preserving scale
+    """
+    H_feat, W_feat = feat.shape[-2:]
+    H_image, W_image = image.shape[-2:]
+    
+    stride_h = torch.tensor(H_image // H_feat, dtype=torch.int64, device=image.device)
+    stride_w = torch.tensor(W_image // W_feat, dtype=torch.int64, device=image.device)
+
+    scales = torch.as_tensor(scales, dtype=feat.dtype, device=feat.device) # (num_scales)
+    assert scales.shape == (len(scales),)
+    aspect_ratios = torch.as_tensor(aspect_ratios, dtype=feat.dtype, device=feat.device) # (num_ratios)
+    assert aspect_ratios.shape == (len(aspect_ratios),)
+    
+    # Assuming anchors of scale 128 sq pixels
+    # For 1:1 it would be (128, 128) -> area=16384
+    # For 2:1 it would be (181.02, 90.51) -> area=16384
+    # For 1:2 it would be (90.51, 181.02) -> area=16384
+    
+    # Look explanation inside [README.md](#RPN-Params)
+    h_ratios = torch.sqrt(aspect_ratios) # (num_ratios)
+    w_ratios = 1 / h_ratios # (num_ratios)
+    
+    # Compute actual side scales
+    h_scales = (h_ratios[:, None] * scales[None, :]).view(-1) # (num_ratios * num_scales)
+    w_scales = (w_ratios[:, None] * scales[None, :]).view(-1) # (num_ratios * num_scales)
+    assert h_scales.shape == (len(scales) * len(aspect_ratios),)
+    assert w_scales.shape == (len(scales) * len(aspect_ratios),)
+    
+    ## Anchor displacements about it center in image coordinates
+    anchor_coords_about_center = torch.stack([-w_scales, -h_scales, w_scales, h_scales], dim=1) / 2 # (num_ratios * num_scales x 4)
+    anchor_coords_about_center = anchor_coords_about_center.round() # (num_ratios * num_scales x 4)
+    assert anchor_coords_about_center.shape == (len(scales) * len(aspect_ratios), 4)
+    
+    # Computes anchor centers in image coordinates
+    shift_x = torch.arange(0, W_feat, dtype=torch.int32, device=feat.device) * stride_w # (W_feat)
+    shift_y = torch.arange(0, H_feat, dtype=torch.int32, device=feat.device) * stride_h # (H_feat)
+    assert shift_x.shape == (W_feat, ) and shift_y.shape == (H_feat, )
+
+    shift_y, shift_x = torch.meshgrid(shift_y, shift_x, indexing="ij") 
+    # both (H_feat, W_feat)
+    assert shift_x.shape == (H_feat, W_feat) and shift_y.shape == (H_feat, W_feat)
+    shift_y = shift_y.reshape(-1)
+    shift_x = shift_x.reshape(-1)
+    assert shift_x.shape == (H_feat * W_feat, ) and shift_y.shape == (H_feat * W_feat, )
+    shifts = torch.stack((shift_x, shift_y, shift_x, shift_y), dim=1) # (H_feat * W_feat x 4)
+    assert shifts.shape == (H_feat * W_feat, 4)
+    anchor_coordinates = shifts[:, None, :] + anchor_coords_about_center[None, :, :]
+    assert anchor_coordinates.shape == (H_feat * W_feat, len(scales) * len(aspect_ratios), 4)
+    anchor_coordinates = anchor_coordinates.reshape(-1, 4)
+    assert anchor_coordinates.shape == (H_feat * W_feat * len(scales) * len(aspect_ratios), 4)
+    return anchor_coordinates

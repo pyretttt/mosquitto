@@ -6,10 +6,16 @@
         {
             "label": "run current python file",
             "type": "shell",
-            "command": "poetry run python ${file}",
+            "command": "poetry",
+            "args": [
+                "run",
+                "python",
+                "-m",
+                "object_detection.faster_rcnn.faster_rcnn"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}"
-            },
+            },            
             "group": {
                 "kind": "build",
                 "isDefault": true
