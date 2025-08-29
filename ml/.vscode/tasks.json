@@ -6,13 +6,13 @@
         {
             "label": "run current python file",
             "type": "shell",
-            "command": "poetry",
-            "args": [
-                "run",
-                "python",
-                "-m",
-                "object_detection.faster_rcnn.faster_rcnn"
-            ],
+            "command": "poetry run python -m $(${workspaceFolder}/module_path.py ${file} -r ${workspaceFolder})",
+            // "args": [
+            //     "run",
+            //     "python",
+            //     "-m",
+            //     "$(${workspaceFolder}/module_path.py ${file} ${workspaceFolder})"
+            // ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },            
