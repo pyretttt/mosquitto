@@ -32,13 +32,13 @@ def get_iou_many_to_many(bbox1, bbox2) -> float:
     area2 = (bbox2[..., 2] - bbox2[..., 0]) * (bbox2[..., 3] - bbox2[..., 1]) # (M, )
 
     # Let's find rightmost leading edge between each rectange in first and second array
-    x_left = torch.max(bbox1[..., None, 0], bbox2[..., 0])
+    x_left = torch.max(bbox1[..., None, 0], bbox2[..., 0]) # (N x M)
     # Let's find leftmost trailling edge between each rectange in first and second array
-    x_right = torch.min(bbox1[..., None, 2], bbox2[..., 2])
+    x_right = torch.min(bbox1[..., None, 2], bbox2[..., 2]) # (N x M)
     # Let's find lower top edge between each rectange in first and second array
-    y_top = torch.max(bbox1[..., None, 1], bbox2[..., 1]) 
+    y_top = torch.max(bbox1[..., None, 1], bbox2[..., 1]) # (N x M)
     # Let's find upper bottom edge between each rectange in first and second array
-    y_bottom = torch.min(bbox1[..., None, 4], bbox2[..., 4])
+    y_bottom = torch.min(bbox1[..., None, 4], bbox2[..., 4]) # (N x M)
 
     # If x_right < x_left then there's no intersection.
     # The same if y_bottom < y_top there's no intesection.
@@ -80,7 +80,7 @@ def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, int]) -> torch.T
     Returns:
         torch.Tensor: clamped boxes (N x 4)
     """
-    width, height = shape
+    width, height = shape[-2:]
     x_1, y_1, x_2, y_2 = (
         boxes[..., 0],
         boxes[..., 1],
@@ -91,7 +91,12 @@ def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, int]) -> torch.T
     y_1 = y_1.clamp(min=0, max=height)
     x_2 = x_2.clamp(min=0, max=width)
     y_2 = y_2.clamp(min=0, max=height)
-    return torch.cat([x_1, y_2, x_2, y_2], dim=-1)
+    return torch.cat([
+        x_1[..., None],
+        y_1[..., None],
+        x_2[..., None],
+        y_2[..., None],
+    ], dim=-1)
 
 
 def scale_boxes_by_aspect_ratio(
@@ -117,4 +122,9 @@ def scale_boxes_by_aspect_ratio(
     x_2 = boxes[..., 2] * width_scale
     y_2 = boxes[..., 3] * height_scale
     
-    return torch.cat([x_1, y_1, x_2, y_2], dim=-1)
+    return torch.cat([
+        x_1[..., None],
+        y_1[..., None],
+        x_2[..., None],
+        y_2[..., None]
+    ], dim=-1)
