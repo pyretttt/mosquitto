@@ -579,8 +579,8 @@ class ROIHead(nn.Module):
         iou_matrix = get_iou(gt_boxes, proposals)
         # For each gt box proposal find best matching gt box
         best_match_iou, best_match_gt_idx = iou_matrix.max(dim=0)
-        ignored_proposals = (best_match_iou < self.iou_threshold) & (best_match_iou >= self.low_bg_iou)
-        background_proposals = best_match_iou < self.low_bg_iou
+        background_proposals = (best_match_iou < self.iou_threshold) & (best_match_iou >= self.low_bg_iou)
+        ignored_proposals = best_match_iou < self.low_bg_iou
         
         # Update best match of low IOU proposals to -1
         best_match_gt_idx[background_proposals] = -1
