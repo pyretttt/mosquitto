@@ -1,4 +1,12 @@
 import torch
+from dataclasses import dataclass
+
+@dataclass
+class Config:
+    is_custom_targets_assignment_rpn_enabled: bool = True
+    is_custom_targets_assignment_roi_enabled: bool = False
+    
+config = Config()
 
 def get_iou(boxes1, boxes2):
     r"""

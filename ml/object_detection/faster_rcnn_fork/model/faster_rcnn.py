@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ab import assign_target_to_regions
+from ab import assign_target_to_regions, config
 
 import torch
 import torch.nn as nn
@@ -8,11 +8,6 @@ import math
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-@dataclass
-class Config:
-    is_custom_targets_assignment_enabled: bool = True
-    
-config = Config()
 
 
 def get_iou(boxes1, boxes2):
@@ -486,7 +481,7 @@ class RegionProposalNetwork(nn.Module):
             return rpn_output
         else:
             # Assign gt box and label for each anchor
-            if config.is_custom_targets_assignment_enabled:
+            if config.is_custom_targets_assignment_rpn_enabled:
                 labels_for_anchors, matched_gt_boxes_for_anchors = assign_target_to_regions(
                     target["bboxes"][0],
                     anchors,
@@ -626,7 +621,7 @@ class ROIHead(nn.Module):
             gt_boxes = target['bboxes'][0]
             gt_labels = target['labels'][0]
             
-            if config.is_custom_targets_assignment_enabled:
+            if config.is_custom_targets_assignment_roi_enabled:
                 labels, matched_gt_boxes_for_proposals = assign_target_to_regions(
                     gt_boxes,
                     proposals,
