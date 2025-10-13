@@ -1,5 +1,11 @@
 from dataclasses import dataclass
-from ab import assign_target_to_regions, config
+from ab import (
+    config, 
+    generate_anchors, 
+    get_iou,
+    assign_target_to_regions,
+    boxes_to_transformations
+)
 
 import torch
 import torch.nn as nn
@@ -7,33 +13,6 @@ import torchvision
 import math
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-
-def get_iou(boxes1, boxes2):
-    r"""
-    IOU between two sets of boxes
-    :param boxes1: (Tensor of shape N x 4)
-    :param boxes2: (Tensor of shape M x 4)
-    :return: IOU matrix of shape N x M
-    """
-    # Area of boxes (x2-x1)*(y2-y1)
-    area1 = (boxes1[:, 2] - boxes1[:, 0]) * (boxes1[:, 3] - boxes1[:, 1])  # (N,)
-    area2 = (boxes2[:, 2] - boxes2[:, 0]) * (boxes2[:, 3] - boxes2[:, 1])  # (M,)
-    
-    # Get top left x1,y1 coordinate
-    x_left = torch.max(boxes1[:, None, 0], boxes2[:, 0])  # (N, M)
-    y_top = torch.max(boxes1[:, None, 1], boxes2[:, 1])  # (N, M)
-    
-    # Get bottom right x2,y2 coordinate
-    x_right = torch.min(boxes1[:, None, 2], boxes2[:, 2])  # (N, M)
-    y_bottom = torch.min(boxes1[:, None, 3], boxes2[:, 3])  # (N, M)
-    
-    intersection_area = (x_right - x_left).clamp(min=0) * (y_bottom - y_top).clamp(min=0)  # (N, M)
-    union = area1[:, None] + area2 - intersection_area  # (N, M)
-    iou = intersection_area / union  # (N, M)
-    return iou
-
 
 def boxes_to_transformation_targets(ground_truth_boxes, anchors_or_proposals):
     r"""
@@ -443,7 +422,10 @@ class RegionProposalNetwork(nn.Module):
         box_transform_pred = self.bbox_reg_layer(rpn_feat)
 
         # Generate anchors
-        anchors = self.generate_anchors(image, feat)
+        if config.use_custom_achor_generator:
+            anchors = generate_anchors(image, feat, self.scales, self.aspect_ratios)
+        else:
+            anchors = self.generate_anchors(image, feat)
         
         # Reshape classification scores to be (Batch Size * H_feat * W_feat * Number of Anchors Per Location, 1)
         # cls_score -> (Batch_Size, Number of Anchors per location, H_feat, W_feat)
@@ -490,6 +472,7 @@ class RegionProposalNetwork(nn.Module):
                     high_iou=self.high_iou_threshold,
                     should_match_all_gt_boxes=True
                 )
+                labels_for_anchors = labels_for_anchors.to(dtype=torch.float32)
             else:
                 labels_for_anchors, matched_gt_boxes_for_anchors = self.assign_targets_to_anchors(
                     anchors,
@@ -498,7 +481,10 @@ class RegionProposalNetwork(nn.Module):
             # Based on gt assignment above, get regression target for the anchors
             # matched_gt_boxes_for_anchors -> (Number of anchors in image, 4)
             # anchors -> (Number of anchors in image, 4)
-            regression_targets = boxes_to_transformation_targets(matched_gt_boxes_for_anchors, anchors)
+            if config.use_custom_boxes_to_transformations:
+                regression_targets = boxes_to_transformations(matched_gt_boxes_for_anchors, anchors)
+            else:
+                regression_targets = boxes_to_transformation_targets(matched_gt_boxes_for_anchors, anchors)
             
             ####### Sampling positive and negative anchors ####
             # Our labels were {fg:1, bg:0, to_be_ignored:-1}
@@ -629,7 +615,8 @@ class ROIHead(nn.Module):
                     low_iou=self.low_bg_iou,
                     high_iou=self.iou_threshold,
                     should_match_all_gt_boxes=False,
-                    labels_type=torch.int64
+                    below_threshold_label=-1, 
+                    between_threshold_label=0
                 )
             else:
                 labels, matched_gt_boxes_for_proposals = self.assign_target_to_proposals(proposals, gt_boxes, gt_labels)
