@@ -71,6 +71,7 @@ class VOCDataset(Dataset):
         self.images_info = load_images_and_anns(im_dir, ann_dir, self.label2idx)
     
     def __len__(self):
+        return 500
         return len(self.images_info)
     
     def __getitem__(self, index):

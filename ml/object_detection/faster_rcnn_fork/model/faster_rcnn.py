@@ -4,7 +4,8 @@ from ab import (
     generate_anchors, 
     get_iou,
     assign_target_to_regions,
-    boxes_to_transformations
+    boxes_to_transformations,
+    apply_transformations_to_anchors
 )
 
 import torch
@@ -447,9 +448,12 @@ class RegionProposalNetwork(nn.Module):
         # box_transform_pred -> (Batch_Size*H_feat*W_feat*Number of Anchors per location, 4)
         
         # Transform generated anchors according to box transformation prediction
-        proposals = apply_regression_pred_to_anchors_or_proposals(
-            box_transform_pred.detach().reshape(-1, 1, 4),
-            anchors)
+        if config.use_custom_apply_transformations_to_anchors:
+            proposals = apply_transformations_to_anchors(transformations=box_transform_pred.detach().reshape(-1, 1, 4), anchors=anchors)
+        else:
+            proposals = apply_regression_pred_to_anchors_or_proposals(
+                box_transform_pred.detach().reshape(-1, 1, 4),
+                anchors)
         proposals = proposals.reshape(proposals.size(0), 4)
         ######################
         
@@ -684,7 +688,10 @@ class ROIHead(nn.Module):
         else:
             device = cls_scores.device
             # Apply transformation predictions to proposals
-            pred_boxes = apply_regression_pred_to_anchors_or_proposals(box_transform_pred, proposals)
+            if config.use_custom_apply_transformations_to_anchors:
+                pred_boxes = apply_transformations_to_anchors(transformations=box_transform_pred, anchors=proposals)
+            else:
+                pred_boxes = apply_regression_pred_to_anchors_or_proposals(box_transform_pred, proposals)
             pred_scores = torch.nn.functional.softmax(cls_scores, dim=-1)
             
             # Clamp box to image boundary
