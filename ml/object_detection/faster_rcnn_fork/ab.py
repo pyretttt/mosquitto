@@ -9,6 +9,7 @@ class Config:
     use_custom_achor_generator: bool = True
     use_custom_boxes_to_transformations: bool = True
     use_custom_apply_transformations_to_anchors: bool = True
+    use_custom_sample_positive_negative: bool = True
     
 config = Config()
 
@@ -258,3 +259,23 @@ def apply_transformations_to_anchors(
     )
     
     return torch.stack((x_0, y_0, x_1, y_1), dim=2) # (transformations.size(0) x x num_classes x 4)
+
+    
+def custom_sample_positive_negative(
+    labels: torch.Tensor, 
+    pos_count: int,
+    total_count: int
+) -> torch.Tensor:
+    positive = torch.where(labels >= 1)[0] # return indices
+    negative = torch.where(labels == 0)[0] # return indices
+    num_positive = min(pos_count, positive.numel())
+    num_negative = min(total_count - num_positive, negative.numel())
+    
+    perm_positive_idx = torch.randperm(positive.numel(), device=positive.device)[:num_positive]
+    perm_negative_idx = torch.randperm(negative.numel(), device=negative.device)[:num_negative]
+    pos_idx, neg_idx = positive[perm_positive_idx], negative[perm_negative_idx]
+    sampled_pos_idx_mask, sampled_neg_idx_mask = torch.zeros((2, *labels.shape), dtype=torch.bool)
+    
+    sampled_pos_idx_mask[pos_idx] = True
+    sampled_neg_idx_mask[neg_idx] = True
+    return sampled_pos_idx_mask, sampled_neg_idx_mask

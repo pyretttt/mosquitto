@@ -5,7 +5,8 @@ from ab import (
     get_iou,
     assign_target_to_regions,
     boxes_to_transformations,
-    apply_transformations_to_anchors
+    apply_transformations_to_anchors,
+    custom_sample_positive_negative
 )
 
 import torch
@@ -492,10 +493,18 @@ class RegionProposalNetwork(nn.Module):
             
             ####### Sampling positive and negative anchors ####
             # Our labels were {fg:1, bg:0, to_be_ignored:-1}
-            sampled_neg_idx_mask, sampled_pos_idx_mask = sample_positive_negative(
-                labels_for_anchors,
-                positive_count=self.rpn_pos_count,
-                total_count=self.rpn_batch_size)
+            if config.use_custom_sample_positive_negative:
+                sampled_neg_idx_mask, sampled_pos_idx_mask = custom_sample_positive_negative(
+                    labels_for_anchors,
+                    pos_count=self.rpn_pos_count,
+                    total_count=self.rpn_batch_size
+                )
+            else:
+                sampled_neg_idx_mask, sampled_pos_idx_mask = sample_positive_negative(
+                    labels_for_anchors,
+                    positive_count=self.rpn_pos_count,
+                    total_count=self.rpn_batch_size
+                )
             
             sampled_idxs = torch.where(sampled_pos_idx_mask | sampled_neg_idx_mask)[0]
             
@@ -624,10 +633,19 @@ class ROIHead(nn.Module):
                 )
             else:
                 labels, matched_gt_boxes_for_proposals = self.assign_target_to_proposals(proposals, gt_boxes, gt_labels)
-            
-            sampled_neg_idx_mask, sampled_pos_idx_mask = sample_positive_negative(labels,
-                                                                                  positive_count=self.roi_pos_count,
-                                                                                  total_count=self.roi_batch_size)
+           
+            if config.use_custom_sample_positive_negative:
+                sampled_neg_idx_mask, sampled_pos_idx_mask = custom_sample_positive_negative(
+                    labels,
+                    pos_count=self.roi_pos_count,
+                    total_count=self.roi_batch_size
+                )
+            else:
+                sampled_neg_idx_mask, sampled_pos_idx_mask = sample_positive_negative(
+                    labels,
+                    positive_count=self.roi_pos_count,
+                    total_count=self.roi_batch_size
+                )
             
             sampled_idxs = torch.where(sampled_pos_idx_mask | sampled_neg_idx_mask)[0]
             
