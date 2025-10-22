@@ -8,7 +8,7 @@ class Config:
     is_custom_targets_assignment_roi_enabled: bool = True
     use_custom_achor_generator: bool = True
     use_custom_boxes_to_transformations: bool = True
-    use_custom_apply_transformations_to_anchors: bool = False
+    use_custom_apply_transformations_to_anchors: bool = True
     
 config = Config()
 
@@ -215,38 +215,40 @@ def apply_transformations_to_anchors(
     transformations = transformations.reshape(transformations.size(0), -1, 4)
     assert transformations.shape == (transformations.size(0), transformations.size(1), 4)
     t_x = transformations[..., 0]
-    t_y = transformations[..., 2]
-    t_w = transformations[..., 1]
+    t_y = transformations[..., 1]
+    t_w = transformations[..., 2]
     t_h = transformations[..., 3]
     # t_h -> (N x H_feat * W_feat * Num_achors x Num_classes x 1)
     assert(t_x.shape == (transformations.size(0), transformations.size(1)))
     
     # Prevents super big exponentials
-    t_w = torch.clamp(t_w, max=math.log(1000.0, math.e))
-    t_h = torch.clamp(t_h, max=math.log(1000.0, math.e))
+    t_w = torch.clamp(t_w, max=math.log(1000.0 / 16, math.e))
+    t_h = torch.clamp(t_h, max=math.log(1000.0 / 16, math.e))
     
     anchor_widths = anchors[..., 2] - anchors[..., 0]
     anchor_heights = anchors[..., 3] - anchors[..., 1]
-    anchor_center_x = anchors[..., 0] + anchor_widths / 2.0
-    anchor_center_y = anchors[..., 1] + anchor_heights / 2.0
+    anchor_center_x = anchors[..., 0] + anchor_widths * 0.5
+    anchor_center_y = anchors[..., 1] + anchor_heights * 0.5
     assert (
         anchor_widths.shape == (anchors.size(0), ) 
         and anchor_heights.shape == (anchors.size(0), )
         and anchor_center_x.shape == (anchors.size(0), )
         and anchor_center_y.shape == (anchors.size(0), )
     )
-    x_0 = anchor_center_x[:, None] - t_x * anchor_widths[:, None] * 0.5
-    y_0 = anchor_center_y[:, None] - t_y * anchor_heights[:, None] * 0.5
+    pred_center_x = t_x * anchor_widths[:, None] + anchor_center_x[:, None]
+    pred_center_y = t_y * anchor_heights[:, None] + anchor_center_y[:, None]
     assert (
-        x_0.shape == (anchors.size(0), transformations.size(1),) 
-        and y_0.shape == (anchors.size(0), transformations.size(1),)
+        pred_center_x.shape == (anchors.size(0), transformations.size(1),) 
+        and pred_center_y.shape == (anchors.size(0), transformations.size(1),)
     )
     
     w = torch.exp(t_w) * anchor_widths[:, None]
     h = torch.exp(t_h) * anchor_heights[:, None]
     ## xy wh -> (N * H_feat * W_feat * Num_achors x num_classes)
-    x_1 = x_0 + w
-    y_1 = y_0 + h
+    x_0 = pred_center_x - w * 0.5
+    x_1 = pred_center_x + w * 0.5
+    y_0 = pred_center_y - h * 0.5
+    y_1 = pred_center_y + h * 0.5
     
     assert (
         x_0.shape == (transformations.size(0), transformations.size(1), )
