@@ -278,4 +278,4 @@ def custom_sample_positive_negative(
     
     sampled_pos_idx_mask[pos_idx] = True
     sampled_neg_idx_mask[neg_idx] = True
-    return sampled_pos_idx_mask, sampled_neg_idx_mask
+    return sampled_neg_idx_mask, sampled_pos_idx_mask
