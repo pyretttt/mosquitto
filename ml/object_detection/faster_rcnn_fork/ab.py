@@ -10,6 +10,7 @@ class Config:
     use_custom_boxes_to_transformations: bool = True
     use_custom_apply_transformations_to_anchors: bool = True
     use_custom_sample_positive_negative: bool = True
+    use_custom_
     
 config = Config()
 
@@ -279,3 +280,32 @@ def custom_sample_positive_negative(
     sampled_pos_idx_mask[pos_idx] = True
     sampled_neg_idx_mask[neg_idx] = True
     return sampled_neg_idx_mask, sampled_pos_idx_mask
+
+    
+def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
+    """Clamps boxes to shape of image
+
+    Args:
+        boxes (torch.Tensor): (N x 4)
+        shape (tuple[int, int]): width x height
+
+    Returns:
+        torch.Tensor: clamped boxes (N x 4)
+    """
+    height, width = shape[-2:]
+    x_1, y_1, x_2, y_2 = (
+        boxes[..., 0],
+        boxes[..., 1],
+        boxes[..., 2],
+        boxes[..., 3],
+    )
+    x_1 = x_1.clamp(min=0, max=width)
+    y_1 = y_1.clamp(min=0, max=height)
+    x_2 = x_2.clamp(min=0, max=width)
+    y_2 = y_2.clamp(min=0, max=height)
+    return torch.cat([        
+	    x_1[..., None],
+        y_1[..., None],
+        x_2[..., None],
+        y_2[..., None],
+    ], dim=-1)
