@@ -7,7 +7,8 @@ from ab import (
     boxes_to_transformations,
     apply_transformations_to_anchors,
     custom_sample_positive_negative,
-    clamp_boxes_to_shape
+    clamp_boxes_to_shape,
+    scale_boxes_by_aspect_ratio
 )
 
 import torch
@@ -869,7 +870,16 @@ class FasterRCNN(nn.Module):
         frcnn_output = self.roi_head(feat, proposals, image.shape[-2:], target)
         if not self.training:
             # Transform boxes to original image dimensions called only during inference
-            frcnn_output['boxes'] = transform_boxes_to_original_size(frcnn_output['boxes'],
-                                                                     image.shape[-2:],
-                                                                     old_shape)
+            if config.use_custom_scale_boxes_by_aspect_ratio:
+                frcnn_output['boxes'] = scale_boxes_by_aspect_ratio(
+                    frcnn_output['boxes'],
+                    image.shape[-2:],
+                    old_shape
+                )
+            else:
+                frcnn_output['boxes'] = transform_boxes_to_original_size(
+                    frcnn_output['boxes'],
+                    image.shape[-2:],
+                    old_shape
+                )
         return rpn_output, frcnn_output

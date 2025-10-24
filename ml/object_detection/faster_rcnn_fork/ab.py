@@ -11,6 +11,7 @@ class Config:
     use_custom_apply_transformations_to_anchors: bool = True
     use_custom_sample_positive_negative: bool = True
     use_custom_clamp_boxes_to_shape: bool = True
+    use_custom_scale_boxes_by_aspect_ratio: bool = True
     
 config = Config()
 
@@ -308,4 +309,35 @@ def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, int]) -> torch.T
         y_1[..., None],
         x_2[..., None],
         y_2[..., None],
+    ], dim=-1)
+
+
+def scale_boxes_by_aspect_ratio(
+    boxes: torch.Tensor, 
+    after_scale_size: tuple[int, int], 
+    original_size: tuple[int, int]
+) -> torch.Tensor:
+    """Applies aspect ratio scale to boxes
+
+    Args:
+        boxes (torch.Tensor): (N x 4)
+        after_scale_size (tuple[int, int]): Size after scale
+        original_size (tuple[int, int]): Size before scale
+
+    Returns:
+        torch.Tensor: Boxes scaled according to original size
+    """
+    height_scale = original_size[0] / after_scale_size[0]
+    width_scale = original_size[1] / after_scale_size[1]
+    
+    x_1 = boxes[..., 0] * width_scale
+    y_1 = boxes[..., 1] * height_scale
+    x_2 = boxes[..., 2] * width_scale
+    y_2 = boxes[..., 3] * height_scale
+    
+    return torch.cat([
+        x_1[..., None],
+        y_1[..., None],
+        x_2[..., None],
+        y_2[..., None]
     ], dim=-1)
