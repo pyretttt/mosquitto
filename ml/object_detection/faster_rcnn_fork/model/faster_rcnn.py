@@ -6,7 +6,8 @@ from ab import (
     assign_target_to_regions,
     boxes_to_transformations,
     apply_transformations_to_anchors,
-    custom_sample_positive_negative
+    custom_sample_positive_negative,
+    clamp_boxes_to_shape
 )
 
 import torch
@@ -374,7 +375,11 @@ class RegionProposalNetwork(nn.Module):
         ##################
         
         # Clamp boxes to image boundary
-        proposals = clamp_boxes_to_image_boundary(proposals, image_shape)
+        if config.use_custom_clamp_boxes_to_shape:
+            proposals = clamp_boxes_to_shape(proposals, image_shape)
+        else:
+            proposals = clamp_boxes_to_image_boundary(proposals, image_shape)
+            
         ####################
         
         # Small boxes based on width and height filtering
@@ -713,7 +718,10 @@ class ROIHead(nn.Module):
             pred_scores = torch.nn.functional.softmax(cls_scores, dim=-1)
             
             # Clamp box to image boundary
-            pred_boxes = clamp_boxes_to_image_boundary(pred_boxes, image_shape)
+            if config.use_custom_clamp_boxes_to_shape:
+                pred_boxes = clamp_boxes_to_shape(pred_boxes, image_shape)
+            else:
+                pred_boxes = clamp_boxes_to_image_boundary(pred_boxes, image_shape)
             
             # create labels for each prediction
             pred_labels = torch.arange(num_classes, device=device)

@@ -10,7 +10,7 @@ class Config:
     use_custom_boxes_to_transformations: bool = True
     use_custom_apply_transformations_to_anchors: bool = True
     use_custom_sample_positive_negative: bool = True
-    use_custom_
+    use_custom_clamp_boxes_to_shape: bool = True
     
 config = Config()
 
