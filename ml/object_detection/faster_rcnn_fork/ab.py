@@ -13,6 +13,7 @@ class Config:
     use_custom_clamp_boxes_to_shape: bool = True
     use_custom_scale_boxes_by_aspect_ratio: bool = True
     use_custom_filter_proposals: bool = True
+    use_custom_filter_predictions: bool = True
     
 config = Config()
 
@@ -396,3 +397,40 @@ def modify_proposals(
 	)
 	
 	return proposals, cls_scores
+
+
+def filter_roi_predictions(pred_boxes, pred_labels, pred_scores, **kwargs):
+    keep = torch.where(pred_scores > kwargs["low_score_threshold"])[0]
+    pred_boxes, pred_scores, pred_labels = pred_boxes[keep], pred_scores[keep], pred_labels[keep]
+
+    min_size = kwargs["min_size"]
+    width, height = pred_boxes[:, 2] - pred_boxes[:, 0], pred_boxes[:, 3] - pred_boxes[:, 1]
+    keep = (width > min_size) & (height > min_size)
+    keep = torch.where(keep)[0]
+    pred_boxes, pred_scores, pred_labels = pred_boxes[keep], pred_scores[keep], pred_labels[keep]
+    
+    keep_mask = torch.zeros_like(pred_scores, dtype=torch.bool)
+    for class_id in torch.unique(pred_labels):
+        indices = torch.where(pred_labels == class_id)[0]
+        keep_indices = torch.ops.torchvision.nms(
+            pred_boxes[indices],
+            pred_scores[indices],
+            kwargs["nms_threshold"]
+        )
+        keep_mask[indices[keep_indices]] = True
+        
+    keep_indices = torch.where(keep_mask)[0]
+    post_nms_keep_indices = (
+        keep_indices[
+            pred_scores[keep_indices]
+            .sort(descending=True)
+            [1]
+        ][:kwargs["topk_detections"]]
+    )
+    pred_boxes, pred_scores, pred_labels = (
+        pred_boxes[post_nms_keep_indices], 
+        pred_scores[post_nms_keep_indices],
+        pred_labels[post_nms_keep_indices]
+    )
+    return pred_boxes, pred_labels, pred_scores
+

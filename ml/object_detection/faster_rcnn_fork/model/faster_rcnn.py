@@ -9,7 +9,8 @@ from ab import (
     custom_sample_positive_negative,
     clamp_boxes_to_shape,
     scale_boxes_by_aspect_ratio,
-    modify_proposals
+    modify_proposals,
+    filter_roi_predictions
 )
 
 import torch
@@ -461,7 +462,8 @@ class RegionProposalNetwork(nn.Module):
         else:
             proposals = apply_regression_pred_to_anchors_or_proposals(
                 box_transform_pred.detach().reshape(-1, 1, 4),
-                anchors)
+                anchors
+            )
         proposals = proposals.reshape(proposals.size(0), 4)
         ######################
         
@@ -754,7 +756,18 @@ class ROIHead(nn.Module):
             pred_scores = pred_scores.reshape(-1)
             pred_labels = pred_labels.reshape(-1)
             
-            pred_boxes, pred_labels, pred_scores = self.filter_predictions(pred_boxes, pred_labels, pred_scores)
+            if config.use_custom_filter_predictions:
+                pred_boxes, pred_labels, pred_scores = filter_roi_predictions(
+                    pred_boxes,
+                    pred_labels, 
+                    pred_scores,
+                    low_score_threshold=self.low_score_threshold,
+                    min_size=16,
+                    nms_threshold=self.nms_threshold,
+                    topk_detections=self.topK_detections
+                )
+            else:
+                pred_boxes, pred_labels, pred_scores = self.filter_predictions(pred_boxes, pred_labels, pred_scores)
             frcnn_output['boxes'] = pred_boxes
             frcnn_output['scores'] = pred_scores
             frcnn_output['labels'] = pred_labels
