@@ -8,7 +8,8 @@ from ab import (
     apply_transformations_to_anchors,
     custom_sample_positive_negative,
     clamp_boxes_to_shape,
-    scale_boxes_by_aspect_ratio
+    scale_boxes_by_aspect_ratio,
+    modify_proposals
 )
 
 import torch
@@ -464,7 +465,18 @@ class RegionProposalNetwork(nn.Module):
         proposals = proposals.reshape(proposals.size(0), 4)
         ######################
         
-        proposals, scores = self.filter_proposals(proposals, cls_scores.detach(), image.shape)
+        if config.use_custom_filter_proposals:
+            proposals, scores = modify_proposals(
+                proposals, 
+                cls_scores.detach(), 
+                image.shape,
+                rpn_prenms_topk=self.rpn_prenms_topk,
+                box_min_size=16,
+                nms_iou_threshold=self.rpn_nms_threshold,
+                post_nms_topk=self.rpn_topk
+            )
+        else:
+            proposals, scores = self.filter_proposals(proposals, cls_scores.detach(), image.shape)
         rpn_output = {
             'proposals': proposals,
             'scores': scores

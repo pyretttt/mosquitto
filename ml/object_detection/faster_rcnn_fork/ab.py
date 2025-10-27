@@ -12,6 +12,7 @@ class Config:
     use_custom_sample_positive_negative: bool = True
     use_custom_clamp_boxes_to_shape: bool = True
     use_custom_scale_boxes_by_aspect_ratio: bool = True
+    use_custom_filter_proposals: bool = True
     
 config = Config()
 
@@ -341,3 +342,57 @@ def scale_boxes_by_aspect_ratio(
         x_2[..., None],
         y_2[..., None]
     ], dim=-1)
+
+
+def modify_proposals(
+	proposals: torch.Tensor,
+	cls_scores: torch.Tensor,
+	image_shape: tuple[int, int],
+	**kwargs
+) -> torch.Tensor:
+	"""
+	This method does three kinds of filtering/modifications
+	1. Pre NMS topK filtering
+	2. Make proposals valid by clamping coordinates(0, width/height)
+	3. Small Boxes filtering based on width and height
+	4. NMS
+	5. Post NMS topK filtering
+	:param proposals: (num_anchors_in_image, 4)
+	:param cls_scores: (num_anchors_in_image, 1) these are cls logits
+	:param image_shape: resized image shape needed to clip proposals to image boundary
+	:param kwargs: key value options 
+	:return: proposals and cls_scores: (num_filtered_proposals, 4) and (num_filtered_proposals)
+	"""
+	cls_scores = torch.sigmoid(cls_scores.reshape(-1))
+	
+	# Pre NMS topK filtering
+	_, top_n_idx = cls_scores.topk(min(kwargs["rpn_prenms_topk"], len(cls_scores)))
+	
+	cls_scores, proposals = cls_scores[top_n_idx], proposals[top_n_idx]
+	
+	# Clamp boxes
+	proposals = clamp_boxes_to_shape(proposals, image_shape)
+	
+	# Small box filtering
+	width, height = proposals[:, 2] - proposals[:, 0], proposals[:, 3] - proposals[:, 1]
+	min_size = kwargs["box_min_size"]
+	size_mask = (width >= min_size) & (height >= min_size)
+	keep = torch.where(size_mask)[0] # returns ((n_non_zero), ) indices of kept proposals
+	cls_scores, proposals = cls_scores[keep], proposals[keep]
+	
+	# NMS
+	keep_mask = torch.zeros_like(cls_scores, dtype=torch.bool)
+	keep_indices = torch.ops.torchvision.nms(
+		proposals, 
+		scores=cls_scores, 
+		iou_threshold=kwargs["nms_iou_threshold"]
+	) # sorted in decreasing order of scores
+	
+	# Post NMS
+	post_nms_topk = kwargs["post_nms_topk"]
+	cls_scores, proposals = (
+		cls_scores[keep_indices[:post_nms_topk]], 
+		proposals[keep_indices[:post_nms_topk]]
+	)
+	
+	return proposals, cls_scores
