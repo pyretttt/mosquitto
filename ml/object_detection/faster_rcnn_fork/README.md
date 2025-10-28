@@ -1,3 +1,10 @@
+# Fork of project
+
+[link](https://github.com/explainingai-code/FasterRCNN-PyTorch)
+
+Mostly for learning purposes, a little adjustments are inside `ab.py` file.
+
+
 Faster R-CNN Implementation in Pytorch
 ========
 
