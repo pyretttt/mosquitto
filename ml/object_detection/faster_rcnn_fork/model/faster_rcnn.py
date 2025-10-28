@@ -10,7 +10,8 @@ from ab import (
     clamp_boxes_to_shape,
     scale_boxes_by_aspect_ratio,
     modify_proposals,
-    filter_roi_predictions
+    filter_roi_predictions,
+    Backbone
 )
 
 import torch
@@ -815,16 +816,19 @@ class FasterRCNN(nn.Module):
     def __init__(self, model_config, num_classes):
         super(FasterRCNN, self).__init__()
         self.model_config = model_config
-        vgg16 = torchvision.models.vgg16(pretrained=True)
-        self.backbone = vgg16.features[:-1]
+        if config.use_resnet_backbone:
+            self.backbone = Backbone()
+        else:
+            vgg16 = torchvision.models.vgg16(pretrained=True)
+            self.backbone = vgg16.features[:-1]
+            for layer in self.backbone[:10]:
+                for p in layer.parameters():
+                    p.requires_grad = False
         self.rpn = RegionProposalNetwork(model_config['backbone_out_channels'],
                                          scales=model_config['scales'],
                                          aspect_ratios=model_config['aspect_ratios'],
                                          model_config=model_config)
         self.roi_head = ROIHead(model_config, num_classes, in_channels=model_config['backbone_out_channels'])
-        for layer in self.backbone[:10]:
-            for p in layer.parameters():
-                p.requires_grad = False
         self.image_mean = [0.485, 0.456, 0.406]
         self.image_std = [0.229, 0.224, 0.225]
         self.min_size = model_config['min_im_size']

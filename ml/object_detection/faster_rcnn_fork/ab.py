@@ -1,6 +1,9 @@
 import torch
 from dataclasses import dataclass
 import math
+from torch import nn
+from torchvision.models import resnet50
+import torchvision
 
 @dataclass
 class Config:
@@ -14,7 +17,8 @@ class Config:
     use_custom_scale_boxes_by_aspect_ratio: bool = True
     use_custom_filter_proposals: bool = True
     use_custom_filter_predictions: bool = True
-    
+    use_resnet_backbone: bool = False
+
 config = Config()
 
 import torch
@@ -434,3 +438,21 @@ def filter_roi_predictions(pred_boxes, pred_labels, pred_scores, **kwargs):
     )
     return pred_boxes, pred_labels, pred_scores
 
+
+class Backbone(nn.Module):
+    def __init__(self):
+        super().__init__()
+        backbone = resnet50(weights=torchvision.models.ResNet50_Weights.IMAGENET1K_V1)
+        self.extractor = nn.Sequential(
+            backbone.conv1,
+            backbone.bn1,
+            backbone.relu,
+            backbone.maxpool,
+            backbone.layer1,
+            backbone.layer2,
+        )
+        # for param in self.extractor.parameters():
+        #     param.requires_grad = False
+
+    def forward(self, x):
+        return self.extractor(x)
