@@ -289,7 +289,7 @@ def custom_sample_positive_negative(
     return sampled_neg_idx_mask, sampled_pos_idx_mask
 
     
-def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, int]) -> torch.Tensor:
+def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, ...]) -> torch.Tensor:
     """Clamps boxes to shape of image
 
     Args:
@@ -352,7 +352,7 @@ def scale_boxes_by_aspect_ratio(
 def modify_proposals(
 	proposals: torch.Tensor,
 	cls_scores: torch.Tensor,
-	image_shape: tuple[int, int],
+	image_shape: tuple[int, ...],
 	**kwargs
 ) -> torch.Tensor:
 	"""

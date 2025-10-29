@@ -16,8 +16,6 @@ from ab import (
 
 import torch
 import torch.nn as nn
-import torchvision
-import math
 
 class RPN(nn.Module):
     def __init__(
@@ -61,6 +59,10 @@ class RPN(nn.Module):
         1. Forward classification and regression head
         2. Generate anchors
         3. Apply regression to anchors, to get proposals
+        4. Assign gt box targets to each anchor
+        5. Turn matched gt box to regression targets
+        6. Sample positive and negatives
+        7. Apply classification for all labels >= 0, and localization loss for positive labels only
         """
         conv_out = self.rpn_conv(feat_map)
         regression_pred = (
@@ -78,14 +80,18 @@ class RPN(nn.Module):
         
         anchors = generate_anchors(
             image=image,
-            fea=feat_map,
+            feat=feat_map,
             scales=self.scales,
             aspect_ratios=self.aspect_ratios
-        ) # N x H x W x Num_anchors
+        ) # N * H * W * Num_anchors x 4
         proposals = apply_transformations_to_anchors(
             anchors=anchors, 
             transformations=regression_pred.detach().reshape(-1, 1, 4) # add class dimension for compatibility
         ).reshape(-1, 4) # N * H * W x Num_anchors
+        proposals = clamp_boxes_to_shape(
+            proposals, 
+            image.shape[-2:]
+        )
         proposals = modify_proposals(
             proposals=proposals,
             cls_scores=classification_scores.detach(),
@@ -98,7 +104,37 @@ class RPN(nn.Module):
                 self.model_config['rpn_train_topk'] if self.training else self.model_config['rpn_test_topk']
             )
         )
-        
-        if not self.train:
+
+        if not self.training:
             return proposals
+
+        labels, matched_gt_boxes = assign_target_to_regions(
+            gt_boxes=target["bboxes"][0],
+            regions=anchors
+        ) # N
+        target_transformations = boxes_to_transformations(
+            boxes=matched_gt_boxes, 
+            anchors=anchors
+        ) # N x 4
+        negative_indices, positive_indices = custom_sample_positive_negative(
+            labels=labels,
+            pos_count=int(self.model_config['rpn_pos_fraction'] * self.model_config['rpn_batch_size']),
+            total_count=self.model_config['rpn_batch_size']
+        )
         
+        sampled_indices = torch.where(negative_indices | positive_indices)[0]
+        
+        classification_loss = torch.nn.functional.cross_entropy(
+            input=classification_scores[sampled_indices],
+            target=labels[sampled_indices].flatten()
+        )
+        localization_loss = torch.nn.functional.smooth_l1_loss(
+            input=regression_pred[positive_indices],
+            target=target_transformations[positive_indices],
+            reduction="sum",
+            beta=1.0/9.0
+        )
+        return dict(
+            classification_loss=classification_loss,
+            localization_loss=localization_loss
+        )
