@@ -1,5 +1,5 @@
 
-class Fn():
+class Graph():
     def __init__(
         self, 
         operand1, 
@@ -12,4 +12,4 @@ class Fn():
         
     
     def forward(self):
-        
+        pass
