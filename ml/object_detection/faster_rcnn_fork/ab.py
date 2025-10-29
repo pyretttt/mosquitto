@@ -18,6 +18,7 @@ class Config:
     use_custom_filter_proposals: bool = True
     use_custom_filter_predictions: bool = True
     use_resnet_backbone: bool = False
+    use_custom_rpn: bool = True
 
 config = Config()
 
