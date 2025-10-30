@@ -1,8 +1,6 @@
 from typing import List
 from ab import (
-    config, 
     generate_anchors, 
-    get_iou,
     assign_target_to_regions,
     boxes_to_transformations,
     apply_transformations_to_anchors,
@@ -14,6 +12,7 @@ from ab import (
     Backbone
 )
 
+import torchvision
 import torch
 import torch.nn as nn
 
@@ -89,7 +88,7 @@ class RPN(nn.Module):
         proposals = apply_transformations_to_anchors(
             anchors=anchors, 
             transformations=regression_pred.detach().reshape(-1, 1, 4) # add class dimension for compatibility
-        ).reshape(-1, 4) # N * H * W x Num_anchors
+        ).reshape(-1, 4) # N * H * W * Num_anchors x 4
         proposals = clamp_boxes_to_shape(
             proposals, 
             image.shape[-2:]
@@ -147,3 +146,96 @@ class RPN(nn.Module):
         rpn_output["rpn_classification_loss"] = classification_loss
         rpn_output["rpn_localization_loss"] = localization_loss
         return rpn_output
+
+
+
+class ROIHead(nn.Module):
+    def __init__(self, model_config, num_classes, in_channels):
+        self.model_config = model_config
+        self.num_classes = num_classes
+        self.fc1 = nn.Linear(
+            in_channels=in_channels * self.model_config['roi_pool_size'] ** 2,
+            out_features=self.model_config['fc_inner_dim'],
+        )
+        self.fc2 = nn.Linear(
+            in_channels=self.model_config['fc_inner_dim'],
+            out_features=self.model_config['fc_inner_dim'],
+        )
+        # Probabilities for all classes
+        self.classifier_head = nn.Linear(
+            in_channels=self.model_config['fc_inner_dim'],
+            out_features=num_classes,
+        )
+        # Regression for all classes
+        self.regression_head = nn.Linear(
+            in_channels=self.model_config['fc_inner_dim'],
+            out_features=4 * num_classes
+        )
+    
+        torch.nn.init.normal_(self.classifier_head.weight, std=0.01)
+        torch.nn.init.constant_(self.classifier_head.bias, 0)
+
+        torch.nn.init.normal_(self.regression_head.weight, std=0.001)
+        torch.nn.init.constant_(self.regression_head.bias, 0)
+    
+    
+    def forward(self, feat, proposals, image_shape, target):
+        """
+        1. Compute roi features w.r.t. to obtained proposals.
+        2. Based roi features compute regression targets and classification scores.
+        3. If training compute gt regression targets and gt labels based on proposals.
+        """
+        
+        h_scale, w_scale = (
+            image_shape[0] / feat.shape[-2],
+            image_shape[1] / feat.shape[-1]
+        )
+        assert h_scale == w_scale
+        proposal_roi_pool_feat = torchvision.ops.roi_pool(
+            input=feat,
+            boxes=proposals,
+            output_size=self.model_config['roi_pool_size'],
+            spatial_scale=w_scale
+        ) # Num_proposals x C x roi_pool_size x roi_pool_size
+        proposal_roi_pool_feat = proposal_roi_pool_feat.flatten(start_dim=1)
+        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc1(proposal_roi_pool_feat))
+        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc2(proposal_roi_pool_feat))
+        
+        classifier_scores = self.classifier_head(proposal_roi_pool_feat) # Num_boxes x num_classes
+        regression_pred = self.regression_head(proposal_roi_pool_feat) # Num_boxes x num_classes * 4
+        assert (
+            classifier_scores.size(-1) == self.num_classes 
+            and regression_pred.size(-1) == self.num_classes * 4
+        )
+        regression_pred = regression_pred.reshape(-1, self.num_classes, 4)
+        
+        frcnn_output = dict()
+        if self.training:
+            gt_boxes = target['bboxes'][0]
+            gt_labels = target['labels'][0]
+            # Add ground truth bounding boxes for better learning, they may or may not be sampled later
+            proposals = torch.cat([proposals, gt_boxes], dim=0)
+            # N x 4
+            labels, matched_gt_boxes_for_proposals = assign_target_to_regions(
+                gt_boxes=gt_boxes,
+                regions=proposals,
+                gt_labels=gt_labels,
+                should_match_all_gt_boxes=False,
+                below_threshold_label=-1,
+                between_threshold_label=0
+            )
+            negative_indices, positive_indices = custom_sample_positive_negative(
+                labels,
+                pos_count=int(self.model_config['roi_pos_fraction'] * self.model_config["roi_batch_size"])
+                total_count=self.model_config["roi_batch_size"]
+            )
+            sampled_idxs = torch.where(positive_indices | negative_indices)[0]
+            proposals = proposals[sampled_idxs]
+            gt_boxes = gt_boxes[sampled_idxs]
+            labels = labels[sampled_idxs]
+            regression_targets = boxes_to_transformations(
+                boxes=matched_gt_boxes_for_proposals[sampled_idxs],
+                anchors=proposals
+            ) # N x 4
+            
+            # This is wrong sample first
