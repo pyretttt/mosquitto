@@ -47,6 +47,9 @@ class RPN(nn.Module):
             out_channels=self.num_anchors,
             kernel_size=1
         )
+        for layer in [self.rpn_conv, self.reg_conv, self.classification_conv]:
+            torch.nn.init.normal_(layer.weight, std=0.01)
+            torch.nn.init.constant_(layer.bias, 0)
         
     def forward(
         self,
@@ -99,9 +102,7 @@ class RPN(nn.Module):
                 self.model_config['rpn_train_prenms_topk'] if self.training else self.model_config['rpn_test_prenms_topk']
             ),
             box_min_size=16,
-            nms_iou_threshold=(
-                self.model_config['rpn_train_topk'] if self.training else self.model_config['rpn_test_topk']
-            ),
+            nms_iou_threshold=self.model_config['rpn_nms_threshold'],
             post_nms_topk=self.model_config['rpn_train_topk'] if self.training else self.model_config['rpn_test_topk']
         )
 
@@ -115,7 +116,12 @@ class RPN(nn.Module):
         labels, matched_gt_boxes = assign_target_to_regions(
             gt_boxes=target["bboxes"][0],
             regions=anchors
-        ) # N
+        ) # N, N x 4
+        assert (
+            len(labels.shape) == 1
+            and len(matched_gt_boxes.shape) == 2 
+            and matched_gt_boxes.size(dim=1) == 4
+        )
         labels = labels.to(dtype=torch.float32)
         
         target_transformations = boxes_to_transformations(
@@ -130,14 +136,14 @@ class RPN(nn.Module):
         sampled_indices = torch.where(negative_indices | positive_indices)[0]
         classification_loss = torch.nn.functional.binary_cross_entropy_with_logits(
             input=classification_scores[sampled_indices].flatten(),
-            target=labels[sampled_indices].flatten()
+            target=labels[sampled_indices]
         )
         localization_loss = torch.nn.functional.smooth_l1_loss(
             input=regression_pred[positive_indices],
             target=target_transformations[positive_indices],
-            reduction="mean",
+            reduction="sum",
             beta=1.0/9.0
-        )
+        ) / (sampled_indices.numel())
         rpn_output["rpn_classification_loss"] = classification_loss
         rpn_output["rpn_localization_loss"] = localization_loss
         return rpn_output
