@@ -151,24 +151,25 @@ class RPN(nn.Module):
 
 class ROIHead(nn.Module):
     def __init__(self, model_config, num_classes, in_channels):
+        super().__init__()
         self.model_config = model_config
         self.num_classes = num_classes
         self.fc1 = nn.Linear(
-            in_channels=in_channels * self.model_config['roi_pool_size'] ** 2,
+            in_features=in_channels * self.model_config['roi_pool_size'] ** 2,
             out_features=self.model_config['fc_inner_dim'],
         )
         self.fc2 = nn.Linear(
-            in_channels=self.model_config['fc_inner_dim'],
+            in_features=self.model_config['fc_inner_dim'],
             out_features=self.model_config['fc_inner_dim'],
         )
         # Probabilities for all classes
         self.classifier_head = nn.Linear(
-            in_channels=self.model_config['fc_inner_dim'],
+            in_features=self.model_config['fc_inner_dim'],
             out_features=num_classes,
         )
         # Regression for all classes
         self.regression_head = nn.Linear(
-            in_channels=self.model_config['fc_inner_dim'],
+            in_features=self.model_config['fc_inner_dim'],
             out_features=4 * num_classes
         )
     
@@ -203,6 +204,8 @@ class ROIHead(nn.Module):
                 regions=proposals,
                 gt_labels=gt_labels,
                 should_match_all_gt_boxes=False,
+                low_iou=self.model_config["roi_low_bg_iou"],
+                high_iou=self.model_config["roi_iou_threshold"],
                 below_threshold_label=-1,
                 between_threshold_label=0
             )
@@ -213,17 +216,18 @@ class ROIHead(nn.Module):
             )
             sampled_idxs = torch.where(positive_indices | negative_indices)[0]
             proposals = proposals[sampled_idxs]
-            gt_boxes = gt_boxes[sampled_idxs]
+            matched_gt_boxes_for_proposals = matched_gt_boxes_for_proposals[sampled_idxs]
             labels = labels[sampled_idxs] # (Num_boxes,)
         
+
         h_scale, w_scale = (
-            image_shape[0] / feat.shape[-2],
-            image_shape[1] / feat.shape[-1]
+            2 ** float(torch.tensor(feat.shape[-2] / image_shape[0]).log2().round()),
+            2 ** float(torch.tensor(feat.shape[-1] / image_shape[1]).log2().round()),
         )
         assert h_scale == w_scale
         proposal_roi_pool_feat = torchvision.ops.roi_pool(
             input=feat,
-            boxes=proposals,
+            boxes=[proposals],
             output_size=self.model_config['roi_pool_size'],
             spatial_scale=w_scale
         ) # Num_proposals x C x roi_pool_size x roi_pool_size
@@ -252,11 +256,11 @@ class ROIHead(nn.Module):
             localization_loss = torch.nn.functional.smooth_l1_loss(
                 input=regression_pred[fg_proposals_indices, fg_cls_labels],
                 target=regression_targets[fg_proposals_indices],
-                beta=1/9,
+                beta=1.0/9.0,
                 reduction="sum"
             ) / labels.numel()
             frcnn_output["frcnn_classification_loss"] = classification_loss
-            fg_proposals_indices["frcnn_localization_loss"] = localization_loss
+            frcnn_output["frcnn_localization_loss"] = localization_loss
         else:
             predicted_boxes = apply_transformations_to_anchors(
                 anchors=proposals, 
@@ -269,7 +273,7 @@ class ROIHead(nn.Module):
             classifier_scores = torch.nn.functional.softmax(classifier_scores, dim=-1)
             
             # Creates labels for each prediction
-            pred_labels = torch.arange(self.num_classes, device=self.device)
+            pred_labels = torch.arange(self.num_classes, device=classifier_scores.device)
             pred_labels = pred_labels.view(1, -1).expand_as(classifier_scores)
 
             
@@ -298,5 +302,5 @@ class ROIHead(nn.Module):
             )
             frcnn_output["boxes"] = predicted_boxes
             frcnn_output["scores"] = classifier_scores
-            frcnn_output["pred_labels"] = pred_labels
+            frcnn_output["labels"] = pred_labels
         return frcnn_output

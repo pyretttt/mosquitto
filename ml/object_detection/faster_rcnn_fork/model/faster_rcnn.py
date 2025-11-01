@@ -13,7 +13,7 @@ from ab import (
     filter_roi_predictions,
     Backbone
 )
-from model.faster_rcnn_fork import RPN
+import model.faster_rcnn_fork as fork
 
 import torch
 import torch.nn as nn
@@ -827,14 +827,19 @@ class FasterRCNN(nn.Module):
                     p.requires_grad = False
                     
         if config.use_custom_rpn:
-            rpn_class = RPN
+            rpn_class = fork.RPN
         else:
             rpn_class = RegionProposalNetwork
+            
         self.rpn = rpn_class(model_config['backbone_out_channels'],
                             scales=model_config['scales'],
                             aspect_ratios=model_config['aspect_ratios'],
                             model_config=model_config)
-        self.roi_head = ROIHead(model_config, num_classes, in_channels=model_config['backbone_out_channels'])
+        if config.use_custom_roi_head:
+            roi_class = fork.ROIHead
+        else:
+            roi_class = ROIHead
+        self.roi_head = roi_class(model_config, num_classes, in_channels=model_config['backbone_out_channels'])
         self.image_mean = [0.485, 0.456, 0.406]
         self.image_std = [0.229, 0.224, 0.225]
         self.min_size = model_config['min_im_size']
