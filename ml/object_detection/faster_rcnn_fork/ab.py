@@ -267,7 +267,7 @@ def apply_transformations_to_anchors(
         and y_1.shape == (transformations.size(0), transformations.size(1), )
     )
     
-    return torch.stack((x_0, y_0, x_1, y_1), dim=2) # (transformations.size(0) x x num_classes x 4)
+    return torch.stack((x_0, y_0, x_1, y_1), dim=2) # (transformations.size(0) x num_classes x 4)
 
     
 def custom_sample_positive_negative(
@@ -294,11 +294,11 @@ def clamp_boxes_to_shape(boxes: torch.Tensor, shape: tuple[int, ...]) -> torch.T
     """Clamps boxes to shape of image
 
     Args:
-        boxes (torch.Tensor): (N x 4)
+        boxes (torch.Tensor): (N x ... x 4)
         shape (tuple[int, int]): width x height
 
     Returns:
-        torch.Tensor: clamped boxes (N x 4)
+        torch.Tensor: clamped boxes (N x ... x 4)
     """
     height, width = shape[-2:]
     x_1, y_1, x_2, y_2 = (
@@ -405,15 +405,20 @@ def modify_proposals(
 
 
 def filter_roi_predictions(pred_boxes, pred_labels, pred_scores, **kwargs):
+    """
+	pred_boxes: torch.tensor (N_proposals * num_classes, 4)
+	pred_labels: torch.tensor (N_proposals * num_classes)
+	pred_scores: torch.tensor (N_proposals * num_classes)
+	"""
     keep = torch.where(pred_scores > kwargs["low_score_threshold"])[0]
     pred_boxes, pred_scores, pred_labels = pred_boxes[keep], pred_scores[keep], pred_labels[keep]
-
+    
     min_size = kwargs["min_size"]
     width, height = pred_boxes[:, 2] - pred_boxes[:, 0], pred_boxes[:, 3] - pred_boxes[:, 1]
     keep = (width > min_size) & (height > min_size)
     keep = torch.where(keep)[0]
+
     pred_boxes, pred_scores, pred_labels = pred_boxes[keep], pred_scores[keep], pred_labels[keep]
-    
     keep_mask = torch.zeros_like(pred_scores, dtype=torch.bool)
     for class_id in torch.unique(pred_labels):
         indices = torch.where(pred_labels == class_id)[0]

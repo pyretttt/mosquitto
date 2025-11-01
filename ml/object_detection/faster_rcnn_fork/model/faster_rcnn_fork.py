@@ -186,7 +186,10 @@ class ROIHead(nn.Module):
         3. Compute classifier scores and regression targets
         4. If training:
         4.1. Compute target boxes transforms out of gt boxes
-        4.2. Compute errors
+        4.2. Compute localization and classification errors
+        5. If infering:
+        5.1. Compute prediction boxes, based on predicted regression targets. Clamp boxes to image shape.
+        5.2. Apply NMS based on scores
         """
         frcnn_output = dict()
         if self.training:
@@ -205,7 +208,7 @@ class ROIHead(nn.Module):
             )
             negative_indices, positive_indices = custom_sample_positive_negative(
                 labels,
-                pos_count=int(self.model_config['roi_pos_fraction'] * self.model_config["roi_batch_size"])
+                pos_count=int(self.model_config['roi_pos_fraction'] * self.model_config["roi_batch_size"]),
                 total_count=self.model_config["roi_batch_size"]
             )
             sampled_idxs = torch.where(positive_indices | negative_indices)[0]
@@ -243,12 +246,57 @@ class ROIHead(nn.Module):
             )
             # Run localization loss only for foreground objects. Zero class is implicitly background
             fg_proposals_indices = torch.where(labels > 0)[0]
-            fg_cls_labels = labels[fg_proposals_indices]
+            fg_cls_labels = labels[fg_proposals_indices] # Will use them as indices for regression_pred
 
             regression_targets = boxes_to_transformations(matched_gt_boxes_for_proposals, proposals)
             localization_loss = torch.nn.functional.smooth_l1_loss(
-                input=regression_pred[fg_proposals_indices],
+                input=regression_pred[fg_proposals_indices, fg_cls_labels],
                 target=regression_targets[fg_proposals_indices],
                 beta=1/9,
                 reduction="sum"
             ) / labels.numel()
+            frcnn_output["frcnn_classification_loss"] = classification_loss
+            fg_proposals_indices["frcnn_localization_loss"] = localization_loss
+        else:
+            predicted_boxes = apply_transformations_to_anchors(
+                anchors=proposals, 
+                transformations=regression_pred
+            )
+            predicted_boxes = clamp_boxes_to_shape(
+                boxes=predicted_boxes, 
+                shape=image_shape[-2:]
+            )
+            classifier_scores = torch.nn.functional.softmax(classifier_scores, dim=-1)
+            
+            # Creates labels for each prediction
+            pred_labels = torch.arange(self.num_classes, device=self.device)
+            pred_labels = pred_labels.view(1, -1).expand_as(classifier_scores)
+
+            
+            # remove predictions with background label
+            pred_labels = pred_labels[:, 1:]
+            predicted_boxes = predicted_boxes[:, 1:]
+            classifier_scores = classifier_scores[:, 1:]
+            assert (
+                pred_labels.shape == (pred_labels.shape[0], self.num_classes - 1,)
+                and predicted_boxes.shape == (pred_labels.shape[0], self.num_classes - 1, 4)
+                and classifier_scores.shape == (pred_labels.shape[0], self.num_classes - 1,)
+            )
+
+            pred_labels = pred_labels.reshape(-1)
+            predicted_boxes = predicted_boxes.reshape(-1, 4)
+            classifier_scores = classifier_scores.reshape(-1)
+            
+            predicted_boxes, pred_labels, classifier_scores = filter_roi_predictions(
+                pred_boxes=predicted_boxes,
+                pred_labels=pred_labels,
+                pred_scores=classifier_scores,
+                low_score_threshold=self.model_config['roi_score_threshold'],
+                min_size=16,
+                nms_threshold=self.model_config['roi_nms_threshold'],
+                topk_detections=self.model_config['roi_topk_detections']
+            )
+            frcnn_output["boxes"] = predicted_boxes
+            frcnn_output["scores"] = classifier_scores
+            frcnn_output["pred_labels"] = pred_labels
+        return frcnn_output
