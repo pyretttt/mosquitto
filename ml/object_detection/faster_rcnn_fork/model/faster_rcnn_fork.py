@@ -181,34 +181,13 @@ class ROIHead(nn.Module):
     
     def forward(self, feat, proposals, image_shape, target):
         """
-        1. Compute roi features w.r.t. to obtained proposals.
-        2. Based roi features compute regression targets and classification scores.
-        3. If training compute gt regression targets and gt labels based on proposals.
+        1. If training sample some labels and gt boxes
+        2. Compute roi features based on proposals
+        3. Compute classifier scores and regression targets
+        4. If training:
+        4.1. Compute target boxes transforms out of gt boxes
+        4.2. Compute errors
         """
-        
-        h_scale, w_scale = (
-            image_shape[0] / feat.shape[-2],
-            image_shape[1] / feat.shape[-1]
-        )
-        assert h_scale == w_scale
-        proposal_roi_pool_feat = torchvision.ops.roi_pool(
-            input=feat,
-            boxes=proposals,
-            output_size=self.model_config['roi_pool_size'],
-            spatial_scale=w_scale
-        ) # Num_proposals x C x roi_pool_size x roi_pool_size
-        proposal_roi_pool_feat = proposal_roi_pool_feat.flatten(start_dim=1)
-        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc1(proposal_roi_pool_feat))
-        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc2(proposal_roi_pool_feat))
-        
-        classifier_scores = self.classifier_head(proposal_roi_pool_feat) # Num_boxes x num_classes
-        regression_pred = self.regression_head(proposal_roi_pool_feat) # Num_boxes x num_classes * 4
-        assert (
-            classifier_scores.size(-1) == self.num_classes 
-            and regression_pred.size(-1) == self.num_classes * 4
-        )
-        regression_pred = regression_pred.reshape(-1, self.num_classes, 4)
-        
         frcnn_output = dict()
         if self.training:
             gt_boxes = target['bboxes'][0]
@@ -232,10 +211,44 @@ class ROIHead(nn.Module):
             sampled_idxs = torch.where(positive_indices | negative_indices)[0]
             proposals = proposals[sampled_idxs]
             gt_boxes = gt_boxes[sampled_idxs]
-            labels = labels[sampled_idxs]
-            regression_targets = boxes_to_transformations(
-                boxes=matched_gt_boxes_for_proposals[sampled_idxs],
-                anchors=proposals
-            ) # N x 4
-            
-            # This is wrong sample first
+            labels = labels[sampled_idxs] # (Num_boxes,)
+        
+        h_scale, w_scale = (
+            image_shape[0] / feat.shape[-2],
+            image_shape[1] / feat.shape[-1]
+        )
+        assert h_scale == w_scale
+        proposal_roi_pool_feat = torchvision.ops.roi_pool(
+            input=feat,
+            boxes=proposals,
+            output_size=self.model_config['roi_pool_size'],
+            spatial_scale=w_scale
+        ) # Num_proposals x C x roi_pool_size x roi_pool_size
+        proposal_roi_pool_feat = proposal_roi_pool_feat.flatten(start_dim=1) # Num_proposals x C * roi_pool_size * roi_pool_size
+        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc1(proposal_roi_pool_feat))
+        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc2(proposal_roi_pool_feat))
+        
+        classifier_scores = self.classifier_head(proposal_roi_pool_feat) # Num_boxes x num_classes
+        regression_pred = self.regression_head(proposal_roi_pool_feat) # Num_boxes x num_classes * 4
+        assert (
+            classifier_scores.size(-1) == self.num_classes 
+            and regression_pred.size(-1) == self.num_classes * 4
+        )
+        regression_pred = regression_pred.reshape(-1, self.num_classes, 4)
+        
+        if self.training:
+            classification_loss = torch.nn.functional.cross_entropy(
+                input=classifier_scores,
+                target=labels
+            )
+            # Run localization loss only for foreground objects. Zero class is implicitly background
+            fg_proposals_indices = torch.where(labels > 0)[0]
+            fg_cls_labels = labels[fg_proposals_indices]
+
+            regression_targets = boxes_to_transformations(matched_gt_boxes_for_proposals, proposals)
+            localization_loss = torch.nn.functional.smooth_l1_loss(
+                input=regression_pred[fg_proposals_indices],
+                target=regression_targets[fg_proposals_indices],
+                beta=1/9,
+                reduction="sum"
+            ) / labels.numel()

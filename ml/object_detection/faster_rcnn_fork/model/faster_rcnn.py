@@ -674,6 +674,7 @@ class ROIHead(nn.Module):
             # Keep only sampled proposals
             proposals = proposals[sampled_idxs]
             labels = labels[sampled_idxs]
+            print("labels.shape: ", labels.shape)
             matched_gt_boxes_for_proposals = matched_gt_boxes_for_proposals[sampled_idxs]
             regression_targets = boxes_to_transformation_targets(matched_gt_boxes_for_proposals, proposals)
             # regression_targets -> (sampled_training_proposals, 4)
