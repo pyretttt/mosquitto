@@ -177,8 +177,8 @@ def boxes_to_transformations(
     """    
     widths = anchors[..., 2] - anchors[..., 0]
     heights = anchors[..., 3] - anchors[..., 1]
-    anchor_center_x = anchors[..., 0] + widths / 2.0
-    anchor_center_y = anchors[..., 1] + heights / 2.0
+    anchor_center_x = anchors[..., 0] + widths * 0.5
+    anchor_center_y = anchors[..., 1] + heights * 0.5
     assert (
         widths.shape == (anchors.size(0), ) 
         and heights.shape == (anchors.size(0), )
@@ -188,8 +188,8 @@ def boxes_to_transformations(
 
     gt_widths = boxes[..., 2] - boxes[..., 0]
     gt_heights = boxes[..., 3] - boxes[..., 1]
-    gt_anchor_center_x = boxes[..., 0] + gt_widths / 2.0
-    gt_anchor_center_y = boxes[..., 1] + gt_heights / 2.0
+    gt_anchor_center_x = boxes[..., 0] + gt_widths * 0.5
+    gt_anchor_center_y = boxes[..., 1] + gt_heights * 0.5
     assert (
         gt_widths.shape == (anchors.size(0), ) 
         and gt_heights.shape == (anchors.size(0), )
@@ -199,12 +199,12 @@ def boxes_to_transformations(
     
     t_x = (gt_anchor_center_x - anchor_center_x) / widths
     t_y = (gt_anchor_center_y - anchor_center_y) / heights
-    t_w = torch.log(gt_widths) - torch.log(widths)
-    t_h = torch.log(gt_heights) - torch.log(heights)
+    t_w = torch.log(gt_widths / widths)
+    t_h = torch.log(gt_heights / heights)
 
     return torch.stack(
         [t_x, t_y, t_w, t_h],
-        dim=-1
+        dim=1
     )
 
 

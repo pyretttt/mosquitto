@@ -152,33 +152,28 @@ class RPN(nn.Module):
 class ROIHead(nn.Module):
     def __init__(self, model_config, num_classes, in_channels):
         super().__init__()
-        self.model_config = model_config
         self.num_classes = num_classes
-        self.fc1 = nn.Linear(
-            in_features=in_channels * self.model_config['roi_pool_size'] ** 2,
-            out_features=self.model_config['fc_inner_dim'],
-        )
-        self.fc2 = nn.Linear(
-            in_features=self.model_config['fc_inner_dim'],
-            out_features=self.model_config['fc_inner_dim'],
-        )
-        # Probabilities for all classes
-        self.classifier_head = nn.Linear(
-            in_features=self.model_config['fc_inner_dim'],
-            out_features=num_classes,
-        )
-        # Regression for all classes
-        self.regression_head = nn.Linear(
-            in_features=self.model_config['fc_inner_dim'],
-            out_features=4 * num_classes
-        )
-    
-        torch.nn.init.normal_(self.classifier_head.weight, std=0.01)
-        torch.nn.init.constant_(self.classifier_head.bias, 0)
+        self.roi_batch_size = model_config['roi_batch_size']
+        self.roi_pos_count = int(model_config['roi_pos_fraction'] * self.roi_batch_size)
+        self.iou_threshold = model_config['roi_iou_threshold']
+        self.low_bg_iou = model_config['roi_low_bg_iou']
+        self.nms_threshold = model_config['roi_nms_threshold']
+        self.topK_detections = model_config['roi_topk_detections']
+        self.low_score_threshold = model_config['roi_score_threshold']
+        self.pool_size = model_config['roi_pool_size']
+        self.fc_inner_dim = model_config['fc_inner_dim']
+        
+        self.fc6 = nn.Linear(in_channels * self.pool_size * self.pool_size, self.fc_inner_dim)
+        self.fc7 = nn.Linear(self.fc_inner_dim, self.fc_inner_dim)
+        self.cls_layer = nn.Linear(self.fc_inner_dim, self.num_classes)
+        self.bbox_reg_layer = nn.Linear(self.fc_inner_dim, self.num_classes * 4)
+        
+        torch.nn.init.normal_(self.cls_layer.weight, std=0.01)
+        torch.nn.init.constant_(self.cls_layer.bias, 0)
 
-        torch.nn.init.normal_(self.regression_head.weight, std=0.001)
-        torch.nn.init.constant_(self.regression_head.bias, 0)
-    
+        torch.nn.init.normal_(self.bbox_reg_layer.weight, std=0.001)
+        torch.nn.init.constant_(self.bbox_reg_layer.bias, 0)
+
     
     def forward(self, feat, proposals, image_shape, target):
         """
@@ -204,15 +199,15 @@ class ROIHead(nn.Module):
                 regions=proposals,
                 gt_labels=gt_labels,
                 should_match_all_gt_boxes=False,
-                low_iou=self.model_config["roi_low_bg_iou"],
-                high_iou=self.model_config["roi_iou_threshold"],
+                low_iou=self.low_bg_iou,
+                high_iou=self.iou_threshold,
                 below_threshold_label=-1,
                 between_threshold_label=0
             )
             negative_indices, positive_indices = custom_sample_positive_negative(
                 labels,
-                pos_count=int(self.model_config['roi_pos_fraction'] * self.model_config["roi_batch_size"]),
-                total_count=self.model_config["roi_batch_size"]
+                pos_count=self.roi_pos_count,
+                total_count=self.roi_batch_size
             )
             sampled_idxs = torch.where(positive_indices | negative_indices)[0]
             proposals = proposals[sampled_idxs]
@@ -228,15 +223,15 @@ class ROIHead(nn.Module):
         proposal_roi_pool_feat = torchvision.ops.roi_pool(
             input=feat,
             boxes=[proposals],
-            output_size=self.model_config['roi_pool_size'],
+            output_size=self.pool_size,
             spatial_scale=w_scale
         ) # Num_proposals x C x roi_pool_size x roi_pool_size
         proposal_roi_pool_feat = proposal_roi_pool_feat.flatten(start_dim=1) # Num_proposals x C * roi_pool_size * roi_pool_size
-        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc1(proposal_roi_pool_feat))
-        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc2(proposal_roi_pool_feat))
+        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc6(proposal_roi_pool_feat))
+        proposal_roi_pool_feat = torch.nn.functional.relu(self.fc7(proposal_roi_pool_feat))
         
-        classifier_scores = self.classifier_head(proposal_roi_pool_feat) # Num_boxes x num_classes
-        regression_pred = self.regression_head(proposal_roi_pool_feat) # Num_boxes x num_classes * 4
+        classifier_scores = self.cls_layer(proposal_roi_pool_feat) # Num_boxes x num_classes
+        regression_pred = self.bbox_reg_layer(proposal_roi_pool_feat) # Num_boxes x num_classes * 4
         assert (
             classifier_scores.size(-1) == self.num_classes 
             and regression_pred.size(-1) == self.num_classes * 4
@@ -295,10 +290,10 @@ class ROIHead(nn.Module):
                 pred_boxes=predicted_boxes,
                 pred_labels=pred_labels,
                 pred_scores=classifier_scores,
-                low_score_threshold=self.model_config['roi_score_threshold'],
+                low_score_threshold=self.low_score_threshold,
                 min_size=16,
-                nms_threshold=self.model_config['roi_nms_threshold'],
-                topk_detections=self.model_config['roi_topk_detections']
+                nms_threshold=self.nms_threshold,
+                topk_detections=self.topK_detections
             )
             frcnn_output["boxes"] = predicted_boxes
             frcnn_output["scores"] = classifier_scores
