@@ -7,7 +7,7 @@ import random
 import os
 import yaml
 from tqdm import tqdm
-from model.faster_rcnn import FasterRCNN
+from rcnn.faster_rcnn import FasterRCNN
 from dataset.voc import VOCDataset
 from torch.utils.data.dataloader import DataLoader
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor

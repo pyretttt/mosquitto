@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from ab import (
+from utils import (
     config, 
     generate_anchors, 
     get_iou,
@@ -13,7 +13,7 @@ from ab import (
     filter_roi_predictions,
     Backbone
 )
-import model.faster_rcnn_fork as fork
+import rcnn.faster_rcnn_fork as fork
 
 import torch
 import torch.nn as nn

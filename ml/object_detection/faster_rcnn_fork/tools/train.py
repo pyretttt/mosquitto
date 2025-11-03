@@ -4,7 +4,7 @@ import os
 import numpy as np
 import yaml
 import random
-from model.faster_rcnn import FasterRCNN
+from rcnn.faster_rcnn import FasterRCNN
 from tqdm import tqdm
 from dataset.voc import VOCDataset
 from torch.utils.data.dataloader import DataLoader
