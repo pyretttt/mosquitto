@@ -54,7 +54,8 @@ class VocYoloDatasetAdapter(Dataset):
         return len(self.voc)
     
     def __getitem__(self, index):
-        im_tensor, targets, im_info = self.voc[index]
+        im_tensor, targets, _ = self.voc[index]
+        im_info = self.voc.images_info[index]
         bboxes = targets["bboxes"] # (N, 4)
         bboxes_out = torch.zeros_like(bboxes)
         bboxes_out[:, 0] = (0.5 * bboxes[:, 0] + bboxes[:, 2]) / im_info["width"]
@@ -66,7 +67,7 @@ class VocYoloDatasetAdapter(Dataset):
         yolo_targets = make_yolo_targets(
             targets, 
             grid_size=self.grid_size,
-            num_classes=self.len(self.num_classes)
+            num_classes=self.num_classes
         )
         im_tensor = self.transform(im_tensor)
         
