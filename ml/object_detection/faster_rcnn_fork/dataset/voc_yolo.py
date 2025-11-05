@@ -1,8 +1,10 @@
+
+from dataset.voc import VOCDataset
+
 import torch
-
-from voc import VOCDataset
-
+from torchvision import transforms
 from torch.utils.data import Dataset
+
 
 def make_yolo_targets(
     targets: dict, 
@@ -30,10 +32,23 @@ def make_yolo_targets(
 
 
 class VocYoloDatasetAdapter(Dataset):
-    def __init__(self, split, im_dir, ann_dir, grid_size: int):
+    def __init__(self, split, im_dir, ann_dir, grid_size: int, im_size: int):
         super().__init__()
         self.voc = VOCDataset(split, im_dir, ann_dir)
         self.grid_size = grid_size
+        
+        self.transform = transforms.Compose([
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406],
+                std=[0.229, 0.224, 0.225]
+            ),
+            transforms.Resize(size=im_size),
+        ])
+        
+    @property
+    def num_classes(self):
+        return len(self.voc.label2idx)
+
         
     def __len__(self):
         return len(self.voc)
@@ -51,7 +66,8 @@ class VocYoloDatasetAdapter(Dataset):
         yolo_targets = make_yolo_targets(
             targets, 
             grid_size=self.grid_size,
-            num_classes=self.len(self.label2idx)
+            num_classes=self.len(self.num_classes)
         )
+        im_tensor = self.transform(im_tensor)
         
         return im_tensor, targets, im_info, yolo_targets

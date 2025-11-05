@@ -36,8 +36,8 @@ class YOLO(nn.Module):
         grid_size: int
     ):
         super().__init__()
-        resnet = models.resnet(weights=models.ResNet50_Weights.IMAGENET1K_V1)
-        self.backbone = nn.Sequential(*resnet.children()[:-2])
+        resnet = models.resnet50(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+        self.backbone = nn.Sequential(*list(resnet.children())[:-2])
         for param in self.backbone.parameters():
             param.requires_grad = False
         
