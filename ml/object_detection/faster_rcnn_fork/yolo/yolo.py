@@ -1,6 +1,30 @@
 import torch
 from torch import nn
 
+class ConvBlock(nn.Module):
+    def __init__(
+        self, 
+        in_channels: int, 
+        out_channels: int, 
+        kernel_size: int, 
+        stride: int, 
+        padding: int
+    ):
+        super().__init__()
+        self.conv = nn.Conv2d(
+            in_channels=in_channels,
+            out_channels=out_channels, 
+            kernel_size=kernel_size, 
+            stride=stride,
+            padding=padding
+        )
+        self.batch_norm = nn.BatchNorm2d(out_channels)
+        self.activation = nn.LeakyReLU(negative_slope=0.1)
+
+    def forward(self, x):
+        return self.activation(self.batch_norm(self.conv(x)))
+
+
 class YOLO(nn.Module):
     def __init__(
         self,
@@ -13,26 +37,16 @@ class YOLO(nn.Module):
         self.num_anchors = num_anchors
         self.grid_size = grid_size
         
-        self.backbone = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=7, stride=2, padding=3),
-            nn.BatchNorm2d(num_features=64),
+        self.backbone = self.layers = nn.Sequential(
+            ConvBlock(3, 32, kernel_size=7, stride=2, padding=3),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.LeakyReLU(negative_slope=0.1),
-            nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(num_features=128),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.LeakyReLU(negative_slope=0.1)
+            ConvBlock(32, 64, kernel_size=3, stride=1, padding=1),
+            nn.MaxPool2d(2, 2),
+            ConvBlock(64, 128, kernel_size=3, stride=1, padding=1),
+            nn.MaxPool2d(2, 2),
         )
         
-        self.detector = nn.Sequential(
-            nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(256),
-            nn.LeakyReLU(negative_slope=0.1),
-            nn.Flatten(),
-            nn.Linear(
-                in_features=448 / (2 ** 3), out_features=
-            )
-        )
+        self.head = nn.Conv2d(in_channels=128, out_channels=(num_anchors * 5 + num_classes) * grid_size ** 2, kernel_size=1)
         
     def forward(self, x, y,):
         pass
