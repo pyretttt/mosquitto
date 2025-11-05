@@ -1,6 +1,9 @@
 import torch
 from torch import nn
 
+import torchvision.models as models
+
+
 class ConvBlock(nn.Module):
     def __init__(
         self, 
@@ -29,63 +32,39 @@ class YOLO(nn.Module):
     def __init__(
         self,
         num_classes: int,
-        num_anchors: int = 3, 
-        grid_size: int = 7
+        num_anchors: int,
+        grid_size: int
     ):
         super().__init__()
+        resnet = models.resnet(weights=models.ResNet50_Weights.IMAGENET1K_V1)
+        self.backbone = nn.Sequential(*resnet.children()[:-2])
+        for param in self.backbone.parameters():
+            param.requires_grad = False
+        
+        
         self.depth = num_anchors * 5 + num_classes
         self.num_classes = num_classes
         self.num_anchors = num_anchors
         self.grid_size = grid_size
         
-        layers = [
-            ConvBlock(3, 32, kernel_size=7, stride=2, padding=3),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            ConvBlock(32, 192, kernel_size=3, stride=1, padding=1),
-            nn.MaxPool2d(2, 2),
-            ConvBlock(192, 128, kernel_size=1),
-            ConvBlock(128, 256, kernel_size=3, stride=1, padding=1),
-            ConvBlock(256, 256, kernel_size=1, stride=1, padding=0),
-            ConvBlock(256, 512, kernel_size=3, stride=1, padding=1),
-            nn.MaxPool2d(2, 2),
-        ]
-        
-        for _ in range(4):
-            layers += [
-                nn.Conv2d(512, 256, kernel_size=1),
-                nn.Conv2d(512, 512, kernel_size=1),
-                nn.LeakyReLU(negative_slope=0.1)
-            ]
-        
-        layers += [
-            ConvBlock(512, 256, kernel_size=1),
-            ConvBlock(512, 1024, kernel_size=3, padding=1),
-            nn.MaxPool2d(2, 2),
-        ]
-        
-        for i in range(2):                                                          # Conv 5
-            layers += [
-                ConvBlock(1024, 512, kernel_size=1),
-                ConvBlock(512, 1024, kernel_size=3, padding=1),
-            ]
-        layers += [
-            ConvBlock(1024, 1024, kernel_size=3, padding=1),
-            ConvBlock(1024, 1024, kernel_size=3, stride=2, padding=1),
-            ConvBlock(1024, 1024, kernel_size=3, stride=1, padding=1),
-            ConvBlock(1024, 1024, kernel_size=3, stride=1, padding=1),
-        ]
-
-        layers = [
-            nn.Flatten(),
-            nn.Linear(grid_size * grid_size * 1024, 4096),
-            nn.Dropout(),
-            nn.LeakyReLU(negative_slope=0.1),
-            nn.Linear(4096, self.depth * self.grid_size * self.grid_size)
-        ]
-        self.model = nn.Sequential(*layers)
-        
-    def forward(self, x):
-        return (
-            self.model(x)
-                .reshape(x.size(dim=0), self.grid_size, self.grid_size, self.depth)
+        self.conv_layers = nn.Sequential(
+            ConvBlock(2048, 512, kernel_size=1, padding=1),
+            ConvBlock(512, 512, kernel_size=3, padding=1),
+            ConvBlock(512, 512, kernel_size=3, padding=1),
         )
+        self.dense_layers = nn.Sequential(
+            nn.Linear(512 * self.grid_size * self.grid_size, out_features=4096), # Implicitly we know the size of in channels
+            nn.BatchNorm1d(4096),
+            nn.LeakyReLU(negative_slope=0.1),
+            nn.Linear(4096, self.grid_size * self.grid_size * self.depth),
+            nn.Sigmoid()
+        )
+
+
+    def forward(self, x):
+        return self.dense_layers(
+                self.conv_layers(
+                    self.backbone(x)
+                ) # N, 512, 14, 14
+                .flatten(start_dim=1) # N, 512 * 14 * 14
+            ) # N, 14 * 14 * 30
