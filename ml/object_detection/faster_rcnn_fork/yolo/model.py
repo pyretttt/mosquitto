@@ -48,8 +48,9 @@ class YOLO(nn.Module):
         self.grid_size = grid_size
         
         self.conv_layers = nn.Sequential(
-            ConvBlock(2048, 512, kernel_size=1, padding=1),
+            ConvBlock(2048, 512, kernel_size=1, padding=0),
             ConvBlock(512, 512, kernel_size=3, padding=1),
+            # nn.MaxPool2d(2, 2),
             ConvBlock(512, 512, kernel_size=3, padding=1),
         )
         self.dense_layers = nn.Sequential(

@@ -42,7 +42,7 @@ class VocYoloDatasetAdapter(Dataset):
                 mean=[0.485, 0.456, 0.406],
                 std=[0.229, 0.224, 0.225]
             ),
-            transforms.Resize(size=im_size),
+            transforms.Resize(size=(im_size, im_size)),
         ])
         
     @property
