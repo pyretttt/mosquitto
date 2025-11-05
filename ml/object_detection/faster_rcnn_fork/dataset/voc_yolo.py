@@ -27,8 +27,8 @@ def make_yolo_targets(
         out[row, col, 5 + label] = 1.0 # gt class probabilities
 
     return out
-    
-    
+
+
 
 class VocYoloDatasetAdapter(Dataset):
     def __init__(self, split, im_dir, ann_dir, grid_size: int):
