@@ -41,7 +41,7 @@ def train(args):
                      grid_size=model_config["grid_size"],
                      im_size=model_config["im_size"])
     train_dataset = DataLoader(voc,
-                               batch_size=1,
+                               batch_size=train_config["batch_size"],
                                shuffle=True,
                                num_workers=4)
     
@@ -76,7 +76,6 @@ def train(args):
             predictions = yolo(im)
             
             loss = yolo_v1_loss(targets=yolo_targets, predictions=predictions)
-            
             yolo_losses.append(loss)
             loss = loss / acc_steps
             loss.backward()
@@ -89,8 +88,9 @@ def train(args):
         optimizer.zero_grad()
         torch.save(yolo.state_dict(), os.path.join(train_config['task_name'],
                                                                 train_config['ckpt_name']))
+        average_loss = np.mean([loss.item() for loss in yolo_losses])
         loss_output = ''
-        loss_output += 'yolo loss : {:.4f}'.format(np.mean(yolo_losses))
+        loss_output += 'yolo loss : {:.4f}'.format(average_loss)
         print(loss_output)
         scheduler.step()
     print('Done Training...')
