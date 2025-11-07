@@ -1,15 +1,11 @@
 
-# class Graph():
-#     def __init__(
-#         self, 
-#         operand1, 
-#         operand2, 
-#         op
-#     ):
-#         self.operand1 = operand1
-#         self.operand2 = operand2
-#         self.op = op
-        
+
+def addGrad(chain, tensor):
     
-#     def forward(self):
-#         pass
+
+class Variable:
+    def __init__(self, do):
+        self.do = do
+        
+    def backward(self, **params):
+        self.do(**params)

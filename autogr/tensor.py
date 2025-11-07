@@ -2,6 +2,8 @@ from typing import List
 import numpy as np
 import numbers
 
+from graph import Variable
+
 class Tensor():
     def __init__(
         self,
@@ -38,6 +40,10 @@ class Tensor():
         self._grad_fn = new_value
 
 
+    @property
+    def T(self):
+        return self.
+
     @staticmethod
     def zeros_like(other, requires_grad: bool = False):
         return Tensor(data=np.zeros_like(other.data), requires_grad=requires_grad)
@@ -65,5 +71,6 @@ class Tensor():
     
     def __add__(self, other):
         if isinstance(other, (numbers.Integral, numbers.Rational)):
-            op1 = 
-            op1 = Tensor.scalar_like(self.data, value=other)
+            self.grad_fn = Variable(
+                lambda chain: Tensor.ones_like(self)
+            )
