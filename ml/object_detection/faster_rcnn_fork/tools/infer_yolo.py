@@ -196,7 +196,7 @@ def compute_map(det_boxes, gt_boxes, iou_threshold=0.5, method='area'):
     return mean_ap, all_aps
 
 
-def load_model_and_dataset(args):
+def load_model_and_dataset(args, custom_batch_size: int = 0):
     # Read the config file #
     with open(args.config_path, 'r') as file:
         try:
@@ -224,7 +224,7 @@ def load_model_and_dataset(args):
         grid_size=model_config["grid_size"],
         im_size=model_config["im_size"]
     )
-    test_dataset = DataLoader(voc, batch_size=train_config["batch_size"], shuffle=False)
+    test_dataset = DataLoader(voc, batch_size=custom_batch_size or train_config["batch_size"], shuffle=False)
     
     yolo = YOLO(        
         num_classes=voc.num_classes, 
@@ -328,26 +328,30 @@ def infer(args):
 
 
 def evaluate_map(args):
-    yolo, voc, test_dataset = load_model_and_dataset(args)
+    yolo, voc, test_dataset = load_model_and_dataset(args, custom_batch_size=1)
     gts = []
     preds = []
     for im, _, fname, yolo_target in tqdm(test_dataset):
         im_name = fname
         im = im.float().to(device)
         
-        cells_indices = yolo_target[..., 0] == 1 # grid_size, grid_size
-        bboxes = yolo_target[cells_indices][..., 1:5]
-        labels = torch.argmax(yolo_target[cells_indices][..., 5:], dim=-1)
+        gt_bboxes, _, gt_labels = convert_yolo_predictions(
+            predictions=yolo_target[0],
+            im_shape=im.shape[-2:],
+            orig_im_shape=im.shape[-2:],
+            threshold=1.0
+        )
         
-        target_boxes = bboxes.float().to(device)
-        target_labels = labels.long().to(device)
+        target_boxes = gt_bboxes.float().to(device)
+        target_labels = gt_labels.long().to(device)
 
-        yolo_out = yolo(im)
-        yolo_cell_above_threshold = yolo_out[..., 0] > 0.5
-        boxes_pred = yolo_out[yolo_cell_above_threshold][..., 1:5]
-        labels_pred = torch.argmax(yolo_out[yolo_cell_above_threshold][..., 5:], dim=-1)
-        scores_pred = yolo_out[yolo_cell_above_threshold][..., 0]
-        
+        yolo_out = yolo(im).squeeze(0)
+        pred_bboxes, pred_scores, pred_labels = convert_yolo_predictions(
+            predictions=yolo_out,
+            im_shape=im.shape[-2:],
+            orig_im_shape=im.shape[:2],
+            threshold=0.5
+        )
         
         pred_boxes = {}
         gt_boxes = {}
@@ -355,10 +359,10 @@ def evaluate_map(args):
             pred_boxes[label_name] = []
             gt_boxes[label_name] = []
         
-        for idx, box in enumerate(boxes_pred):
+        for idx, box in enumerate(pred_bboxes):
             x1, y1, x2, y2 = box.detach().cpu().numpy()
-            label = labels_pred[idx].detach().cpu().item()
-            score = scores_pred[idx].detach().cpu().item()
+            label = pred_labels[idx].detach().cpu().item()
+            score = pred_scores[idx].detach().cpu().item()
             label_name = voc.idx2label[label]
             pred_boxes[label_name].append([x1, y1, x2, y2, score])
         for idx, box in enumerate(target_boxes):

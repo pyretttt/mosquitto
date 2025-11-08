@@ -54,10 +54,10 @@ class YOLO(nn.Module):
             ConvBlock(512, 512, kernel_size=3, padding=1),
         )
         self.dense_layers = nn.Sequential(
-            nn.Linear(512 * self.grid_size * self.grid_size, out_features=1024), # Implicitly we know the size of in channels
-            nn.BatchNorm1d(1024),
+            nn.Linear(512 * self.grid_size * self.grid_size, out_features=4096), # Implicitly we know the size of in channels
+            nn.BatchNorm1d(4096),
             nn.LeakyReLU(negative_slope=0.1),
-            nn.Linear(1024, self.grid_size * self.grid_size * self.depth),
+            nn.Linear(4096, self.grid_size * self.grid_size * self.depth),
             nn.Sigmoid()
         )
 
