@@ -13,6 +13,52 @@ from torch.utils.data.dataloader import DataLoader
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+def convert_yolo_predictions(
+    predictions,
+    im_shape: tuple[int, ...],
+    orig_im_shape: tuple[int, ...],
+    threshold: float = 0.5
+):
+    """
+    predictions: torch.Tensor (grid_size, grid_size, depth)
+    """
+    grid_size = predictions.shape[0]
+    grid_shape = im_shape[0] / grid_size, im_shape[1] / grid_size
+
+    sY, sX = orig_im_shape[0] / im_shape[0], orig_im_shape[1] / im_shape[1]
+    
+    predictions = predictions.reshape(-1, predictions.shape[-1])
+    pred_index = torch.where(predictions[..., 0] >= threshold)[0]
+    
+    prediction_scores = predictions[pred_index][..., 0] # (N, )
+    pred_labels = torch.argmax(predictions[pred_index][..., 5:], dim=-1) # (N, )
+
+    pred_bboxes = predictions[pred_index][..., 1:5]
+    x, y = pred_bboxes[..., 0:1], pred_bboxes[..., 1:2]
+    assert x.shape == (len(pred_index), 1) and y.shape == (len(pred_index), 1)
+
+    cell_row, cell_col = (pred_index // grid_size).unsqueeze(-1), (pred_index % grid_size).unsqueeze(-1)
+    assert cell_row.shape == (len(pred_index), 1) and cell_col.shape == (len(pred_index), 1)
+    x, y = (cell_col + x) * grid_shape[1], (cell_row +  y) * grid_shape[0]
+    assert x.shape == (len(pred_index), 1) and y.shape == (len(pred_index), 1)
+    x, y = x * sX, y * sY
+    assert x.shape == (len(pred_index), 1) and y.shape == (len(pred_index), 1)
+
+    w, h = pred_bboxes[..., 2:3], pred_bboxes[..., 3:4]
+    w, h = w * im_shape[1] * sX, h * im_shape[0] * sY
+
+    x_1 = x - w * 0.5
+    y_1 = y - h * 0.5
+    x_2 = x + w * 0.5
+    y_2 = y + h * 0.5
+
+    pred_bboxes = torch.cat([
+        x_1, y_1, x_2, y_2
+    ], dim=-1)
+    assert pred_bboxes.shape == (len(pred_index), 4)
+    
+    return pred_bboxes, prediction_scores, pred_labels
+
 
 def get_iou(det, gt):
     det_x1, det_y1, det_x2, det_y2 = det
@@ -209,23 +255,26 @@ def infer(args):
 
         gt_im = cv2.imread(fname)
         gt_im_copy = gt_im.copy()
-        
-        cells_indices = yolo_target[..., 0] == 1 # grid_size, grid_size
-        bboxes = yolo_target[cells_indices][..., 1:5]
-        labels = torch.argmax(yolo_target[cells_indices][..., 5:], dim=-1)
+                
+        gt_bboxes, _, gt_labels = convert_yolo_predictions(
+            predictions=yolo_target,
+            im_shape=im.shape[-2:],
+            orig_im_shape=gt_im.shape[:2],
+            threshold=1.0
+        )
         
         # Saving images with ground truth boxes
-        for idx, box in enumerate(bboxes):
+        for idx, box in enumerate(gt_bboxes):
             x1, y1, x2, y2 = box.detach().cpu().numpy()
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
             
             cv2.rectangle(gt_im, (x1, y1), (x2, y2), thickness=2, color=[0, 255, 0])
             cv2.rectangle(gt_im_copy, (x1, y1), (x2, y2), thickness=2, color=[0, 255, 0])
-            text = voc.idx2label[labels[idx].detach().cpu().item()]
+            text = voc.idx2label[gt_labels[idx].detach().cpu().item()]
             text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_PLAIN, 1, 1)
             text_w, text_h = text_size
             cv2.rectangle(gt_im_copy , (x1, y1), (x1 + 10+text_w, y1 + 10+text_h), [255, 255, 255], -1)
-            cv2.putText(gt_im, text=voc.idx2label[labels[idx].detach().cpu().item()],
+            cv2.putText(gt_im, text=voc.idx2label[gt_labels[idx].detach().cpu().item()],
                         org=(x1+5, y1+15),
                         thickness=1,
                         fontScale=1,
@@ -241,22 +290,24 @@ def infer(args):
         cv2.imwrite('samples/output_frcnn_gt_{}.png'.format(sample_count), gt_im)
         
         # Getting predictions from trained model
-        yolo_out = yolo(im)
-        yolo_cell_above_threshold = yolo_out[..., 0] >= 0.7
-        boxes = yolo_out[yolo_cell_above_threshold][1:5]
-        labels = torch.argmax(yolo_out[yolo_cell_above_threshold][5:], dim=-1)
-        scores = yolo_out[yolo_cell_above_threshold][0:1]
+        yolo_out = yolo(im).squeeze(0)
+        pred_bboxes, pred_scores, pred_labels = convert_yolo_predictions(
+            predictions=yolo_out,
+            im_shape=im.shape[-2:],
+            orig_im_shape=gt_im.shape[:2],
+            threshold=0.5
+        )
         im = cv2.imread(fname)
         im_copy = im.copy()
         
         # Saving images with predicted boxes
-        for idx, box in enumerate(boxes):
+        for idx, box in enumerate(pred_bboxes):
             x1, y1, x2, y2 = box.detach().cpu().numpy()
             x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
             cv2.rectangle(im, (x1, y1), (x2, y2), thickness=2, color=[0, 0, 255])
             cv2.rectangle(im_copy, (x1, y1), (x2, y2), thickness=2, color=[0, 0, 255])
-            text = '{} : {:.2f}'.format(voc.idx2label[labels[idx].detach().cpu().item()],
-                                        scores[idx].detach().cpu().item())
+            text = '{} : {:.2f}'.format(voc.idx2label[pred_labels[idx].detach().cpu().item()],
+                                        pred_scores[idx].detach().cpu().item())
             text_size, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_PLAIN, 1, 1)
             text_w, text_h = text_size
             cv2.rectangle(im_copy , (x1, y1), (x1 + 10+text_w, y1 + 10+text_h), [255, 255, 255], -1)
@@ -288,14 +339,15 @@ def evaluate_map(args):
         bboxes = yolo_target[cells_indices][..., 1:5]
         labels = torch.argmax(yolo_target[cells_indices][..., 5:], dim=-1)
         
-        target_boxes = bboxes.float().to(device)[0]
-        target_labels = labels.long().to(device)[0]
-        yolo_out = yolo(im)
+        target_boxes = bboxes.float().to(device)
+        target_labels = labels.long().to(device)
 
-        yolo_cell_above_threshold = yolo_out[..., 0] > 0.7
-        boxes = yolo_out[yolo_cell_above_threshold, 1:5]
-        labels = torch.argmax(yolo_out[yolo_cell_above_threshold, 5:], dim=-1)
-        scores = yolo_out[yolo_cell_above_threshold, 0]
+        yolo_out = yolo(im)
+        yolo_cell_above_threshold = yolo_out[..., 0] > 0.5
+        boxes_pred = yolo_out[yolo_cell_above_threshold][..., 1:5]
+        labels_pred = torch.argmax(yolo_out[yolo_cell_above_threshold][..., 5:], dim=-1)
+        scores_pred = yolo_out[yolo_cell_above_threshold][..., 0]
+        
         
         pred_boxes = {}
         gt_boxes = {}
@@ -303,10 +355,10 @@ def evaluate_map(args):
             pred_boxes[label_name] = []
             gt_boxes[label_name] = []
         
-        for idx, box in enumerate(boxes):
+        for idx, box in enumerate(boxes_pred):
             x1, y1, x2, y2 = box.detach().cpu().numpy()
-            label = labels[idx].detach().cpu().item()
-            score = scores[idx].detach().cpu().item()
+            label = labels_pred[idx].detach().cpu().item()
+            score = scores_pred[idx].detach().cpu().item()
             label_name = voc.idx2label[label]
             pred_boxes[label_name].append([x1, y1, x2, y2, score])
         for idx, box in enumerate(target_boxes):
