@@ -1,9 +1,9 @@
-from typing import List, Optional, Self, Union
+from typing import Optional, Self, Union
 import numpy as np
 import numbers
 
 from grad import Variable
-
+from methods import add
 
 class Tensor():
     def __init__(
@@ -17,6 +17,7 @@ class Tensor():
         self.requires_grad = requires_grad
         self._grad_fn = grad_fn
         self.is_leaf = is_leaf
+        self.grad: Self = None
 
     @property
     def grad_fn(self):
@@ -29,7 +30,7 @@ class Tensor():
 
 
     @property
-    def T(self):
+    def T(self) -> Self:
         return Tensor(
             data=self.data.T,
             requires_grad=self.requires_grad,
@@ -39,29 +40,29 @@ class Tensor():
 
 
     @staticmethod
-    def zeros_like(other: Self, requires_grad: bool = False):
+    def zeros_like(other: Self, requires_grad: bool = False) -> Self:
         return Tensor(
-            data=np.zeros_like(other.data), 
+            data=np.zeros_like(other.data),
             requires_grad=requires_grad
         )
 
-    
+
     @staticmethod
-    def ones_like(other: Self, requires_grad: bool = False):
+    def ones_like(other: Self, requires_grad: bool = False) -> Self:
         return Tensor(
-            data=np.ones_like(other.data), 
+            data=np.ones_like(other.data),
             requires_grad=requires_grad
         )
 
 
     @staticmethod
     def scalar_like(
-        other: Self, 
+        other: Self,
         value: numbers.Number,
         requires_grad: bool = False
-    ):
+    ) -> Self:
         return Tensor(
-            data=np.ones_like(other.data) * value, 
+            data=np.ones_like(other.data) * value,
             requires_grad=requires_grad
         )
 
@@ -69,17 +70,43 @@ class Tensor():
     @staticmethod
     def tensor(
         other: Self,
-        requires_grad: bool = True
-    ):
+        requires_grad: bool = False
+    ) -> Self:
         return Tensor(data=other.data, requires_grad=requires_grad)
 
-    
+
+    @staticmethod
+    def from_numpy(
+        data: np.array,
+        requires_grad: bool = False
+    ) -> Self:
+        return Tensor(
+            data=data,
+            requires_grad=requires_grad
+        )
+
     # Methods
-    
+
+    def backward(self):
+        if self.grad_fn is None:
+            raise RuntimeError("backward is called when gradient is not computed")
+        self.grad_fn.backward(chain_jacobian=None)
+
+
     # Operands
-    
+
     def __add__(self, other: Union[Self, numbers.Number]):
-        if isinstance(other, (numbers.Number)):
-            if self.requires_grad:
-                Variable()
-            
+        return add(self, other)
+
+
+    # Meta
+
+    def __repr__(self):
+        return str(
+            dict(
+                data=self.data,
+                requires_grad=self.requires_grad,
+                is_leaf=self.is_leaf,
+                grad_fn=self.grad_fn
+            )
+        )
