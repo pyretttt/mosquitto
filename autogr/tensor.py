@@ -38,6 +38,11 @@ class Tensor():
             is_leaf=self.is_leaf
         )
 
+    @property
+    def shape(self):
+        return self.data.shape
+
+    # Constructors
 
     @staticmethod
     def zeros_like(
