@@ -41,6 +41,6 @@ class CompoundVariable:
         self.variables = variables
 
 
-    def backward(self, *params):
-        for variable, param_group in zip(self.variables, params):
-            variable.backward(**param_group)
+    def backward(self, **params):
+        for variable in self.variables:
+            variable.backward(**params)

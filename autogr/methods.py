@@ -49,7 +49,7 @@ def add(
     # both tensors
     req_grad=op1.requires_grad or op2.requires_grad
     return tensor.Tensor(
-        data=op1.data + op2,
+        data=op1.data + op2.data,
         requires_grad=op1.requires_grad or op2.requires_grad,
         grad_fn=(
             CompoundVariable(
@@ -65,13 +65,14 @@ def add(
 
 def make_add_backward(host: Tensor):
     def add_backward(chain_jacobian: Optional[Tensor]):
+        add_grad = tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
         return (
             matmul(
                 chain_jacobian,
-                tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
+                add_grad
             )
             if chain_jacobian is not None
-            else tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
+            else add_grad
         )
 
     return add_backward
