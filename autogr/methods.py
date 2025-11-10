@@ -3,11 +3,13 @@ from typing import Union, Optional
 from numbers import Number
 from typing import TYPE_CHECKING
 
+import numpy as np
+
 if TYPE_CHECKING:
     from tensor import Tensor
 else:
     import tensor
-from grad import Variable
+from grad import Variable, CompoundVariable
 
 
 def matmul(
@@ -20,7 +22,7 @@ def matmul(
         requires_grad=requires_grad,
         grad_fn=(
             Variable(make_add_backward())
-            if op1.requires_grad
+            if requires_grad
             else None
         ),
         is_leaf=False
@@ -44,16 +46,32 @@ def add(
             is_leaf=False
         )
 
+    # both tensors
+    req_grad=op1.requires_grad or op2.requires_grad
+    return tensor.Tensor(
+        data=op1.data + op2,
+        requires_grad=op1.requires_grad or op2.requires_grad,
+        grad_fn=(
+            CompoundVariable(
+                Variable(op1, backward_method=make_add_backward(host=op1)),
+                Variable(op2, backward_method=make_add_backward(host=op2)),
+            )
+            if req_grad
+            else None
+        ),
+        is_leaf=False
+    )
+
 
 def make_add_backward(host: Tensor):
     def add_backward(chain_jacobian: Optional[Tensor]):
         return (
             matmul(
                 chain_jacobian,
-                tensor.Tensor.ones_like(host)
+                tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
             )
             if chain_jacobian is not None
-            else tensor.Tensor.ones_like(host)
+            else tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
         )
 
     return add_backward

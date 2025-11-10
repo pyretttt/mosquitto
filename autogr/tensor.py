@@ -1,9 +1,9 @@
-from typing import Optional, Self, Union
+from typing import Optional, Self, Union, List
 import numpy as np
 import numbers
 
 from grad import Variable
-from methods import add
+import methods
 
 class Tensor():
     def __init__(
@@ -40,18 +40,28 @@ class Tensor():
 
 
     @staticmethod
-    def zeros_like(other: Self, requires_grad: bool = False) -> Self:
+    def zeros_like(
+        other: Self,
+        requires_grad: bool = False,
+        is_leaf: bool = True
+    ) -> Self:
         return Tensor(
             data=np.zeros_like(other.data),
-            requires_grad=requires_grad
+            requires_grad=requires_grad,
+            is_leaf=is_leaf
         )
 
 
     @staticmethod
-    def ones_like(other: Self, requires_grad: bool = False) -> Self:
+    def ones_like(
+        other: Self,
+        requires_grad: bool = False,
+        is_leaf: bool = True
+    ) -> Self:
         return Tensor(
             data=np.ones_like(other.data),
-            requires_grad=requires_grad
+            requires_grad=requires_grad,
+            is_leaf=is_leaf
         )
 
 
@@ -59,30 +69,48 @@ class Tensor():
     def scalar_like(
         other: Self,
         value: numbers.Number,
-        requires_grad: bool = False
+        requires_grad: bool = False,
+        is_leaf: bool = True
     ) -> Self:
         return Tensor(
             data=np.ones_like(other.data) * value,
-            requires_grad=requires_grad
+            requires_grad=requires_grad,
+            is_leaf=is_leaf
         )
 
 
     @staticmethod
     def tensor(
         other: Self,
-        requires_grad: bool = False
+        requires_grad: bool = False,
+        is_leaf: bool = True
     ) -> Self:
-        return Tensor(data=other.data, requires_grad=requires_grad)
+        return Tensor(data=other.data, requires_grad=requires_grad, is_leaf=is_leaf)
 
 
     @staticmethod
     def from_numpy(
         data: np.array,
-        requires_grad: bool = False
+        requires_grad: bool = False,
+        is_leaf: bool = True
     ) -> Self:
         return Tensor(
             data=data,
-            requires_grad=requires_grad
+            requires_grad=requires_grad,
+            is_leaf=is_leaf
+        )
+
+
+    @staticmethod
+    def diag(
+        data: Union[np.array, List[numbers.Number], numbers.Number, Self],
+        requires_grad: bool = False,
+        is_leaf: bool = True
+    ):
+        return Tensor(
+            data=np.diag(data),
+            requires_grad=requires_grad,
+            is_leaf=is_leaf
         )
 
     # Methods
@@ -96,7 +124,7 @@ class Tensor():
     # Operands
 
     def __add__(self, other: Union[Self, numbers.Number]):
-        return add(self, other)
+        return methods.add(self, other)
 
 
     # Meta
