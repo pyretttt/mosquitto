@@ -65,14 +65,14 @@ def add(
 
 def make_add_backward(host: Tensor):
     def add_backward(chain_jacobian: Optional[Tensor]):
-        add_grad = tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
+        add_partial_wrt_to_host = tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
         return (
             matmul(
                 chain_jacobian,
-                add_grad
+                add_partial_wrt_to_host
             )
             if chain_jacobian is not None
-            else add_grad
+            else add_partial_wrt_to_host
         )
 
     return add_backward
