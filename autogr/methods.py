@@ -12,6 +12,22 @@ else:
 from grad import Variable, CompoundVariable
 
 
+# Reduction
+
+def mean(op1: Tensor, dim: int):
+    return tensor.Tensor(
+        data=np.mean(op1.data, axis=dim),
+        requires_grad=op1.requires_grad,
+        grad_fn=(
+            Variable
+            if op1.requires_grad
+            else None
+        )
+    )
+
+
+# Multiplication
+
 def matmul(
     op1: Tensor,
     op2: Tensor
@@ -64,6 +80,10 @@ def add(
 
 
 def make_add_backward(host: Tensor):
+    """
+    Maps op1.shape -> op1.shape
+    So jacobian has size (op1.shape, op1.shape)
+    """
     def add_backward(chain_jacobian: Optional[Tensor]):
         add_partial_wrt_to_host = tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
         return (
