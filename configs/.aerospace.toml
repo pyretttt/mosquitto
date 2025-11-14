@@ -224,3 +224,4 @@ automatically-unhide-macos-hidden-apps = false
 [[on-window-detected]]
     if.app-id = 'com.spotify.client'
     run = ['move-node-to-workspace 2']
+
