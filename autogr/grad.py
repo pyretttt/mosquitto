@@ -8,9 +8,9 @@ class Variable:
     Backwards whole computation graph.
     """
 
-    def __init__(self, argument, backward_method):
+    def __init__(self, wrt_argument, backward_method):
         self.backward_method = backward_method
-        self.argument = argument
+        self.wrt_argument = wrt_argument
 
 
     def backward(self, **params):
@@ -18,14 +18,14 @@ class Variable:
         jacobian_wrt_argument = self.backward_method(**params)
         assert jacobian_wrt_argument.requires_grad == False
         assert jacobian_wrt_argument.is_leaf == False
-        if self.argument.is_leaf:
+        if self.wrt_argument.is_leaf:
             # gradient accumulation
-            if self.argument.grad is not None:
-                self.argument.grad = self.argument.grad + jacobian_wrt_argument
+            if self.wrt_argument.grad is not None:
+                self.wrt_argument.grad = self.wrt_argument.grad + jacobian_wrt_argument
             else:
-                self.argument.grad = jacobian_wrt_argument
-        elif self.argument.grad_fn is not None and self.argument.requires_grad:
-            self.argument.grad_fn.backward(
+                self.wrt_argument.grad = jacobian_wrt_argument
+        elif self.wrt_argument.grad_fn is not None and self.wrt_argument.requires_grad:
+            self.wrt_argument.grad_fn.backward(
                 chain_jacobian=jacobian_wrt_argument
             )
         else:

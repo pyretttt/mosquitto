@@ -55,7 +55,7 @@ def add(
             data=op1.data + op2,
             requires_grad=op1.requires_grad,
             grad_fn=(
-                Variable(argument=op1, backward_method=make_add_backward(host=op1))
+                Variable(wrt_argument=op1, backward_method=make_add_backward(wrt_host=op1))
                 if op1.requires_grad
                 else None
             ),
@@ -69,8 +69,8 @@ def add(
         requires_grad=op1.requires_grad or op2.requires_grad,
         grad_fn=(
             CompoundVariable(
-                Variable(op1, backward_method=make_add_backward(host=op1)),
-                Variable(op2, backward_method=make_add_backward(host=op2)),
+                Variable(wrt_argument=op1, backward_method=make_add_backward(wrt_host=op1)),
+                Variable(wrt_argument=op2, backward_method=make_add_backward(wrt_host=op2)),
             )
             if req_grad
             else None
@@ -79,13 +79,13 @@ def add(
     )
 
 
-def make_add_backward(host: Tensor):
+def make_add_backward(wrt_host: Tensor):
     """
     Maps op1.shape -> op1.shape
     So jacobian has size (op1.shape, op1.shape)
     """
     def add_backward(chain_jacobian: Optional[Tensor]):
-        add_partial_wrt_to_host = tensor.Tensor.diag(np.ones(shape=(len(host.data))), is_leaf=False)
+        add_partial_wrt_to_host = tensor.Tensor.diag(np.ones(shape=(len(wrt_host.data))), is_leaf=False)
         return (
             matmul(
                 chain_jacobian,
