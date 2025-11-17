@@ -38,6 +38,14 @@ class Tensor():
             is_leaf=self.is_leaf
         )
 
+
+    def dim(self) -> int:
+        return len(self.shape)
+
+    @property
+    def size(self) -> int:
+        return self.data.size
+
     @property
     def shape(self):
         return self.data.shape
@@ -123,6 +131,8 @@ class Tensor():
     def backward(self):
         if self.grad_fn is None:
             raise RuntimeError("backward is called when gradient is not computed")
+        if self.dim() != 0:
+            raise RuntimeError("backward should be computed for scalar outputs")
         self.grad_fn.backward(chain_jacobian=None)
 
 
@@ -131,6 +141,9 @@ class Tensor():
     def __add__(self, other: Union[Self, numbers.Number]):
         return methods.add(self, other)
 
+
+    def mean(self):
+        return methods.mean(op1=self, dim=0)
 
     # Meta
 
