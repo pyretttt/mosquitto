@@ -1,129 +1,3 @@
-# from typing import Optional, List, Tuple
-# from argparse import ArgumentParser
-# from enum import Enum
-
-# import cv2 as cv
-# import numpy as np
-
-
-# class State(Enum):
-#     recording1 = 0
-#     snapping = 1
-#     recording2 = 2
-
-# state = State.recording1
-# min_x: Optional[int] = None
-# min_y: Optional[int] = None
-# max_x: Optional[int] = None
-# max_y: Optional[int] = None
-# lines: List[Tuple[int, ...]] = []
-
-
-# def mouse_cb(event, x, y, flags, param):
-#     global state, min_x, min_y, max_x, max_y
-
-#     if state == State.recording2:
-#         return
-
-#     if event == cv.EVENT_LBUTTONDOWN:
-#         state = State.snapping
-#         min_x = max_x = x
-#         min_y = max_y = y
-#     elif event == cv.EVENT_MOUSEMOVE and state == State.snapping:
-
-#         max_x = max(min_x, x)
-#         max_y = max(min_y, y)
-#     elif event == cv.EVENT_LBUTTONUP and state == State.snapping:
-#         state = State.recording2
-
-
-# def main(args):
-#     global state, min_x, min_y, max_x, max_y
-#     cap = cv.VideoCapture(0)
-#     if not cap.isOpened():
-#         return print("failed to start webcam")
-#     ret, frame = cap.read()
-#     if not ret:
-#         return print("failed to read from camera")
-#     height, width = frame.shape[:2]
-
-#     window_name = "1x2 Video Grid"
-#     cv.namedWindow(window_name)
-#     cv.setMouseCallback(window_name, mouse_cb)
-
-#     snapshot = None
-#     canvas = np.zeros((height, width * 2, 3), dtype=np.uint8)
-#     while True:
-#         if state == State.recording1 or state == State.recording2:
-#             ret, frame = cap.read()
-#             if not ret:
-#                 break
-#             frame = (
-#                 cv.flip(frame, flipCode=1)
-#                 if args.flip
-#                 else frame
-#             )
-#         else:
-#             snapshot = (
-#                 cv.flip(frame, flipCode=1)
-#                 if args.flip
-#                 else frame
-#             )
-
-
-#         if state == State.recording1 or state == State.snapping:
-#             canvas[:height, :width, :] = frame
-#             cv.putText(
-#                 canvas,
-#                 "Click and move mouse to select region of interest",
-#                 (10, height-10),
-#                 cv.FONT_HERSHEY_SIMPLEX,
-#                 0.5,
-#                 (255, 255, 255),
-#                 1,
-#                 cv.LINE_AA
-#             )
-#         elif state == State.recording2:
-#             canvas[:height, :width, :] = snapshot
-#             canvas[:height, width:, :] = frame
-
-#         if min_x is not None:
-#             rect_min_x = max(min_x, 0)
-#             rect_min_y = max(min_y, 0)
-#             rect_max_x = min(max_x, width - 1)
-#             rect_max_y = min(max_y, height - 1)
-#             canvas = cv.rectangle(
-#                 canvas,
-#                 pt1=(rect_min_x, rect_min_y),
-#                 pt2=(rect_max_x, rect_max_y),
-#                 color=(255, 255, 255),
-#                 thickness=1
-#             )
-
-#         cv.imshow(window_name, canvas)
-#         key = cv.waitKey(40) & 0xFF
-#         if key == 27:
-#             break
-
-#     cap.release()
-#     cv.destroyAllWindows()
-
-
-# if __name__ == "__main__":
-#     argparse = ArgumentParser()
-#     argparse.add_argument(
-#         "--alg_name",
-#         choices=["hog", "harris", "sift", "surf", "orb"],
-#         default="hog"
-#     )
-#     argparse.add_argument(
-#         "--flip",
-#         default=False
-#     )
-
-#     args = argparse.parse_args()
-#     main(args)
-
 from typing import Optional
 from argparse import ArgumentParser
 from enum import Enum
@@ -135,6 +9,28 @@ import numpy as np
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
+
+
+class Matcher:
+    def __init__(self, alg: str, matcher):
+        if alg == "hog":
+            pass
+        elif alg == "harris":
+            pass
+        elif alg == "sift":
+            pass
+        elif alg == "surf":
+            pass
+        elif alg == "orb":
+            pass
+
+    def build_kp1(self, img):
+        gray = np.float32(cv.cvtColor(img,cv.COLOR_BGR2GRAY))
+        corners = cv.cornerHarris(gray, blockSize=2, ksize=3, k=0.04)
+        corners = cv.dilate(corners)
+
+
+
 
 
 class State(Enum):
@@ -275,9 +171,6 @@ class AppLogic:
             )
 
         elif self.state == State.recording2:
-            # Left cell: snapshot from snapping
-            if self.snapshot is None:
-                self.snapshot = frame.copy()
             self.canvas[:self.height, :self.width, :] = self.snapshot
             # Right cell: live video
             self.canvas[:self.height, self.width:, :] = frame
@@ -293,8 +186,6 @@ class AppLogic:
             rect_min_y = max(min_y, 0)
             rect_max_x = min(max_x, self.width - 1)
             rect_max_y = min(max_y, self.height - 1)
-
-            print(rect_min_x, rect_min_y)
 
             cv.rectangle(
                 self.canvas,
@@ -374,7 +265,12 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--flip",
-        action="store_true",  # better than default=False
+        action="store_true",
+    )
+    parser.add_argument(
+        "--matcher",
+        choices=["bf", "flann"],
+        default="bf"
     )
 
     args = parser.parse_args()
