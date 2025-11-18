@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 from argparse import ArgumentParser
 from enum import Enum
 import sys
@@ -11,23 +11,51 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
 
 
+
 class Matcher:
-    def __init__(self, alg: str, matcher):
+    def __init__(self, alg: str):
+        FLANN_INDEX_KDTREE = 1
+        index_params: dict[str, Union[bool, int, float, str]] = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        search_params: dict[str, Union[bool, int, float, str]] = dict(checks=50)
+        self.matcher = cv.FlannBasedMatcher(indexParams=index_params, searchParams=search_params)
         if alg == "hog":
             pass
         elif alg == "harris":
             pass
         elif alg == "sift":
-            pass
+            sift = cv.SIFT_create()
+            self.detect_and_compute = sift.detectAndCompute
         elif alg == "surf":
             pass
         elif alg == "orb":
             pass
 
-    def build_kp1(self, img):
-        gray = np.float32(cv.cvtColor(img,cv.COLOR_BGR2GRAY))
-        corners = cv.cornerHarris(gray, blockSize=2, ksize=3, k=0.04)
-        corners = cv.dilate(corners)
+    def match_lines(self, im1, im2, roi):
+        im1 = cv.cvtColor(im1, cv.COLOR_BGR2GRAY)
+        im2 = cv.cvtColor(im2, cv.COLOR_BGR2GRAY)
+        mask = np.zeros_like(im1)
+        mask[roi[1]: roi[3], roi[0]:roi[2]] = True
+
+        kp1, desc1 = self.detect_and_compute(im1, mask)
+        kp2, desc2 = self.detect_and_compute(im2, None)
+
+        matches = self.matcher.knnMatch(desc1, desc2, k=2)
+        keep_matches = []
+        for nn, snn in matches:
+            assert nn.queryIdx == snn.queryIdx
+            if nn.distance < 0.7 * snn.distance:
+                keep_matches.append(nn)
+
+
+        lines = []
+        for match in keep_matches:
+            template_kp = kp1[match.queryIdx]
+            matched_kp = kp2[match.trainIdx]
+            matched_x, matched_y = matched_kp.pt
+            matched_x += im1.shape[-1]
+            line = (int(template_kp.pt[0]), int(template_kp.pt[1]), int(matched_x), int(matched_y))
+            lines.append(line)
+        return lines
 
 
 
@@ -73,6 +101,7 @@ class AppLogic:
     def __init__(self, args, video_widget: VideoWidget):
         self.args = args
         self.video_widget = video_widget
+        self.matcher = Matcher(alg=args.alg_name)
 
         self.state = State.recording1
 
@@ -196,6 +225,20 @@ class AppLogic:
                 lineType=cv.LINE_AA,
             )
 
+            if self.state == State.recording2:
+                matched_lines = self.matcher.match_lines(self.snapshot, frame, roi=(rect_min_x, rect_min_y, rect_max_x, rect_max_y))
+                colors = np.random.randint(0, 256, size=(len(matched_lines), 3), dtype=np.uint8)
+                for i, line in enumerate(matched_lines):
+                    cv.line(
+                        self.canvas,
+                        pt1=(line[0], line[1]),
+                        pt2=(line[2], line[3]),
+                        color=colors[i].tolist(),
+                        thickness=1,
+                        lineType=cv.LINE_AA
+                    )
+
+
         # Convert canvas (BGR) → QImage (RGB)
         rgb = cv.cvtColor(self.canvas, cv.COLOR_BGR2RGB)
         self._last_rgb = rgb  # keep ref so QImage memory stays valid
@@ -261,7 +304,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--alg_name",
         choices=["hog", "harris", "sift", "surf", "orb"],
-        default="hog",
+        default="sift",
     )
     parser.add_argument(
         "--flip",
