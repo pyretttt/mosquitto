@@ -11,6 +11,7 @@ from PyQt5.QtGui import QImage, QPixmap
 from PyQt5.QtWidgets import QApplication, QLabel, QMainWindow
 
 
+colors = np.random.randint(0, 256, size=(1024, 3), dtype=np.uint8)
 
 class Matcher:
     def __init__(self, alg: str):
@@ -26,6 +27,7 @@ class Matcher:
             sift = cv.SIFT_create()
             self.detect_and_compute = sift.detectAndCompute
         elif alg == "surf":
+            # Non free
             pass
         elif alg == "orb":
             pass
@@ -227,7 +229,6 @@ class AppLogic:
 
             if self.state == State.recording2:
                 matched_lines = self.matcher.match_lines(self.snapshot, frame, roi=(rect_min_x, rect_min_y, rect_max_x, rect_max_y))
-                colors = np.random.randint(0, 256, size=(len(matched_lines), 3), dtype=np.uint8)
                 for i, line in enumerate(matched_lines):
                     cv.line(
                         self.canvas,
