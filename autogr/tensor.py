@@ -145,6 +145,10 @@ class Tensor():
     def mean(self):
         return methods.mean(op1=self, dim=0)
 
+
+    def matmul(self, op2: Self):
+        return methods.matmul(op1=self, op2=op2)
+
     # Meta
 
     def __repr__(self):

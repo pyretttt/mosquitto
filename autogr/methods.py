@@ -11,6 +11,10 @@ else:
     import tensor
 from grad import Variable, CompoundVariable
 
+WRT_DIFF_TEXT = "Multidimensional Valued function should be differentiated w.r.t scalar"
+
+def ascii_uppercase_prefix(len: int) -> str:
+    return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:len]
 
 # Reduction
 
@@ -36,8 +40,9 @@ def make_mean_backward(wrt_host: Tensor):
             is_leaf=False
         )
         dldx = (
+            # chain jacobian is just scalar w.r.t. L
             tensor.Tensor.from_numpy(
-                np.einsum("i,...i->...i", chain_jacobian, mean_partial_wrt_to_host),
+                mean_partial_wrt_to_host.data * chain_jacobian.data,
                 is_leaf=False
             )
             if chain_jacobian is not None
@@ -53,17 +58,69 @@ def matmul(
     op1: Tensor,
     op2: Tensor
 ):
+    """
+    Broadcasted over `...` for shapes `...ij`, `...jk`
+    """
+    assert op1.dim() >= op2.dim(), "Not supported"
     requires_grad = op1.requires_grad or op2.requires_grad
     return tensor.Tensor(
-        data=op1.data @ op2.data,
+        data=np.matmul(op1.data, op2.data),
         requires_grad=requires_grad,
         grad_fn=(
-            Variable(make_add_backward())
+            CompoundVariable(
+                *list(filter(
+                    lambda x: x is not None,
+                    [
+                        (
+                            Variable(
+                                wrt_argument=op1,
+                                backward_method=make_matmul_backward(wrt_host=op1, op2=op2, left_multiply=True)
+                            )
+                            if op1.requires_grad
+                            else None
+                        ),
+                        (
+                            Variable(
+                                wrt_argument=op2,
+                                backward_method=make_matmul_backward(wrt_host=op2, op2=op1, left_multiply=False)
+                            )
+                            if op2.requires_grad
+                            else None
+                        )
+                    ]
+                ))
+            )
             if requires_grad
             else None
         ),
         is_leaf=False
     )
+
+def make_matmul_backward(wrt_host: Tensor, op2: Tensor, left_multiply: bool):
+    def matmul_backward(chain_jacobian: Optional[Tensor]):
+        assert chain_jacobian is not None, WRT_DIFF_TEXT
+        if left_multiply:
+            # For now I assume that it's ...jk data matrix
+            return tensor.Tensor.from_numpy(
+                # Should work for most broadcasting's
+                data=np.einsum("...ij,...jk->...ik", chain_jacobian.data, op2.data.T),
+                is_leaf=False
+            )
+        else:
+            einsum_prefix_for_summ_indices = ascii_uppercase_prefix(len=op2.dim() - wrt_host.dim())
+            # For now I assume that it's 2x2 matrix weights
+            return tensor.Tensor.from_numpy(
+                # Should work for most broadcasting's
+                data=np.einsum(
+                    f"{einsum_prefix_for_summ_indices}pj,{einsum_prefix_for_summ_indices}jq->pq",
+                    np.swapaxes(op2.data, -1, -2),
+                    chain_jacobian.data
+                ),
+                is_leaf=False
+            )
+
+    return matmul_backward
+
 
 # Add
 
@@ -105,16 +162,13 @@ def make_add_backward(wrt_host: Tensor):
     Maps op1.shape -> op1.shape
     So jacobian has size (op1.shape, op1.shape)
     """
-    def add_backward(chain_jacobian: Optional[Tensor]):
+    def add_backward(chain_jacobian: Optional[Tensor]) -> Tensor:
+        assert chain_jacobian is not None, WRT_DIFF_TEXT
         add_partial_wrt_to_host = tensor.Tensor.from_numpy(np.ones_like(wrt_host.data), is_leaf=False)
-        dldx = (
-            tensor.Tensor.from_numpy(
-                # elementwise multiplication with ones, can actually be just chain_jacobian.data
-                data=np.einsum("...,...->...", chain_jacobian.data, add_partial_wrt_to_host.data),
-                is_leaf=False
-            )
-            if chain_jacobian is not None
-            else add_partial_wrt_to_host
+        dldx = tensor.Tensor.from_numpy(
+            # elementwise multiplication with ones, can actually be just chain_jacobian.data
+            data=np.einsum("...,...->...", chain_jacobian.data, add_partial_wrt_to_host.data),
+            is_leaf=False
         )
         return dldx
 
