@@ -9,12 +9,7 @@ if TYPE_CHECKING:
     from tensor import Tensor
 else:
     import tensor
-from grad import Variable, CompoundVariable, make_compound_variable
-
-WRT_DIFF_TEXT = "Multidimensional Valued function should be differentiated w.r.t scalar"
-
-def ascii_uppercase_prefix(len: int) -> str:
-    return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:len]
+from grad import Variable, make_compound_variable, make_elementwise_einsum_notation, ascii_uppercase_prefix, assert_dldy
 
 # Reduction
 
@@ -28,7 +23,8 @@ def mean(op1: Tensor, dim: int):
             Variable(wrt_argument=op1, backward_method=make_mean_backward(wrt_host=op1))
             if op1.requires_grad
             else None
-        )
+        ),
+        is_leaf=False
     )
 
 
@@ -80,8 +76,8 @@ def matmul(
     )
 
 def make_matmul_backward(wrt_host: Tensor, op2: Tensor, left_multiply: bool):
+    @assert_dldy
     def matmul_backward(chain_jacobian: Optional[Tensor]):
-        assert chain_jacobian is not None, WRT_DIFF_TEXT
         if left_multiply:
             # For now I assume that it's ...jk data matrix
             return tensor.Tensor.from_numpy(
@@ -147,12 +143,12 @@ def make_add_backward(wrt_host: Tensor):
     Maps op1.shape -> op1.shape
     So jacobian has size (op1.shape, op1.shape)
     """
+    @assert_dldy
     def add_backward(chain_jacobian: Optional[Tensor]) -> Tensor:
-        assert chain_jacobian is not None, WRT_DIFF_TEXT
         add_partial_wrt_to_host = tensor.Tensor.from_numpy(np.ones_like(wrt_host.data), is_leaf=False)
         dldx = tensor.Tensor.from_numpy(
             # elementwise multiplication with ones, can actually be just chain_jacobian.data
-            data=np.einsum("...,...->...", chain_jacobian.data, add_partial_wrt_to_host.data),
+            data=np.einsum(make_elementwise_einsum_notation(), chain_jacobian.data, add_partial_wrt_to_host.data),
             is_leaf=False
         )
         return dldx

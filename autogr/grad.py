@@ -1,4 +1,22 @@
 from typing import Callable, Union, TypeVar
+from functools import wraps
+
+
+def ascii_uppercase_prefix(len: int) -> str:
+    return "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[:len]
+
+
+def make_elementwise_einsum_notation() -> str:
+    return "...,...->..."
+
+
+def assert_dldy(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        assert kwargs["chain_jacobian"] is not None, "Multidimensional Valued function should be differentiated w.r.t scalar"
+        return fn(*args, **kwargs)
+    return wrapper
+
 
 
 class Variable:
