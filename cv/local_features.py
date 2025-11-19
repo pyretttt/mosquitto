@@ -45,7 +45,7 @@ class Matcher:
             search_params = dict(checks=50)
             self.matcher = cv.FlannBasedMatcher(index_params, search_params)
 
-            orb = cv.ORB_create(nfeatures=512, scaleFactor=1.2, nlevels=8)
+            orb = cv.ORB_create()
             self.detect_and_compute = orb.detectAndCompute
 
 
