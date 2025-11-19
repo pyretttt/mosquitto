@@ -15,22 +15,39 @@ colors = np.random.randint(0, 256, size=(1024, 3), dtype=np.uint8)
 
 class Matcher:
     def __init__(self, alg: str):
-        FLANN_INDEX_KDTREE = 1
-        index_params: dict[str, Union[bool, int, float, str]] = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
-        search_params: dict[str, Union[bool, int, float, str]] = dict(checks=50)
-        self.matcher = cv.FlannBasedMatcher(indexParams=index_params, searchParams=search_params)
+        self.alg = alg
+        # FLANN_INDEX_KDTREE = 1
+        # index_params: dict[str, Union[bool, int, float, str]] = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+        # search_params: dict[str, Union[bool, int, float, str]] = dict(checks=50)
+        # self.matcher = cv.FlannBasedMatcher(indexParams=index_params, searchParams=search_params)
+        # self.bf = cv.BFMatcher(cv.NORM_HAMMING, crossCheck=True)
         if alg == "hog":
             pass
         elif alg == "harris":
             pass
         elif alg == "sift":
+            FLANN_INDEX_KDTREE = 1
+            index_params: dict[str, Union[bool, int, float, str]] = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
+            search_params: dict[str, Union[bool, int, float, str]] = dict(checks=50)
+            self.matcher = cv.FlannBasedMatcher(indexParams=index_params, searchParams=search_params)
+
             sift = cv.SIFT_create()
             self.detect_and_compute = sift.detectAndCompute
         elif alg == "surf":
             # Non free
             pass
         elif alg == "orb":
-            pass
+            FLANN_INDEX_LSH = 6
+            index_params = dict(algorithm=FLANN_INDEX_LSH,
+                                table_number=6,      # 12 is good, 6 is faster
+                                key_size=12,         # was 20 in many examples
+                                multi_probe_level=1) # 1–2 is typical
+            search_params = dict(checks=50)
+            self.matcher = cv.FlannBasedMatcher(index_params, search_params)
+
+            orb = cv.ORB_create(nfeatures=512, scaleFactor=1.2, nlevels=8)
+            self.detect_and_compute = orb.detectAndCompute
+
 
     def match_lines(self, im1, im2, roi):
         im1 = cv.cvtColor(im1, cv.COLOR_BGR2GRAY)
@@ -41,12 +58,19 @@ class Matcher:
         kp1, desc1 = self.detect_and_compute(im1, mask)
         kp2, desc2 = self.detect_and_compute(im2, None)
 
+        # if self.alg == "sift":
         matches = self.matcher.knnMatch(desc1, desc2, k=2)
         keep_matches = []
+        matches = list(filter(lambda elem: len(elem) == 2, matches))
         for nn, snn in matches:
             assert nn.queryIdx == snn.queryIdx
             if nn.distance < 0.7 * snn.distance:
                 keep_matches.append(nn)
+        # elif self.alg == "orb":
+        #     matches = self.bf.match(desc1, desc2)
+        #     print("matches: ", matches)
+        #     matches = sorted(matches, key=lambda x: x.distance)
+        #     keep_matches = matches
 
 
         lines = []
