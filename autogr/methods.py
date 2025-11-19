@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from tensor import Tensor
 else:
     import tensor
-from grad import Variable, CompoundVariable
+from grad import Variable, CompoundVariable, make_compound_variable
 
 WRT_DIFF_TEXT = "Multidimensional Valued function should be differentiated w.r.t scalar"
 
@@ -67,28 +67,11 @@ def matmul(
         data=np.matmul(op1.data, op2.data),
         requires_grad=requires_grad,
         grad_fn=(
-            CompoundVariable(
-                *list(filter(
-                    lambda x: x is not None,
-                    [
-                        (
-                            Variable(
-                                wrt_argument=op1,
-                                backward_method=make_matmul_backward(wrt_host=op1, op2=op2, left_multiply=True)
-                            )
-                            if op1.requires_grad
-                            else None
-                        ),
-                        (
-                            Variable(
-                                wrt_argument=op2,
-                                backward_method=make_matmul_backward(wrt_host=op2, op2=op1, left_multiply=False)
-                            )
-                            if op2.requires_grad
-                            else None
-                        )
-                    ]
-                ))
+            make_compound_variable(
+                zip(
+                    [op1, op2],
+                    [make_matmul_backward(wrt_host=op1, op2=op2, left_multiply=True), make_matmul_backward(wrt_host=op2, op2=op1, left_multiply=False)]
+                )
             )
             if requires_grad
             else None
@@ -146,9 +129,11 @@ def add(
         data=op1.data + op2.data,
         requires_grad=op1.requires_grad or op2.requires_grad,
         grad_fn=(
-            CompoundVariable(
-                Variable(wrt_argument=op1, backward_method=make_add_backward(wrt_host=op1)),
-                Variable(wrt_argument=op2, backward_method=make_add_backward(wrt_host=op2)),
+            make_compound_variable(
+                zip(
+                    [op1, op2],
+                    [make_add_backward(wrt_host=op1), make_add_backward(wrt_host=op2)]
+                )
             )
             if req_grad
             else None

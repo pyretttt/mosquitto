@@ -44,3 +44,25 @@ class CompoundVariable:
     def backward(self, **params):
         for variable in self.variables:
             variable.backward(**params)
+
+
+
+def make_compound_variable(wrts_with_backwards: list):
+    variables = list(filter(
+        lambda x: x is not None,
+        [
+            (
+                Variable(
+                    wrt_argument=op,
+                    backward_method=backward_method
+                )
+                if op.requires_grad and backward_method is not None
+                else None
+            )
+            for op, backward_method in wrts_with_backwards
+        ]
+    ))
+    if not len(variables):
+        raise RuntimeError("Wrong backward chain")
+
+    return CompoundVariable(*variables)
