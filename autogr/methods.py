@@ -20,7 +20,7 @@ def mean(op1: Tensor, dim: int):
         data=output,
         requires_grad=op1.requires_grad,
         grad_fn=(
-            Variable(wrt_argument=op1, backward_method=make_mean_backward(wrt_host=op1))
+            Variable(wrt_argument=op1, backward_method=make_mean_backward(wrt_argument=op1))
             if op1.requires_grad
             else None
         ),
@@ -28,21 +28,21 @@ def mean(op1: Tensor, dim: int):
     )
 
 
-def make_mean_backward(wrt_host: Tensor):
+def make_mean_backward(wrt_argument: Tensor):
     def mean_backward(chain_jacobian: Optional[Tensor]) -> Tensor:
-        mean_partial_wrt_to_host = tensor.Tensor.scalar_like(
-            wrt_host.data,
-            value=1.0 / wrt_host.data.size,
+        mean_partial_wrt_argument = tensor.Tensor.scalar_like(
+            wrt_argument.data,
+            value=1.0 / wrt_argument.data.size,
             is_leaf=False
         )
         dldx = (
             # chain jacobian is just scalar w.r.t. L
             tensor.Tensor.from_numpy(
-                mean_partial_wrt_to_host.data * chain_jacobian.data,
+                mean_partial_wrt_argument.data * chain_jacobian.data,
                 is_leaf=False
             )
             if chain_jacobian is not None
-            else mean_partial_wrt_to_host
+            else mean_partial_wrt_argument
         )
         return dldx
 
@@ -66,7 +66,7 @@ def matmul(
             make_compound_variable(
                 zip(
                     [op1, op2],
-                    [make_matmul_backward(wrt_host=op1, op2=op2, left_multiply=True), make_matmul_backward(wrt_host=op2, op2=op1, left_multiply=False)]
+                    [make_matmul_backward(wrt_argument=op1, op2=op2, left_multiply=True), make_matmul_backward(wrt_argument=op2, op2=op1, left_multiply=False)]
                 )
             )
             if requires_grad
@@ -75,7 +75,7 @@ def matmul(
         is_leaf=False
     )
 
-def make_matmul_backward(wrt_host: Tensor, op2: Tensor, left_multiply: bool):
+def make_matmul_backward(wrt_argument: Tensor, op2: Tensor, left_multiply: bool):
     @assert_dldy
     def matmul_backward(chain_jacobian: Optional[Tensor]):
         if left_multiply:
@@ -86,7 +86,7 @@ def make_matmul_backward(wrt_host: Tensor, op2: Tensor, left_multiply: bool):
                 is_leaf=False
             )
         else:
-            einsum_prefix_for_summ_indices = ascii_uppercase_prefix(len=op2.dim() - wrt_host.dim())
+            einsum_prefix_for_summ_indices = ascii_uppercase_prefix(len=op2.dim() - wrt_argument.dim())
             # For now I assume that it's 2x2 matrix weights
             return tensor.Tensor.from_numpy(
                 # Should work for most broadcasting's
@@ -112,7 +112,7 @@ def add(
             data=op1.data + op2,
             requires_grad=op1.requires_grad,
             grad_fn=(
-                Variable(wrt_argument=op1, backward_method=make_add_backward(wrt_host=op1))
+                Variable(wrt_argument=op1, backward_method=make_add_backward(wrt_argument=op1))
                 if op1.requires_grad
                 else None
             ),
@@ -128,7 +128,7 @@ def add(
             make_compound_variable(
                 zip(
                     [op1, op2],
-                    [make_add_backward(wrt_host=op1), make_add_backward(wrt_host=op2)]
+                    [make_add_backward(wrt_argument=op1), make_add_backward(wrt_argument=op2)]
                 )
             )
             if req_grad
@@ -138,17 +138,17 @@ def add(
     )
 
 
-def make_add_backward(wrt_host: Tensor):
+def make_add_backward(wrt_argument: Tensor):
     """
     Maps op1.shape -> op1.shape
     So jacobian has size (op1.shape, op1.shape)
     """
     @assert_dldy
     def add_backward(chain_jacobian: Optional[Tensor]) -> Tensor:
-        add_partial_wrt_to_host = tensor.Tensor.from_numpy(np.ones_like(wrt_host.data), is_leaf=False)
+        add_partial_wrt_argument = tensor.Tensor.from_numpy(np.ones_like(wrt_argument.data), is_leaf=False)
         dldx = tensor.Tensor.from_numpy(
             # elementwise multiplication with ones, can actually be just chain_jacobian.data
-            data=np.einsum(make_elementwise_einsum_notation(), chain_jacobian.data, add_partial_wrt_to_host.data),
+            data=np.einsum(make_elementwise_einsum_notation(), chain_jacobian.data, add_partial_wrt_argument.data),
             is_leaf=False
         )
         return dldx

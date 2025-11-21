@@ -13,7 +13,7 @@ def sin(tensor: Tensor, /) -> Tensor:
         grad_fn=(
             Variable(
                 wrt_argument=tensor,
-                backward_method=make_sin_backward(wrt_host=tensor)
+                backward_method=make_sin_backward(wrt_argument=tensor)
             )
             if tensor.requires_grad
             else None
@@ -22,11 +22,11 @@ def sin(tensor: Tensor, /) -> Tensor:
     )
 
 
-def make_sin_backward(wrt_host: Tensor):
+def make_sin_backward(wrt_argument: Tensor):
     @assert_dldy
     def sin_backward(chain_jacobian: Optional[Tensor]) -> Tensor:
         return Tensor.from_numpy(
-            data=chain_jacobian.data * np.cos(wrt_host.data),
+            data=chain_jacobian.data * np.cos(wrt_argument.data),
             is_leaf=False
         )
 
@@ -43,7 +43,7 @@ def relu(tensor: Tensor, /) -> Tensor:
         grad_fn=(
             Variable(
                 wrt_argument=tensor,
-                backward_method=make_relu_backward(wrt_host=tensor, mask=mask)
+                backward_method=make_relu_backward(wrt_argument=tensor, mask=mask)
             )
             if tensor.requires_grad
             else None
@@ -52,7 +52,7 @@ def relu(tensor: Tensor, /) -> Tensor:
     )
 
 
-def make_relu_backward(wrt_host: Tensor, mask: np.ndarray):
+def make_relu_backward(wrt_argument: Tensor, mask: np.ndarray):
     @assert_dldy
     def relu_backward(chain_jacobian: Optional[Tensor]):
         return Tensor.from_numpy(
