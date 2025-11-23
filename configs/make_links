@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
+ln -s $SCRIPT_DIR/aerospace/.aerospace.toml ~/.aerospace.toml
+ln -s $SCRIPT_DIR/tmux/.tmux.conf ~/.tmux.conf
