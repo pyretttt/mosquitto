@@ -10,8 +10,8 @@ from scratchers.transformer.attn import Attention
 from scratchers.positional_embeddings import PositionalEmbeddings
 
 def forward_attention(
-    queries: torch.Tensor, 
-    keys: torch.Tensor, 
+    queries: torch.Tensor,
+    keys: torch.Tensor,
     values: torch.Tensor,
     projection: nn.Linear,
     dropout: float,
@@ -41,12 +41,13 @@ class Transformer(nn.Module):
         self.linear_projector2 = nn.Linear(config.attn_d_k, config.input_size)
         self.encoder = TransformerEncoder(config)
         self.decoder = TransformerDecoder(config)
-   
+
     @staticmethod
     def self_attn_mask(shape: tuple[int], device='cpu'):
         return torch.tril(
             torch.ones(shape[-2:], device=device)
         ).view(*shape)
+
 
     def forward(
         self,
@@ -79,14 +80,14 @@ class TransformerDecoder(nn.Module):
     def forward(
         self,
         x: torch.Tensor,
-        memory: torch.Tensor, 
+        memory: torch.Tensor,
         src_mask: torch.Tensor,
         memory_mask: torch.Tensor
     ):
         for block in self.blocks:
             x = block(
-                x, 
-                memory, 
+                x,
+                memory,
                 src_mask,
                 memory_mask
             )
@@ -132,16 +133,16 @@ class TransformerDecoderLayer(nn.Module):
         self.layer_norm3 = nn.LayerNorm(config.attn_d_k)
 
     def forward(
-        self, 
+        self,
         x: torch.Tensor,
-        memory: torch.Tensor, 
+        memory: torch.Tensor,
         src_mask: torch.Tensor,
         memory_mask: torch.Tensor
     ):
         x = x + self.attention(self.layer_norm1(x), mask=src_mask, cache=None)
         x = x + forward_attention(
             self.cross_attention_queries(self.layer_norm2(x)),
-            self.cross_attention_keys(memory), 
+            self.cross_attention_keys(memory),
             self.cross_attention_values(memory),
             self.cross_attention_projection,
             self.dropout,
@@ -149,7 +150,7 @@ class TransformerDecoderLayer(nn.Module):
         )
         x = x + self.ffn(self.layer_norm3(x))
         return x
-        
+
 
 class TransformerEncoderLayer(nn.Module):
     def __init__(self, config: TransformerConfig):
@@ -166,7 +167,7 @@ class TransformerEncoderLayer(nn.Module):
             nn.Dropout(config.dropout)
         )
         self.layer_norm2 = nn.LayerNorm(config.attn_d_k)
-    
+
     def forward(self, x: torch.Tensor, mask: torch.Tensor):
         x = x + self.attention(self.layer_norm1(x), mask=mask, cache=None)
         x = x + self.ffn(self.layer_norm2(x))
