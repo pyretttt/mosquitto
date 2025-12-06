@@ -1,6 +1,6 @@
 dataset_params:
-  train_im_sets: ['data/VOC2007', 'data/VOC2012']
-  test_im_sets: ['data/VOC2007-test']
+  train_im_sets: ['/mnt/data_storage/datasets/DETR_VOC/VOCtrainval_06-Nov-2007/VOCdevkit/VOC2007/']
+  test_im_sets: ['/mnt/data_storage/datasets/DETR_VOC/VOCtest_06-Nov-2007/VOCdevkit/VOC2007/']
   num_classes : 21
   bg_class_idx : 0
   im_size : 640

@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "detr_fork"
+version = "0.1.0"
+description = ""
+authors = ["Woodraw Willson <percalee@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "3.10.12"
+einops = "0.8.0"
+opencv-python = "4.10.0.84"
+pillow = "10.4.0"
+PyYAML = "6.0.1"
+torch = ">=0.0.0"
+torchvision = ">=0.0.0"
+tqdm = "4.66.4"
+scipy = "1.14.1"
+
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
