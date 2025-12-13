@@ -1,6 +1,10 @@
 import torch
 from torch import nn
 import numpy as np
+import torchvision.models
+from torchvision.models import resnet34
+from collections import defaultdict
+
 
 def get_spatial_position_embedding(emb_dim, feat_map):
     H, W = feat_map.shape[2], feat_map.shape[3]
@@ -219,3 +223,97 @@ class TransformerDecoder(nn.Module):
             decoder_outputs.append(self.output_norm(out))
 
         return torch.stack(decoder_outputs), torch.stack(decoder_cross_attn_weight)
+
+
+class Detr(nn.Module):
+    def __init__(
+        self,
+        config,
+        num_classes: int,
+        bg_class_idx: int
+    ):
+        self.backbone_channels = config['backbone_channels']
+        self.d_model = config['d_model']
+        self.num_queries = config['num_queries']
+        self.num_classes = num_classes
+        self.num_decoder_layers = config['decoder_layers']
+        self.cls_cost_weight = config['cls_cost_weight']
+        self.l1_cost_weight = config['l1_cost_weight']
+        self.giou_cost_weight = config['giou_cost_weight']
+        self.bg_cls_weight = config['bg_class_weight']
+        self.nms_threshold = config['nms_threshold']
+        self.bg_class_idx = bg_class_idx
+        valid_bg_idx = (self.bg_class_idx == 0 or
+                        self.bg_class_idx == (self.num_classes-1))
+        assert valid_bg_idx, "Background can only be 0 or num_classes-1"
+
+        self.backbone = nn.Sequential(*list(resnet34(
+            weights=torchvision.models.ResNet34_Weights.IMAGENET1K_V1,
+            norm_layer=torchvision.ops.FrozenBatchNorm2d
+        ).children())[:-2])
+
+        if config["freeze_backbone"]:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+
+        self.backbone_proj = nn.Conv2d(
+            self.backbone_channels,
+            self.d_model,
+            kernel_size=1
+        )
+        self.encoder = TransformerEncoder(
+            num_layers=config['encoder_layers'],
+            num_heads=config['encoder_attn_heads'],
+            d_model=config['d_model'],
+            ff_inner_dim=config['ff_inner_dim'],
+            dropout_prob=config['dropout_prob']
+        )
+        self.decoder = TransformerDecoder(
+            num_layers=config['decoder_layers'],
+            num_heads=config['decoder_attn_heads'],
+            d_model=config['d_model'],
+            ff_inner_dim=config['ff_inner_dim'],
+            dropout_prob=config['dropout_prob']
+        )
+        self.query_embed = nn.Parameter(torch.randn(self.num_queries, self.d_model))
+        self.class_mlp = nn.Linear(self.d_model, self.num_classes)
+        self.bbox_mlp = nn.Sequential(
+            nn.Linear(self.d_model, self.d_model),
+            nn.ReLU(),
+            nn.Linear(self.d_model, self.d_model),
+            nn.ReLU(),
+            nn.Linear(self.d_model, 4),
+        )
+
+
+    def forward(self, x, targets=None, score_thresh=0, use_nms=False):
+        conv_out = self.backbone(x)
+        conv_out = self.backbone_proj(conv_out) # B, d_model, feat_h, feat_w
+        batch_size, d_model, feat_h, feat_w = conv_out.shape
+        pos_emb = get_spatial_position_embedding(
+            emb_dim=self.d_model, feat_map=conv_out
+        )
+        conv_out = (
+            conv_out.reshape(batch_size, d_model, feat_h * feat_w)
+            .transpose(1, 2)
+        ) # B, feat_h * feat_w, d_model
+        enc_output, enc_attn_weights = self.encoder(conv_out, pos_emb) # (B, feat_h * feat_w, d_model; num_layers, B, feat_h * feat_w, feat_h * feat_w)
+        query_objects = torch.zeros_like(
+            self.query_embed.unsqueeze(0)
+                .repeat((batch_size, 1, 1))
+        ) # B, num_queries, d_model
+
+        query_objects, decoder_attn_weights = self.decoder.forward(
+            query_objects=query_objects,
+            encoder_output=enc_output,
+            query_embedding=self.query_embed.unsqueeze(0).repeat((batch_size, 1, 1)),
+            pos_emb=pos_emb
+        )
+        cls_output = self.class_mlp(query_objects)
+        bbox_output = self.bbox_mlp(query_objects).sigmoid()
+
+        losses = defaultdict(list)
+        detections = []
+        detr_output = {}
+
+        
