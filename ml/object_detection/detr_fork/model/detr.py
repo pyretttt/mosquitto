@@ -5,6 +5,8 @@ from torchvision.models import resnet34
 from scipy.optimize import linear_sum_assignment
 from collections import defaultdict
 
+import ab
+
 
 def get_spatial_position_embedding(pos_emb_dim, feat_map):
     assert pos_emb_dim % 4 == 0, ('Position embedding dimension '
@@ -323,17 +325,40 @@ class DETR(nn.Module):
 
         self.backbone_proj = nn.Conv2d(self.backbone_channels, self.d_model,
                                        kernel_size=1)
-        self.encoder = TransformerEncoder(num_layers=config['encoder_layers'],
-                                          num_heads=config['encoder_attn_heads'],
-                                          d_model=config['d_model'],
-                                          ff_inner_dim=config['ff_inner_dim'],
-                                          dropout_prob=config['dropout_prob'])
+        if ab.AB.custom_encoder:
+            self.encoder = ab.TransformerEncoder(
+                num_layers=config['encoder_layers'],
+                num_heads=config['encoder_attn_heads'],
+                d_model=config['d_model'],
+                ff_inner_dim=config['ff_inner_dim'],
+                dropout_prob=config['dropout_prob']
+            )
+        else:
+            self.encoder = TransformerEncoder(
+                num_layers=config['encoder_layers'],
+                num_heads=config['encoder_attn_heads'],
+                d_model=config['d_model'],
+                ff_inner_dim=config['ff_inner_dim'],
+                dropout_prob=config['dropout_prob']
+            )
         self.query_embed = nn.Parameter(torch.randn(self.num_queries, self.d_model))
-        self.decoder = TransformerDecoder(num_layers=config['decoder_layers'],
-                                          num_heads=config['decoder_attn_heads'],
-                                          d_model=config['d_model'],
-                                          ff_inner_dim=config['ff_inner_dim'],
-                                          dropout_prob=config['dropout_prob'])
+
+        if ab.AB.custom_decoder:
+            self.decoder = ab.TransformerDecoder(
+                num_layers=config['decoder_layers'],
+                num_heads=config['decoder_attn_heads'],
+                d_model=config['d_model'],
+                ff_inner_dim=config['ff_inner_dim'],
+                dropout_prob=config['dropout_prob']
+            )
+        else:
+            self.decoder = TransformerDecoder(
+                num_layers=config['decoder_layers'],
+                num_heads=config['decoder_attn_heads'],
+                d_model=config['d_model'],
+                ff_inner_dim=config['ff_inner_dim'],
+                dropout_prob=config['dropout_prob']
+            )
         self.class_mlp = nn.Linear(self.d_model, self.num_classes)
         self.bbox_mlp = nn.Sequential(
             nn.Linear(self.d_model, self.d_model),
@@ -356,7 +381,10 @@ class DETR(nn.Module):
         conv_out = self.backbone_proj(conv_out)  # (B, d_model, feat_h, feat_w)
 
         batch_size, d_model, feat_h, feat_w = conv_out.shape
-        spatial_pos_embed = get_spatial_position_embedding(self.d_model, conv_out)
+        if ab.AB.custom_get_spatial_position_embedding:
+            spatial_pos_embed = ab.get_spatial_position_embedding(self.d_model, conv_out)
+        else:
+            spatial_pos_embed = get_spatial_position_embedding(self.d_model, conv_out)
         # spatial_pos_embed -> (feat_h * feat_w, d_model)
 
         conv_out = (conv_out.reshape(batch_size, d_model, feat_h * feat_w).
