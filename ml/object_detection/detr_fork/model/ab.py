@@ -19,7 +19,9 @@ def get_spatial_position_embedding(emb_dim, feat_map):
     vertical_indices = torch.arange(H, dtype=torch.float32, device=feat_map.device)
     horizontal_indices = torch.arange(W, dtype=torch.float32, device=feat_map.device)
     grid = torch.meshgrid(vertical_indices, horizontal_indices, indexing="ij") # (H,) (W,) -> (H, W), (H, W)
+	# grid[0] - all rows elements have same scalar, from 0 to H vertically
     grid_h = grid[0].reshape(-1).unsqueeze(1) # H * W, 1
+	# grid[1] - all cols elements have same scalar, from 0 to W horizontally
     grid_w = grid[1].reshape(-1).unsqueeze(1) # H * W, 1
     assert grid_h.shape == (H * W, 1) and grid_w.shape == (H * W, 1)
 
@@ -34,13 +36,13 @@ def get_spatial_position_embedding(emb_dim, feat_map):
     grid_w_emb = grid_w * factor # H * W, embed_dim // 4
     assert grid_h_emb.shape == grid_w_emb.shape and grid_h_emb.shape == (H * W, emb_dim // 4)
 
-    print(grid_h)
-
+	# for each `y` and `emb_dim` inside feature map contains sin and cosine
     pos_h = torch.cat([
         torch.sin(grid_h_emb),
         torch.cos(grid_h_emb)
     ], dim=-1) # H * W, embed_dim // 2
 
+	# for each `x` and `emb_dim` inside feature map contains sin and cosine
     pos_w = torch.cat([
         torch.sin(grid_w_emb),
         torch.cos(grid_w_emb)

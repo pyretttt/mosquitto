@@ -5,7 +5,7 @@ from torchvision.models import resnet34
 from scipy.optimize import linear_sum_assignment
 from collections import defaultdict
 
-import ab
+import model.ab as ab
 
 
 def get_spatial_position_embedding(pos_emb_dim, feat_map):
@@ -484,6 +484,8 @@ class DETR(nn.Module):
                         )
                         batch_idx_pred, batch_idx_target = batch_idx_assignments
                         # len(batch_idx_assignment_pred) = num_targets_ith_image
+
+                        # Assigns each prediction box to ground truth box based on hungarian approximation algorithm
                         match_indices.append((torch.as_tensor(batch_idx_pred,
                                                               dtype=torch.int64),
                                               torch.as_tensor(batch_idx_target,
@@ -497,8 +499,9 @@ class DETR(nn.Module):
                 pred_batch_idxs = torch.cat([
                     torch.ones_like(pred_idx) * i
                     for i, (pred_idx, _) in enumerate(match_indices)
-                ])
+                ]) # Batch indices
                 # pred_batch_idxs -> (num_targets_for_entire_batch, )
+
                 # pred_query_idx are prediction box indexes(out of num_queries)
                 # for each assignment pair
                 pred_query_idx = torch.cat([pred_idx for (pred_idx, _) in match_indices])
@@ -619,8 +622,7 @@ class DETR(nn.Module):
                     {
                         "boxes": boxes_idx,
                         "scores": scores_idx,
-                        "labels": labels_idx
-                        ,
+                        "labels": labels_idx,
                     }
                 )
 
