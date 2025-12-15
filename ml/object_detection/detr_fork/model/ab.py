@@ -204,8 +204,8 @@ class TransformerDecoder(nn.Module):
 
         for i in range(self.num_layers):
             in_emb = self.attn_norms[i](out)
-            q = in_emb + pos_emb
-            k = in_emb + pos_emb
+            q = in_emb + query_embedding
+            k = in_emb + query_embedding
             self_attn, _ = self.self_attns[i](
                 query=q,
                 key=k,
