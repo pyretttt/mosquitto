@@ -18,12 +18,12 @@ package-mode = false
 
 [tool.ruff]
 line-length = 120
-lint.pydocstyle = "google"
+lint.pydocstyle.convention = "google"
+lint.isort.split-on-trailing-comma = true
 
 [tool.ruff.format]
 quote-style = "double"
 indent-style = "space"
-split-on-trailing-comma = true
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]

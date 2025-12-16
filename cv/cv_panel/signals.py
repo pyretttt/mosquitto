@@ -1,15 +1,12 @@
-from typing import Generic, TypeVar, Callable
+from typing import TypeVar, Callable
 
 
-from PySide6.QtCore import (
-    Signal,
-    QObject,
-    Slot
-)
+from PySide6.QtCore import Signal, QObject, Slot
 
 
 T = TypeVar("T")
 V = TypeVar("V")
+
 
 class CurrentValue(QObject):
     def __init__(self, initial_value: T, signal: Signal, op):
@@ -49,10 +46,7 @@ class CurrentValueProperty(QObject):
             def map(value):
                 new_value = mapper(value)
                 fn(new_value)
+
             return map
 
-        return CurrentValue(
-            initial_value=mapper(self.value),
-            signal=self.signal,
-            op=make_mapper
-        )
+        return CurrentValue(initial_value=mapper(self.value), signal=self.signal, op=make_mapper)
