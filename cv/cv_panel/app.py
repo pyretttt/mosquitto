@@ -26,7 +26,9 @@ class MainScreen:
             self.addToolBar(self.toolbar)
 
     class Data(QAbstractListModel):
-        def __init__(self,):
+        def __init__(
+            self,
+        ):
             pass
 
 
