@@ -7,6 +7,7 @@ from PySide6.QtCore import (
     Slot
 )
 
+
 T = TypeVar("T")
 V = TypeVar("V")
 
