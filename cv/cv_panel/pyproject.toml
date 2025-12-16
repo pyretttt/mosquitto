@@ -17,9 +17,15 @@ dependencies = [
 package-mode = false
 
 [tool.ruff]
+lint.preview = true
 line-length = 120
 lint.pydocstyle.convention = "google"
 lint.isort.split-on-trailing-comma = true
+lint.select = [
+    "E301",
+    "E305",
+    "E306",
+]
 
 [tool.ruff.format]
 quote-style = "double"
