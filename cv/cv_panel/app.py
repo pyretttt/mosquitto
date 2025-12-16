@@ -10,15 +10,37 @@ from PySide6.QtWidgets import (
     QLabel,
     QMenu,
     QTabWidget,
-    QStackedLayout
+    QStackedLayout,
+    QToolBar,
+    QStatusBar
 )
 
 class MainWindow(QMainWindow):
     def __init__(self, ):
         super().__init__()
-        self.setWindowTitle("List of algorithms")
+        self.setup_ui()
 
-        layout = QStackedLayout()
+    def setup_ui(self):
+        self.setWindowTitle("List of algorithms")
+        
+        self.layout = QStackedLayout()
+        self.toolbar = QToolBar("My main toolbar")
+        self.addToolBar(self.toolbar)
+
+        self.button_action = QAction("Your button", self)
+        self.button_action.setStatusTip("This is your button")
+        self.button_action.triggered.connect(self.toolbar_button_clicked)
+        self.button_action.setCheckable(True)
+        self.toolbar.addAction(self.button_action)
+
+
+        self.setStatusBar(QStatusBar(self))
+
+
+
+
+    def toolbar_button_clicked(self, s):
+        print("click", s)
 
 
 

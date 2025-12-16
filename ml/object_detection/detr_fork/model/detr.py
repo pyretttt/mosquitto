@@ -8,16 +8,16 @@ from collections import defaultdict
 import model.ab as ab
 
 
-def get_spatial_position_embedding(pos_emb_dim, feat_map):
+def get_spatial_position_embedding(pos_emb_dim, feat_map_shape, device):
     assert pos_emb_dim % 4 == 0, ('Position embedding dimension '
                                   'must be divisible by 4')
-    grid_size_h, grid_size_w = feat_map.shape[2], feat_map.shape[3]
+    grid_size_h, grid_size_w = feat_map_shape.shape[2], feat_map_shape.shape[3]
     grid_h = torch.arange(grid_size_h,
                           dtype=torch.float32,
-                          device=feat_map.device)
+                          device=device)
     grid_w = torch.arange(grid_size_w,
                           dtype=torch.float32,
-                          device=feat_map.device)
+                          device=device)
     grid = torch.meshgrid(grid_h, grid_w, indexing='ij')
     grid = torch.stack(grid, dim=0)
 
@@ -30,7 +30,7 @@ def get_spatial_position_embedding(pos_emb_dim, feat_map):
         start=0,
         end=pos_emb_dim // 4,
         dtype=torch.float32,
-        device=feat_map.device) / (pos_emb_dim // 4))
+        device=device) / (pos_emb_dim // 4))
     )
 
     grid_h_emb = grid_h_positions[:, None].repeat(1, pos_emb_dim // 4) / factor
@@ -382,7 +382,7 @@ class DETR(nn.Module):
 
         batch_size, d_model, feat_h, feat_w = conv_out.shape
         if ab.AB.custom_get_spatial_position_embedding:
-            spatial_pos_embed = ab.get_spatial_position_embedding(self.d_model, conv_out)
+            spatial_pos_embed = ab.get_spatial_position_embedding(self.d_model, conv_out.shape, conv_out.device)
         else:
             spatial_pos_embed = get_spatial_position_embedding(self.d_model, conv_out)
         # spatial_pos_embed -> (feat_h * feat_w, d_model)
@@ -400,12 +400,11 @@ class DETR(nn.Module):
                                          repeat((batch_size, 1, 1)))
         # query_objects -> (B, num_queries, d_model)
 
-        decoder_outputs = self.decoder(
+        query_objects, decoder_attn_weights = self.decoder(
             query_objects,
             enc_output,
             self.query_embed.unsqueeze(0).repeat((batch_size, 1, 1)),
             spatial_pos_embed)
-        query_objects, decoder_attn_weights = decoder_outputs
         # query_objects -> (num_decoder_layers, B, num_queries, d_model)
         # decoder_attn_weights -> (num_decoder_layers, B, num_queries, feat_h*feat_w)
 
@@ -422,79 +421,90 @@ class DETR(nn.Module):
             num_decoder_layers = self.num_decoder_layers
             # Perform matching for each decoder layer
             for decoder_idx in range(num_decoder_layers):
-                cls_idx_output = cls_output[decoder_idx]
-                bbox_idx_output = bbox_output[decoder_idx]
+                layer_cls_output = cls_output[decoder_idx]
+                layer_bbox_output = bbox_output[decoder_idx]
+
+                # Here we match ground truth boxes and predicted boxes using index hacking and approximation of hungarian algorithm
                 with torch.no_grad():
                     # Concat all prediction boxes and class prob together
-                    class_prob = cls_idx_output.reshape((-1, self.num_classes))
-                    class_prob = class_prob.softmax(dim=-1)
-                    # class_prob -> (B*num_queries, num_classes)
+                    class_prob = (
+                        layer_cls_output
+                            .reshape((-1, self.num_classes))
+                            .softmax(dim=-1)
+                    ) # N, num_queries, num_classes -> N * num_queries, num_classes
+                    pred_boxes = layer_bbox_output.reshape((-1, 4)) # N, num_queries, 4 -> N * num_queries, 4
 
-                    pred_boxes = bbox_idx_output.reshape((-1, 4))
-                    # pred_boxes -> (B*num_queries, 4)
-
-                    # Concat all target boxes and labels also together
+                    # Concat target boxes and labels from whole batch
                     target_labels = torch.cat([target["labels"] for target in targets])
                     target_boxes = torch.cat([target["boxes"] for target in targets])
                     # len(target_labels) -> num_targets_for_entire_batch
                     # target_boxes -> (num_targets_for_entire_batch, 4)
 
-                    # Classification Cost
-                    cost_classification = -class_prob[:, target_labels]
-                    # cost_cls -> (B*num_queries, num_targets_for_entire_batch)
+                    # Classification Cost.
+                    # For each image in batch it retrieves the same number of probabilities,
+                    # some may not be useful for the exact image in batch - it will be handled later.
+                    # Some will be duplicated
+                    # Later we can split `num_targets_for_entire_batch` by `[len(target["labels"]) for target in targets]`,
+                    # such that all k first enties belongs to first image, next j to second image and so on.
+                    cost_classification = -class_prob[:, target_labels] # N * num_queries, num_targets_for_entire_batch
 
                     # DETR predicts cx,cy,w,h , we need to covert to x1y1x2y2 for giou
                     # Don't need to convert targets as they are already in x1y1x2y2
                     pred_boxes_x1y1x2y2 = torchvision.ops.box_convert(
                         pred_boxes,
                         'cxcywh',
-                        'xyxy')
+                        'xyxy'
+                    )
 
+                    # It actually computes distance from different images. We don't need it but, it simplifies indexing
                     cost_localization_l1 = torch.cdist(
                         pred_boxes_x1y1x2y2,
                         target_boxes,
                         p=1
-                     )
-                    # cost_l1 -> (B*num_queries, num_targets_for_entire_batch)
+                     ) # N * num_queries, num_targets_for_entire_batch
 
+                    # It actually computes iou from different images. We don't need it but, it simplifies indexing
                     cost_localization_giou = -torchvision.ops.generalized_box_iou(
                         pred_boxes_x1y1x2y2,
                         target_boxes
                     )
-                    # cost_giou->(B*num_queries,num_targets_for_entire_batch)
-                    total_cost = (self.l1_cost_weight * cost_localization_l1
-                                  + self.cls_cost_weight * cost_classification
-                                  + self.giou_cost_weight * cost_localization_giou)
+                    total_cost = (
+                        self.l1_cost_weight * cost_localization_l1
+                        + self.cls_cost_weight * cost_classification
+                        + self.giou_cost_weight * cost_localization_giou
+                    ) # N * num_queries, num_targets_for_entire_batch
 
-                    total_cost = total_cost.reshape(batch_size,self.num_queries,-1).cpu()
-                    # total_cost -> (B, num_queries, num_targets_for_entire_batch)
+                    # After computing losses turn `num_queries` shape back
+                    total_cost = total_cost.reshape(batch_size,self.num_queries,-1).cpu() # N, num_queries, num_targets_for_entire_batch
 
                     num_targets_per_image = [len(target["labels"]) for target in targets]
                     total_cost_per_batch_image = total_cost.split(
                         num_targets_per_image,
                         dim=-1
                     )
-                    # total_cost_per_batch_image[0]=(B,num_queries,num_targets_0th_image)
-                    # total_cost_per_batch_image[i]=(B,num_queries,num_targets_ith_image)
+                    # total_cost_per_batch_image[0][0]=(num_queries,num_targets_0th_image)
+                    # total_cost_per_batch_image[i][i]=(num_queries,num_targets_ith_image)
 
+                    # For each ground truth box assigns best prediction based on total cost
                     match_indices = []
                     for batch_idx in range(batch_size):
-                        batch_idx_assignments = linear_sum_assignment(
+                        batch_idx_pred, batch_idx_target = linear_sum_assignment(
                             total_cost_per_batch_image[batch_idx][batch_idx]
                         )
-                        batch_idx_pred, batch_idx_target = batch_idx_assignments
                         # len(batch_idx_assignment_pred) = num_targets_ith_image
 
                         # Assigns each prediction box to ground truth box based on hungarian approximation algorithm
-                        match_indices.append((torch.as_tensor(batch_idx_pred,
-                                                              dtype=torch.int64),
-                                              torch.as_tensor(batch_idx_target,
-                                                              dtype=torch.int64)))
+                        match_indices.append((
+                            torch.as_tensor(batch_idx_pred, dtype=torch.int64),
+                            torch.as_tensor(batch_idx_target, dtype=torch.int64)
+                        ))
                         # match_indices -> [
                         #   ([pred_box_a1, ...],[target_box_i1, ...]),
                         #   ([pred_box_a2, ...],[target_box_i2, ...]),
                         #   ... assignment pairs for ith batch image
                         #   ]
+
+
                 # pred_batch_idxs are batch indexes for each assignment pair
                 pred_batch_idxs = torch.cat([
                     torch.ones_like(pred_idx) * i
@@ -516,10 +526,10 @@ class DETR(nn.Module):
 
                 # Initialize target class for all predicted boxes to be background class
                 target_classes = torch.full(
-                    cls_idx_output.shape[:2],
+                    layer_cls_output.shape[:2],
                     fill_value=self.bg_class_idx,
                     dtype=torch.int64,
-                    device=cls_idx_output.device
+                    device=layer_cls_output.device
                 )
                 # target_classes -> (B, num_queries)
 
@@ -533,12 +543,12 @@ class DETR(nn.Module):
 
                 # Compute classification loss
                 loss_cls = torch.nn.functional.cross_entropy(
-                    cls_idx_output.reshape(-1, self.num_classes),
+                    layer_cls_output.reshape(-1, self.num_classes),
                     target_classes.reshape(-1),
-                    cls_weights.to(cls_idx_output.device))
+                    cls_weights.to(layer_cls_output.device))
 
                 # Get pred box coordinates for all matched pred boxes
-                matched_pred_boxes = bbox_idx_output[pred_batch_idxs, pred_query_idx]
+                matched_pred_boxes = layer_bbox_output[pred_batch_idxs, pred_query_idx]
                 # matched_pred_boxes -> (num_targets_for_entire_batch, 4)
 
                 # Get target box coordinates for all matched target boxes
