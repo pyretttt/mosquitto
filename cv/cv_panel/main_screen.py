@@ -2,7 +2,7 @@ from enum import IntEnum
 from dataclasses import dataclass
 from typing import Union, List, Optional
 
-from PySide6.QtCore import Qt, QAbstractListModel, QModelIndex, QSize, QObject
+from PySide6.QtCore import Qt, QAbstractListModel, QModelIndex, QObject
 from PySide6.QtGui import QFont, QPainter
 from PySide6.QtWidgets import (
     QApplication,
@@ -11,7 +11,7 @@ from PySide6.QtWidgets import (
     QWidget,
     QListView,
     QStyle,
-    QVBoxLayout,
+    QHBoxLayout,
 )
 
 
@@ -65,8 +65,8 @@ class DataModel(QAbstractListModel):
         item = self._items[index.row()]
         if role == self.DataRole:
             return item
-        elif role == Qt.SizeHintRole:
-            return QSize(200, 44)
+        # elif role == Qt.SizeHintRole:
+        #     return QSize(width=-1, height=44)
 
     def flags(self, index: QModelIndex):
         if not index.isValid():
@@ -115,23 +115,43 @@ class CellDelegate(QStyledItemDelegate):
 
             painter.restore()
 
+    def sizeHint(self, option, index):
+        s = super().sizeHint(option, index)
+        s.setHeight(56)
+        return s
+
 
 class MainWidget(QWidget):
     def __init__(self, parent: Optional[QWidget]):
         super().__init__(parent=parent)
 
-        self.list_view = QListView(parent=self)
-        self.list_view.setUniformItemSizes(False)
-        self.model = DataModel(
+        self.algs_view = QListView(parent=self)
+        self.algs_view.setUniformItemSizes(False)
+        self.algs_model = DataModel(
             [
                 CellModel(item_type=ItemType.CELL, data=CellData("Homography", "Projective Homography")),
                 CellModel(item_type=ItemType.CELL, data=CellData("Some sheet", "Some sheet")),
             ]
         )
-        self.list_view.setModel(self.model)
-        self.list_view.setItemDelegate(CellDelegate(self.list_view))
+        self.algs_view.setModel(self.algs_model)
+        self.algs_view.setItemDelegate(CellDelegate(self.algs_view))
 
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.list_view)
-        # self.layout = QVBoxLayout(parent=self)
-        # self.layout.addWidget(self.list_view)
+        self.options_view = QListView(parent=self)
+        self.options_view.setUniformItemSizes(False)
+        self.options_model = DataModel(
+            [
+                CellModel(item_type=ItemType.CELL, data=CellData("Homography", "Projective Homography")),
+                CellModel(item_type=ItemType.CELL, data=CellData("Some sheet", "Some sheet")),
+            ]
+        )
+        self.options_view.setModel(self.options_model)
+        self.options_view.setItemDelegate(CellDelegate(self.options_view))
+
+        self.central_view = QWidget(parent=self)
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self.algs_view, 1)
+        layout.addWidget(self.central_view, 4)
+        layout.addWidget(self.options_view, 1)

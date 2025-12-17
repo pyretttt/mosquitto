@@ -1,6 +1,6 @@
 import sys
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QStackedLayout, QToolBar
+from PySide6.QtWidgets import QApplication, QMainWindow, QStackedLayout, QToolBar, QWidget
 
 from main_screen import MainWidget
 
@@ -11,11 +11,15 @@ class MainWindow(QMainWindow):
         self.setup_ui()
 
     def setup_ui(self):
-        self.stacked_layout = QStackedLayout(parent=self)
-        self.setWindowTitle("List of algorithms")
-        self.main_widget = MainWidget(parent=self)
+        self.setWindowTitle("Welcome back")
+        self.container_widget = QWidget(self)
+        self.stacked_layout = QStackedLayout(self.container_widget)
+        self.main_widget = MainWidget(parent=self.container_widget)
+        self.stacked_layout.addWidget(self.main_widget)
         self.toolbar = QToolBar("My main toolbar")
         self.addToolBar(self.toolbar)
+
+        self.setCentralWidget(self.container_widget)
 
 
 def main():
