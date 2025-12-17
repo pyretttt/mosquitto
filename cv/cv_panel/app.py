@@ -1,9 +1,8 @@
 import sys
-from enum import IntEnum
-from dataclasses import dataclass
 
-from PySide6.QtCore import QAbstractListModel
-from PySide6.QtWidgets import QApplication, QMainWindow, QStackedLayout, QToolBar, QHBoxLayout
+from PySide6.QtWidgets import QApplication, QMainWindow, QStackedLayout, QToolBar
+
+from main_screen import MainWidget
 
 
 class MainWindow(QMainWindow):
@@ -12,10 +11,9 @@ class MainWindow(QMainWindow):
         self.setup_ui()
 
     def setup_ui(self):
+        self.stacked_layout = QStackedLayout(parent=self)
         self.setWindowTitle("List of algorithms")
-
-        self.page_layout = QHBoxLayout()
-        self.central_layout = QStackedLayout()
+        self.main_widget = MainWidget(parent=self)
         self.toolbar = QToolBar("My main toolbar")
         self.addToolBar(self.toolbar)
 

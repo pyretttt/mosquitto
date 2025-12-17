@@ -25,6 +25,7 @@ lint.select = [
     "E301",
     "E305",
     "E306",
+    "F401",
 ]
 
 [tool.ruff.format]
