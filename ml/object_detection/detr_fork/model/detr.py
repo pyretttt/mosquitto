@@ -421,8 +421,8 @@ class DETR(nn.Module):
             num_decoder_layers = self.num_decoder_layers
             # Perform matching for each decoder layer
             for decoder_idx in range(num_decoder_layers):
-                layer_cls_output = cls_output[decoder_idx]
-                layer_bbox_output = bbox_output[decoder_idx]
+                layer_cls_output = cls_output[decoder_idx] # N, num_queries, num_classes
+                layer_bbox_output = bbox_output[decoder_idx] # N, num_queries, 4
 
                 # Here we match ground truth boxes and predicted boxes using index hacking and approximation of hungarian algorithm
                 with torch.no_grad():
@@ -506,6 +506,7 @@ class DETR(nn.Module):
 
 
                 # pred_batch_idxs are batch indexes for each assignment pair
+                # For each match from above - assigns batch index, where prediction resides in layer_outputs
                 pred_batch_idxs = torch.cat([
                     torch.ones_like(pred_idx) * i
                     for i, (pred_idx, _) in enumerate(match_indices)
@@ -519,10 +520,9 @@ class DETR(nn.Module):
 
                 # For all assigned prediction boxes, get the target label
                 valid_obj_target_cls = torch.cat([
-                    target["labels"][target_obj_idx]
+                    target["labels"][target_obj_idx] # obtains multiple labels
                     for target, (_, target_obj_idx) in zip(targets, match_indices)
-                ])
-                # valid_obj_target_cls -> (num_targets_for_entire_batch, )
+                ]) # valid_obj_target_cls -> (num_targets_for_entire_batch, )
 
                 # Initialize target class for all predicted boxes to be background class
                 target_classes = torch.full(
@@ -530,22 +530,20 @@ class DETR(nn.Module):
                     fill_value=self.bg_class_idx,
                     dtype=torch.int64,
                     device=layer_cls_output.device
-                )
-                # target_classes -> (B, num_queries)
+                ) # N, num_queries
 
-                # For predicted boxes that were assigned to some target,
-                # update their target label accordingly
+                # For predicted boxes that were assigned to some target, update their target label accordingly
                 target_classes[(pred_batch_idxs, pred_query_idx)] = valid_obj_target_cls
 
                 # To ensure background class is not disproportionately attended by model
-                cls_weights = torch.ones(self.num_classes)
+                cls_weights = torch.ones(self.num_classes, device=layer_cls_output.device)
                 cls_weights[self.bg_class_idx] = self.bg_cls_weight
 
                 # Compute classification loss
                 loss_cls = torch.nn.functional.cross_entropy(
-                    layer_cls_output.reshape(-1, self.num_classes),
-                    target_classes.reshape(-1),
-                    cls_weights.to(layer_cls_output.device))
+                    layer_cls_output.reshape(-1, self.num_classes), # N * num_queries, num_classes
+                    target_classes.reshape(-1), # N * num_queries, num_classes
+                )
 
                 # Get pred box coordinates for all matched pred boxes
                 matched_pred_boxes = layer_bbox_output[pred_batch_idxs, pred_query_idx]
@@ -553,7 +551,7 @@ class DETR(nn.Module):
 
                 # Get target box coordinates for all matched target boxes
                 target_boxes = torch.cat([
-                    target['boxes'][target_obj_idx]
+                    target['boxes'][target_obj_idx] # obtains multiple gt boxes
                     for target, (_, target_obj_idx) in zip(targets, match_indices)],
                     dim=0
                 )
@@ -570,7 +568,8 @@ class DETR(nn.Module):
                 loss_bbox = torch.nn.functional.l1_loss(
                     matched_pred_boxes_x1y1x2y2,
                     target_boxes,
-                    reduction='none')
+                    reduction='none'
+                )
                 loss_bbox = loss_bbox.sum() / matched_pred_boxes.shape[0]
 
                 # Compute GIoU loss
@@ -590,51 +589,54 @@ class DETR(nn.Module):
             # For inference we are only interested in last layer outputs
             cls_output = cls_output[-1]
             bbox_output = bbox_output[-1]
-            # cls_output -> (B, num_queries, num_classes)
-            # bbox_output -> (B, num_queries, 4)
+            # cls_output -> (N, num_queries, num_classes)
+            # bbox_output -> (N, num_queries, 4)
 
-            prob = torch.nn.functional.softmax(cls_output, -1)
+            prob = torch.nn.functional.softmax(cls_output, dim=-1)
 
             # Get all query boxes and their best fg class as label
             if self.bg_class_idx == 0:
-                scores, labels = prob[..., 1:].max(-1)
-                labels = labels+1
+                scores, labels = prob[..., 1:].max(dim=-1) # N, num_queries
+                labels = labels + 1
+                assert scores.shape == labels.shape and labels.shape == cls_output.shape[:2]
             else:
-                scores, labels = prob[..., :-1].max(-1)
+                scores, labels = prob[..., :-1].max(dim=-1)
 
             # convert to x1y1x2y2 format
-            boxes = torchvision.ops.box_convert(bbox_output,
-                                                'cxcywh',
-                                                'xyxy')
+            boxes = torchvision.ops.box_convert(
+                bbox_output,
+                'cxcywh',
+                'xyxy',
+            )
 
             for batch_idx in range(boxes.shape[0]):
-                scores_idx = scores[batch_idx]
-                labels_idx = labels[batch_idx]
-                boxes_idx = boxes[batch_idx]
+                batch_scores = scores[batch_idx] # num_queries
+                batch_labels = labels[batch_idx] # num_queries
+                batch_boxes = boxes[batch_idx] # num_queries, 4
 
                 # Low score filtering
-                keep_idxs = scores_idx >= score_thresh
-                scores_idx = scores_idx[keep_idxs]
-                boxes_idx = boxes_idx[keep_idxs]
-                labels_idx = labels_idx[keep_idxs]
+                keep_idxs = batch_scores >= score_thresh
+                batch_scores = batch_scores[keep_idxs]
+                batch_boxes = batch_boxes[keep_idxs]
+                batch_labels = batch_labels[keep_idxs]
 
                 # NMS filtering
                 if use_nms:
                     keep_idxs = torchvision.ops.batched_nms(
-                        boxes_idx,
-                        scores_idx,
-                        labels_idx,
-                        iou_threshold=self.nms_threshold)
-                    scores_idx = scores_idx[keep_idxs]
-                    boxes_idx = boxes_idx[keep_idxs]
-                    labels_idx = labels_idx[keep_idxs]
-                detections.append(
-                    {
-                        "boxes": boxes_idx,
-                        "scores": scores_idx,
-                        "labels": labels_idx,
-                    }
-                )
+                        boxes=batch_boxes,
+                        scores=batch_scores,
+                        idxs=batch_labels,
+                        iou_threshold=self.nms_threshold
+                    )
+                    batch_scores = batch_scores[keep_idxs]
+                    batch_boxes = batch_boxes[keep_idxs]
+                    batch_labels = batch_labels[keep_idxs]
+
+                detections.append({
+                    "boxes": batch_boxes,
+                    "scores": batch_scores,
+                    "labels": batch_labels,
+                })
 
             detr_output['detections'] = detections
             detr_output['enc_attn'] = enc_attn_weights
