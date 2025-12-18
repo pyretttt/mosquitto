@@ -1,0 +1,10 @@
+info:
+  name: "Homography"
+  description: "Planar homography"
+
+layout:
+  type: horizontal
+  columns: 2
+
+options:
+  checkbox: true
