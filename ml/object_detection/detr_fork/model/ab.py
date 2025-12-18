@@ -1,3 +1,4 @@
+import math
 import torch
 from torch import nn
 import numpy as np
@@ -165,11 +166,33 @@ class MultiheadAttention(nn.Module):
         d_model: int,
         batch_first: bool,
         dropout: float,
+        device: None,
+        dtype: None,
     ):
+        super().__init__()
+        factory_kwargs = {"device": device, "dtype": dtype}
         self.nheads = nheads
         self.d_model = d_model
         self.batch_first = batch_first
         self.dropout = dropout
+        assert d_model % nheads == 0, "d_model must be divisible by number of heads for multihead attention"
+        self.head_dim = d_model // nheads
+        self.q_proj = nn.Linear(3 * d_model, d_model, **factory_kwargs)
+        self.k_proj = nn.Linear(d_model, d_model, **factory_kwargs)
+        self.v_proj = nn.Linear(d_model, d_model, **factory_kwargs)
+        self.out_proj = nn.Linear(d_model, d_model, **factory_kwargs)
+        self.attn_dropout = nn.Dropout(dropout)
+        self._reset_parameters()
+
+    def _reset_parameters(self) -> None:
+        nn.init.xavier_uniform_(self.q_proj.weight)
+        nn.init.xavier_uniform_(self.k_proj.weight)
+        nn.init.xavier_uniform_(self.v_proj.weight)
+        nn.init.xavier_uniform_(self.out_proj.weight)
+        nn.init.constant_(self.q_proj.bias, 0.0)
+        nn.init.constant_(self.k_proj.bias, 0.0)
+        nn.init.constant_(self.v_proj.bias, 0.0)
+        nn.init.constant_(self.out_proj.bias, 0.0)
 
     def forward(
         self,
@@ -182,4 +205,69 @@ class MultiheadAttention(nn.Module):
         average_attn_weights=True,
         is_causal=False,
     ):
-        pass
+        if not self.batch_first:
+            query = query.transpose(0, 1)
+            key = key.transpose(0, 1)
+            value = value.transpose(0, 1)
+
+        bsz, tgt_len = query.shape[:2]
+        src_len = key.shape[1]
+
+        q = self.q_proj(query)
+        k = self.k_proj(key)
+        v = self.v_proj(value)
+
+        q = q.reshape(bsz, tgt_len, self.nheads, self.head_dim).transpose(1, 2)
+        k = k.reshape(bsz, src_len, self.nheads, self.head_dim).transpose(1, 2)
+        v = v.reshape(bsz, src_len, self.nheads, self.head_dim).transpose(1, 2)
+        # N, N_heads, S_src/S_tgt, head_dim
+
+        # N, N_heads, S_tgt, head_dim @ N, N_heads, head_dim, S_src -> N, N_heads, S_tgt, S_src
+        scores = torch.matmul(q, k.transpose(-2, -1)) / math.sqrt(self.head_dim)
+
+        if attn_mask is not None:
+            if attn_mask.dim() == 2:
+                attn_mask = attn_mask.unsqueeze(0)
+            if attn_mask.dtype == torch.bool:
+                scores = scores.masked_fill(attn_mask, float("-inf"))
+            else:
+                scores = scores + attn_mask
+
+        if key_padding_mask is not None:
+            # Key padding mask is N, S_src
+            mask = key_padding_mask[:, None, None, :].to(torch.bool)  # N, 1, 1, S_src
+            scores = scores.masked_fill(
+                mask,
+                float("-inf"),
+            )  # fills src components, such that tgt sequence do not attend to them
+
+        if is_causal:
+            # Actually all elements on main diagona and below it, are not masked
+            causal_mask = torch.ones(tgt_len, src_len, dtype=torch.bool, device=scores.device).triu(diagonal=1)
+            scores = scores.masked_fill(causal_mask, float("-inf"))
+
+        attn_weights = torch.softmax(scores, dim=-1)
+        attn_weights = self.attn_dropout(attn_weights)
+
+        attn_output = torch.matmul(
+            attn_weights,
+            v,
+        )  #  N, N_heads, S_tgt, S_src @ N, N_heads, S_src, head_dim -> N, N_heads, S_tgt, head_dim
+        attn_output = attn_output.transpose(1, 2).reshape(
+            bsz,
+            tgt_len,
+            self.d_model,
+        )  # N, N_heads, S_tgt, head_dim -> N, S_tgt, N_heads, head_dim ->  N, S_tgt, d_model
+        attn_output = self.out_proj(attn_output)  # N, S_tgt, d_model
+
+        if not need_weights:
+            attn_weights_to_return = None
+        else:
+            attn_weights_to_return = attn_weights
+            if average_attn_weights:
+                attn_weights_to_return = attn_weights.mean(dim=1)
+
+        if not self.batch_first:
+            attn_output = attn_output.transpose(0, 1)
+
+        return attn_output, attn_weights_to_return
