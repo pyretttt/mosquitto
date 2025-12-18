@@ -10,6 +10,7 @@ class AB:
     custom_get_spatial_position_embedding: bool = True
     custom_encoder: bool = True
     custom_decoder: bool = True
+    custom_mha: bool = True
 
 
 def get_spatial_position_embedding(emb_dim, feat_map):
@@ -50,7 +51,9 @@ class TransformerEncoder(nn.Module):
         self.num_heads = num_heads
         self.attns = nn.ModuleList(
             [
-                nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+                MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+                if AB.custom_mha
+                else nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
                 for _ in range(num_layers)
             ]
         )
@@ -96,13 +99,17 @@ class TransformerDecoder(nn.Module):
         self.num_heads = num_heads
         self.self_attns = nn.ModuleList(
             [
-                nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+                MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+                if AB.custom_mha
+                else nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
                 for _ in range(num_layers)
             ]
         )
         self.cross_attns = nn.ModuleList(
             [
-                nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+                MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
+                if AB.custom_mha
+                else nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout, batch_first=True)
                 for _ in range(num_layers)
             ]
         )
