@@ -9,12 +9,12 @@ from PySide6.QtWidgets import QApplication
 from PySide6.QtQml import QQmlApplicationEngine
 
 from data.sidebar import LeftSidebarCellData
-from signals import EngineProperty
+from signals import EnginePropertyV2
 
 
 @dataclass
 class AppData:
-    left_side_bar_data: EngineProperty[List[dict]]
+    left_side_bar_data: EnginePropertyV2[List[dict]]
 
 
 def main():
@@ -35,13 +35,15 @@ def main():
                     print("Failed to parse config at: ", current_path)
 
     serialized_cells = [asdict(cell) for cell in algorithm_cells]
-    app_data = AppData(left_side_bar_data=EngineProperty(initial_value=serialized_cells))
+    app_data = AppData(left_side_bar_data=EnginePropertyV2(initial=serialized_cells))
 
     app = QApplication(sys.argv)
     engine = QQmlApplicationEngine()
     engine.quit.connect(app.quit)
+    app_data.left_side_bar_data.bindContext(engine, "leftDataSideBar")
     engine.load("main.qml")
-    app_data.left_side_bar_data.connect(engine, "leftSideBarData")
+
+    app_data.left_side_bar_data.send(LeftSidebarCellData(id="id", name="info", description="info"))
 
     app.exec()
 

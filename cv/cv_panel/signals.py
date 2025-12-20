@@ -2,7 +2,7 @@ from typing import TypeVar, Callable, Generic
 from dataclasses import dataclass
 
 
-from PySide6.QtCore import Signal, QObject
+from PySide6.QtCore import Signal, QObject, Slot, Property
 from PySide6.QtQml import QQmlApplicationEngine
 
 
@@ -37,6 +37,7 @@ class CurrentValueProperty(QObject, Generic[T]):
         self.current_value = CurrentValue(initial_value, signal=self.signal, op=lambda x: x)
         self.signal.connect(self.current_value.new_value)
 
+    @Slot()
     def send(self, value: T):
         self.signal.emit(value)
 
@@ -59,8 +60,8 @@ class CurrentValueProperty(QObject, Generic[T]):
 
         return CurrentValue[V](initial_value=mapper(self.value), signal=self.signal, op=make_mapper)
 
-    def connect(self, callable):
-        self.signal.connect(callable)
+    def subscribe(self, callable):
+        self.signal.connect(slot=callable)
 
 
 @dataclass
@@ -68,7 +69,7 @@ class EngineProperty(CurrentValueProperty, Generic[T]):
     def __init__(self, initial_value: T):
         super().__init__(initial_value)
 
-    def connect(
+    def bind(
         self,
         engine: QQmlApplicationEngine,
         key: str,
@@ -80,5 +81,37 @@ class EngineProperty(CurrentValueProperty, Generic[T]):
 
         root = root_objects[0]
         root.setProperty(key, self)
+        if resend_current:
+            self.send(self.value)
+
+
+class EnginePropertyV2(QObject, Generic[T]):
+    def __init__(self, initial: T):
+        super().__init__()
+        self.current_value = initial
+
+    value_changed = Signal(object, arguments=["new_value"])
+
+    def value(self) -> T:
+        return self.current_value
+
+    @Slot(object)
+    def send(self, new_value: T):
+        self.current_value = new_value
+        self.value_changed.emit(new_value)
+
+    def subscribe(self, subscriber: Callable[[T], None]):
+        self.value_changed.connect(subscriber)
+
+    property = Property(object, fget=value, fset=send, notify=value_changed)
+
+    def bindContext(
+        self,
+        engine: QQmlApplicationEngine,
+        key: str,
+        resend_current: bool = True,
+    ):
+        context = engine.rootContext()
+        context.setContextProperty(key, self)
         if resend_current:
             self.send(self.value)
