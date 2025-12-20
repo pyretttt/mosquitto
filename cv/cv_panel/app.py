@@ -43,12 +43,6 @@ def main():
     app_data.left_side_bar_data.bindContext(engine, "leftDataSideBar")
     engine.load("main.qml")
 
-    # Send data to QML using the same structure ListView expects (list of dicts)
-    extra_cell = LeftSidebarCellData(id="id", name="info", description="info")
-    payload = app_data.left_side_bar_data.get_value() + [asdict(extra_cell)]
-    print(payload)
-    app_data.left_side_bar_data.send(payload)
-
     app.exec()
 
 
