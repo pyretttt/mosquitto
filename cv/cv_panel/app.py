@@ -5,33 +5,16 @@ from dataclasses import dataclass
 import yaml
 import uuid
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QStackedLayout, QToolBar, QWidget
+from PySide6.QtWidgets import QApplication
+from PySide6.QtQml import QQmlApplicationEngine
 
-from main_screen import MainWidget, CellData
+from data.sidebar import LeftSidebarCellData
 from signals import CurrentValueProperty
 
 
 @dataclass
 class AppData:
-    algorithms: CurrentValueProperty[List[CellData]]
-
-
-class MainWindow(QMainWindow):
-    def __init__(self, app_data: AppData):
-        super().__init__()
-        self.app_data = app_data
-        self.setup_ui()
-
-    def setup_ui(self):
-        self.setWindowTitle("Welcome back")
-        self.container_widget = QWidget(self)
-        self.stacked_layout = QStackedLayout(self.container_widget)
-        self.main_widget = MainWidget(parent=self.container_widget, algorithms=self.app_data.algorithms)
-        self.stacked_layout.addWidget(self.main_widget)
-        self.toolbar = QToolBar("My main toolbar")
-        self.addToolBar(self.toolbar)
-
-        self.setCentralWidget(self.container_widget)
+    left_side_bar_data: CurrentValueProperty[List[LeftSidebarCellData]]
 
 
 def main():
@@ -46,17 +29,20 @@ def main():
                     id = uuid.uuid4()
                     config = yaml.safe_load(f)
                     info = config["info"]
-                    cell_model = CellData(id=id, name=info["name"], description=info["description"])
+                    cell_model = LeftSidebarCellData(id=id, name=info["name"], description=info["description"])
                     algorithm_cells.append(cell_model)
                 except:
                     print("Failed to parse config at: ", current_path)
 
-    algorithms = CurrentValueProperty[List[CellData]](algorithm_cells)
-    app_data = AppData(algorithms=algorithms)
+    algorithms = CurrentValueProperty[List[LeftSidebarCellData]](algorithm_cells)
+    app_data = AppData(left_side_bar_data=algorithms)
 
     app = QApplication(sys.argv)
-    window = MainWindow(app_data=app_data)
-    window.show()
+    engine = QQmlApplicationEngine()
+    engine.quit.connect(app.quit)
+    engine.load("main.qml")
+    engine.rootObjects()[0].setProperty("leftSideBarData", app_data.left_side_bar_data)
+
     app.exec()
 
 

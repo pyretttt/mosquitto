@@ -1,6 +1,6 @@
 info:
-  name: "Registration"
-  description: "Using homography, and ransac, to align one image into another"
+  name: "Image Registration"
+  description: "Using homography,\nand ransac,\nto align one image into another"
 
 layout:
   type: horizontal

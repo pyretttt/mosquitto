@@ -28,7 +28,7 @@ class CurrentValue(QObject, Generic[T]):
 
 
 class CurrentValueProperty(QObject, Generic[T]):
-    signal = Signal(T)
+    signal = Signal(T, arguments=["new_value"])
 
     def __init__(self, initial_value: T):
         super().__init__()
