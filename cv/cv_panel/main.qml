@@ -20,13 +20,13 @@ ApplicationWindow {
                 anchors.leftMargin: 12
                 spacing: 2
 
-                Text { text: "name"; font.pixelSize: 16 }      // keys become roles
-                Text { text: description; opacity: 0.7 }
+                Text { text: modelData.name; font.pixelSize: 16 }      // keys become roles
+                Text { text: modelData.description; opacity: 0.7 }
             }
 
             MouseArea {
                 anchors.fill: parent
-                onClicked: console.log("Clicked:", id)
+                onClicked: console.log("Clicked:", modelData.id)
             }
         }
     }

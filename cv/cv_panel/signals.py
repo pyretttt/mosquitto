@@ -92,7 +92,10 @@ class EnginePropertyV2(QObject, Generic[T]):
 
     value_changed = Signal(object, arguments=["new_value"])
 
-    def value(self) -> T:
+    # def value(self) -> T:
+    #     return self.current_value
+
+    def get_value(self) -> T:
         return self.current_value
 
     @Slot(object)
@@ -103,7 +106,7 @@ class EnginePropertyV2(QObject, Generic[T]):
     def subscribe(self, subscriber: Callable[[T], None]):
         self.value_changed.connect(subscriber)
 
-    property = Property(object, fget=value, fset=send, notify=value_changed)
+    property = Property("QVariantList", fget=get_value, fset=send, notify=value_changed)
 
     def bindContext(
         self,
@@ -114,4 +117,4 @@ class EnginePropertyV2(QObject, Generic[T]):
         context = engine.rootContext()
         context.setContextProperty(key, self)
         if resend_current:
-            self.send(self.value)
+            self.send(self.get_value())
