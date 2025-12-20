@@ -1,7 +1,9 @@
 from typing import TypeVar, Callable, Generic
+from dataclasses import dataclass
 
 
 from PySide6.QtCore import Signal, QObject
+from PySide6.QtQml import QQmlApplicationEngine
 
 
 T = TypeVar("T")
@@ -28,7 +30,7 @@ class CurrentValue(QObject, Generic[T]):
 
 
 class CurrentValueProperty(QObject, Generic[T]):
-    signal = Signal(T, arguments=["new_value"])
+    signal = Signal(object, arguments=["new_value"])
 
     def __init__(self, initial_value: T):
         super().__init__()
@@ -59,3 +61,24 @@ class CurrentValueProperty(QObject, Generic[T]):
 
     def connect(self, callable):
         self.signal.connect(callable)
+
+
+@dataclass
+class EngineProperty(CurrentValueProperty, Generic[T]):
+    def __init__(self, initial_value: T):
+        super().__init__(initial_value)
+
+    def connect(
+        self,
+        engine: QQmlApplicationEngine,
+        key: str,
+        resend_current: bool = True,
+    ):
+        root_objects = engine.rootObjects()
+        if not root_objects:
+            raise RuntimeError("Failed to load QML: no root objects")
+
+        root = root_objects[0]
+        root.setProperty(key, self)
+        if resend_current:
+            self.send(self.value)

@@ -3,12 +3,21 @@ import QtQuick.Controls
 import QtQuick.Layouts
 
 ApplicationWindow {
+    id: window
     visible: true
     width: 420
     height: 640
     title: ""
 
+    property QtObject leftSideBarData: null
+    property var itemsModel: []
 
+    Connections {
+        target: window.leftSideBarData
+        function onSignal(data) {
+            window.itemsModel = data;
+        }
+    }
 
     ListView {
         id: list
@@ -17,15 +26,7 @@ ApplicationWindow {
         spacing: 10
         clip: true
 
-        property QtObject leftSideBarData
-        model: itemsModel
-
-        Connections {
-            target: leftSideBarData
-            function onSignal(data) {
-                model = data;
-            }
-        }
+        model: window.itemsModel
 
 
         delegate: Rectangle {
@@ -45,15 +46,26 @@ ApplicationWindow {
                 anchors.margins: 12
                 spacing: 8
 
-                Label {
-                    text: modelData
-                    wrapMode: Text.WordWrap
+                ColumnLayout {
                     Layout.fillWidth: true
+
+                    Label {
+                        text: modelData.name
+                        font.bold: true
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
+
+                    Label {
+                        text: modelData.description
+                        wrapMode: Text.WordWrap
+                        Layout.fillWidth: true
+                    }
                 }
 
                 Button {
                     text: "Tap"
-                    onClicked: console.log("Tapped item:", modelData)
+                    onClicked: console.log("Tapped item:", modelData.name)
                 }
             }
         }
