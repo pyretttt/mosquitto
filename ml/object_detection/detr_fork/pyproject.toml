@@ -5,7 +5,7 @@ description = ""
 authors = ["Woodraw Willson <percalee@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "3.13.7"
+python = ">=3.13.7,<3.16"
 einops = "0.8.0"
 opencv-python = "4.10.0.84"
 pillow = "10.4.0"
