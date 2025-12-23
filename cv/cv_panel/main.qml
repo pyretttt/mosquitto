@@ -31,12 +31,12 @@ ApplicationWindow {
                     width: leftList.width
 
                     // self-size based on contents
-                    implicitHeight: content.implicitHeight + 20
+                    implicitHeight: content.implicitHeight + 26
                     height: implicitHeight
 
                     color: {
                         if (isSelected)
-                            return "#343333ff";
+                            return "#5c5c5c";
                         return (index % 2 === 0) ? "#232323" : "#1f1f1f";
                     }
 
@@ -44,6 +44,9 @@ ApplicationWindow {
                         id: content
                         anchors.left: parent.left
                         anchors.right: parent.right
+                        anchors.top: parent.top
+                        anchors.bottom: parent.bottom
+
                         anchors.margins: 10
                         spacing: 6
 
