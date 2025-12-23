@@ -17,7 +17,7 @@ This repo was only meant for better understanding of DETR. Though the overall fl
 
 
 
-## Result by training DETR on VOC 2007 dataset 
+## Result by training DETR on VOC 2007 dataset
 I have used frozen Resnet 34 backbone with 25 query objects. Using this configuration, one should be able to get **65% mAP(with NMS) and 60%(without)** by training on VOC 2007+2012 trainval images.
 To get better results, use trainable Resnet-50/101 with 100 query objects.
 
@@ -72,7 +72,7 @@ For setting up the VOC 2007 dataset:
               -> VOC2007-test
                   -> JPEGImages
                   -> Annotations
-              -> VOC2012 
+              -> VOC2012
                   -> JPEGImages
                   -> Annotations
                   -> ImageSets
@@ -82,7 +82,7 @@ For setting up the VOC 2007 dataset:
           -> config
               -> voc.yaml
           -> model
-              -> detr.py 
+              -> detr.py
           -> dataset
               -> voc.py
       ```
@@ -95,7 +95,7 @@ For setting up the VOC 2007 dataset:
 * Update the class list of your dataset in the dataset file.
 * Dataset class should return the following:
     ```
-  im_tensor(C x H x W) , 
+  im_tensor(C x H x W) ,
   target{
         'boxes': Number of Gts x 4 (this is in x1y1x2y2 format normalized from 0-1)
         'labels': Number of Gts,
@@ -105,32 +105,32 @@ For setting up the VOC 2007 dataset:
   ```
 
 
-## For modifications 
+## For modifications
 * In case you have GPU which does not support large batch size, you can use a smaller batch size like 2 and then have `acc_steps` in config set as 4(to mimic 8 batch size training).
 * For using a different backbone you would have to change the following:
   * Change the backbone layers in initialization of DETR model
-  * Ensure the `backbone_channels` is correctly set in config, this is the number of channels in final feature map returned by backbone 
+  * Ensure the `backbone_channels` is correctly set in config, this is the number of channels in final feature map returned by backbone
 
 # Quickstart
 * Create a new conda environment with python 3.10 then run below commands
 * ```git clone https://github.com/explainingai-code/DETR-PyTorch.git```
 * ```cd DETR-PyTorch```
 * ```pip install -r requirements.txt```
-* For training/inference use the below commands passing the desired configuration file as the config argument in case you want to play with it. 
+* For training/inference use the below commands passing the desired configuration file as the config argument in case you want to play with it.
 * ```python -m tools.train``` for training DETR on VOC dataset
 * ```python -m tools.infer --evaluate False --infer_samples True``` for generating inference predictions
 * ```python -m tools.infer --evaluate True --infer_samples False``` for evaluating on test dataset
 
 ## Configuration
-* ```config/voc.yaml``` - Allows you to play with different components of DETR on voc dataset  
+* ```config/voc.yaml``` - Allows you to play with different components of DETR on voc dataset
 
 
-## Output 
+## Output
 Outputs will be saved according to the configuration present in yaml files.
 
 For every run a folder of `task_name` key in config will be created
 
-During training of DETR, the following output will be saved 
+During training of DETR, the following output will be saved
 * Latest Model checkpoint in ```task_name``` directory
 
 During inference the following output will be saved
@@ -139,12 +139,16 @@ During inference the following output will be saved
 ## Citations
 ```
 @misc{carion2020endtoendobjectdetectiontransformers,
-      title={End-to-End Object Detection with Transformers}, 
+      title={End-to-End Object Detection with Transformers},
       author={Nicolas Carion and Francisco Massa and Gabriel Synnaeve and Nicolas Usunier and Alexander Kirillov and Sergey Zagoruyko},
       year={2020},
       eprint={2005.12872},
       archivePrefix={arXiv},
       primaryClass={cs.CV},
-      url={https://arxiv.org/abs/2005.12872}, 
+      url={https://arxiv.org/abs/2005.12872},
 }
 ```
+
+
+***
+Before `mise install` it may be crucial to set `MISE_POETRY_INSTALL_URL="https://raw.githubusercontent.com/python-poetry/install.python-poetry.org/main/install-poetry.py"`
