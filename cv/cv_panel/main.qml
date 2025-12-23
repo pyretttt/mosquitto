@@ -106,18 +106,13 @@ ApplicationWindow {
                 clip: true
                 model: store.rightModel
                 spacing: 12
-                topMargin: 12
-                bottomMargin: 12
-                leftMargin: 12
-                rightMargin: 12
+                anchors.margins: 12
 
                 delegate: Item {
                     width: rightList.width - rightList.leftMargin - rightList.rightMargin
                     implicitHeight: loader.implicitHeight
                     height: implicitHeight
 
-
-                    // Choose component by `type` role
                     Loader {
                         id: loader
                         anchors.left: parent.left
@@ -126,6 +121,7 @@ ApplicationWindow {
                             if (type === "header") return headerComp
                             if (type === "toggle") return toggleComp
                             if (type === "button") return buttonComp
+                            if (type === "integer_field") return integerField
                             return cardComp
                         }
                     }
@@ -143,6 +139,39 @@ ApplicationWindow {
                                 font.pixelSize: 18
                                 font.bold: true
                                 wrapMode: Text.WordWrap
+                            }
+                        }
+                    }
+
+                    Component {
+                        id: integerField
+                        Item {
+                            implicitHeight: spin_item.implicitHeight
+                            Column {
+                                id: spin_item
+                                spacing: 12
+
+                                Label {
+                                    text: model.name
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: "white"
+                                    font.pixelSize: 14
+                                    font.bold: false
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                SpinBox {
+                                    id: spin
+                                    height: 28
+                                    editable: false
+                                    from: 0
+                                    to: 100
+                                    stepSize: 1
+                                    value: model.value
+                                    onValueModified: {
+                                        store.dispatch({ "type": "SET_CENTER_COLOR", "payload": model.payload || {} })
+                                    }
+                                }
                             }
                         }
                     }
@@ -211,6 +240,29 @@ ApplicationWindow {
 
                     Component {
                         id: buttonComp
+                        Item {
+                            implicitHeight: btn.implicitHeight
+                            Button {
+                                id: btn
+                                anchors.left: parent.left
+                                anchors.right: parent.right
+                                text: model.text
+
+                                onClicked: {
+                                    if (actionType === "SET_CENTER_COLOR") {
+                                        store.dispatch({ "type": "SET_CENTER_COLOR", "payload": model.payload || {} })
+                                    } else if (actionType === "ADD_LEFT") {
+                                        store.dispatch({ "type": "ADD_LEFT", "payload": { "name": "Added", "description": "Created from a right-sidebar button" } })
+                                    } else {
+                                        store.dispatch({ "type": actionType })
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Component {
+                        id: integerCounter
                         Item {
                             implicitHeight: btn.implicitHeight
                             Button {

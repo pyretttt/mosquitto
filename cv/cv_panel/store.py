@@ -20,6 +20,15 @@ class AppState:
     right_items: List[Dict[str, Any]]
     center_color: str
 
+    def selected_left_item_id(self) -> str | None:
+        return next((item["id"] for item in self.left_items if item["is_selected"]), None)
+
+    def option(self, id: str) -> dict | None:
+        if self.selected_left_item_id() is None:
+            return None
+        options = self.right_items[self.selected_left_item_id()]
+        return next((options for options in options if options["id"] == id), None)
+
 
 class LeftSidebarModel(QAbstractListModel):
     IdRole = Qt.UserRole + 1
@@ -69,54 +78,56 @@ class LeftSidebarModel(QAbstractListModel):
 
 class RightSidebarModel(QAbstractListModel):
     TypeRole = Qt.UserRole + 1
-    TextRole = Qt.UserRole + 2
-    TitleRole = Qt.UserRole + 3
-    BodyRole = Qt.UserRole + 4
-    CheckedRole = Qt.UserRole + 5
-    ActionTypeRole = Qt.UserRole + 6
+    NameRole = Qt.UserRole + 2
+    CheckedRole = Qt.UserRole + 3
+    ValueRole = Qt.UserRole + 4
 
-    def __init__(self, items: List[Dict[str, Any]] | None = None, parent: QObject | None = None):
+    def __init__(self, items: Dict[str, List[Dict[str, Any]]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
-        self._items: List[Dict[str, Any]] = items or []
+        self._items: Dict[str, List[Dict[str, Any]]] = items or []
+        self.selected_id = None
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
+        if self.selected_id is None:
+            return 0
         return 0 if parent.isValid() else len(self._items)
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:
+        if self.selected_id is None:
+            return None
         if not index.isValid():
             return None
         row = index.row()
         if row < 0 or row >= len(self._items):
             return None
-        item = self._items[row]
+        item = self._items[self.selected_id][row]
 
         if role == self.TypeRole:
             return item.get("type", "card")
-        if role == self.TextRole:
-            return item.get("text", "")
-        if role == self.TitleRole:
-            return item.get("title", "")
-        if role == self.BodyRole:
-            return item.get("body", "")
+        if role == self.NameRole:
+            return item.get("name", "")
         if role == self.CheckedRole:
             return bool(item.get("checked", False))
-        if role == self.ActionTypeRole:
-            return item.get("actionType", "")
+        if role == self.ValueRole:
+            return item.get("value", None)
         return None
 
     def roleNames(self) -> Dict[int, bytes]:
         return {
             self.TypeRole: b"type",
-            self.TextRole: b"text",
-            self.TitleRole: b"title",
-            self.BodyRole: b"body",
+            self.NameRole: b"name",
             self.CheckedRole: b"checked",
-            self.ActionTypeRole: b"actionType",
+            self.ValueRole: b"value",
         }
 
-    def set_items(self, items: List[Dict[str, Any]]) -> None:
+    def set_items(self, items: Dict[str, List[Dict[str, Any]]]) -> None:
         self.beginResetModel()
         self._items = list(items)
+        self.endResetModel()
+
+    def set_selected_id(self, id: str):
+        self.beginResetModel()
+        self.selected_id = id
         self.endResetModel()
 
 
@@ -163,9 +174,20 @@ def reducer(state: AppState, action: Dict[str, Any]) -> AppState:
 
     if t == "LEFT_ITEM_TAPPED":
         index = payload.get("index", 0)
-        new_items = [{**item, "is_selected": False} for item in state.left_items]
-        new_items[index]["is_selected"] = not state.left_items[index].get("is_selected", False)
-        return replace(state, left_items=new_items)
+        new_left_items = [{**item, "is_selected": False} for item in state.left_items]
+        new_left_items[index]["is_selected"] = not state.left_items[index].get("is_selected", False)
+
+        return replace(state, left_items=new_left_items)
+
+    if t == "OPTION_CHANGED":
+        option_id = payload.get("id")
+        new_option = dict(state.option(id=option_id))
+        new_option["value"] = payload.get("value")
+        new_options = state.right_items.copy()
+        new_options[state.selected_left_item_id()] = [
+            new_option if option_id == option.id else option for option in new_options[state.selected_left_item_id()]
+        ]
+        return replace(state, right_items=new_options)
 
     return state
 
@@ -200,6 +222,7 @@ class Store(QObject):
         # Independent updates: only touch what changed.
         if new_state.left_items != self._state.left_items:
             self._left_model.set_items(new_state.left_items)
+            self._right_model.set_selected_id(new_state.selected_left_item_id())
 
         if new_state.right_items != self._state.right_items:
             self._right_model.set_items(new_state.right_items)

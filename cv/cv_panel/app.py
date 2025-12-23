@@ -4,6 +4,7 @@ import os
 import sys
 import uuid
 from typing import Any, Dict, List
+import yaml
 
 from PySide6.QtQml import QQmlApplicationEngine
 from PySide6.QtWidgets import QApplication
@@ -11,46 +12,19 @@ from PySide6.QtWidgets import QApplication
 from store import Store, AppState
 
 
-def load_left_items_from_descriptors(descriptors_dir: str) -> List[Dict[str, Any]]:
-    items: List[Dict[str, Any]] = []
-    if not os.path.isdir(descriptors_dir):
-        return items
+def make_debug_app_state() -> AppState:
+    left_items = []
+    for i in range(20):
+        desc = "Example item " + ("— more text " * (i % 6))
+        left_items.append(
+            {
+                "id": str(uuid.uuid4()),
+                "name": f"Algorithm {i + 1}",
+                "description": desc,
+            }
+        )
 
-    # for root, _, files in os.walk(descriptors_dir):
-    #     for file in files:
-    #         path = os.path.join(root, file)
-    #         try:
-    #             with open(path, "r", encoding="utf-8") as f:
-    #                 config = yaml.safe_load(f) or {}
-    #             info = config.get("info") or {}
-    #             name = str(info.get("name", os.path.splitext(file)[0]))
-    #             desc = str(info.get("description", ""))
-    #             items.append(
-    #                 {
-    #                     "id": str(uuid.uuid4()),
-    #                     "name": name,
-    #                     "description": desc,
-    #                 }
-    #             )
-    #         except Exception as e:
-    #             print("Failed to parse config at:", path, "error:", e)
-
-    # Fallback if empty
-    if not items:
-        for i in range(20):
-            desc = "Example item " + ("— more text " * (i % 6))
-            items.append(
-                {
-                    "id": str(uuid.uuid4()),
-                    "name": f"Algorithm {i + 1}",
-                    "description": desc,
-                }
-            )
-    return items
-
-
-def make_default_right_items() -> List[Dict[str, Any]]:
-    return [
+    right_items = [
         {"type": "header", "text": "Right sidebar"},
         {
             "type": "card",
@@ -74,6 +48,43 @@ def make_default_right_items() -> List[Dict[str, Any]]:
             "payload": {"color": "#102018"},
         },
     ]
+    return AppState(left_items=left_items, right_items=right_items, center_color="#2a2a2a")
+
+
+def load_app_state(descriptors_dir: str) -> List[Dict[str, Any]]:
+    left_items: List[Dict[str, Any]] = []
+    right_items: Dict[str, List[Dict[str, Any]]] = {}
+    if not os.path.isdir(descriptors_dir):
+        return make_debug_app_state()
+
+    for root, _, files in os.walk(descriptors_dir):
+        for file in files:
+            path = os.path.join(root, file)
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    config = yaml.safe_load(f) or {}
+                info = config.get("info") or {}
+                id = str(uuid.uuid4())
+                left_items.append(
+                    {
+                        "id": id,
+                        "name": info.get("name", os.path.splitext(file)[0]),
+                        "description": info.get("description", ""),
+                    }
+                )
+                right_items[id] = []
+                options = config.get("options", [])
+                for option in options:
+                    right_items[id].append(dict(option))
+
+            except Exception as e:
+                print("Failed to parse config at:", path, "error:", e)
+
+    return AppState(
+        left_items=left_items,
+        right_items=right_items,
+        center_color="#2a2a2a",
+    )
 
 
 # ----------------------------
@@ -85,33 +96,27 @@ def main() -> None:
     base_dir = os.path.dirname(os.path.abspath(__file__))
     descriptors_dir = os.path.join(base_dir, "descriptors")
 
-    initial = AppState(left_items=[], right_items=[], center_color="#2a2a2a")
-    store = Store(initial)
+    app_state = load_app_state(descriptors_dir)
+    store = Store(app_state)
 
     app = QApplication(sys.argv)
     engine = QQmlApplicationEngine()
     engine.quit.connect(app.quit)
-
     engine.rootContext().setContextProperty("store", store)
-
     qml_path = os.path.join(base_dir, "main.qml")
     engine.load(qml_path)
     if not engine.rootObjects():
         raise RuntimeError(f"Failed to load QML: {qml_path}")
-
-    # INIT after QML is up (but before user interacts).
-    left_items = load_left_items_from_descriptors(descriptors_dir)
-    right_items = make_default_right_items()
-    store.dispatch(
-        {
-            "type": "INIT",
-            "payload": {
-                "left_items": left_items,
-                "right_items": right_items,
-                "center_color": "#2a2a2a",
-            },
-        }
-    )
+    # store.dispatch(
+    #     {
+    #         "type": "INIT",
+    #         "payload": {
+    #             "left_items": left_items,
+    #             "right_items": right_items,
+    #             "center_color": "#2a2a2a",
+    #         },
+    #     }
+    # )
 
     app.exec()
 

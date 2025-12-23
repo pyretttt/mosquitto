@@ -1,12 +1,14 @@
 info:
-  name: "Image Registration"
-  description: "Using homography, and ransac, to align one image into another"
+    name: "Image Registration"
+    description: "Using homography, and ransac, to align one image into another"
 
-layout:
-  type: horizontal
-  columns: 2
+workspace:
+  layout:
+    type: horizontal
+    columns: 2
 
 options:
   - type: integer_field
     value: 20
-    name: ransac_iterations
+    name: Ransac iterations
+    id: ransac_iter
