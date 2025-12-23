@@ -3,6 +3,8 @@ name = "detr_fork"
 version = "0.1.0"
 description = ""
 authors = ["Woodraw Willson <percalee@gmail.com>"]
+package-mode = false
+
 
 [tool.poetry.dependencies]
 python = ">=3.13.0,<3.16"
@@ -10,8 +12,6 @@ einops = "0.8.0"
 opencv-python = "4.10.0.84"
 pillow = "10.4.0"
 PyYAML = "6.0.1"
-torch = ">=0.0.0"
-torchvision = ">=0.0.0"
 tqdm = "4.66.4"
 scipy = "^1.16.3"
 
