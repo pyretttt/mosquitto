@@ -316,9 +316,9 @@ class DETR(nn.Module):
 
         batch_size, d_model, feat_h, feat_w = conv_out.shape
         if ab.AB.custom_get_spatial_position_embedding:
-            spatial_pos_embed = ab.get_spatial_position_embedding(self.d_model, conv_out.shape, conv_out.device)
+            spatial_pos_embed = ab.get_spatial_position_embedding(self.d_model, conv_out)
         else:
-            spatial_pos_embed = get_spatial_position_embedding(self.d_model, conv_out)
+            spatial_pos_embed = get_spatial_position_embedding(self.d_model, conv_out, conv_out.device)
         # spatial_pos_embed -> (feat_h * feat_w, d_model)
 
         conv_out = conv_out.reshape(batch_size, d_model, feat_h * feat_w).transpose(1, 2)
