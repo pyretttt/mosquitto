@@ -25,6 +25,7 @@ class LeftSidebarModel(QAbstractListModel):
     IdRole = Qt.UserRole + 1
     NameRole = Qt.UserRole + 2
     DescriptionRole = Qt.UserRole + 3
+    IsSelectedRole = Qt.UserRole + 4
 
     def __init__(self, items: List[Dict[str, Any]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
@@ -47,10 +48,18 @@ class LeftSidebarModel(QAbstractListModel):
             return item.get("name", "")
         if role == self.DescriptionRole:
             return item.get("description", "")
+        if role == self.IsSelectedRole:
+            return item.get("is_selected", False)
+
         return None
 
     def roleNames(self) -> Dict[int, bytes]:
-        return {self.IdRole: b"id", self.NameRole: b"name", self.DescriptionRole: b"description"}
+        return {
+            self.IdRole: b"id",
+            self.NameRole: b"name",
+            self.IsSelectedRole: b"isSelected",
+            self.DescriptionRole: b"description",
+        }
 
     def set_items(self, items: List[Dict[str, Any]]) -> None:
         self.beginResetModel()
@@ -113,9 +122,9 @@ class RightSidebarModel(QAbstractListModel):
 
 def reducer(state: AppState, action: Dict[str, Any]) -> AppState:
     t = action.get("type")
+    payload = action.get("payload", {})
 
     if t == "INIT":
-        payload = action.get("payload", {})
         return replace(
             state,
             left_items=payload.get("left_items", state.left_items),
@@ -129,7 +138,6 @@ def reducer(state: AppState, action: Dict[str, Any]) -> AppState:
         return replace(state, left_items=new_left)
 
     if t == "ADD_LEFT":
-        payload = action.get("payload", {})
         new_item = {
             "id": str(uuid.uuid4()),
             "name": payload.get("name", "New item"),
@@ -138,7 +146,7 @@ def reducer(state: AppState, action: Dict[str, Any]) -> AppState:
         return replace(state, left_items=[new_item] + state.left_items)
 
     if t == "TOGGLE_RIGHT":
-        row = int(action.get("payload", {}).get("row", -1))
+        row = int(payload).get("row", -1)
         if row < 0 or row >= len(state.right_items):
             return state
         new_right = list(state.right_items)
@@ -148,10 +156,16 @@ def reducer(state: AppState, action: Dict[str, Any]) -> AppState:
         return replace(state, right_items=new_right)
 
     if t == "SET_CENTER_COLOR":
-        color = action.get("payload", {}).get("color")
+        color = payload.get("color")
         if not isinstance(color, str) or not color:
             return state
         return replace(state, center_color=color)
+
+    if t == "LEFT_ITEM_TAPPED":
+        index = payload.get("index", 0)
+        new_items = [{**item, "is_selected": False} for item in state.left_items]
+        new_items[index]["is_selected"] = not state.left_items[index].get("is_selected", False)
+        return replace(state, left_items=new_items)
 
     return state
 

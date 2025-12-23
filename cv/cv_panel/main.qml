@@ -34,7 +34,11 @@ ApplicationWindow {
                     implicitHeight: content.implicitHeight + 20
                     height: implicitHeight
 
-                    color: (index % 2 === 0) ? "#232323" : "#1f1f1f"
+                    color: {
+                        if (isSelected)
+                            return "#343333ff";
+                        return (index % 2 === 0) ? "#232323" : "#1f1f1f";
+                    }
 
                     Column {
                         id: content
@@ -58,6 +62,12 @@ ApplicationWindow {
                             width: parent.width
                             visible: description.length > 0
                         }
+                    }
+                    TapHandler {
+                        onTapped: {
+                            store.dispatch({"type": "LEFT_ITEM_TAPPED", "payload": {"index": index}});
+                        }
+                        onPressedChanged: cell.opacity = pressed ? 0.7 : 1.0
                     }
                 }
 
