@@ -19,7 +19,6 @@ if torch.backends.mps.is_available():
 def collate_function(data):
     return tuple(zip(*data))
 
-
 def train(args):
     # Read the config file #
     with open(args.config_path, 'r') as file:

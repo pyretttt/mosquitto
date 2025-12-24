@@ -45,7 +45,7 @@ def get_spatial_position_embedding(emb_dim, feat_map):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, num_layers: int, num_heads: int, d_model: int, ff_inner_dim: int, dropout_prob: float = 0.0):
+    def __init__(self, num_layers: int, num_heads: int, d_model: int, ff_inner_dim: int, dropout_prob: float = 0.0,):
         super().__init__()
         self.num_layers = num_layers
         self.num_heads = num_heads
@@ -78,8 +78,8 @@ class TransformerEncoder(nn.Module):
             in_emb = self.attn_norms[i](out)
             q = in_emb + pos_emb
             k = in_emb + pos_emb
-            out_emb, attn_weights = self.attns[i](query=q, key=k, value=in_emb)
-            attn_weights.append(attn_weights)
+            out_emb, attn_weight = self.attns[i](query=q, key=k, value=in_emb)
+            attn_weights.append(attn_weight)
             out_emb = self.attn_dropouts[i](out_emb)
             out = out + out_emb
 
@@ -163,7 +163,7 @@ class TransformerDecoder(nn.Module):
             out = out + out_ff
             decoder_outputs.append(self.output_norm(out))
 
-        return torch.stack(decoder_outputs), torch.stack(decoder_cross_attn_weight)
+        return torch.stack(decoder_outputs), torch.stack(decoder_cross_attns)
 
 
 class MultiheadAttention(nn.Module):
@@ -184,7 +184,7 @@ class MultiheadAttention(nn.Module):
         self.dropout = dropout
         assert d_model % nheads == 0, "d_model must be divisible by number of heads for multihead attention"
         self.head_dim = d_model // nheads
-        self.q_proj = nn.Linear(3 * d_model, d_model, **factory_kwargs)
+        self.q_proj = nn.Linear(d_model, d_model, **factory_kwargs)
         self.k_proj = nn.Linear(d_model, d_model, **factory_kwargs)
         self.v_proj = nn.Linear(d_model, d_model, **factory_kwargs)
         self.out_proj = nn.Linear(d_model, d_model, **factory_kwargs)
