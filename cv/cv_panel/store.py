@@ -89,7 +89,7 @@ class RightSidebarModel(QAbstractListModel):
 
     def __init__(self, items: Dict[str, List[Dict[str, Any]]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
-        self._items: Dict[str, List[Dict[str, Any]]] = items or []
+        self._items: Dict[str, List[Dict[str, Any]]] = items or dict()
         self.selected_id = None
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
@@ -228,8 +228,6 @@ class Store(QObject):
     @Slot("QVariantMap")
     def dispatch(self, action: Dict[str, Any]) -> None:
         new_state = reducer(self._state, dict(action))
-
-        print(new_state.right_items)
 
         # Independent updates: only touch what changed.
         if new_state.left_items != self._state.left_items:
