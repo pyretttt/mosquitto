@@ -17,7 +17,7 @@ from PySide6.QtCore import (
 @dataclass(frozen=True)
 class AppState:
     left_items: List[Dict[str, Any]]
-    right_items: List[Dict[str, Any]]
+    right_items: Dict[str, List[Dict[str, Any]]]
     center_color: str
 
     def selected_left_item_id(self) -> str | None:
@@ -89,13 +89,15 @@ class RightSidebarModel(QAbstractListModel):
 
     def __init__(self, items: Dict[str, List[Dict[str, Any]]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
-        self._items: Dict[str, List[Dict[str, Any]]] = items or dict()
+        self._items: Dict[str, List[Dict[str, Any]]] = dict(items or {})
         self.selected_id = None
 
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if self.selected_id is None:
             return 0
-        return 0 if parent.isValid() else len(self._items[self.selected_id])
+        if parent.isValid():
+            return 0
+        return len(self._items.get(self.selected_id, []))
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:
         if self.selected_id is None:
@@ -103,12 +105,14 @@ class RightSidebarModel(QAbstractListModel):
         if not index.isValid():
             return None
         row = index.row()
-        if row < 0 or row >= len(self._items):
+        options = self._items.get(self.selected_id)
+        if row < 0 or row >= len(options):
             return None
-        item = self._items[self.selected_id][row]
+        if not options:
+            return None
 
+        item = options[row]
         if role == self.TypeRole:
-            print("ptype is: ", item.get("type"))
             return item.get("type", "card")
         if role == self.NameRole:
             return item.get("name", "")
@@ -132,7 +136,7 @@ class RightSidebarModel(QAbstractListModel):
 
     def set_items(self, items: Dict[str, List[Dict[str, Any]]]) -> None:
         self.beginResetModel()
-        self._items = list(items)
+        self._items = dict(items)
         self.endResetModel()
 
     def set_selected_id(self, id: str):
