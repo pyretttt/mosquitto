@@ -118,6 +118,7 @@ ApplicationWindow {
                         anchors.left: parent.left
                         anchors.right: parent.right
                         sourceComponent: {
+                            console.log("type is: ", type);
                             if (type === "header") return headerComp
                             if (type === "toggle") return toggleComp
                             if (type === "button") return buttonComp

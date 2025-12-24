@@ -104,16 +104,6 @@ def main() -> None:
     engine.load(qml_path)
     if not engine.rootObjects():
         raise RuntimeError(f"Failed to load QML: {qml_path}")
-    # store.dispatch(
-    #     {
-    #         "type": "INIT",
-    #         "payload": {
-    #             "left_items": left_items,
-    #             "right_items": right_items,
-    #             "center_color": "#2a2a2a",
-    #         },
-    #     }
-    # )
 
     app.exec()
 

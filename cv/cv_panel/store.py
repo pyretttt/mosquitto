@@ -108,6 +108,7 @@ class RightSidebarModel(QAbstractListModel):
         item = self._items[self.selected_id][row]
 
         if role == self.TypeRole:
+            print("ptype is: ", item.get("type"))
             return item.get("type", "card")
         if role == self.NameRole:
             return item.get("name", "")
