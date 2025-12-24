@@ -20,3 +20,8 @@ package-mode = false
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "debugpy (>=1.8.19,<2.0.0)"
+]

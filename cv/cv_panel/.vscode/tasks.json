@@ -1,0 +1,41 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "start app within mise",
+      "type": "shell",
+      "command": "mise",
+      "args": ["exec", "--", "poetry", "run", "python", "-m", "app"],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "mise: debugpy (wait)",
+      "type": "shell",
+      "command": "mise",
+      "args": [
+        "exec",
+        "--",
+        "poetry",
+        "run",
+        "python",
+        "-m",
+        "debugpy",
+        "--listen",
+        "127.0.0.1:5678",
+        "--wait-for-client",
+        "-m",
+        "app"
+      ],
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": [{ "regexp": ".*" }],
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": ".*",
+          "endsPattern": ".*(Waiting for client|waiting for client|Listening|listening).*"
+        }
+      },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    }
+  ]
+}
