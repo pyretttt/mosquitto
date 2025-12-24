@@ -72,10 +72,7 @@ def load_app_state(descriptors_dir: str) -> List[Dict[str, Any]]:
                         "description": info.get("description", ""),
                     }
                 )
-                right_items[id] = []
-                options = config.get("options", [])
-                for option in options:
-                    right_items[id].append(dict(option))
+                right_items[id] = config.get("options", [])
 
             except Exception as e:
                 print("Failed to parse config at:", path, "error:", e)

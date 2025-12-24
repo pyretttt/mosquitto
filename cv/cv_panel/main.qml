@@ -121,6 +121,7 @@ ApplicationWindow {
                             if (type === "header") return headerComp
                             if (type === "toggle") return toggleComp
                             if (type === "button") return buttonComp
+                            if (type === "value_selector") return valueSelector
                             if (type === "integer_field") return integerField
                             return cardComp
                         }
@@ -152,7 +153,7 @@ ApplicationWindow {
                                 spacing: 12
 
                                 Label {
-                                    text: model.name
+                                    text: model.data.name
                                     verticalAlignment: Text.AlignVCenter
                                     color: "white"
                                     font.pixelSize: 14
@@ -167,9 +168,42 @@ ApplicationWindow {
                                     from: 0
                                     to: 100
                                     stepSize: 1
-                                    value: model.value
+                                    value: model.data.value
                                     onValueModified: {
-                                        store.dispatch({ "type": "SET_CENTER_COLOR", "payload": model.payload || {} })
+                                        model.action.value = value;
+                                        store.dispatch(action);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Component {
+                        id: valueSelector
+                        Item {
+                            implicitHeight: valueSelectorItem.implicitHeight
+                            Column {
+                                id: valueSelectorItem
+                                spacing: 12
+
+                                Label {
+                                    text: model.data.name
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: "white"
+                                    font.pixelSize: 14
+                                    font.bold: false
+                                    wrapMode: Text.WordWrap
+                                }
+
+                                ComboBox {
+                                    id: combo
+                                    height: 28
+                                    model: model.data.options
+                                    currentIndex: model.data.currentIndex
+
+                                    onActivated: {
+                                        model.action.value = currentIndex;
+                                        store.dispatch(action);
                                     }
                                 }
                             }

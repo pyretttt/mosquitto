@@ -12,3 +12,11 @@ options:
     value: 20
     name: Ransac iterations
     id: ransac_iter
+  - type: value_selector
+    currentIndex: 0
+    options:
+      - one
+      - two
+      - three
+    name: Some values
+    id: value_selecting

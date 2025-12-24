@@ -35,6 +35,7 @@ class LeftSidebarModel(QAbstractListModel):
     NameRole = Qt.UserRole + 2
     DescriptionRole = Qt.UserRole + 3
     IsSelectedRole = Qt.UserRole + 4
+    DataRole = Qt.UserRole + 5
 
     def __init__(self, items: List[Dict[str, Any]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
@@ -59,6 +60,8 @@ class LeftSidebarModel(QAbstractListModel):
             return item.get("description", "")
         if role == self.IsSelectedRole:
             return item.get("is_selected", False)
+        if role == self.DataRole:
+            return item
 
         return None
 
@@ -68,6 +71,7 @@ class LeftSidebarModel(QAbstractListModel):
             self.NameRole: b"name",
             self.IsSelectedRole: b"isSelected",
             self.DescriptionRole: b"description",
+            self.DataRole: b"data",
         }
 
     def set_items(self, items: List[Dict[str, Any]]) -> None:
@@ -81,6 +85,7 @@ class RightSidebarModel(QAbstractListModel):
     NameRole = Qt.UserRole + 2
     CheckedRole = Qt.UserRole + 3
     ValueRole = Qt.UserRole + 4
+    DataRole = Qt.UserRole + 5
 
     def __init__(self, items: Dict[str, List[Dict[str, Any]]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
@@ -90,7 +95,7 @@ class RightSidebarModel(QAbstractListModel):
     def rowCount(self, parent: QModelIndex = QModelIndex()) -> int:
         if self.selected_id is None:
             return 0
-        return 0 if parent.isValid() else len(self._items)
+        return 0 if parent.isValid() else len(self._items[self.selected_id])
 
     def data(self, index: QModelIndex, role: int = Qt.DisplayRole) -> Any:
         if self.selected_id is None:
@@ -110,6 +115,9 @@ class RightSidebarModel(QAbstractListModel):
             return bool(item.get("checked", False))
         if role == self.ValueRole:
             return item.get("value", None)
+        if role == self.DataRole:
+            return item
+
         return None
 
     def roleNames(self) -> Dict[int, bytes]:
@@ -118,6 +126,7 @@ class RightSidebarModel(QAbstractListModel):
             self.NameRole: b"name",
             self.CheckedRole: b"checked",
             self.ValueRole: b"value",
+            self.DataRole: b"data",
         }
 
     def set_items(self, items: Dict[str, List[Dict[str, Any]]]) -> None:
@@ -218,6 +227,8 @@ class Store(QObject):
     @Slot("QVariantMap")
     def dispatch(self, action: Dict[str, Any]) -> None:
         new_state = reducer(self._state, dict(action))
+
+        print(new_state.right_items)
 
         # Independent updates: only touch what changed.
         if new_state.left_items != self._state.left_items:
