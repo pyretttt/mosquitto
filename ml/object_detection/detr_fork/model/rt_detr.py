@@ -1,3 +1,4 @@
+import torch
 from torch import nn
 
 from model.ab import TransformerEncoder
@@ -74,9 +75,6 @@ class HybridEncoder(nn.Module):
         act="silu",
         eval_spatial_size=None,
     ):
-        """
-        Имплементация Hybrid Encoder.
-        """
         super().__init__()
         self.in_channels = in_channels
         self.feat_strides = feat_strides
