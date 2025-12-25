@@ -1,54 +1,11 @@
+"""Minimal Dash mock-up for experimenting with image transformations."""
+
 from __future__ import annotations
 
-import os
-import sys
-import uuid
-from typing import Any, Dict, List
-import yaml
+import dash_mantine_components as dmc
+import dash_html_components as html
 
-from PySide6.QtQml import QQmlApplicationEngine
-from PySide6.QtWidgets import QApplication
-
-from store import Store, AppState
-
-
-def make_debug_app_state() -> AppState:
-    left_items = []
-    for i in range(20):
-        desc = "Example item " + ("— more text " * (i % 6))
-        left_items.append(
-            {
-                "id": str(uuid.uuid4()),
-                "name": f"Algorithm {i + 1}",
-                "description": desc,
-            }
-        )
-
-    right_items = [
-        {"type": "header", "text": "Right sidebar"},
-        {
-            "type": "card",
-            "title": "Mixed cell types",
-            "body": "This list mixes different delegate layouts (card/toggle/button/header) with different heights.",
-        },
-        {"type": "toggle", "text": "Enable feature X", "checked": True},
-        {"type": "toggle", "text": "Enable feature Y", "checked": False},
-        {"type": "button", "text": "Shuffle left items", "actionType": "SHUFFLE_LEFT"},
-        {"type": "button", "text": "Add left item", "actionType": "ADD_LEFT"},
-        {
-            "type": "button",
-            "text": "Center: dark blue",
-            "actionType": "SET_CENTER_COLOR",
-            "payload": {"color": "#102030"},
-        },
-        {
-            "type": "button",
-            "text": "Center: dark green",
-            "actionType": "SET_CENTER_COLOR",
-            "payload": {"color": "#102018"},
-        },
-    ]
-    return AppState(left_items=left_items, right_items=right_items, center_color="#2a2a2a")
+from dash import Dash, Input, Output, html
 
 
 def load_app_state(descriptors_dir: str) -> List[Dict[str, Any]]:
@@ -84,29 +41,84 @@ def load_app_state(descriptors_dir: str) -> List[Dict[str, Any]]:
     )
 
 
-# ----------------------------
-# App
-# ----------------------------
+TRANSFORMATIONS = [
+    {"name": "Grayscale"},
+    {"name": "Blur"},
+    {"name": "Edge Detection"},
+    {"name": "Perspective Warp"},
+    {"name": "Histogram Equalization"},
+]
+
+TRANSFORMATION_OPTIONS = {
+    "Grayscale": ["Channel averaging", "Keep alpha"],
+    "Blur": ["Kernel size: 5x5", "Gaussian"],
+    "Edge Detection": ["Canny", "Threshold 1 / Threshold 2"],
+    "Perspective Warp": ["4-point homography", "Bicubic resampling"],
+    "Histogram Equalization": ["CLAHE", "Tile size 8x8"],
+}
+
+app: Dash = Dash(__name__, title="Dash Image Transform Panel")
 
 
-def main() -> None:
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    descriptors_dir = os.path.join(base_dir, "descriptors")
+layout = dmc.AppShell(
+    [
+        dmc.AppShellHeader(
+            dmc.Group(
+                [
+                    dmc.Burger(
+                        id="burger",
+                        size="sm",
+                        hiddenFrom="sm",
+                        opened=False,
+                    ),
+                    dmc.Title("Demo App", c="blue"),
+                ],
+                h="100%",
+                px="md",
+            )
+        ),
+        dmc.AppShellNavbar(
+            id="navbar",
+            children=[
+                "Navbar",
+                *[dmc.Skeleton(height=28, mt="sm", animate=False) for _ in range(15)],
+            ],
+            p="md",
+        ),
+        dmc.AppShellMain("Aside is hidden on md breakpoint and cannot be opened when it is collapsed"),
+        dmc.AppShellAside("Aside", p="md"),
+        dmc.AppShellFooter("Footer", p="md"),
+    ],
+    header={"height": 60},
+    footer={"height": 60},
+    navbar={
+        "width": 300,
+        "breakpoint": "sm",
+        "collapsed": {"mobile": True},
+    },
+    aside={
+        "width": 300,
+        "breakpoint": "md",
+        "collapsed": {"desktop": False, "mobile": True},
+    },
+    padding="md",
+    id="appshell",
+)
+app.layout = dmc.MantineProvider(layout)
 
-    app_state = load_app_state(descriptors_dir)
-    store = Store(app_state)
 
-    app = QApplication(sys.argv)
-    engine = QQmlApplicationEngine()
-    engine.quit.connect(app.quit)
-    engine.rootContext().setContextProperty("store", store)
-    qml_path = os.path.join(base_dir, "main.qml")
-    engine.load(qml_path)
-    if not engine.rootObjects():
-        raise RuntimeError(f"Failed to load QML: {qml_path}")
-
-    app.exec()
+@app.callback(
+    Output("selected-transform", "children"),
+    Output("option-list", "children"),
+    Input("transform-table", "selected_rows"),
+)
+def update_selection(selected_rows: list[int] | None):
+    row_index = selected_rows[0] if selected_rows else 0
+    row_index = max(0, min(row_index, len(TRANSFORMATIONS) - 1))
+    name = TRANSFORMATIONS[row_index]["name"]
+    options = TRANSFORMATION_OPTIONS.get(name, ["No options available."])
+    return name, [html.Li(option) for option in options]
 
 
 if __name__ == "__main__":
-    main()
+    app.run(debug=True)
