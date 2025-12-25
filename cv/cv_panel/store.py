@@ -86,6 +86,7 @@ class RightSidebarModel(QAbstractListModel):
     CheckedRole = Qt.UserRole + 3
     ValueRole = Qt.UserRole + 4
     DataRole = Qt.UserRole + 5
+    ActionRole = Qt.UserRole + 6
 
     def __init__(self, items: Dict[str, List[Dict[str, Any]]] | None = None, parent: QObject | None = None):
         super().__init__(parent)
@@ -122,6 +123,8 @@ class RightSidebarModel(QAbstractListModel):
             return item.get("value", None)
         if role == self.DataRole:
             return item
+        if role == self.ActionRole:
+            return {"type": "OPTION_CHANGED", "payload": {"id": item["id"], "value": None}}
 
         return None
 

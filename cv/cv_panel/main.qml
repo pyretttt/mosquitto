@@ -182,6 +182,9 @@ ApplicationWindow {
                     Component {
                         id: valueSelector
                         Item {
+                            readonly property var optionsModel: model.data.options
+                            readonly property var index: model.data.currentIndex
+
                             implicitHeight: valueSelectorItem.implicitHeight
                             Column {
                                 id: valueSelectorItem
@@ -199,8 +202,8 @@ ApplicationWindow {
                                 ComboBox {
                                     id: combo
                                     height: 28
-                                    model: model.data.options
-                                    currentIndex: model.data.currentIndex
+                                    model: optionsModel
+                                    currentIndex: index
 
                                     onActivated: {
                                         model.action.value = currentIndex;
