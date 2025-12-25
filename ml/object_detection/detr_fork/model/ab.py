@@ -45,7 +45,14 @@ def get_spatial_position_embedding(emb_dim, feat_map):
 
 
 class TransformerEncoder(nn.Module):
-    def __init__(self, num_layers: int, num_heads: int, d_model: int, ff_inner_dim: int, dropout_prob: float = 0.0,):
+    def __init__(
+        self,
+        num_layers: int,
+        num_heads: int,
+        d_model: int,
+        ff_inner_dim: int,
+        dropout_prob: float = 0.0,
+    ):
         super().__init__()
         self.num_layers = num_layers
         self.num_heads = num_heads
@@ -53,14 +60,19 @@ class TransformerEncoder(nn.Module):
             [
                 MultiheadAttention(d_model=d_model, nheads=num_heads, dropout=dropout_prob, batch_first=True)
                 if AB.custom_mha
-                else nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout_prob, batch_first=True)
+                else nn.MultiheadAttention(
+                    embed_dim=d_model, num_heads=num_heads, dropout=dropout_prob, batch_first=True
+                )
                 for _ in range(num_layers)
             ]
         )
         self.ffs = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.Linear(d_model, ff_inner_dim), nn.Dropout(dropout_prob), nn.ReLU(), nn.Linear(ff_inner_dim, d_model)
+                    nn.Linear(d_model, ff_inner_dim),
+                    nn.Dropout(dropout_prob),
+                    nn.ReLU(),
+                    nn.Linear(ff_inner_dim, d_model),
                 )
                 for _ in range(num_layers)
             ]
@@ -101,7 +113,9 @@ class TransformerDecoder(nn.Module):
             [
                 MultiheadAttention(d_model=d_model, nheads=num_heads, dropout=dropout_prob, batch_first=True)
                 if AB.custom_mha
-                else nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout_prob, batch_first=True)
+                else nn.MultiheadAttention(
+                    embed_dim=d_model, num_heads=num_heads, dropout=dropout_prob, batch_first=True
+                )
                 for _ in range(num_layers)
             ]
         )
@@ -109,7 +123,9 @@ class TransformerDecoder(nn.Module):
             [
                 MultiheadAttention(d_model=d_model, nheads=num_heads, dropout=dropout_prob, batch_first=True)
                 if AB.custom_mha
-                else nn.MultiheadAttention(embed_dim=d_model, num_heads=num_heads, dropout=dropout_prob, batch_first=True)
+                else nn.MultiheadAttention(
+                    embed_dim=d_model, num_heads=num_heads, dropout=dropout_prob, batch_first=True
+                )
                 for _ in range(num_layers)
             ]
         )
@@ -117,7 +133,10 @@ class TransformerDecoder(nn.Module):
         self.ffs = nn.ModuleList(
             [
                 nn.Sequential(
-                    nn.Linear(d_model, ff_inner_dim), nn.Dropout(dropout_prob), nn.ReLU(), nn.Linear(ff_inner_dim, d_model)
+                    nn.Linear(d_model, ff_inner_dim),
+                    nn.Dropout(dropout_prob),
+                    nn.ReLU(),
+                    nn.Linear(ff_inner_dim, d_model),
                 )
                 for _ in range(num_layers)
             ]
@@ -173,8 +192,8 @@ class MultiheadAttention(nn.Module):
         d_model: int,
         batch_first: bool,
         dropout: float,
-        device = None,
-        dtype = None,
+        device=None,
+        dtype=None,
     ):
         super().__init__()
         factory_kwargs = {"device": device, "dtype": dtype}
