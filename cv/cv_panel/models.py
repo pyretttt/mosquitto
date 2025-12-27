@@ -1,6 +1,11 @@
-from typing import List, Optional, Union
-from dataclasses import dataclass
+from typing import List, Optional, Union, Self
+from dataclasses import dataclass, field
 from numbers import Number
+import uuid
+
+
+def make_uuid() -> str:
+    return str(uuid.uuid4())
 
 
 @dataclass
@@ -53,24 +58,44 @@ OptionVariant = Union[NumberField | ValueSelector | Field | Checkbox]
 
 @dataclass
 class Option:
-    id: str
     name: str
-    description: Optional[str]
     info: OptionVariant
+    description: Optional[str] = None
+    id: str = field(default_factory=make_uuid)
 
 
 @dataclass
 class Method:
-    id: str
-    title: str
+    name: str
     description: str
     options: List[Option]
+    id: str = field(default_factory=make_uuid)
+
+
+MenuActionVariant = Union[str | List[Self]]
+
+
+@dataclass
+class Menu:
+    name: str
+    action: MenuActionVariant
+
+
+def make_default_menu() -> List[Menu]:
+    return [
+        Menu(name="File", action="save"),
+        Menu(
+            name="Transforms",
+            action=[Menu(name="Flip horizontally", action="flip_h"), Menu(name="Flip vertically", action="flip_v")],
+        ),
+    ]
 
 
 @dataclass
 class AppState:
     methods: List[Method]
-    selected_id: Optional[str]
+    selected_id: Optional[str] = None
+    menu: Menu = field(default_factory=make_default_menu)
 
     @property
     def selected_method(self) -> Optional[Method]:
