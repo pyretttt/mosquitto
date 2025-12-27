@@ -100,8 +100,8 @@ def make_default_menu() -> List[Menu]:
                 Menu(
                     name="Inner level",
                     action=[
-                        Menu(name="Flip horizontally", action="flip_h2"),
-                        Menu(name="Flip vertically", action="flip_v2"),
+                        Menu(name="Flip horizontally2", action="flip_h2"),
+                        Menu(name="Flip vertically2", action="flip_v2"),
                     ],
                 ),
             ],

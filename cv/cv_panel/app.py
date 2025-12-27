@@ -58,14 +58,25 @@ def make_menu(menu: Menu, depth=1) -> dmc.Menu:
     MenuComponent = dmc.SubMenu if depth > 1 else dmc.Menu
     MenuTargetComponent = dmc.SubMenuTarget if depth > 1 else dmc.MenuTarget
     MenuDropdownComponent = dmc.SubMenuDropdown if depth > 1 else dmc.MenuDropdown
-    MenuItemComponent = dmc.SubMenuItem if depth > 1 else dmc.MenuItem
+    MenuItemComponent = dmc.MenuItem
 
-    children = [MenuTargetComponent(children=dmc.Button(children=menu.name, id=get_menu_id(menu)))]
+    target_children = (
+        dmc.Button(children=menu.name, id=get_menu_id(menu))
+        if depth == 1
+        else dmc.SubMenuItem(
+            children=menu.name,
+            rightSection=DashIconify(icon="tabler:chevron-right", height=12),
+            id=get_menu_id(menu),
+        )
+    )
+    children = [MenuTargetComponent(children=target_children)]
     if sub_items := get_items(menu):
         children.append(
             MenuDropdownComponent(
                 children=[
-                    MenuItemComponent(subitem.name) if subitem.is_leaf else make_menu(subitem, depth=depth + 1)
+                    MenuItemComponent(subitem.name, id=get_menu_id(subitem))
+                    if subitem.is_leaf
+                    else make_menu(subitem, depth=depth + 1)
                     for subitem in sub_items
                 ]
             )
