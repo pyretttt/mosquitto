@@ -61,7 +61,9 @@ def make_menu(menu: Menu, depth=1) -> dmc.Menu:
     MenuItemComponent = dmc.MenuItem
 
     target_children = (
-        dmc.Button(children=menu.name, id=get_menu_id(menu))
+        dmc.Button(
+            children=menu.name, id=get_menu_id(menu), radius="xs", variant="subtle", size="compact-xs", h=24, c="gray.4"
+        )
         if depth == 1
         else dmc.SubMenuItem(
             children=menu.name,
@@ -96,9 +98,9 @@ def make_header(app_state: AppState) -> dmc.AppSheelHeader:
             id="header-group",
             children=[make_menu(menu) for menu in app_state.menu],
             justify="flex-start",
-            gap="xs",
+            gap="2",
             grow=False,
-            px="md",
+            px="xs",
         ),
     )
 
