@@ -1,18 +1,44 @@
 """Minimal Dash mock-up for experimenting with image transformations."""
 
 from __future__ import annotations
+from typing import List
+import os
+import uuid
 
+import yaml
 import dash_mantine_components as dmc
-import dash_html_components as html
-
 from dash import Dash, Input, Output, html
 
+from models import Method, Option, AppState, OptionVariant, NumberField, ValueSelector, Field, Checkbox
 
-def load_app_state(descriptors_dir: str) -> List[Dict[str, Any]]:
-    left_items: List[Dict[str, Any]] = []
-    right_items: Dict[str, List[Dict[str, Any]]] = {}
+
+def make_option_info(option: dict) -> OptionVariant:
+    option_type = option.get("type")
+    if option_type == "number_field":
+        return NumberField(
+            value=option.get("value", float("nan")),
+            min_value=option.get("min_value", float("nan")),
+            max_value=option.get("max_value", float("nan")),
+        )
+    elif option_type == "value_selector":
+        values = option.get("values", [])
+        idx = option.get("selected_idx", 0)
+        assert len(values) and idx < len(values) and idx >= 0
+        return ValueSelector(
+            values=values,
+            selected_idx=idx,
+        )
+    elif option_type == "field":
+        return Field(value=option.get("value", ""))
+    elif option_type == "checkbox":
+        return Checkbox(value=option.get("value", False))
+
+
+def load_app_state(descriptors_dir: str) -> AppState:
+    methods: List[Method] = []
     if not os.path.isdir(descriptors_dir):
-        return make_debug_app_state()
+        # return make_debug_app_state()
+        pass
 
     for root, _, files in os.walk(descriptors_dir):
         for file in files:
@@ -22,24 +48,33 @@ def load_app_state(descriptors_dir: str) -> List[Dict[str, Any]]:
                     config = yaml.safe_load(f) or {}
                 info = config.get("info") or {}
                 id = str(uuid.uuid4())
-                left_items.append(
-                    {
-                        "id": id,
-                        "name": info.get("name", os.path.splitext(file)[0]),
-                        "description": info.get("description", ""),
-                    }
+
+                options = [
+                    Option(
+                        id=raw_option.get("id"),
+                        name=raw_option.get("name", "L10n.name"),
+                        description=raw_option.get("description"),
+                        info=make_option_info(option=raw_option),
+                    )
+                    for raw_option in config.get("options", [])
+                ]
+                methods.append(
+                    Method(
+                        id=id,
+                        title=info.get("name", "L10n.title"),
+                        description=info.get("description", "L10n.description"),
+                        options=options,
+                    )
                 )
-                right_items[id] = config.get("options", [])
 
             except Exception as e:
-                print("Failed to parse config at:", path, "error:", e)
+                print("Failed to parse config at:", path, "error:", repr(e))
 
-    return AppState(
-        left_items=left_items,
-        right_items=right_items,
-        center_color="#2a2a2a",
-    )
+    return AppState(methods=methods, selected_id=None)
 
+
+app_state = load_app_state("descriptors")
+print(app_state)
 
 TRANSFORMATIONS = [
     {"name": "Grayscale"},

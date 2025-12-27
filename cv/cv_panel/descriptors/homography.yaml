@@ -8,13 +8,15 @@ workspace:
     columns: 2
 
 options:
-  - type: integer_field
+  - type: number_field
     value: 20
+    min_value: 1
+    max_value: 1000000
     name: Ransac iterations
     id: ransac_iter
   - type: value_selector
-    currentIndex: 0
-    options:
+    selected_idx: 0
+    values:
       - one
       - two
       - three
