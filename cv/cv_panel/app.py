@@ -8,7 +8,7 @@ import dash_mantine_components as dmc
 from dash import Dash, Input, Output, html, dcc
 from dash_iconify import DashIconify
 
-from models import AppState, MenuActionVariant, Menu
+from models import AppState, Menu
 from methods import image_registration
 
 app_state = AppState(
@@ -37,37 +37,44 @@ def make_navbar(app_state: AppState) -> dmc.AppShellNavbar:
 
 
 def make_menu(menu: Menu, depth=1) -> dmc.Menu:
-    def get_menu_id(menu: MenuActionVariant) -> str:
-        match menu.action:
-            case str():
-                return menu.action
-            case [*menus]:
-                return menu.name
+    def get_menu_id(menu_def: Menu) -> str:
+        match menu_def.action:
+            case str(action_id):
+                return action_id
+            case [*_]:
+                return menu_def.name
             case _:
-                raise ValueError(f"Unknown type is passed {type(menu.action)}")
+                raise ValueError(f"Unknown action type: {type(menu_def.action)}")
 
-    def get_submenus(menu: MenuActionVariant) -> Optional[str]:
-        match menu:
+    def get_items(menu_def: Menu) -> Optional[list[Menu]]:
+        match menu_def.action:
             case str():
                 return None
-            case [*menus] if menu and all(isinstance(v, Menu) for v in menu):
+            case [*menus] if all(isinstance(v, Menu) for v in menus):
                 return menus
+            case _:
+                raise ValueError(f"Unknown submenu type: {type(menu_def.action)}")
 
-    Menu = dmc.SubMenu if depth > 1 else dmc.Menu
-    MenuTarget = dmc.SubMenuTarget if depth > 1 else dmc.MenuTarget
-    MenuDropdown = dmc.SubMenuDropdown if depth > 1 else dmc.MenuDropdown
-    # MenuItem = dmc.SubMenuItem if depth > 1 else dmc.MenuItem
-    submenu = get_submenus(menu)
-    return Menu(
+    MenuComponent = dmc.SubMenu if depth > 1 else dmc.Menu
+    MenuTargetComponent = dmc.SubMenuTarget if depth > 1 else dmc.MenuTarget
+    MenuDropdownComponent = dmc.SubMenuDropdown if depth > 1 else dmc.MenuDropdown
+    MenuItemComponent = dmc.SubMenuItem if depth > 1 else dmc.MenuItem
+
+    children = [MenuTargetComponent(children=dmc.Button(children=menu.name, id=get_menu_id(menu)))]
+    if sub_items := get_items(menu):
+        children.append(
+            MenuDropdownComponent(
+                children=[
+                    MenuItemComponent(subitem.name) if subitem.is_leaf else make_menu(subitem, depth=depth + 1)
+                    for subitem in sub_items
+                ]
+            )
+        )
+    return MenuComponent(
         trigger="hover",
         openDelay=100,
         closeDelay=400,
-        children=[
-            MenuTarget(
-                children=dmc.Button(children=menu.name, id=get_menu_id(menu)),
-            ),
-            MenuDropdown(children=make_menu(submenu)) if submenu is not None else None,
-        ],
+        children=children,
         transitionProps={"transition": "rotate-right", "duration": 150},
     )
 

@@ -80,13 +80,31 @@ class Menu:
     name: str
     action: MenuActionVariant
 
+    @property
+    def is_leaf(self) -> bool:
+        match self.action:
+            case str():
+                return True
+            case _:
+                return False
+
 
 def make_default_menu() -> List[Menu]:
     return [
         Menu(name="File", action="save"),
         Menu(
             name="Transforms",
-            action=[Menu(name="Flip horizontally", action="flip_h"), Menu(name="Flip vertically", action="flip_v")],
+            action=[
+                Menu(name="Flip horizontally", action="flip_h"),
+                Menu(name="Flip vertically", action="flip_v"),
+                Menu(
+                    name="Inner level",
+                    action=[
+                        Menu(name="Flip horizontally", action="flip_h2"),
+                        Menu(name="Flip vertically", action="flip_v2"),
+                    ],
+                ),
+            ],
         ),
     ]
 
@@ -95,7 +113,7 @@ def make_default_menu() -> List[Menu]:
 class AppState:
     methods: List[Method]
     selected_id: Optional[str] = None
-    menu: Menu = field(default_factory=make_default_menu)
+    menu: List[Menu] = field(default_factory=make_default_menu)
 
     @property
     def selected_method(self) -> Optional[Method]:
