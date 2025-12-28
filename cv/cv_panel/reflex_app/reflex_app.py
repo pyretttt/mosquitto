@@ -27,10 +27,16 @@ def navbar() -> rx.Component:
             spacing="2",
             align="stretch",
         ),
-        width="220px",
+        width="160px",
+        min_w="160px",
+        max_w="160px",
         padding="0rem",
         border_right="1px solid var(--gray-5)",
         bg="var(--gray-1)",
+        height="100%",
+        min_h="0",
+        overflow_y="auto",
+        flex_shrink="0",
         # min_h="calc(100vh - 64px)",
     )
 
@@ -87,10 +93,7 @@ def header() -> rx.Component:
             size="1",
             on_click=AppViewState.toggle_navbar,
         ),
-        rx.flex(
-            *[menu_dropdown(menu) for menu in APP_STATE.menu],
-            gap="0.5rem",
-        ),
+        rx.flex(*[menu_dropdown(menu) for menu in APP_STATE.menu], gap="0.5rem", align="center"),
         rx.spacer(),
         rx.text("Reflex CV Panel", font_weight="bold"),
         align="center",
@@ -104,16 +107,53 @@ def header() -> rx.Component:
 def option_card(option) -> rx.Component:
     return rx.box(
         rx.text(option["name"], font_weight="medium"),
-        rx.text(option["value"], color="gray"),
         rx.cond(
             option["description"] != "",
             rx.text(option["description"], color="gray"),
             rx.box(),
         ),
+        option_control(option),
         border="1px solid var(--gray-5)",
         border_radius="8px",
         padding="0.75rem",
         width="100%",
+    )
+
+
+def option_control(option) -> rx.Component:
+    return rx.cond(
+        option["type"] == "checkbox",
+        rx.flex(
+            rx.el.input(
+                type="checkbox",
+                default_checked=option["value"],
+            ),
+            align="center",
+            gap="0.5rem",
+        ),
+        rx.cond(
+            option["type"] == "select",
+            rx.el.select(
+                rx.foreach(option["values"], lambda value: rx.el.option(value, value=value)),
+                default_value=option["value"],
+                style={"width": "100%", "padding": "0.25rem"},
+            ),
+            rx.cond(
+                option["type"] == "number",
+                rx.el.input(
+                    type="number",
+                    default_value=option["value"],
+                    min=option["min"],
+                    max=option["max"],
+                    style={"width": "100%", "padding": "0.25rem"},
+                ),
+                rx.el.input(
+                    type="text",
+                    default_value=option["value"],
+                    style={"width": "100%", "padding": "0.25rem"},
+                ),
+            ),
+        ),
     )
 
 
@@ -128,21 +168,58 @@ def method_details() -> rx.Component:
             size="4",
         ),
         rx.text(AppViewState.selected_method_description, color="gray"),
-        rx.foreach(
-            AppViewState.selected_method_options,
-            lambda option: option_card(option),
-        ),
-        spacing="6",
+        spacing="4",
         width="100%",
+        align="start",
+    )
+
+
+def method_options_sidebar() -> rx.Component:
+    return rx.vstack(
+        rx.heading("Method options", size="3"),
+        rx.cond(
+            AppViewState.selected_method_options.length() > 0,
+            rx.foreach(
+                AppViewState.selected_method_options,
+                lambda option: option_card(option),
+            ),
+            rx.text("No options available.", color="gray"),
+        ),
+        spacing="4",
+        width="100%",
+        align="stretch",
     )
 
 
 def main_content() -> rx.Component:
-    return rx.box(
-        method_details(),
+    return rx.flex(
+        rx.box(
+            method_details(),
+            flex="1",
+            padding="1.5rem",
+            width="100%",
+            min_h="0",
+            height="100%",
+            min_w="0",
+            overflow_y="auto",
+        ),
+        rx.box(
+            method_options_sidebar(),
+            width="160px",
+            min_w="160px",
+            max_w="160px",
+            padding="1.5rem",
+            border_left="1px solid var(--gray-5)",
+            bg="var(--gray-1)",
+            min_h="0",
+            height="100%",
+            overflow_y="auto",
+            flex_shrink="0",
+        ),
         flex="1",
-        padding="1.5rem",
         width="100%",
+        min_h="0",
+        height="100%",
     )
 
 
@@ -171,9 +248,11 @@ def app_shell() -> rx.Component:
                 display="flex",
                 flex_direction="column",
                 flex="1",
-                min_h="calc(100vh - 64px)",
+                min_h="0",
             ),
             width="100%",
+            flex="1",
+            min_h="0",
         ),
         display="flex",
         flex_direction="column",

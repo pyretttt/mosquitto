@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional, TypedDict, Literal, NotRequired
 
 import reflex as rx
 
@@ -15,6 +15,17 @@ from reflex_app.models import (
     make_default_menu,
 )
 import reflex_app.methods.image_registration as image_registration
+
+
+class RenderedOption(TypedDict):
+    id: str
+    name: str
+    description: str
+    type: Literal["number", "select", "text", "checkbox"]
+    value: Any
+    min: NotRequired[Any]
+    max: NotRequired[Any]
+    values: NotRequired[list[str]]
 
 
 APP_STATE = AppState(
@@ -60,32 +71,60 @@ class AppViewState(rx.State):
         return method.description if method else "Select a method to see the details."
 
     @rx.var
-    def selected_method_options(self) -> list[dict[str, str]]:
+    def selected_method_options(self) -> list[RenderedOption]:
         method = get_method(self.selected_method_id)
         if method is None:
             return []
-        rendered: list[dict[str, str]] = []
+        rendered: list[RenderedOption] = []
         for option in method.options:
-            rendered.append(
-                {
-                    "name": option.name,
-                    "value": describe_option(option),
-                    "description": option.description or "",
-                }
-            )
+            rendered.append(serialize_option(option))
         return rendered
 
 
-def describe_option(option: Option) -> str:
+def serialize_option(option: Option) -> RenderedOption:
     info = option.info
+    base: RenderedOption = {
+        "id": option.id,
+        "name": option.name,
+        "description": option.description or "",
+    }
     match info:
         case NumberField():
-            return f"{info.value} (range {info.min_value}–{info.max_value})"
+            base.update(
+                {
+                    "type": "number",
+                    "value": info.value,
+                    "min": info.min_value,
+                    "max": info.max_value,
+                }
+            )
         case ValueSelector():
-            return f"selected: {info.selected_value}"
+            base.update(
+                {
+                    "type": "select",
+                    "value": info.selected_value,
+                    "values": info.values,
+                }
+            )
         case Field():
-            return info.value
+            base.update(
+                {
+                    "type": "text",
+                    "value": info.value,
+                }
+            )
         case Checkbox():
-            return "enabled" if info.value else "disabled"
+            base.update(
+                {
+                    "type": "checkbox",
+                    "value": info.value,
+                }
+            )
         case _:
-            return ""
+            base.update(
+                {
+                    "type": "text",
+                    "value": "",
+                }
+            )
+    return base
