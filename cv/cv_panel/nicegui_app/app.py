@@ -16,6 +16,20 @@ from nicegui_app.state import (
 
 
 state = AppState()
+ui.add_css(
+    """
+html,
+body,
+#nicegui-root {
+    margin: 0;
+    padding: 0;
+}
+
+.no-dropdown-icon .q-btn-dropdown__arrow {
+    display: none;
+}
+"""
+)
 
 
 def on_method_selected(method_id: str) -> None:
@@ -38,7 +52,7 @@ def render_menu_items(items: List[Menu]) -> None:
             ui.menu_item(item.name, on_click=lambda _=None, action=item.action_id: on_menu_action(action))
         else:
             with ui.menu_item(item.name, auto_close=True):
-                with ui.item_section().props("side"):
+                with ui.item_section():
                     ui.icon("keyboard_arrow_right")
 
                 with ui.menu().props('anchor="top end" self="top start"'):
@@ -49,31 +63,32 @@ def render_menu(menu: Menu) -> None:
     if menu.is_leaf:
         ui.button(menu.name, on_click=lambda action=menu.action_id: on_menu_action(action)).props("flat color=gray")
     else:
-        with ui.dropdown_button(menu.name, icon="", auto_close=False).props("flat").classes("h-32px p-0"):
+        with ui.dropdown_button(menu.name, auto_close=False).props("flat").classes("h-32px p-1 no-dropdown-icon"):
             render_menu_items(menu.submenus)
 
 
 @ui.refreshable
 def methods_sidebar() -> None:
-    with ui.column().classes("w-64 h-full bg-gray-100 p-4 gap-3 overflow-y-auto border-r border-gray-200"):
-        ui.label("Methods").classes("text-xs font-semibold uppercase text-gray-500 tracking-wide")
+    with ui.column().classes(
+        "w-[160px] h-full bg-[#1e1e1e] text-gray-200 py-3 px-2 gap-2overflow-y-auto border-r border-[#333333]"
+    ):
+        ui.label("Methods").classes("text-[12px] font-semibold text-gray-400 tracking-wide px-1")
         for method in state.methods:
             is_selected = state.selected_method_id == method.id
-            button = (
-                ui.button(
-                    method.name,
-                    on_click=lambda m_id=method.id: on_method_selected(m_id),
-                )
-                .props("flat")
-                .classes("w-full justify-start")
+            button = ui.button(on_click=lambda m_id=method.id: on_method_selected(m_id)).props("flat")
+            button.classes(
+                "w-full justify-start items-start text-left px-2 py-1 gap-1 rounded-md "
+                "border border-transparent bg-transparent transition-colors duration-200"
             )
-            button.classes(add="border border-transparent rounded-lg")
             if is_selected:
-                button.classes(add="bg-primary text-white")
+                button.classes(add="bg-[#2d2d2d] border-[#4d4d4d] text-gray-100")
             else:
-                button.classes(add="text-gray-700 hover:bg-gray-200")
-            ui.label(method.description).classes("text-xs text-gray-500 ml-2")
-            ui.separator().classes("opacity-30")
+                button.classes(add="text-gray-300 hover:bg-[#292929]")
+            with button:
+                ui.label(method.name).classes("text-[12px] font-medium leading-tight")
+                if method.description:
+                    ui.label(method.description).classes("text-[10px] text-gray-400 leading-tight")
+        ui.space()
 
 
 def _checkbox_control(option: Option) -> None:
@@ -160,27 +175,29 @@ def options_sidebar() -> None:
         else:
             for option in options:
                 render_option_card(option)
+        ui.space()
 
 
 def build_layout() -> None:
-    with ui.header().classes("w-full h-32px bg-gray-100 px-4 py-0"):
-        with ui.row().classes("items-center gap-2 w-full"):
+    with ui.column().classes("h-screen w-screen bg-gray-50 p-0"):
+        with ui.row().classes("w-full h-32px bg-gray-100 px-4 py-0 items-center gap-2"):
             ui.label("Vision Panel").classes("font-semibold text-sm text-gray-800")
             for menu in state.menu:
                 render_menu(menu)
             ui.space()
-    with ui.column().classes("h-screen w-screen bg-gray-50"):
-        with ui.row().classes("flex-1 w-full overflow-hidden"):
-            methods_sidebar()
-            ui.element("div").classes("flex-1 h-full bg-white")
-            options_sidebar()
+        with ui.column().classes("w-screen flex-1 bg-gray-50"):
+            with ui.row().classes("flex-1 w-full overflow-hidden"):
+                methods_sidebar()
+                ui.element("div").classes("flex-1 h-full bg-white")
+                options_sidebar()
 
-    with ui.footer().classes("bg-gray-100 min-h-[48px] w-full border-t border-gray-200"):
-        pass
+        with ui.row().classes("bg-gray-100 h-24px w-full border-t border-gray-200"):
+            pass
 
 
 def main() -> None:
     build_layout()
+    ui.query(".nicegui-content").classes("p-0")
     dark_mode = ui.dark_mode()
     dark_mode.enable()
     ui.run(title="Image Transform Panel (NiceGUI)")
