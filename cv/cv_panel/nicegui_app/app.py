@@ -41,15 +41,15 @@ def render_menu_items(items: List[Menu]) -> None:
                 with ui.item_section().props("side"):
                     ui.icon("keyboard_arrow_right")
 
-                with ui.menu().props('anchor="top end" self="top start" auto-close'):
+                with ui.menu().props('anchor="top end" self="top start"'):
                     render_menu_items(item.submenus)
 
 
 def render_menu(menu: Menu) -> None:
     if menu.is_leaf:
-        ui.button(menu.name, on_click=lambda action=menu.action_id: on_menu_action(action)).props("flat color=primary")
+        ui.button(menu.name, on_click=lambda action=menu.action_id: on_menu_action(action)).props("flat color=gray")
     else:
-        with ui.dropdown_button(menu.name, auto_close=False).props("flat color=primary"):
+        with ui.dropdown_button(menu.name, icon="", auto_close=False).props("flat").classes("h-32px p-0"):
             render_menu_items(menu.submenus)
 
 
@@ -163,20 +163,11 @@ def options_sidebar() -> None:
 
 
 def build_layout() -> None:
-    ui.add_css(
-        """
-        body, #q-app {
-            height: 100%;
-        }
-        """
-    )
-
-    with ui.header().classes("w-full bg-gray-100 px-4 py-2 shadow-sm"):
-        with ui.row().classes("items-center gap-12 w-full"):
-            ui.label("Vision Panel").classes("font-semibold text-lg text-gray-800")
-            with ui.row().classes("gap-2"):
-                for menu in state.menu:
-                    render_menu(menu)
+    with ui.header().classes("w-full h-32px bg-gray-100 px-4 py-0"):
+        with ui.row().classes("items-center gap-2 w-full"):
+            ui.label("Vision Panel").classes("font-semibold text-sm text-gray-800")
+            for menu in state.menu:
+                render_menu(menu)
             ui.space()
     with ui.column().classes("h-screen w-screen bg-gray-50"):
         with ui.row().classes("flex-1 w-full overflow-hidden"):
