@@ -2,8 +2,7 @@ from __future__ import annotations
 
 import reflex as rx
 
-from reflex_app.models import Menu, Method
-from reflex_app.state import APP_STATE, AppViewState
+from reflex_app.state import Menu, Method, AppState
 
 
 def method_nav_button(method: Method) -> rx.Component:
@@ -12,10 +11,10 @@ def method_nav_button(method: Method) -> rx.Component:
         method.name,
         width="100%",
         justify_content="flex-start",
-        variant=rx.cond(AppViewState.selected_method_id == method.id, "solid", "ghost"),
-        color_scheme=rx.cond(AppViewState.selected_method_id == method.id, "blue", "gray"),
+        variant=rx.cond(AppState.selected_method_id == method.id, "solid", "ghost"),
+        color_scheme=rx.cond(AppState.selected_method_id == method.id, "blue", "gray"),
         size="1",
-        on_click=AppViewState.select_method(method.id),
+        on_click=AppState.select_method(method.id),
     )
 
 
@@ -23,79 +22,66 @@ def navbar() -> rx.Component:
     return rx.box(
         rx.vstack(
             rx.text("Methods", font_weight="bold"),
-            *[method_nav_button(method) for method in APP_STATE.methods],
-            spacing="2",
+            rx.foreach(AppState.methods, method_nav_button),
+            spacing="4",
             align="stretch",
         ),
         width="160px",
-        min_w="160px",
-        max_w="160px",
-        padding="0rem",
+        padding="0.5rem",
         border_right="1px solid var(--gray-5)",
-        bg="var(--gray-1)",
+        bg="var(--gray-3)",
         height="100%",
-        min_h="0",
         overflow_y="auto",
-        flex_shrink="0",
-        # min_h="calc(100vh - 64px)",
+        flex_shrink="1",
     )
 
 
 def menu_dropdown(menu: Menu) -> rx.Component:
-    if menu.is_leaf:
-        action_id = str(menu.action)
-        return rx.button(
+    print("type(menu): ", type(menu))
+    return rx.cond(
+        menu.is_leaf,
+        rx.button(
             menu.name,
             size="1",
             variant="ghost",
-            on_click=AppViewState.trigger_menu_action(action_id),
-        )
-    return rx.menu.root(
-        rx.menu.trigger(
-            rx.button(menu.name, size="1", variant="outline"),
+            on_click=AppState.trigger_menu_action(str(menu.action)),
         ),
-        rx.menu.content(
-            *[menu_item(submenu) for submenu in menu_items(menu)],
+        rx.menu.root(
+            rx.menu.trigger(
+                rx.button(menu.name, size="1", variant="ghost"),
+            ),
+            rx.menu.content(rx.foreach(menu.action, menu_item)),
         ),
     )
 
 
 def menu_item(menu: Menu) -> rx.Component:
-    if menu.is_leaf:
-        return rx.menu.item(
+    return rx.cond(
+        menu.is_leaf,
+        rx.menu.item(
             menu.name,
-            on_select=AppViewState.trigger_menu_action(str(menu.action)),
-        )
-    return rx.menu.sub(
-        rx.menu.sub_trigger(
-            rx.flex(
-                rx.text(menu.name),
-                rx.text("›", color="gray"),
-                gap="0.25rem",
-                align="center",
-            )
+            on_select=AppState.trigger_menu_action(str(menu.action)),
         ),
-        rx.menu.sub_content(
-            *[menu_item(submenu) for submenu in menu_items(menu)],
+        rx.menu.sub(
+            rx.menu.sub_trigger(
+                rx.text(menu.name),
+            ),
+            rx.menu.sub_content(rx.foreach(menu.action, menu_item)),
         ),
     )
-
-
-def menu_items(menu: Menu) -> list[Menu]:
-    return menu.action if isinstance(menu.action, list) else []
 
 
 def header() -> rx.Component:
     return rx.flex(
         rx.button(
-            rx.cond(AppViewState.navbar_collapsed, "Show menu", "Hide menu"),
+            rx.cond(AppState.navbar_collapsed, "Show menu", "Hide menu"),
             variant="ghost",
             size="1",
-            on_click=AppViewState.toggle_navbar,
+            on_click=AppState.toggle_navbar,
         ),
-        rx.flex(*[menu_dropdown(menu) for menu in APP_STATE.menu], gap="0.5rem", align="center"),
+        rx.flex(rx.foreach(AppState.menu, menu_dropdown), gap="0.5rem", align="center"),
         rx.spacer(),
-        rx.text("Reflex CV Panel", font_weight="bold"),
+        rx.text("Vision", font_weight="bold"),
         align="center",
         padding="0.75rem 1rem",
         border_bottom="1px solid var(--gray-5)",
@@ -105,6 +91,7 @@ def header() -> rx.Component:
 
 
 def option_card(option) -> rx.Component:
+    print(type(option))
     return rx.box(
         rx.text(option["name"], font_weight="medium"),
         rx.cond(
@@ -161,13 +148,13 @@ def method_details() -> rx.Component:
     return rx.vstack(
         rx.heading(
             rx.cond(
-                AppViewState.selected_method_name.length() > 0,
-                AppViewState.selected_method_name,
+                AppState.selected_method_name.length() > 0,
+                AppState.selected_method_name,
                 "Select a method",
             ),
             size="4",
         ),
-        rx.text(AppViewState.selected_method_description, color="gray"),
+        rx.text(AppState.selected_method_description, color="gray"),
         spacing="4",
         width="100%",
         align="start",
@@ -178,10 +165,10 @@ def method_options_sidebar() -> rx.Component:
     return rx.vstack(
         rx.heading("Method options", size="3"),
         rx.cond(
-            AppViewState.selected_method_options.length() > 0,
+            AppState.selected_method_options.length() > 0,
             rx.foreach(
-                AppViewState.selected_method_options,
-                lambda option: option_card(option),
+                AppState.selected_method_options,
+                option_card,
             ),
             rx.text("No options available.", color="gray"),
         ),
@@ -225,7 +212,7 @@ def main_content() -> rx.Component:
 
 def footer() -> rx.Component:
     return rx.flex(
-        rx.text(AppViewState.last_menu_action, font_size="1", color="gray"),
+        rx.text(AppState.last_menu_action, font_size="1", color="gray"),
         justify="between",
         padding="0.5rem 1.5rem",
         border_top="1px solid var(--gray-5)",
@@ -238,7 +225,7 @@ def app_shell() -> rx.Component:
         header(),
         rx.flex(
             rx.cond(
-                AppViewState.navbar_collapsed,
+                AppState.navbar_collapsed,
                 rx.box(width="0px"),
                 navbar(),
             ),
@@ -256,7 +243,8 @@ def app_shell() -> rx.Component:
         ),
         display="flex",
         flex_direction="column",
-        min_h="100vh",
+        align="start",
+        height="100vh",
         bg="var(--gray-2)",
     )
 
