@@ -5,14 +5,14 @@ from typing import Optional
 from dataclasses import asdict
 
 import dash_mantine_components as dmc
-from dash import Dash, Input, Output, html, dcc
+from dash import Dash, Input, Output, dcc, MATCH
 from dash_iconify import DashIconify
 
-from models import AppState, Menu
+from models import AppState, Menu, Method
 from methods import image_registration
 
 app_state = AppState(
-    methods=[image_registration.method_state],
+    methods=[image_registration.method_state, Method(name="HUI", description="Pizda", options=[])],
 )
 
 app: Dash = Dash(__name__, title="Dash Image Transform Panel")
@@ -22,13 +22,14 @@ def make_navbar(app_state: AppState) -> dmc.AppShellNavbar:
     return dmc.AppShellNavbar(
         id="navbar",
         children=[
-            dmc.NavLink(
-                label=method.name,
+            dmc.Button(
+                children=method.name,
                 leftSection=DashIconify(icon="hugeicons:apple-vision-pro", height=16),
-                variant="subtle",
-                active=True,
+                variant="light" if app_state.selected_id == method.id else "subtle",
                 p="4",
                 c="gray.4",
+                styles={"inner": {"justify-content": "left"}},
+                id={"type": "navbutton", "id": method.id},
             )
             for method in app_state.methods
         ],
@@ -136,16 +137,13 @@ app.layout = dmc.MantineProvider(
 
 
 @app.callback(
-    Output("app-state", "children"),
-    Output("option-list", "children"),
-    Input("transform-table", "selected_rows"),
+    # Output("app_state", "data"),
+    Output({"type": "navbutton", "id": MATCH}, "active"),
+    Input({"type": "navbutton", "id": MATCH}, "n_clicks"),
 )
-def update_selection(selected_rows: list[int] | None):
-    row_index = selected_rows[0] if selected_rows else 0
-    row_index = max(0, min(row_index, len(TRANSFORMATIONS) - 1))
-    name = TRANSFORMATIONS[row_index]["name"]
-    options = TRANSFORMATION_OPTIONS.get(name, ["No options available."])
-    return name, [html.Li(option) for option in options]
+def update_selection(n_clicks: int):
+    print(n_clicks)
+    return asdict(app_state)
 
 
 if __name__ == "__main__":
