@@ -37,8 +37,11 @@ def render_menu_items(items: List[Menu]) -> None:
         if item.is_leaf:
             ui.menu_item(item.name, on_click=lambda _=None, action=item.action_id: on_menu_action(action))
         else:
-            with ui.menu_item(item.name):
-                with ui.menu().props('anchor="top right" self="top left"'):
+            with ui.menu_item(item.name, auto_close=True):
+                with ui.item_section().props("side"):
+                    ui.icon("keyboard_arrow_right")
+
+                with ui.menu().props('anchor="top end" self="top start" auto-close'):
                     render_menu_items(item.submenus)
 
 
@@ -168,22 +171,21 @@ def build_layout() -> None:
         """
     )
 
+    with ui.header().classes("w-full bg-gray-100 px-4 py-2 shadow-sm"):
+        with ui.row().classes("items-center gap-4 w-full"):
+            ui.label("Vision Panel").classes("font-semibold text-lg text-gray-800")
+            with ui.row().classes("gap-2"):
+                for menu in state.menu:
+                    render_menu(menu)
+            ui.space()
     with ui.column().classes("h-screen w-screen bg-gray-50"):
-        with ui.header().classes("w-full bg-gray-100 px-4 py-2 shadow-sm"):
-            with ui.row().classes("items-center gap-4 w-full"):
-                ui.label("Vision Panel").classes("font-semibold text-lg text-gray-800")
-                with ui.row().classes("gap-2"):
-                    for menu in state.menu:
-                        render_menu(menu)
-                ui.space()
-
         with ui.row().classes("flex-1 w-full overflow-hidden"):
             methods_sidebar()
             ui.element("div").classes("flex-1 h-full bg-white")
             options_sidebar()
 
-        with ui.footer().classes("bg-gray-100 min-h-[48px] w-full border-t border-gray-200"):
-            pass
+    with ui.footer().classes("bg-gray-100 min-h-[48px] w-full border-t border-gray-200"):
+        pass
 
 
 def main() -> None:
@@ -191,5 +193,5 @@ def main() -> None:
     ui.run(title="Image Transform Panel (NiceGUI)")
 
 
-if __name__ == "__main__":
+if __name__ in ("__main__", "__mp_main__"):
     main()

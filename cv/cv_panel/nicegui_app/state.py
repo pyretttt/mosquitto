@@ -180,7 +180,7 @@ class AppState:
 
     @property
     def selected_method(self) -> Optional[Method]:
-        return next((method for method in self.methods if method.id == self.select_method_id))
+        return next((method for method in self.methods if method.id == self.selected_method_id))
 
     @property
     def selected_method_options(self) -> List[Option]:

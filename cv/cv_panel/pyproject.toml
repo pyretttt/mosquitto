@@ -16,6 +16,7 @@ dependencies = [
     "dash-core-components (>=2.0.0,<3.0.0)",
     "dash-iconify (>=0.1.2,<0.2.0)",
     "reflex (>=0.8.24.post1,<0.9.0)",
+    "nicegui (>=3.4.1,<4.0.0)",
 ]
 
 [tool.poetry]
