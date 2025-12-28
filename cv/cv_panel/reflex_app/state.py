@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 import uuid
 from numbers import Number
-from typing import Optional, List, Union, Self
+from typing import Optional, List, Union
 
 import reflex as rx
 
@@ -66,6 +66,18 @@ class Option:
     description: Optional[str] = None
     id: str = field(default_factory=make_uuid)
 
+    @property
+    def type(self) -> str:
+        match self.info:
+            case NumberField():
+                return "number_field"
+            case ValueSelector():
+                return "value_selector"
+            case Field():
+                return "field"
+            case Checkbox():
+                return "checkbox"
+
 
 @dataclass
 class Method:
@@ -75,18 +87,14 @@ class Method:
     id: str = field(default_factory=make_uuid)
 
 
-MenuActionVariant = Union[str | List[Self]]
-
-
 @dataclass
 class Menu:
     name: str
-    submenus: List[Menu]
     action_id: Optional[str] = None
+    submenus: List[Menu] = field(default_factory=list)
 
     @property
     def is_leaf(self) -> bool:
-        print("is_leaf: ", self.action_id is not None)
         return self.action_id is not None
 
 

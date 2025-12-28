@@ -36,7 +36,7 @@ def navbar() -> rx.Component:
     )
 
 
-def menu_dropdown(menu: Menu) -> rx.Component:
+def menu_dropdown(menu: Menu, depth=1) -> rx.Component:
     return rx.cond(
         menu.is_leaf,
         rx.button(
@@ -55,16 +55,9 @@ def menu_dropdown(menu: Menu) -> rx.Component:
 
 
 def menu_item(menu: Menu) -> rx.Component:
-    return rx.cond(
-        menu.is_leaf,
-        rx.menu.item(
-            menu.name,
-            on_select=AppState.trigger_menu_action(str(menu.action_id)),
-        ),
-        rx.menu.sub(
-            rx.menu.sub_trigger(rx.text(menu.name)),
-            rx.menu.sub_content(rx.foreach(menu.submenus, menu_item)),
-        ),
+    return rx.menu.item(
+        menu.name,
+        on_select=AppState.trigger_menu_action(str(menu.action_id)),
     )
 
 
@@ -88,12 +81,11 @@ def header() -> rx.Component:
 
 
 def option_card(option) -> rx.Component:
-    print(type(option))
     return rx.box(
-        rx.text(option["name"], font_weight="medium"),
+        rx.text(option.name, font_weight="medium"),
         rx.cond(
-            option["description"] != "",
-            rx.text(option["description"], color="gray"),
+            option.description is not None,
+            rx.text(option.description, color="gray"),
             rx.box(),
         ),
         option_control(option),
@@ -105,37 +97,41 @@ def option_card(option) -> rx.Component:
 
 
 def option_control(option) -> rx.Component:
-    return rx.cond(
-        option["type"] == "checkbox",
-        rx.flex(
-            rx.el.input(
-                type="checkbox",
-                default_checked=option["value"],
+    return (
+        rx.match(
+            option.type,
+            (
+                "checkbox",
+                rx.flex(
+                    rx.el.input(
+                        type="checkbox",
+                        default_checked=option.value,
+                    ),
+                    align="center",
+                    gap="0.5rem",
+                ),
             ),
-            align="center",
-            gap="0.5rem",
-        ),
-        rx.cond(
-            option["type"] == "select",
-            rx.el.select(
-                rx.foreach(option["values"], lambda value: rx.el.option(value, value=value)),
-                default_value=option["value"],
-                style={"width": "100%", "padding": "0.25rem"},
+            (
+                "value_selector",
+                rx.el.select(
+                    rx.foreach(option.values, lambda value: rx.el.option(value, value=value)),
+                    default_value=option.value,
+                    style={"width": "100%", "padding": "0.25rem"},
+                ),
             ),
-            rx.cond(
-                option["type"] == "number",
+            (
+                "number_field",
                 rx.el.input(
                     type="number",
-                    default_value=option["value"],
-                    min=option["min"],
-                    max=option["max"],
+                    default_value=option.value,
+                    min=option.min_value,
+                    max=option.max_value,
                     style={"width": "100%", "padding": "0.25rem"},
                 ),
-                rx.el.input(
-                    type="text",
-                    default_value=option["value"],
-                    style={"width": "100%", "padding": "0.25rem"},
-                ),
+            ),
+            (
+                "field",
+                rx.el.input(type="text", default_value=option.value, style={"width": "100%", "padding": "0.25rem"}),
             ),
         ),
     )
@@ -145,13 +141,13 @@ def method_details() -> rx.Component:
     return rx.vstack(
         rx.heading(
             rx.cond(
-                AppState.selected_method_name.length() > 0,
-                AppState.selected_method_name,
+                AppState.selected_method,
+                AppState.selected_method.name,
                 "Select a method",
             ),
             size="4",
         ),
-        rx.text(AppState.selected_method_description, color="gray"),
+        rx.text(AppState.selected_method.description, color="gray"),
         spacing="4",
         width="100%",
         align="start",
