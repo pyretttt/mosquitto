@@ -49,7 +49,7 @@ def render_menu(menu: Menu) -> None:
     if menu.is_leaf:
         ui.button(menu.name, on_click=lambda action=menu.action_id: on_menu_action(action)).props("flat color=primary")
     else:
-        with ui.dropdown_button(menu.name, auto_close=True).props("flat color=primary"):
+        with ui.dropdown_button(menu.name, auto_close=False).props("flat color=primary"):
             render_menu_items(menu.submenus)
 
 
@@ -172,7 +172,7 @@ def build_layout() -> None:
     )
 
     with ui.header().classes("w-full bg-gray-100 px-4 py-2 shadow-sm"):
-        with ui.row().classes("items-center gap-4 w-full"):
+        with ui.row().classes("items-center gap-12 w-full"):
             ui.label("Vision Panel").classes("font-semibold text-lg text-gray-800")
             with ui.row().classes("gap-2"):
                 for menu in state.menu:
@@ -190,6 +190,8 @@ def build_layout() -> None:
 
 def main() -> None:
     build_layout()
+    dark_mode = ui.dark_mode()
+    dark_mode.enable()
     ui.run(title="Image Transform Panel (NiceGUI)")
 
 
