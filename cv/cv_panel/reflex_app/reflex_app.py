@@ -37,20 +37,19 @@ def navbar() -> rx.Component:
 
 
 def menu_dropdown(menu: Menu) -> rx.Component:
-    print("type(menu): ", type(menu))
     return rx.cond(
         menu.is_leaf,
         rx.button(
             menu.name,
             size="1",
             variant="ghost",
-            on_click=AppState.trigger_menu_action(str(menu.action)),
+            on_click=AppState.trigger_menu_action(str(menu.action_id)),
         ),
         rx.menu.root(
             rx.menu.trigger(
                 rx.button(menu.name, size="1", variant="ghost"),
             ),
-            rx.menu.content(rx.foreach(menu.action, menu_item)),
+            rx.menu.content(rx.foreach(menu.submenus, menu_item)),
         ),
     )
 
@@ -60,13 +59,11 @@ def menu_item(menu: Menu) -> rx.Component:
         menu.is_leaf,
         rx.menu.item(
             menu.name,
-            on_select=AppState.trigger_menu_action(str(menu.action)),
+            on_select=AppState.trigger_menu_action(str(menu.action_id)),
         ),
         rx.menu.sub(
-            rx.menu.sub_trigger(
-                rx.text(menu.name),
-            ),
-            rx.menu.sub_content(rx.foreach(menu.action, menu_item)),
+            rx.menu.sub_trigger(rx.text(menu.name)),
+            rx.menu.sub_content(rx.foreach(menu.submenus, menu_item)),
         ),
     )
 

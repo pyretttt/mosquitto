@@ -81,30 +81,28 @@ MenuActionVariant = Union[str | List[Self]]
 @dataclass
 class Menu:
     name: str
-    action: MenuActionVariant
+    submenus: List[Menu]
+    action_id: Optional[str] = None
 
     @property
     def is_leaf(self) -> bool:
-        match self.action:
-            case str():
-                return True
-            case _:
-                return False
+        print("is_leaf: ", self.action_id is not None)
+        return self.action_id is not None
 
 
 def make_default_menu() -> List[Menu]:
     return [
-        Menu(name="File", action="save"),
+        Menu(name="File", action_id="save"),
         Menu(
             name="Transforms",
-            action=[
-                Menu(name="Flip horizontally", action="flip_h"),
-                Menu(name="Flip vertically", action="flip_v"),
+            submenus=[
+                Menu(name="Flip horizontally", action_id="flip_h"),
+                Menu(name="Flip vertically", action_id="flip_v"),
                 Menu(
                     name="Inner level",
-                    action=[
-                        Menu(name="Flip horizontally2", action="flip_h2"),
-                        Menu(name="Flip vertically2", action="flip_v2"),
+                    submenus=[
+                        Menu(name="Flip horizontally2", action_id="flip_h2"),
+                        Menu(name="Flip vertically2", action_id="flip_v2"),
                     ],
                 ),
             ],
