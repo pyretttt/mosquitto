@@ -210,9 +210,12 @@ def build_layout() -> None:
 
 
 def main() -> None:
+    ui.colors(
+        primary="#888",
+        accent="#202020",
+    )
     build_layout()
     ui.query(".nicegui-content").classes("p-0")
-    ui.colors(primary="#888", accent="#202020")
     dark_mode = ui.dark_mode()
     dark_mode.enable()
     ui.run(title="Image Transform Panel (NiceGUI)")
