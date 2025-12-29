@@ -17,8 +17,11 @@ from nicegui_app.state import (
 
 class Colors:
     brd = "#444"
-    central = "#1F1F1F"
+    effective = "#1F1F1F"
     brand = "#1A1A1A"
+    caption = "#2A2A2A"
+    text1 = "#888"
+    text2 = "#BBB"
 
 
 state = AppState()
@@ -55,11 +58,11 @@ def render_menu_items(items: List[Menu]) -> None:
         if item.is_leaf:
             ui.menu_item(
                 item.name, on_click=lambda _=None, action=item.action_id: on_menu_action(action), auto_close=True
-            ).classes("text-gray-200 hover:bg-accent text-xs min-h-[8px]")
+            ).classes(f"text-[{Colors.text1}] hover:bg-accent text-xs min-h-[8px]")
         else:
-            with ui.menu_item(item.name, auto_close=True).classes("text-gray-200 text-xs min-h-[8px]"):
+            with ui.menu_item(item.name, auto_close=True).classes(f"text-[{Colors.text1}] text-xs min-h-[8px]"):
                 with ui.item_section():
-                    ui.icon("keyboard_arrow_right").classes("text-gray-500 pl-2")
+                    ui.icon("keyboard_arrow_right").classes(f"text-[{Colors.text1}] pl-2")
 
                 with ui.menu().props('anchor="top end" self="top start"'):
                     render_menu_items(item.submenus)
@@ -72,14 +75,14 @@ def render_menu(menu: Menu) -> None:
                 menu.name, on_click=lambda _=None, action=menu.action_id: on_menu_action(action), auto_close=True
             )
             .props("flat dense")
-            .classes("text-xs tracking-wide text-gray-200 hover:text-white normal-case")
+            .classes(f"text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case")
         )
     else:
         with (
             ui.dropdown_button(menu.name, auto_close=False)
             .props("flat dense")
             .classes(
-                "h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-gray-200 hover:text-white normal-case"
+                f"h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case"
             )
         ):
             render_menu_items(menu.submenus)
@@ -87,9 +90,9 @@ def render_menu(menu: Menu) -> None:
 
 @ui.refreshable
 def methods_sidebar() -> None:
-    with ui.column().classes(f"w-[160px] h-full text-gray-200 px-3 py-1 gap-1 overflow-y-auto") as col:
+    with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-1 overflow-y-auto") as col:
         col.set_visibility(state.is_left_sidebar_visible)
-        ui.dropdown_button("methods").props("flat dense").classes("text-[11px] uppercase text-gray-300 px-1")
+        ui.dropdown_button("methods").props("flat dense").classes(f"text-[11px] uppercase text-[{Colors.text1}] px-1")
         for method in state.methods:
             is_selected = state.selected_method_id == method.id
             button = ui.button(on_click=lambda m_id=method.id: on_method_selected(m_id)).props("flat dense")
@@ -97,14 +100,14 @@ def methods_sidebar() -> None:
                 'align="left"'
             )
             if is_selected:
-                button.classes(add=f"bg-central text-gray-200")
+                button.classes(add=f"bg-effective")
             else:
-                button.classes(add="text-gray-300 hover:bg-primary")
+                button.classes(add="hover:bg-primary")
 
             with button:
-                ui.label(method.name).classes("text-[12px] font-medium leading-tight text-left")
+                ui.label(method.name).classes(f"text-[12px] font-medium text-[{Colors.text2}] leading-tight text-left")
                 if method.description:
-                    ui.label(method.description).classes("text-[10px] text-gray-400 leading-tight text-left")
+                    ui.label(method.description).classes(f"text-[10px] text-[{Colors.text1}] leading-tight text-left")
 
 
 def _checkbox_control(option: Option) -> None:
@@ -116,7 +119,7 @@ def _checkbox_control(option: Option) -> None:
             on_change=lambda e, opt=option: setattr(opt.info, "value", bool(e.value)),
         )
         .props("dense")
-        .classes("text-gray-200")
+        .classes("text-[{Colors.text1}]")
     )
 
 
@@ -126,7 +129,7 @@ def _value_selector_control(option: Option) -> None:
         options=option.info.values,
         value=option.info.selected_value,
         on_change=lambda e, opt=option: opt.info.set_value(e.value),
-    ).classes("w-full text-gray-100").props("dense filled dark use-input")
+    ).classes(f"w-full text-[{Colors.text1}]").props("dense filled dark use-input")
 
 
 def _number_control(option: Option) -> None:
@@ -152,7 +155,7 @@ def _number_control(option: Option) -> None:
         max=option.info.max_value,
         step=step,
         on_change=update_value,
-    ).classes("w-full text-gray-100").props("dense filled dark")
+    ).classes(f"w-full text-[{Colors.text1}]").props("dense filled dark")
 
 
 def _field_control(option: Option) -> None:
@@ -160,7 +163,7 @@ def _field_control(option: Option) -> None:
     ui.input(
         value=option.info.value,
         on_change=lambda e, opt=option: setattr(opt.info, "value", e.value),
-    ).classes("w-full text-gray-100").props("dense filled dark")
+    ).classes(f"w-full text-[{Colors.text1}]").props("dense filled dark")
 
 
 def render_option_control(option: Option) -> None:
@@ -178,34 +181,36 @@ def render_option_control(option: Option) -> None:
 
 
 def render_option_card(option: Option) -> None:
-    with ui.card().classes("w-full gap-2 p-4 panel-card text-gray-200"):
-        ui.label(option.name).classes("font-medium text-gray-100")
-        if option.description:
-            ui.label(option.description).classes("text-xs text-gray-400")
+    with ui.card().tight().classes(f"w-full gap-1 p-1").props("flat"):
+        with ui.row().classes("gap-[4px] flex-1 w-full flex-nowrap"):
+            ui.label(option.name).classes(f"text-sm text-[{Colors.text2}] flex-1")
+            with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start"):
+                ui.tooltip(option.description or "No info").classes(
+                    f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
+                )
         render_option_control(option)
 
 
 @ui.refreshable
 def options_sidebar() -> None:
-    with ui.column().classes(f"w-[160px] h-full px-4 py-6 gap-4 overflow-y-auto"):
-        ui.label("Settings").classes("text-sm font-semibold text-[#c5c5c5] tracking-[0.3em]")
-        options = state.selected_method_options
-        if not options:
-            ui.label("No options available").classes("text-sm text-gray-400")
+    with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-2 overflow-y-auto "):
+        ui.label("Settings").classes(f"text-sm font-medium text-[{Colors.text1}] leading-tight text-left")
+        if not state.selected_method_options:
+            ui.label("No options available").classes(f"text-sm text-[{Colors.text1}]")
         else:
-            for option in options:
+            for option in state.selected_method_options:
                 render_option_card(option)
 
 
 @ui.refreshable
 def build_layout() -> None:
-    with ui.column().classes("h-screen w-screen text-gray-200 p-0 gap-0"):
+    with ui.column().classes(f"h-screen w-screen p-0 gap-0"):
         with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
             with (
                 ui.button(on_click=toggle_left_sidebar).props("flat dense").classes("bg-transparent h-[32px] w-[32px]")
             ):
                 ui.icon("toggle_on" if state.is_left_sidebar_visible else "toggle_off").classes(
-                    "text-gray-500 px-2 text-2xl"
+                    f"text-[{Colors.text1}] px-2 text-2xl"
                 )
             for menu in state.menu:
                 render_menu(menu)
@@ -213,7 +218,7 @@ def build_layout() -> None:
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
             methods_sidebar()
             with ui.column().classes(
-                "flex-1 h-full bg-central gap-2 p-3 text-gray-400 gap-0 overflow-hidden rounded-md"
+                f"flex-1 h-full bg-effective gap-2 p-3 text-[{Colors.text1}] gap-0 overflow-hidden rounded-md"
             ):
                 ui.label("workspace.ts").classes("text-xs text-[#6f6f6f] tracking-[0.3em]")
                 ui.element("div").classes(
@@ -226,7 +231,7 @@ def build_layout() -> None:
 
 
 def main() -> None:
-    ui.colors(primary="#888", accent="#202020", brand=Colors.brand, central=Colors.central, brd=Colors.brd)
+    ui.colors(primary="#888", accent="#202020", brand=Colors.brand, effective=Colors.effective, brd=Colors.brd)
     build_layout()
     ui.query(".nicegui-content").classes("p-0")
     dark_mode = ui.dark_mode()
