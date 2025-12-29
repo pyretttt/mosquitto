@@ -171,6 +171,7 @@ class AppState:
         self.methods: List[Method] = make_methods()
         self.selected_method_id: Optional[str] = self.methods[0].id if self.methods else None
         self.last_menu_action: Optional[str] = None
+        self.is_left_sidebar_visible = True
 
     def select_method(self, method_id: str) -> None:
         self.selected_method_id = method_id

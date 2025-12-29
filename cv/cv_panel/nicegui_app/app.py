@@ -15,6 +15,12 @@ from nicegui_app.state import (
 )
 
 
+class Colors:
+    brd = "#444"
+    central = "#1F1F1F"
+    brand = "#1A1A1A"
+
+
 state = AppState()
 ui.add_css(
     """
@@ -29,6 +35,11 @@ def on_method_selected(method_id: str) -> None:
     state.select_method(method_id)
     methods_sidebar.refresh()
     options_sidebar.refresh()
+
+
+def toggle_left_sidebar():
+    state.is_left_sidebar_visible = not state.is_left_sidebar_visible
+    build_layout.refresh()
 
 
 def on_menu_action(action_id: str | None) -> None:
@@ -49,7 +60,7 @@ def render_menu_items(items: List[Menu]) -> None:
         else:
             with ui.menu_item(item.name, auto_close=True).classes("text-gray-200 text-xs min-h-[8px]"):
                 with ui.item_section():
-                    ui.icon("keyboard_arrow_right").classes("text-gray-500 ")
+                    ui.icon("keyboard_arrow_right").classes("text-gray-500 pl-2")
 
                 with ui.menu().props('anchor="top end" self="top start"'):
                     render_menu_items(item.submenus)
@@ -60,14 +71,14 @@ def render_menu(menu: Menu) -> None:
         (
             ui.button(menu.name, on_click=lambda action=menu.action_id: on_menu_action(action))
             .props("flat dense")
-            .classes("text-xs tracking-wide text-gray-200 hover:text-white")
+            .classes("text-xs tracking-wide text-gray-200 hover:text-white normal-case")
         )
     else:
         with (
             ui.dropdown_button(menu.name, auto_close=False)
             .props("flat")
             .classes(
-                "h-[32px] px-2 py-0 no-dropdown-icon text-xs uppercase tracking-wide text-gray-200 hover:text-white"
+                "h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-gray-200 hover:text-white normal-case"
             )
         ):
             render_menu_items(menu.submenus)
@@ -75,24 +86,18 @@ def render_menu(menu: Menu) -> None:
 
 @ui.refreshable
 def methods_sidebar() -> None:
-    with ui.column().classes(
-        "w-[160px] h-full bg-[#252526] text-gray-200 px-3 py-1 gap-1overflow-y-auto border-r border-[#1f1f1f]"
-    ):
-        ui.label("Methods").classes("text-[14px] font-semibold text-gray-200 px-1")
-        ui.separator()
+    with ui.column().classes(f"w-[160px] h-full text-gray-200 px-3 py-1 gap-1 overflow-y-auto") as col:
+        col.set_visibility(state.is_left_sidebar_visible)
+        ui.dropdown_button("methods").props("flat dense").classes("text-[11px] uppercase text-gray-300 px-1")
         for method in state.methods:
             is_selected = state.selected_method_id == method.id
             button = ui.button(on_click=lambda m_id=method.id: on_method_selected(m_id)).props("flat dense")
-            button.classes(
-                "w-full text-left px-2 py-1 rounded-xs "
-                "border border-transparent bg-transparent transition-colors duration-150"
-            )
+            button.classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150")
             if is_selected:
-                button.classes(
-                    add="bg-[#37373d] border-[#4d4d4d] text-gray-200 shadow-[inset_0_0_0_1px_rgba(255,255,255,0.05)]"
-                )
+                button.classes(add=f"bg-central text-gray-200")
             else:
-                button.classes(add="text-gray-300 hover:bg-[#2f2f33]")
+                button.classes(add="text-gray-300 hover:bg-primary")
+
             with button:
                 ui.label(method.name).classes("text-[12px] font-medium leading-tight")
                 if method.description:
@@ -179,8 +184,8 @@ def render_option_card(option: Option) -> None:
 
 @ui.refreshable
 def options_sidebar() -> None:
-    with ui.column().classes("w-[160px] h-full bg-[#1e1e1e] px-4 py-6 gap-4 overflow-y-auto border-l border-[#111]"):
-        ui.label("METHOD OPTIONS").classes("text-sm font-semibold text-[#c5c5c5] tracking-[0.3em]")
+    with ui.column().classes(f"w-[160px] h-full px-4 py-6 gap-4 overflow-y-auto"):
+        ui.label("Settings").classes("text-sm font-semibold text-[#c5c5c5] tracking-[0.3em]")
         options = state.selected_method_options
         if not options:
             ui.label("No options available").classes("text-sm text-gray-400")
@@ -189,31 +194,38 @@ def options_sidebar() -> None:
                 render_option_card(option)
 
 
+@ui.refreshable
 def build_layout() -> None:
-    with ui.column().classes("h-screen w-screen bg-[#1e1e1e] text-gray-200 p-0 gap-0"):
-        with ui.row().classes(
-            "w-full h-[32px] bg-[#252526] px-4 items-center gap-4 border-b border-black/60 text-xs tracking-wide"
-        ):
-            ui.label("Vision Panel").classes("font-semibold text-sm text-gray-50")
+    with ui.column().classes("h-screen w-screen text-gray-200 p-0 gap-0"):
+        with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
+            with (
+                ui.button(on_click=toggle_left_sidebar)
+                .props("flat dense")
+                .classes("bg-transparent h-[32px] w-[32px] p-0 m-0")
+            ):
+                ui.icon("toggle_on" if state.is_left_sidebar_visible else "toggle_off").classes(
+                    "text-gray-500 px-2 text-2xl"
+                )
             for menu in state.menu:
                 render_menu(menu)
             ui.space()
-        with ui.row().classes("flex-1 w-full overflow-hidden bg-[#1e1e1e]"):
+        with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
             methods_sidebar()
-            with ui.column().classes("flex-1 h-full bg-[#1e1e1e] px-6 py-6 text-gray-400 gap-3 overflow-hidden"):
-                ui.label("workspace.ts").classes("text-xs text-[#6f6f6f] uppercase tracking-[0.3em]")
-                ui.element("div").classes("flex-1 w-full rounded-lg border border-dashed border-[#3a3a3a] bg-[#1b1b1f]")
+            with ui.column().classes(
+                "flex-1 h-full bg-central px-6 py-6 text-gray-400 gap-0 overflow-hidden rounded-md"
+            ):
+                ui.label("workspace.ts").classes("text-xs text-[#6f6f6f] tracking-[0.3em]")
+                ui.element("div").classes(
+                    f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[#1b1b1f]"
+                )
             options_sidebar()
 
-        with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-red"):
+        with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-brand"):
             ui.label("Footer")
 
 
 def main() -> None:
-    ui.colors(
-        primary="#888",
-        accent="#202020",
-    )
+    ui.colors(primary="#888", accent="#202020", brand=Colors.brand, central=Colors.central, brd=Colors.brd)
     build_layout()
     ui.query(".nicegui-content").classes("p-0")
     dark_mode = ui.dark_mode()
