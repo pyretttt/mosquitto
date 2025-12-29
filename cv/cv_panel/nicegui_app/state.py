@@ -141,6 +141,11 @@ def make_methods() -> List[Method]:
                     info=Checkbox(value=False),
                     description="Trades accuracy for speed",
                 ),
+                Option(
+                    name="Fast mode",
+                    info=Field(value="123"),
+                    description="Trades accuracy for speed",
+                ),
             ],
         ),
         Method(
@@ -187,3 +192,10 @@ class AppState:
     def selected_method_options(self) -> List[Option]:
         method = self.selected_method
         return method.options if method else []
+
+    def change_option(self, updated_option: Option) -> None:
+        idx = next(idx for idx, option in enumerate(self.selected_method.options) if option.id == updated_option.id)
+        if idx is not None:
+            self.selected_method.options[idx] = updated_option
+        else:
+            assert "Option not found"

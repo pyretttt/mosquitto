@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import List
+from copy import deepcopy
 
 from nicegui import ui
 
@@ -110,35 +111,54 @@ def methods_sidebar() -> None:
                     ui.label(method.description).classes(f"text-[10px] text-[{Colors.text1}] leading-tight text-left")
 
 
-def _checkbox_control(option: Option) -> None:
+def checkbox_control(option: Option) -> None:
     assert isinstance(option.info, Checkbox)
-    (
+
+    def _change_option_value(option: Option, value: bool) -> None:
+        opt = deepcopy(option)
+        opt.info.value = value
+        state.change_option(opt)
+        print(state.selected_method.options)
+
+    return (
         ui.checkbox(
             "Enabled",
             value=option.info.value,
-            on_change=lambda e, opt=option: setattr(opt.info, "value", bool(e.value)),
+            on_change=lambda event, option=option: _change_option_value(option, event.value),
         )
         .props("dense")
-        .classes("text-[{Colors.text1}]")
+        .classes(f"text-[{Colors.text1}] text-[11px] font-medium")
     )
 
 
-def _value_selector_control(option: Option) -> None:
+def value_selector_control(option: Option) -> None:
     assert isinstance(option.info, ValueSelector)
-    ui.select(
-        options=option.info.values,
-        value=option.info.selected_value,
-        on_change=lambda e, opt=option: opt.info.set_value(e.value),
-    ).classes(f"w-full text-[{Colors.text1}]").props("dense filled dark use-input")
+
+    def _change_option_value(option: Option, value: str) -> None:
+        opt = deepcopy(option)
+        new_idx = next(idx for idx, val in enumerate(option.info.values) if value == val)
+        opt.info.selected_idx = new_idx
+        state.change_option(opt)
+        print(state.selected_method.options)
+
+    (
+        ui.select(
+            options=option.info.values,
+            value=option.info.selected_value,
+            on_change=lambda event, option=option: _change_option_value(option, event.value),
+        )
+        .classes(f"w-full text-[{Colors.text1}] min-h-[12px] text-[11px]")
+        .props("dense filled hide-bottom-space options-dense")
+    )
 
 
-def _number_control(option: Option) -> None:
+def number_control(option: Option) -> None:
     assert isinstance(option.info, NumberField)
     start_value = option.info.value
     is_int = isinstance(start_value, int)
     step = 1 if is_int else 0.1
 
-    def update_value(e, opt=option) -> None:
+    def update_value(e, option=option) -> None:
         raw_value = e.value
         if raw_value is None or raw_value == "":
             return
@@ -146,8 +166,10 @@ def _number_control(option: Option) -> None:
             new_value = int(float(raw_value)) if is_int else float(raw_value)
         except ValueError:
             return
+        opt = deepcopy(option)
         opt.info.value = opt.info.clamp(new_value)
         e.sender.value = opt.info.value
+        state.change_option(opt)
 
     ui.number(
         value=start_value,
@@ -155,27 +177,34 @@ def _number_control(option: Option) -> None:
         max=option.info.max_value,
         step=step,
         on_change=update_value,
-    ).classes(f"w-full text-[{Colors.text1}]").props("dense filled dark")
+    ).classes(f"w-full text-[{Colors.text1}] min-h-[12px] text-[11px]").props("dense filled dark ")
 
 
-def _field_control(option: Option) -> None:
+def field_control(option: Option) -> None:
     assert isinstance(option.info, Field)
+
+    def _change_option_value(option: Option, value: str) -> None:
+        opt = deepcopy(option)
+        opt.info.value = value
+        state.change_option(opt)
+        print(state.selected_method.options)
+
     ui.input(
         value=option.info.value,
-        on_change=lambda e, opt=option: setattr(opt.info, "value", e.value),
-    ).classes(f"w-full text-[{Colors.text1}]").props("dense filled dark")
+        on_change=lambda event, opt=option: _change_option_value(opt, event.value),
+    ).classes(f"w-full text-[{Colors.text1}] min-h-[12px] text-[11px]").props("dense filled dark ")
 
 
 def render_option_control(option: Option) -> None:
     match option.type:
         case "checkbox":
-            _checkbox_control(option)
+            checkbox_control(option)
         case "value_selector":
-            _value_selector_control(option)
+            value_selector_control(option)
         case "number_field":
-            _number_control(option)
+            number_control(option)
         case "field":
-            _field_control(option)
+            field_control(option)
         case _:
             ui.label("Unsupported option").classes("text-red-600")
 
@@ -183,7 +212,7 @@ def render_option_control(option: Option) -> None:
 def render_option_card(option: Option) -> None:
     with ui.card().tight().classes(f"w-full gap-1 p-1").props("flat"):
         with ui.row().classes("gap-[4px] flex-1 w-full flex-nowrap"):
-            ui.label(option.name).classes(f"text-sm text-[{Colors.text2}] flex-1")
+            ui.label(option.name).classes(f"text-xs font-medium text-[{Colors.text2}] flex-1")
             with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start"):
                 ui.tooltip(option.description or "No info").classes(
                     f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
@@ -194,7 +223,7 @@ def render_option_card(option: Option) -> None:
 @ui.refreshable
 def options_sidebar() -> None:
     with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-2 overflow-y-auto "):
-        ui.label("Settings").classes(f"text-sm font-medium text-[{Colors.text1}] leading-tight text-left")
+        ui.label("Settings").classes(f"text-[11px] uppercase font-medium text-[{Colors.text1}] leading-tight text-left")
         if not state.selected_method_options:
             ui.label("No options available").classes(f"text-sm text-[{Colors.text1}]")
         else:
