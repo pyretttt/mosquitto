@@ -54,8 +54,7 @@ def render_menu_items(items: List[Menu]) -> None:
     for item in items:
         if item.is_leaf:
             ui.menu_item(
-                item.name,
-                on_click=lambda _=None, action=item.action_id: on_menu_action(action),
+                item.name, on_click=lambda _=None, action=item.action_id: on_menu_action(action), auto_close=True
             ).classes("text-gray-200 hover:bg-accent text-xs min-h-[8px]")
         else:
             with ui.menu_item(item.name, auto_close=True).classes("text-gray-200 text-xs min-h-[8px]"):
@@ -69,14 +68,16 @@ def render_menu_items(items: List[Menu]) -> None:
 def render_menu(menu: Menu) -> None:
     if menu.is_leaf:
         (
-            ui.button(menu.name, on_click=lambda action=menu.action_id: on_menu_action(action))
+            ui.menu_item(
+                menu.name, on_click=lambda _=None, action=menu.action_id: on_menu_action(action), auto_close=True
+            )
             .props("flat dense")
             .classes("text-xs tracking-wide text-gray-200 hover:text-white normal-case")
         )
     else:
         with (
             ui.dropdown_button(menu.name, auto_close=False)
-            .props("flat")
+            .props("flat dense")
             .classes(
                 "h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-gray-200 hover:text-white normal-case"
             )
@@ -92,16 +93,18 @@ def methods_sidebar() -> None:
         for method in state.methods:
             is_selected = state.selected_method_id == method.id
             button = ui.button(on_click=lambda m_id=method.id: on_method_selected(m_id)).props("flat dense")
-            button.classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150")
+            button.classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150").props(
+                'align="left"'
+            )
             if is_selected:
                 button.classes(add=f"bg-central text-gray-200")
             else:
                 button.classes(add="text-gray-300 hover:bg-primary")
 
             with button:
-                ui.label(method.name).classes("text-[12px] font-medium leading-tight")
+                ui.label(method.name).classes("text-[12px] font-medium leading-tight text-left")
                 if method.description:
-                    ui.label(method.description).classes("text-[10px] text-gray-400 leading-tight")
+                    ui.label(method.description).classes("text-[10px] text-gray-400 leading-tight text-left")
 
 
 def _checkbox_control(option: Option) -> None:
@@ -199,9 +202,7 @@ def build_layout() -> None:
     with ui.column().classes("h-screen w-screen text-gray-200 p-0 gap-0"):
         with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
             with (
-                ui.button(on_click=toggle_left_sidebar)
-                .props("flat dense")
-                .classes("bg-transparent h-[32px] w-[32px] p-0 m-0")
+                ui.button(on_click=toggle_left_sidebar).props("flat dense").classes("bg-transparent h-[32px] w-[32px]")
             ):
                 ui.icon("toggle_on" if state.is_left_sidebar_visible else "toggle_off").classes(
                     "text-gray-500 px-2 text-2xl"
@@ -212,7 +213,7 @@ def build_layout() -> None:
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
             methods_sidebar()
             with ui.column().classes(
-                "flex-1 h-full bg-central px-6 py-6 text-gray-400 gap-0 overflow-hidden rounded-md"
+                "flex-1 h-full bg-central gap-2 p-3 text-gray-400 gap-0 overflow-hidden rounded-md"
             ):
                 ui.label("workspace.ts").classes("text-xs text-[#6f6f6f] tracking-[0.3em]")
                 ui.element("div").classes(
