@@ -175,6 +175,47 @@ class LayoutType(Enum):
     OneDimensional = 1
 
 
+@dataclass
+class ImagesState:
+    # image workspace state
+    input_image_src: Optional[str] = None
+    output_image_src: Optional[str] = None
+    # default images (label -> url)
+    default_images: Dict[str, str] = field(
+        default_factory=lambda: {
+            "Mountains": "https://picsum.photos/id/1015/1200/800",
+            "Forest": "https://picsum.photos/id/102/1200/800",
+            "City": "https://picsum.photos/id/1011/1200/800",
+            "Kitten": "https://placekitten.com/1200/800",
+        }
+    )
+    selected_default_input: Optional[str] = None
+    selected_default_output: Optional[str] = None
+
+
+@dataclass(frozen=True)
+class OptionChanged:
+    option: Option
+
+
+@dataclass(frozen=True)
+class DidTapMenuItem:
+    menu_id: str
+
+
+@dataclass(frozen=True)
+class DidSelectMethod:
+    identifier: str
+
+
+@dataclass(frozen=True)
+class DidSelectArea:
+    index: int
+
+
+Action = Union[OptionChanged, DidTapMenuItem, DidSelectMethod, DidSelectArea]
+
+
 class AppState:
     def __init__(self) -> None:
         self.menu: List[Menu] = make_default_menu()
@@ -184,24 +225,7 @@ class AppState:
         self.is_left_sidebar_visible = True
         self.layout_type = LayoutType.OneDimensional
 
-        # image workspace state
-        self.input_image_src: Optional[str] = None
-        self.output_image_src: Optional[str] = None
-        # default images (label -> url)
-        self.default_images: Dict[str, str] = {
-            "Mountains": "https://picsum.photos/id/1015/1200/800",
-            "Forest": "https://picsum.photos/id/102/1200/800",
-            "City": "https://picsum.photos/id/1011/1200/800",
-            "Kitten": "https://placekitten.com/1200/800",
-        }
-        self.selected_default_input: Optional[str] = None
-        self.selected_default_output: Optional[str] = None
-
-    def select_method(self, method_id: str) -> None:
-        self.selected_method_id = method_id
-
-    def handle_menu_action(self, action_id: str) -> None:
-        self.last_menu_action = action_id
+        self.images = ImagesState()
 
     @property
     def selected_method(self) -> Optional[Method]:
@@ -212,9 +236,15 @@ class AppState:
         method = self.selected_method
         return method.options if method else []
 
-    def change_option(self, updated_option: Option) -> None:
-        idx = next(idx for idx, option in enumerate(self.selected_method.options) if option.id == updated_option.id)
-        if idx is not None:
-            self.selected_method.options[idx] = updated_option
-        else:
-            assert "Option not found"
+    def handle(self, action: Action):
+        match action:
+            case OptionChanged(option):
+                idx = next(idx for idx, option in enumerate(self.selected_method.options) if option.id == option.id)
+                if idx is not None:
+                    self.selected_method.options[idx] = option
+                else:
+                    assert "Option not found"
+            case DidTapMenuItem(identifier):
+                self.last_menu_action = identifier
+            case DidSelectMethod(identifier):
+                self.selected_method_id = identifier

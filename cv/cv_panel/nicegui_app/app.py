@@ -5,8 +5,22 @@ from copy import deepcopy
 import base64
 
 from nicegui import ui
+from nicegui.events import KeyEventArguments
 
-from nicegui_app.state import AppState, Checkbox, Field, Menu, NumberField, Option, ValueSelector, LayoutType
+from nicegui_app.state import (
+    AppState,
+    Checkbox,
+    Field,
+    Menu,
+    NumberField,
+    Option,
+    ValueSelector,
+    LayoutType,
+    OptionChanged,
+    DidTapMenuItem,
+    DidSelectMethod,
+    DidSelectArea,
+)
 
 
 class Colors:
@@ -30,7 +44,7 @@ ui.add_css(
 
 
 def on_method_selected(method_id: str) -> None:
-    state.select_method(method_id)
+    state.handle(DidSelectMethod(identifier=method_id))
     methods_sidebar.refresh()
     options_sidebar.refresh()
 
@@ -43,7 +57,7 @@ def toggle_left_sidebar():
 def on_menu_action(action_id: str | None) -> None:
     if action_id is None:
         return
-    state.handle_menu_action(action_id)
+    state.handle(DidTapMenuItem(menu_id=action_id))
     ui.notify(f"Triggered action: {action_id}", position="top", type="positive")
 
 
@@ -115,7 +129,7 @@ def checkbox_control(option: Option) -> None:
     def _change_option_value(option: Option, value: bool) -> None:
         opt = deepcopy(option)
         opt.info.value = value
-        state.change_option(opt)
+        state.handle(OptionChanged(option=opt))
         print(state.selected_method.options)
 
     return (
@@ -136,7 +150,7 @@ def value_selector_control(option: Option) -> None:
         opt = deepcopy(option)
         new_idx = next(idx for idx, val in enumerate(option.info.values) if value == val)
         opt.info.selected_idx = new_idx
-        state.change_option(opt)
+        state.handle(OptionChanged(option=opt))
         print(state.selected_method.options)
 
     (
@@ -167,7 +181,7 @@ def number_control(option: Option) -> None:
         opt = deepcopy(option)
         opt.info.value = opt.info.clamp(new_value)
         e.sender.value = opt.info.value
-        state.change_option(opt)
+        state.handle(OptionChanged(option=opt))
 
     ui.number(
         value=start_value,
@@ -184,7 +198,7 @@ def field_control(option: Option) -> None:
     def _change_option_value(option: Option, value: str) -> None:
         opt = deepcopy(option)
         opt.info.value = value
-        state.change_option(opt)
+        state.handle(OptionChanged(option=opt))
         print(state.selected_method.options)
 
     ui.input(
@@ -246,32 +260,32 @@ def make_image_workspace() -> None:
         if data:
             src = _to_data_url(getattr(event, "type", "image/*"), data)
             if side == "input":
-                state.input_image_src = src
-                state.selected_default_input = None
+                state.images.input_image_src = src
+                state.images.selected_default_input = None
             else:
-                state.output_image_src = src
-                state.selected_default_output = None
+                state.images.output_image_src = src
+                state.images.selected_default_output = None
             make_image_workspace.refresh()
 
     def _on_default_select(value: str | None, side: str) -> None:
         if not value:
             return
-        url = state.default_images.get(value)
+        url = state.images.default_images.get(value)
         if not url:
             return
         if side == "input":
-            state.selected_default_input = value
-            state.input_image_src = url
+            state.images.selected_default_input = value
+            state.images.input_image_src = url
         else:
-            state.selected_default_output = value
-            state.output_image_src = url
+            state.images.selected_default_output = value
+            state.images.output_image_src = url
         make_image_workspace.refresh()
 
     def _clear_image(side: str) -> None:
-        state.input_image_src = None
-        state.selected_default_input = None
-        state.output_image_src = None
-        state.selected_default_output = None
+        state.images.input_image_src = None
+        state.images.selected_default_input = None
+        state.images.output_image_src = None
+        state.images.selected_default_output = None
         make_image_workspace.refresh()
 
     def image_card(title: str, side: str) -> None:
@@ -289,7 +303,7 @@ def make_image_workspace() -> None:
             with ui.element("div").classes(
                 f"flex-1 w-full min-h-[280px] max-h-full flex items-center justify-center bg-[{Colors.accent_background}]"
             ):
-                img_src = state.input_image_src if side == "input" else state.output_image_src
+                img_src = state.images.input_image_src if side == "input" else state.images.output_image_src
                 if img_src:
                     ui.image(img_src).classes("max-w-full max-h-full object-contain")
                 else:
@@ -334,12 +348,18 @@ def build_layout() -> None:
             with ui.column().classes(
                 f"flex-1 h-full bg-effective gap-2 p-3 text-[{Colors.text1}] gap-0 overflow-hidden rounded-md"
             ):
-                ui.label("workspace").classes("text-xs text-text1 tracking-[0.3em]")
+                with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
+                    pass
                 make_image_workspace()
             options_sidebar()
 
         with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-brand"):
             ui.label("Footer")
+
+
+def handle_key(e: KeyEventArguments):
+    if e.key in ("1", "2", "3", "4") and not e.action.repeat:
+        state.handle(DidSelectArea(index=int(e.key)))
 
 
 def main() -> None:
@@ -351,6 +371,7 @@ def main() -> None:
         brd=Colors.brd,
         accent_background=Colors.accent_background,
     )
+    ui.keyboard(on_key=handle_key)
     build_layout()
     ui.query(".nicegui-content").classes("p-0")
     dark_mode = ui.dark_mode()
