@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import List
 from copy import deepcopy
+import base64
 
 from nicegui import ui
 
@@ -44,6 +45,10 @@ def on_menu_action(action_id: str | None) -> None:
         return
     state.handle_menu_action(action_id)
     ui.notify(f"Triggered action: {action_id}", position="top", type="positive")
+
+
+def default_tooltip(text: str):
+    ui.tooltip(text).classes(f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]")
 
 
 def render_menu_items(items: List[Menu]) -> None:
@@ -207,9 +212,7 @@ def render_option_card(option: Option) -> None:
         with ui.row().classes("gap-[4px] flex-1 w-full flex-nowrap"):
             ui.label(option.name).classes(f"text-xs font-medium text-[{Colors.text2}] flex-1")
             with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start hover:text-[{Colors.text2}]"):
-                ui.tooltip(option.description or "No info").classes(
-                    f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
-                )
+                default_tooltip(option.description or "No info")
         render_option_control(option)
 
 
@@ -226,13 +229,91 @@ def options_sidebar() -> None:
 
 @ui.refreshable
 def make_image_workspace() -> None:
+    def _to_data_url(mime: str, content: bytes) -> str:
+        try:
+            encoded = base64.b64encode(content).decode("utf-8")
+        except Exception:
+            encoded = ""
+        mime = mime or "image/*"
+        return f"data:{mime};base64,{encoded}"
+
+    def _on_upload(event, side: str) -> None:
+        data = None
+        try:
+            data = event.content.read() if hasattr(event.content, "read") else event.content
+        except Exception:
+            data = None
+        if data:
+            src = _to_data_url(getattr(event, "type", "image/*"), data)
+            if side == "input":
+                state.input_image_src = src
+                state.selected_default_input = None
+            else:
+                state.output_image_src = src
+                state.selected_default_output = None
+            make_image_workspace.refresh()
+
+    def _on_default_select(value: str | None, side: str) -> None:
+        if not value:
+            return
+        url = state.default_images.get(value)
+        if not url:
+            return
+        if side == "input":
+            state.selected_default_input = value
+            state.input_image_src = url
+        else:
+            state.selected_default_output = value
+            state.output_image_src = url
+        make_image_workspace.refresh()
+
+    def _clear_image(side: str) -> None:
+        state.input_image_src = None
+        state.selected_default_input = None
+        state.output_image_src = None
+        state.selected_default_output = None
+        make_image_workspace.refresh()
+
+    def image_card(title: str, side: str) -> None:
+        with (
+            ui.card()
+            .tight()
+            .props("flat")
+            .classes(
+                f"w-full h-full p-0 overflow-hidden border border-[{Colors.brd}] border-dashed bg-[{Colors.brand}] rounded-md"
+            )
+        ):
+            ui.label(title).classes(f"text-[11px] px-1 tracking-wide text-[{Colors.text1}]")
+
+            # content
+            with ui.element("div").classes(
+                f"flex-1 w-full min-h-[280px] max-h-full flex items-center justify-center bg-[{Colors.accent_background}]"
+            ):
+                img_src = state.input_image_src if side == "input" else state.output_image_src
+                if img_src:
+                    ui.image(img_src).classes("max-w-full max-h-full object-contain")
+                else:
+                    uploader = ui.upload(on_upload=lambda e, s=side: _on_upload(e, s))
+                    uploader.props('accept="image/*" auto-upload max-files=1 no-thumbnails')
+                    uploader.classes(
+                        f"w-full h-[300px] border border-dashed border-[{Colors.brd}] rounded-md "
+                        f"flex items-center justify-center text-[{Colors.text1}]"
+                    )
+                    with ui.tooltip("Drop image here or click to upload"):
+                        pass
+
     match state.layout_type:
         case LayoutType.OneDimensional:
-            ui.row().classes(f"flex-1 w-full")
+            with ui.row().classes(f"flex-1 w-full gap-2 overflow-hidden"):
+                with ui.column().classes("flex-1 h-full overflow-hidden"):
+                    image_card("Input Image", "input")
+                with ui.column().classes("flex-1 h-full overflow-hidden"):
+                    image_card("Output Image", "output")
         case _:
-            ui.element("div").classes(
+            with ui.element("div").classes(
                 f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[{Colors.accent_background}]"
-            )
+            ):
+                ui.label("Unsupported layout")
 
 
 @ui.refreshable

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from numbers import Number
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict
 import uuid
 from enum import Enum
 
@@ -183,6 +183,19 @@ class AppState:
         self.last_menu_action: Optional[str] = None
         self.is_left_sidebar_visible = True
         self.layout_type = LayoutType.OneDimensional
+
+        # image workspace state
+        self.input_image_src: Optional[str] = None
+        self.output_image_src: Optional[str] = None
+        # default images (label -> url)
+        self.default_images: Dict[str, str] = {
+            "Mountains": "https://picsum.photos/id/1015/1200/800",
+            "Forest": "https://picsum.photos/id/102/1200/800",
+            "City": "https://picsum.photos/id/1011/1200/800",
+            "Kitten": "https://placekitten.com/1200/800",
+        }
+        self.selected_default_input: Optional[str] = None
+        self.selected_default_output: Optional[str] = None
 
     def select_method(self, method_id: str) -> None:
         self.selected_method_id = method_id
