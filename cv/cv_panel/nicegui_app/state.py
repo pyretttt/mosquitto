@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from numbers import Number
 from typing import List, Optional, Union
 import uuid
+from enum import Enum
 
 
 def make_uuid() -> str:
@@ -170,6 +171,10 @@ def make_methods() -> List[Method]:
     ]
 
 
+class LayoutType(Enum):
+    OneDimensional = 1
+
+
 class AppState:
     def __init__(self) -> None:
         self.menu: List[Menu] = make_default_menu()
@@ -177,6 +182,7 @@ class AppState:
         self.selected_method_id: Optional[str] = self.methods[0].id if self.methods else None
         self.last_menu_action: Optional[str] = None
         self.is_left_sidebar_visible = True
+        self.layout_type = LayoutType.OneDimensional
 
     def select_method(self, method_id: str) -> None:
         self.selected_method_id = method_id

@@ -5,15 +5,7 @@ from copy import deepcopy
 
 from nicegui import ui
 
-from nicegui_app.state import (
-    AppState,
-    Checkbox,
-    Field,
-    Menu,
-    NumberField,
-    Option,
-    ValueSelector,
-)
+from nicegui_app.state import AppState, Checkbox, Field, Menu, NumberField, Option, ValueSelector, LayoutType
 
 
 class Colors:
@@ -23,6 +15,7 @@ class Colors:
     caption = "#2A2A2A"
     text1 = "#888"
     text2 = "#BBB"
+    accent_background = "#1b1b1f"
 
 
 state = AppState()
@@ -213,7 +206,7 @@ def render_option_card(option: Option) -> None:
     with ui.card().tight().classes(f"w-full gap-1 p-1").props("flat"):
         with ui.row().classes("gap-[4px] flex-1 w-full flex-nowrap"):
             ui.label(option.name).classes(f"text-xs font-medium text-[{Colors.text2}] flex-1")
-            with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start"):
+            with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start hover:text-[{Colors.text2}]"):
                 ui.tooltip(option.description or "No info").classes(
                     f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
                 )
@@ -229,6 +222,17 @@ def options_sidebar() -> None:
         else:
             for option in state.selected_method_options:
                 render_option_card(option)
+
+
+@ui.refreshable
+def make_image_workspace() -> None:
+    match state.layout_type:
+        case LayoutType.OneDimensional:
+            ui.row().classes(f"flex-1 w-full")
+        case _:
+            ui.element("div").classes(
+                f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[{Colors.accent_background}]"
+            )
 
 
 @ui.refreshable
@@ -249,10 +253,8 @@ def build_layout() -> None:
             with ui.column().classes(
                 f"flex-1 h-full bg-effective gap-2 p-3 text-[{Colors.text1}] gap-0 overflow-hidden rounded-md"
             ):
-                ui.label("workspace.ts").classes("text-xs text-[#6f6f6f] tracking-[0.3em]")
-                ui.element("div").classes(
-                    f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[#1b1b1f]"
-                )
+                ui.label("workspace").classes("text-xs text-text1 tracking-[0.3em]")
+                make_image_workspace()
             options_sidebar()
 
         with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-brand"):
@@ -260,7 +262,14 @@ def build_layout() -> None:
 
 
 def main() -> None:
-    ui.colors(primary="#888", accent="#202020", brand=Colors.brand, effective=Colors.effective, brd=Colors.brd)
+    ui.colors(
+        primary="#888",
+        accent="#202020",
+        brand=Colors.brand,
+        effective=Colors.effective,
+        brd=Colors.brd,
+        accent_background=Colors.accent_background,
+    )
     build_layout()
     ui.query(".nicegui-content").classes("p-0")
     dark_mode = ui.dark_mode()
