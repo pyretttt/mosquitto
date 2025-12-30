@@ -292,7 +292,7 @@ def make_image_workspace() -> None:
         with (
             ui.card()
             .tight()
-            .props("flat")
+            .props("flat dense")
             .classes(
                 f"w-full h-full p-0 overflow-hidden border border-[{Colors.brd}] border-dashed bg-[{Colors.brand}] rounded-md"
             )
@@ -301,7 +301,7 @@ def make_image_workspace() -> None:
 
             # content
             with ui.element("div").classes(
-                f"flex-1 w-full min-h-[280px] max-h-full flex items-center justify-center bg-[{Colors.accent_background}]"
+                f"flex-1 w-full min-h-[300px] max-h-full flex items-top justify-center bg-[{Colors.accent_background}]"
             ):
                 img_src = state.images.input_image_src if side == "input" else state.images.output_image_src
                 if img_src:
@@ -320,9 +320,9 @@ def make_image_workspace() -> None:
         case LayoutType.OneDimensional:
             with ui.row().classes(f"flex-1 w-full gap-2 overflow-hidden"):
                 with ui.column().classes("flex-1 h-full overflow-hidden"):
-                    image_card("Input Image", "input")
+                    image_card("Input area", "input")
                 with ui.column().classes("flex-1 h-full overflow-hidden"):
-                    image_card("Output Image", "output")
+                    image_card("Output area", "output")
         case _:
             with ui.element("div").classes(
                 f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[{Colors.accent_background}]"
@@ -346,7 +346,7 @@ def build_layout() -> None:
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
             methods_sidebar()
             with ui.column().classes(
-                f"flex-1 h-full bg-effective gap-2 p-3 text-[{Colors.text1}] gap-0 overflow-hidden rounded-md"
+                f"flex-1 h-full bg-effective gap-0 p-3 text-[{Colors.text1}] overflow-hidden rounded-md"
             ):
                 with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
                     pass
