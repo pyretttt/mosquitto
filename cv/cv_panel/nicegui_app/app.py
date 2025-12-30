@@ -39,6 +39,17 @@ ui.add_css(
 .no-dropdown-icon .q-btn-dropdown__arrow {
     display: none;
 }
+.my-uploader.q-uploader {
+  border: none;
+  border-radius: 12px;
+}
+.my-uploader .q-uploader__header {
+  background: transparent;
+  border-bottom: none;
+}
+.my-uploader .q-uploader__list {
+  display: none;
+}
 """
 )
 
@@ -289,13 +300,8 @@ def make_image_workspace() -> None:
         make_image_workspace.refresh()
 
     def image_card(title: str, side: str) -> None:
-        with (
-            ui.card()
-            .tight()
-            .props("flat dense")
-            .classes(
-                f"w-full h-full p-0 overflow-hidden border border-[{Colors.brd}] border-dashed bg-[{Colors.brand}] rounded-md"
-            )
+        with ui.column().classes(
+            f"w-full h-full p-1 gap-1 overflow-hidden border border-[{Colors.brd}] border-dashed bg-[{Colors.brand}] rounded-md"
         ):
             ui.label(title).classes(f"text-[11px] px-1 tracking-wide text-[{Colors.text1}]")
 
@@ -307,11 +313,11 @@ def make_image_workspace() -> None:
                 if img_src:
                     ui.image(img_src).classes("max-w-full max-h-full object-contain")
                 else:
-                    uploader = ui.upload(on_upload=lambda e, s=side: _on_upload(e, s))
-                    uploader.props('accept="image/*" auto-upload max-files=1 no-thumbnails')
+                    uploader = ui.upload(label="upload a file", on_upload=lambda e, s=side: _on_upload(e, s))
+                    uploader.props('accept="image/*" auto-upload max-files=1')
                     uploader.classes(
-                        f"w-full h-[300px] border border-dashed border-[{Colors.brd}] rounded-md "
-                        f"flex items-center justify-center text-[{Colors.text1}]"
+                        f"w-full flex-1 border border-dashed border-[{Colors.brd}] rounded-md "
+                        f"flex items-center justify-center text-[{Colors.text1}] my-uploader"
                     )
                     with ui.tooltip("Drop image here or click to upload"):
                         pass
