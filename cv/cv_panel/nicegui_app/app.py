@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List
 from copy import deepcopy
-import base64
 
 from nicegui import ui
 from nicegui.events import KeyEventArguments
@@ -254,58 +253,8 @@ def options_sidebar() -> None:
 
 @ui.refreshable
 def make_image_workspace() -> None:
-    def _to_data_url(mime: str, content: bytes) -> str:
-        try:
-            encoded = base64.b64encode(content).decode("utf-8")
-        except Exception:
-            encoded = ""
-        mime = mime or "image/*"
-        return f"data:{mime};base64,{encoded}"
-
-    def _on_upload(event, side: str) -> None:
-        data = None
-        try:
-            data = event.content.read() if hasattr(event.content, "read") else event.content
-        except Exception:
-            data = None
-        if data:
-            src = _to_data_url(getattr(event, "type", "image/*"), data)
-            if side == "input":
-                state.images.input_image_src = src
-                state.images.selected_default_input = None
-            else:
-                state.images.output_image_src = src
-                state.images.selected_default_output = None
-            make_image_workspace.refresh()
-
-    def _on_default_select(value: str | None, side: str) -> None:
-        if not value:
-            return
-        url = state.images.default_images.get(value)
-        if not url:
-            return
-        if side == "input":
-            state.images.selected_default_input = value
-            state.images.input_image_src = url
-        else:
-            state.images.selected_default_output = value
-            state.images.output_image_src = url
-        make_image_workspace.refresh()
-
-    def _clear_image(side: str) -> None:
-        state.images.input_image_src = None
-        state.images.selected_default_input = None
-        state.images.output_image_src = None
-        state.images.selected_default_output = None
-        make_image_workspace.refresh()
-
     def image_card(title: str, side: str) -> None:
-        with ui.column().classes(
-            f"w-full h-full p-1 gap-1 overflow-hidden border border-[{Colors.brd}] border-dashed bg-[{Colors.brand}] rounded-md"
-        ):
-            ui.label(title).classes(f"text-[11px] px-1 tracking-wide text-[{Colors.text1}]")
-
-            # content
+        with ui.column().classes(f"w-full h-full p-1 gap-1 overflow-hidden rounded-md"):
             with ui.element("div").classes(
                 f"flex-1 w-full min-h-[300px] max-h-full flex items-top justify-center bg-[{Colors.accent_background}]"
             ):
@@ -313,7 +262,7 @@ def make_image_workspace() -> None:
                 if img_src:
                     ui.image(img_src).classes("max-w-full max-h-full object-contain")
                 else:
-                    uploader = ui.upload(label="upload a file", on_upload=lambda e, s=side: _on_upload(e, s))
+                    uploader = ui.upload(label="upload a file")
                     uploader.props('accept="image/*" auto-upload max-files=1')
                     uploader.classes(
                         f"w-full flex-1 border border-dashed border-[{Colors.brd}] rounded-md "
@@ -324,11 +273,20 @@ def make_image_workspace() -> None:
 
     match state.layout_type:
         case LayoutType.OneDimensional:
-            with ui.row().classes(f"flex-1 w-full gap-2 overflow-hidden"):
-                with ui.column().classes("flex-1 h-full overflow-hidden"):
+            with ui.splitter(
+                horizontal=False, reverse=False, value=50, limits=(25, 75), on_change=lambda e: ui.notify(e.value)
+            ).classes("w-full flex-1 h-full p-3 overflow-hidden bg-effective ") as splitter:
+                ui.tooltip("This is the default slot.").classes("bg-green")
+                with splitter.before:
                     image_card("Input area", "input")
-                with ui.column().classes("flex-1 h-full overflow-hidden"):
+                with splitter.after:
                     image_card("Output area", "output")
+                with splitter.separator:
+                    with ui.icon("swipe").classes(
+                        f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
+                    ) as icon:
+                        icon.on("dblclick", lambda: setattr(splitter, "value", 50))
+
         case _:
             with ui.element("div").classes(
                 f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[{Colors.accent_background}]"
@@ -351,12 +309,10 @@ def build_layout() -> None:
             ui.space()
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
             methods_sidebar()
-            with ui.column().classes(
-                f"flex-1 h-full bg-effective gap-0 p-3 text-[{Colors.text1}] overflow-hidden rounded-md"
-            ):
-                with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
-                    pass
-                make_image_workspace()
+            # with ui.column().classes(
+            #     f"flex-1 h-full bg-effective gap-0 p-3 text-[{Colors.text1}] overflow-hidden rounded-md"
+            # ):
+            make_image_workspace()
             options_sidebar()
 
         with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-brand"):
