@@ -80,11 +80,10 @@ class TransformerEncoder(nn.Module):
         out = x
         attn_weights_all = []
         for i in range(self.num_layers):
-            q = self.norm1[i](out)
-            q = q + pos  # add 2D position to q/k
-            k = q
-            v = self.norm1[i](out)
-            attn_out, attn_weights = self.attn[i](q, k, v)
+            in_emb = self.norm1[i](out)
+            q = in_emb + pos  # add 2D position to q/k
+            k = in_emb + pos
+            attn_out, attn_weights = self.attn[i](q, k, in_emb)
             out = out + self.dropout1[i](attn_out)
 
             ff_in = self.norm2[i](out)
@@ -149,10 +148,10 @@ class TransformerDecoder(nn.Module):
         cross_weights_all = []
         for i in range(self.num_layers):
             # self-attn on queries
-            q = self.norm_self[i](out)
-            q = q + query_embed
-            k = q
-            v = self.norm_self[i](out)
+            in_emb = self.norm_self[i](out)
+            q = in_emb + query_embed
+            k = in_emb + query_embed
+            v = in_emb
             sa_out, _ = self.self_attn[i](q, k, v)
             out = out + self.drop_self[i](sa_out)
 
