@@ -4,7 +4,8 @@ from typing import List
 from copy import deepcopy
 
 from nicegui import ui
-from nicegui.events import KeyEventArguments
+from nicegui.events import KeyEventArguments, UploadEventArguments
+import base64
 
 from nicegui_app.state import (
     AppState,
@@ -41,6 +42,8 @@ ui.add_css(
 .my-uploader.q-uploader {
   border: none;
   border-radius: 12px;
+  box-shadow: none;
+  bg-[]
 }
 .my-uploader .q-uploader__header {
   background: transparent;
@@ -69,6 +72,64 @@ def on_menu_action(action_id: str | None) -> None:
         return
     state.handle(DidTapMenuItem(menu_id=action_id))
     ui.notify(f"Triggered action: {action_id}", position="top", type="positive")
+
+
+def _bytes_to_data_url(data: bytes, filename: str | None = None) -> str:
+    """Convert bytes into a data URL; best effort for content type from filename."""
+    content_type = "image/png"
+    if filename and "." in filename:
+        ext = filename.lower().rsplit(".", 1)[-1]
+        if ext in ("jpg", "jpeg"):
+            content_type = "image/jpeg"
+        elif ext in ("png",):
+            content_type = "image/png"
+        elif ext in ("gif",):
+            content_type = "image/gif"
+        elif ext in ("webp",):
+            content_type = "image/webp"
+        elif ext in ("bmp",):
+            content_type = "image/bmp"
+        elif ext in ("tif", "tiff"):
+            content_type = "image/tiff"
+    b64 = base64.b64encode(data).decode("ascii")
+    return f"data:{content_type};base64,{b64}"
+
+
+def handle_upload_input(e: UploadEventArguments) -> None:
+    """Handle uploaded input image and update workspace state."""
+    try:
+        content = e.content.read() if hasattr(e.content, "read") else e.content  # type: ignore[attr-defined]
+        if isinstance(content, bytes):
+            state.images.input_image_src = _bytes_to_data_url(content, e.name)
+            state.images.selected_default_input = None
+            make_image_workspace.refresh()
+            ui.notify(f"Loaded {e.name}", type="positive")
+        else:
+            ui.notify("Unsupported upload content", type="warning")
+    except Exception as ex:
+        ui.notify(f"Upload failed: {ex}", type="negative")
+
+
+def set_default_input_image(title: str, url: str) -> None:
+    state.images.input_image_src = url
+    state.images.selected_default_input = title
+    make_image_workspace.refresh()
+    ui.notify(f"Selected default: {title}", type="positive")
+
+
+def reset_workspace() -> None:
+    state.images.input_image_src = None
+    state.images.output_image_src = None
+    state.images.selected_default_input = None
+    state.images.selected_default_output = None
+    make_image_workspace.refresh()
+    ui.notify("Workspace reset", type="warning")
+
+
+def run_workspace() -> None:
+    # Placeholder hook for running current method/transform
+    method_name = state.selected_method.name if state.selected_method else "<none>"
+    ui.notify(f"Run: {method_name}", type="positive")
 
 
 def default_tooltip(text: str):
@@ -256,14 +317,69 @@ def make_image_workspace() -> None:
     match state.layout_type:
         case LayoutType.OneDimensional:
             with ui.column().classes(f"flex-1 h-full bg-effective overflow-hidden rounded-lg"):
-                # Add menu header with ui.menu and ui.button with icons
+                # Toolbar row: upload, defaults, transforms, reset, run
+                with ui.row().classes(f"w-full items-center gap-1 p-1"):
+                    # 1) Upload a file
+                    ui.upload(label="Upload image", on_upload=handle_upload_input).classes(
+                        "my-uploader text-xs max-w-[124px]"
+                    )
+                    ui.tooltip("Upload an input image").classes(
+                        f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
+                    )
+
+                    # 2) Dropdown with default images
+                    with (
+                        ui.dropdown_button("Default images", auto_close=True)
+                        .props("flat dense")
+                        .classes(
+                            f"h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case"
+                        )
+                    ):
+                        ui.menu_item("Default Images").props("disable").classes(f"text-[{Colors.text1}] text-[10px]")
+                        for title, url in state.images.default_images.items():
+                            ui.menu_item(title, on_click=lambda t=title, u=url: set_default_input_image(t, u)).classes(
+                                f"text-[{Colors.text1}] hover:bg-accent text-xs min-h-[8px]"
+                            )
+
+                    # 3) Dropdown transforms button (uses existing menu structure)
+                    transforms_menu = next((m for m in state.menu if m.name == "Transforms"), None)
+                    if transforms_menu is not None:
+                        with (
+                            ui.dropdown_button("Transforms", auto_close=False)
+                            .props("flat dense")
+                            .classes(
+                                f"h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case"
+                            )
+                        ):
+                            render_menu_items(transforms_menu.submenus)
+
+                    ui.space()
+
+                    # 4) Plain reset button
+                    ui.button("Reset", on_click=reset_workspace).props("flat dense").classes(
+                        f"h-[28px] px-2 text-xs text-[{Colors.text1}] hover:text-white"
+                    )
+                    # 5) Plain run button
+                    ui.button("Run", on_click=run_workspace).props("flat dense").classes(
+                        f"h-[28px] px-2 text-xs text-[{Colors.text2}] bg-primary/10 hover:bg-primary/20"
+                    )
+
+                # Main splitter area
                 with ui.splitter(
                     horizontal=False, reverse=False, value=50, limits=(25, 75), on_change=lambda e: ui.notify(e.value)
                 ).classes("w-full flex-1 h-full p-1 overflow-hidden bg-effective ") as splitter:
                     with splitter.before:
-                        pass
+                        # top pane (e.g., input)
+                        with ui.element("div").classes(
+                            f"w-full h-full rounded-md border border-dashed border-[{Colors.brd}] flex items-center justify-center text-[{Colors.text1}]"
+                        ):
+                            ui.label("Input pane")
                     with splitter.after:
-                        pass
+                        # bottom pane (e.g., output)
+                        with ui.element("div").classes(
+                            f"w-full h-full rounded-md border border-dashed border-[{Colors.brd}] flex items-center justify-center text-[{Colors.text1}]"
+                        ):
+                            ui.label("Output pane")
                     with splitter.separator:
                         with ui.icon("swipe").classes(
                             f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
