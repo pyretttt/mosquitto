@@ -253,34 +253,17 @@ def options_sidebar() -> None:
 
 @ui.refreshable
 def make_image_workspace() -> None:
-    def image_card(title: str, side: str) -> None:
-        with ui.column().classes(f"w-full h-full p-1 gap-1 overflow-hidden rounded-md"):
-            with ui.element("div").classes(
-                f"flex-1 w-full min-h-[300px] max-h-full flex items-top justify-center bg-[{Colors.accent_background}]"
-            ):
-                img_src = state.images.input_image_src if side == "input" else state.images.output_image_src
-                if img_src:
-                    ui.image(img_src).classes("max-w-full max-h-full object-contain")
-                else:
-                    uploader = ui.upload(label="upload a file")
-                    uploader.props('accept="image/*" auto-upload max-files=1')
-                    uploader.classes(
-                        f"w-full flex-1 border border-dashed border-[{Colors.brd}] rounded-md "
-                        f"flex items-center justify-center text-[{Colors.text1}] my-uploader"
-                    )
-                    with ui.tooltip("Drop image here or click to upload"):
-                        pass
-
     match state.layout_type:
         case LayoutType.OneDimensional:
             with ui.column().classes(f"flex-1 h-full bg-effective overflow-hidden rounded-lg"):
+                # Add menu header with ui.menu and ui.button with icons
                 with ui.splitter(
                     horizontal=False, reverse=False, value=50, limits=(25, 75), on_change=lambda e: ui.notify(e.value)
                 ).classes("w-full flex-1 h-full p-1 overflow-hidden bg-effective ") as splitter:
                     with splitter.before:
-                        image_card("Input area", "input")
+                        pass
                     with splitter.after:
-                        image_card("Output area", "output")
+                        pass
                     with splitter.separator:
                         with ui.icon("swipe").classes(
                             f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
