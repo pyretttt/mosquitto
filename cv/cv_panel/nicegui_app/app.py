@@ -273,19 +273,20 @@ def make_image_workspace() -> None:
 
     match state.layout_type:
         case LayoutType.OneDimensional:
-            with ui.splitter(
-                horizontal=False, reverse=False, value=50, limits=(25, 75), on_change=lambda e: ui.notify(e.value)
-            ).classes("w-full flex-1 h-full p-3 overflow-hidden bg-effective ") as splitter:
-                ui.tooltip("This is the default slot.").classes("bg-green")
-                with splitter.before:
-                    image_card("Input area", "input")
-                with splitter.after:
-                    image_card("Output area", "output")
-                with splitter.separator:
-                    with ui.icon("swipe").classes(
-                        f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
-                    ) as icon:
-                        icon.on("dblclick", lambda: setattr(splitter, "value", 50))
+            with ui.column().classes(f"flex-1 h-full bg-effective overflow-hidden rounded-lg"):
+                with ui.splitter(
+                    horizontal=False, reverse=False, value=50, limits=(25, 75), on_change=lambda e: ui.notify(e.value)
+                ).classes("w-full flex-1 h-full p-1 overflow-hidden bg-effective ") as splitter:
+                    with splitter.before:
+                        image_card("Input area", "input")
+                    with splitter.after:
+                        image_card("Output area", "output")
+                    with splitter.separator:
+                        with ui.icon("swipe").classes(
+                            f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
+                        ) as icon:
+                            icon.on("dblclick", lambda: setattr(splitter, "value", 50))
+                            ui.tooltip("Drag to resize. Double click to reset")
 
         case _:
             with ui.element("div").classes(
