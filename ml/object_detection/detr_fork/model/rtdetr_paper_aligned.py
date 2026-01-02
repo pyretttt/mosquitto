@@ -136,18 +136,22 @@ class CCFM(nn.Module):
         # Lateral connections
         laterals = [conv(feat) for conv, feat in zip(self.lateral_convs, features)]
 
-        # Top-down pathway: P5 -> P4 -> P3
-        for i in range(len(laterals) - 1, 0, -1):
-            laterals[i - 1] = laterals[i - 1] + F.interpolate(
-                laterals[i], size=laterals[i - 1].shape[-2:], mode="nearest"
+        # Top-down pathway: P5 -> P4 -> P3. P5 upsamped to P4 and P4 is upsampled to P3 fusing info from all scales
+        for i in range(len(laterals) - 1, 0, -1):  # [2, 1]
+            laterals[i - 1] = (
+                laterals[i - 1]
+                + F.interpolate(  # P4 + P5, P3 + P4
+                    laterals[i], size=laterals[i - 1].shape[-2:], mode="nearest"
+                )
             )
             laterals[i - 1] = self.fpn_blocks[i - 1](laterals[i - 1])
 
         # Bottom-up pathway: P3 -> P4 -> P5
-        outputs = [laterals[0]]
-        for i in range(len(laterals) - 1):
-            outputs.append(self.downsample_convs[i](outputs[-1]) + laterals[i + 1])
+        outputs = [laterals[0]]  # P3 with info from P4 and P5
+        for i in range(len(laterals) - 1):  # 0, 1
+            outputs.append(self.downsample_convs[i](outputs[-1]) + laterals[i + 1])  # P3 + P4, P4 + P5
 
+        # It adds info in both ways P3 -> P4 -> P5, and P5 -> P4 -> P3. It also downsamples feature by factor of 2
         return outputs
 
 
@@ -270,9 +274,10 @@ class HybridEncoder(nn.Module):
         for feat in output_features:
             bs, c, h, w = feat.shape
             spatial_shapes.append((h, w))
-            src_flatten.append(feat.flatten(2).transpose(1, 2))
+            src_flatten.append(feat.flatten(2).transpose(1, 2))  # [B, HW, C]
+            assert src_flatten[-1].shape == (bs, h * w, c)
 
-        src_flatten = torch.cat(src_flatten, 1)
+        src_flatten = torch.cat(src_flatten, dim=1)
         spatial_shapes = torch.as_tensor(spatial_shapes, dtype=torch.long, device=src_flatten.device)
         level_start_index = torch.cat((spatial_shapes.new_zeros((1,)), spatial_shapes.prod(1).cumsum(0)[:-1]))
 
