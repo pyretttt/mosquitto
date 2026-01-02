@@ -32,22 +32,6 @@ def get_spatial_position_embedding(pos_emb_dim: int, feat_map: torch.Tensor) -> 
     return pos
 
 
-class Lazy1x1Conv(nn.Module):
-    """Lazy 1x1 conv that initializes on first forward based on input channels."""
-
-    def __init__(self, out_channels: int):
-        super().__init__()
-        self.out_channels = out_channels
-        self.conv: nn.Conv2d | None = None
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.conv is None:
-            in_ch = x.shape[1]
-            self.conv = nn.Conv2d(in_ch, self.out_channels, kernel_size=1)
-            self.conv.to(x.device, x.dtype)
-        return self.conv(x)
-
-
 class MultiScaleBackbone(nn.Module):
     """Wrap a backbone to produce last 3 pyramid features."""
 
@@ -74,7 +58,8 @@ class MultiScaleBackbone(nn.Module):
         else:
             while len(feats) < self.num_scales:
                 feats.insert(0, feats[0])
-        return feats[-self.num_scales :][::-1]
+        # Return features in ascending resolution order [C3, C4, C5]
+        return feats[-self.num_scales :]
 
 
 class RepConvBlock(nn.Module):
@@ -216,14 +201,6 @@ class HybridEncoder(nn.Module):
         self.use_encoder_idx = use_encoder_idx
         self.num_levels = len(in_channels_list)
 
-        # Input projections
-        self.input_proj = nn.ModuleList(
-            [
-                nn.Sequential(nn.Conv2d(in_ch, hidden_dim, 1, bias=False), nn.BatchNorm2d(hidden_dim))
-                for in_ch in in_channels_list
-            ]
-        )
-
         # CCFM: CNN-based cross-scale feature fusion
         self.ccfm = CCFM(in_channels_list, hidden_dim)
 
@@ -245,12 +222,9 @@ class HybridEncoder(nn.Module):
         # Step 1: CCFM for cross-scale fusion
         fused_features = self.ccfm(features)
 
-        # Step 2: Project features
-        proj_features = [proj(feat) for proj, feat in zip(self.input_proj, fused_features)]
-
-        # Step 3: Apply AIFI to selected scales (decoupled intra-scale interaction)
+        # Step 2: Apply AIFI to selected scales (decoupled intra-scale interaction)
         output_features = []
-        for idx, feat in enumerate(proj_features):
+        for idx, feat in enumerate(fused_features):
             if idx in self.use_encoder_idx:
                 # Apply AIFI for intra-scale feature interaction
                 bs, c, h, w = feat.shape
@@ -279,7 +253,15 @@ class HybridEncoder(nn.Module):
 
         src_flatten = torch.cat(src_flatten, dim=1)
         spatial_shapes = torch.as_tensor(spatial_shapes, dtype=torch.long, device=src_flatten.device)
-        level_start_index = torch.cat((spatial_shapes.new_zeros((1,)), spatial_shapes.prod(1).cumsum(0)[:-1]))
+        level_start_index = torch.cat(
+            (
+                spatial_shapes.new_zeros((1,)),  # first level starts at zero
+                spatial_shapes.prod(1).cumsum(0)[  # Multiply height with width
+                      # Compute cumulative level sum
+                    :-1
+                ],  # Return all levels but last
+            )
+        )
 
         return src_flatten, output_features, spatial_shapes, level_start_index
 
@@ -596,8 +578,7 @@ class RTDETR(nn.Module):
             for p in self.backbone.parameters():
                 p.requires_grad = False
 
-        # Per-level projection
-        self.input_proj = nn.ModuleList([Lazy1x1Conv(d_model) for _ in range(3)])
+        # Note: Per-level projection is handled inside HybridEncoder.
 
         # Efficient Hybrid Encoder (AIFI + CCFM)
         # Infer backbone channels dynamically during first forward
@@ -655,15 +636,15 @@ class RTDETR(nn.Module):
 
     def forward(self, x: torch.Tensor, targets=None, score_thresh: float = 0.0, use_nms: bool = False):
         # Backbone multi-scale features
-        feats_list = self.backbone(x)
+        feats_list = self.backbone(x)  # S3, S4, S5
+        print("feats_list: ", [feat.shape for feat in feats_list])
 
         # Initialize encoder on first forward
         if self.encoder is None:
             in_channels = [f.shape[1] for f in feats_list]
             self._init_encoder(in_channels)
 
-        # Project features to same dimension
-        feats_list = [self.input_proj[i](f) for i, f in enumerate(feats_list)]
+        # Pass raw backbone features to the HybridEncoder (it performs projection internally)
 
         # Efficient Hybrid Encoder (AIFI + CCFM)
         memory, enc_feats, spatial_shapes, level_start_index = self.encoder(feats_list)
