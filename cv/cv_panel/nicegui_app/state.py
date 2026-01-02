@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from numbers import Number
-from typing import List, Optional, Union, Dict
+from typing import List, Optional, Union, Dict, Self
 import uuid
 from enum import Enum
 
@@ -11,12 +11,12 @@ def make_uuid() -> str:
     return str(uuid.uuid4())
 
 
-@dataclass
+@dataclass(frozen=True)
 class CheckboxOption:
     value: bool
 
 
-@dataclass
+@dataclass(frozen=True)
 class NumberFieldOption:
     value: Number
     min_value: Number
@@ -31,7 +31,7 @@ class NumberFieldOption:
         return new_value
 
 
-@dataclass
+@dataclass(frozen=True)
 class ValueSelectorOption:
     values: List[str]
     selected_idx: int = 0
@@ -48,7 +48,7 @@ class ValueSelectorOption:
         raise ValueError(f"{new_value} is not part of the available values")
 
 
-@dataclass
+@dataclass(frozen=True)
 class FieldOption:
     value: str
 
@@ -56,7 +56,7 @@ class FieldOption:
 OptionVariant = Union[NumberFieldOption, ValueSelectorOption, FieldOption, CheckboxOption]
 
 
-@dataclass
+@dataclass(frozen=True)
 class Option:
     name: str
     info: OptionVariant
@@ -68,26 +68,38 @@ class Option:
         return self.info
 
 
-@dataclass
-class Screen:
-    name: str
-    description: str
-    options: List[Option]
-    id: str = field(default_factory=make_uuid)
+@dataclass(frozen=True)
+class MenuAction:
+    class Action(Enum):
+        FileSave = 1
+        LeftSideBarValueChanged = 2
+
+    id: Action
+    data: Optional[Union[str, int, bool]] = None
 
 
-@dataclass
+@dataclass(frozen=True)
 class Menu:
     name: str
-    action_id: Optional[str] = None
+    action_id: MenuAction = None
     submenus: List["Menu"] = field(default_factory=list)
+    is_active: bool = True
 
     @property
     def is_leaf(self) -> bool:
         return self.action_id is not None
 
 
-def make_default_menu() -> List[Menu]:
+@dataclass(frozen=True)
+class Screen:
+    name: str
+    description: str
+    options: List[Option]
+    id: str = field(default_factory=make_uuid)
+    top_bar_menu: List[Menu] = field(default_factory=list)
+
+
+def append_to_default_menu(menu: List[Menu]) -> List[Menu]:
     return [
         Menu(
             name="File",
@@ -110,7 +122,7 @@ def make_default_menu() -> List[Menu]:
                 ),
             ],
         ),
-    ]
+    ] + menu
 
 
 def make_methods() -> List[Screen]:
@@ -167,7 +179,7 @@ class LayoutType(Enum):
     OneDimensional = 1
 
 
-@dataclass
+@dataclass(frozen=True)
 class ImagesState:
     # image workspace state
     input_image_src: Optional[str] = None
@@ -191,11 +203,6 @@ class OptionChanged:
 
 
 @dataclass(frozen=True)
-class DidTapMenuItem:
-    menu_id: str
-
-
-@dataclass(frozen=True)
 class DidSelectMethod:
     identifier: str
 
@@ -205,12 +212,12 @@ class DidSelectArea:
     index: int
 
 
-Action = Union[OptionChanged, DidTapMenuItem, DidSelectMethod, DidSelectArea]
+Action = Union[OptionChanged, MenuAction, DidSelectMethod, DidSelectArea]
 
 
 class AppState:
     def __init__(self) -> None:
-        self.menu: List[Menu] = make_default_menu()
+        self.menu: List[Menu] = append_to_default_menu([])
         self.methods: List[Screen] = make_methods()
         self.selected_method_id: Optional[str] = self.methods[0].id if self.methods else None
         self.last_menu_action: Optional[str] = None
@@ -228,7 +235,7 @@ class AppState:
         method = self.selected_method
         return method.options if method else []
 
-    def handle(self, action: Action):
+    def handle(self, action: Action) -> Self:
         match action:
             case OptionChanged(option):
                 idx = next(idx for idx, opt in enumerate(self.selected_method.options) if option.id == opt.id)
@@ -236,7 +243,13 @@ class AppState:
                     self.selected_method.options[idx] = option
                 else:
                     assert "Option not found"
-            case DidTapMenuItem(identifier):
-                self.last_menu_action = identifier
+            case MenuAction(id=action, data=value):
+                match action:
+                    case MenuAction.Action.LeftSideBarValueChanged:
+                        self.is_left_sidebar_visible = value
+                    case MenuAction.Action.FileSave:
+                        self.last_menu_action = "File saved"
             case DidSelectMethod(identifier):
                 self.selected_method_id = identifier
+
+        return self

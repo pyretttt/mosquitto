@@ -1,11 +1,11 @@
 from __future__ import annotations
 
 from typing import List
-from copy import deepcopy
+import base64
+from dataclasses import replace
 
 from nicegui import ui
 from nicegui.events import KeyEventArguments, UploadEventArguments
-import base64
 
 from nicegui_app.state import (
     AppState,
@@ -17,9 +17,10 @@ from nicegui_app.state import (
     ValueSelectorOption,
     LayoutType,
     OptionChanged,
-    DidTapMenuItem,
+    MenuAction,
     DidSelectMethod,
     DidSelectArea,
+    ValueAction,
 )
 
 
@@ -63,20 +64,24 @@ ui.add_css(
 
 
 def on_method_selected(method_id: str) -> None:
-    state.handle(DidSelectMethod(identifier=method_id))
+    global state
+    state = state.handle(DidSelectMethod(identifier=method_id))
     methods_sidebar.refresh()
     options_sidebar.refresh()
 
 
 def toggle_left_sidebar():
+    state.handle(ValueAction(id=ValueAction.Action()))
     state.is_left_sidebar_visible = not state.is_left_sidebar_visible
     build_layout.refresh()
 
 
 def on_menu_action(action_id: str | None) -> None:
+    global state
     if action_id is None:
         return
-    state.handle(DidTapMenuItem(menu_id=action_id))
+    state = state.handle(MenuAction(MenuAction.Action.FileSave))
+    # Fix menu actions
     ui.notify(f"Triggered action: {action_id}", position="top", type="positive")
 
 
@@ -103,6 +108,7 @@ def _bytes_to_data_url(data: bytes, filename: str | None = None) -> str:
 
 def handle_upload_input(e: UploadEventArguments) -> None:
     """Handle uploaded input image and update workspace state."""
+    global state
     try:
         content = e.content.read() if hasattr(e.content, "read") else e.content  # type: ignore[attr-defined]
         if isinstance(content, bytes):
@@ -117,6 +123,7 @@ def handle_upload_input(e: UploadEventArguments) -> None:
 
 
 def set_default_input_image(title: str, url: str) -> None:
+    global state
     state.images.input_image_src = url
     state.images.selected_default_input = title
     make_image_workspace.refresh()
@@ -124,6 +131,7 @@ def set_default_input_image(title: str, url: str) -> None:
 
 
 def reset_workspace() -> None:
+    global state
     state.images.input_image_src = None
     state.images.output_image_src = None
     state.images.selected_default_input = None
@@ -204,9 +212,9 @@ def checkbox_control(option: Option) -> None:
     assert isinstance(option.info, CheckboxOption)
 
     def _change_option_value(option: Option, value: bool) -> None:
-        opt = deepcopy(option)
-        opt.info.value = value
-        state.handle(OptionChanged(option=opt))
+        global state
+        opt = replace(option, info=replace(option.info, value=value))
+        state = state.handle(OptionChanged(option=opt))
         print(state.selected_method.options)
 
     return (
@@ -224,9 +232,8 @@ def value_selector_control(option: Option) -> None:
     assert isinstance(option.info, ValueSelectorOption)
 
     def _change_option_value(option: Option, value: str) -> None:
-        opt = deepcopy(option)
         new_idx = next(idx for idx, val in enumerate(option.info.values) if value == val)
-        opt.info.selected_idx = new_idx
+        opt = replace(option, info=replace(option.info, selected_idx=new_idx))
         state.handle(OptionChanged(option=opt))
         print(state.selected_method.options)
 
@@ -255,8 +262,7 @@ def number_control(option: Option) -> None:
             new_value = int(float(raw_value)) if is_int else float(raw_value)
         except ValueError:
             return
-        opt = deepcopy(option)
-        opt.info.value = opt.info.clamp(new_value)
+        opt = replace(option, info=replace(option.info, value=option.info.clamp(new_value)))
         e.sender.value = opt.info.value
         state.handle(OptionChanged(option=opt))
 
@@ -273,8 +279,7 @@ def field_control(option: Option) -> None:
     assert isinstance(option.info, FieldOption)
 
     def _change_option_value(option: Option, value: str) -> None:
-        opt = deepcopy(option)
-        opt.info.value = value
+        opt = replace(option, info=replace(option.info, value=value))
         state.handle(OptionChanged(option=opt))
         print(state.selected_method.options)
 
@@ -299,7 +304,7 @@ def render_option_control(option: Option) -> None:
 
 
 def render_option_card(option: Option) -> None:
-    with ui.card().tight().classes(f"w-full gap-1 p-1").props("flat"):
+    with ui.card().tight().classes(f"w-full gap-1 p-2").props("flat"):
         with ui.row().classes("gap-[4px] flex-1 w-full flex-nowrap"):
             ui.label(option.name).classes(f"text-xs font-medium text-[{Colors.text2}] flex-1")
             with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start hover:text-[{Colors.text2}]"):
@@ -309,7 +314,7 @@ def render_option_card(option: Option) -> None:
 
 @ui.refreshable
 def options_sidebar() -> None:
-    with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-2 overflow-y-auto "):
+    with ui.column().classes(f"w-[160px] h-full px-2 py-1 gap-2 overflow-y-auto "):
         ui.label("Settings").classes(f"text-[11px] uppercase font-medium text-[{Colors.text1}] leading-tight text-left")
         if not state.selected_method_options:
             ui.label("No options available").classes(f"text-sm text-[{Colors.text1}]")
@@ -363,11 +368,11 @@ def make_image_workspace() -> None:
 
                     # 4) Plain reset button
                     ui.button(icon="replay", on_click=reset_workspace).props("flat dense").classes(
-                        f"h-[28px] px-2 text-xs text-[{Colors.text1}] hover:text-red"
+                        f"h-[28px] px-1 text-xs text-[{Colors.text1}]"
                     )
                     # 5) Plain run button
                     ui.button(icon="play_arrow", on_click=run_workspace).props("flat dense").classes(
-                        f"h-[28px] px-2 text-xs text-[{Colors.text2}] bg-primary/10 hover:bg-primary/20 hover:text-[{Colors.text2}]"
+                        f"h-[28px] px-1 text-xs text-[{Colors.text2}] hover:bg-red"
                     )
 
                 # Main splitter area
