@@ -43,7 +43,6 @@ ui.add_css(
   border: none;
   border-radius: 12px;
   box-shadow: none;
-  bg-[]
 }
 .my-uploader .q-uploader__header {
   background: transparent;
@@ -52,6 +51,13 @@ ui.add_css(
 .my-uploader .q-uploader__list {
   display: none;
 }
+.my-uploader .q-uploader__title {
+  font-size: 11px;
+}
+.my-uploader .q-uploader__subtitle {
+  font-size: 9px;
+}
+
 """
 )
 
@@ -323,7 +329,7 @@ def make_image_workspace() -> None:
                     ui.upload(label="Upload image", on_upload=handle_upload_input).classes(
                         "my-uploader text-xs max-w-[124px]"
                     )
-                    ui.tooltip("Upload an input image").classes(
+                    ui.tooltip("Drop and image").classes(
                         f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
                     )
 
