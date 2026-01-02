@@ -9,12 +9,12 @@ import base64
 
 from nicegui_app.state import (
     AppState,
-    Checkbox,
-    Field,
+    CheckboxOption,
+    FieldOption,
     Menu,
-    NumberField,
+    NumberFieldOption,
     Option,
-    ValueSelector,
+    ValueSelectorOption,
     LayoutType,
     OptionChanged,
     DidTapMenuItem,
@@ -201,7 +201,7 @@ def methods_sidebar() -> None:
 
 
 def checkbox_control(option: Option) -> None:
-    assert isinstance(option.info, Checkbox)
+    assert isinstance(option.info, CheckboxOption)
 
     def _change_option_value(option: Option, value: bool) -> None:
         opt = deepcopy(option)
@@ -221,7 +221,7 @@ def checkbox_control(option: Option) -> None:
 
 
 def value_selector_control(option: Option) -> None:
-    assert isinstance(option.info, ValueSelector)
+    assert isinstance(option.info, ValueSelectorOption)
 
     def _change_option_value(option: Option, value: str) -> None:
         opt = deepcopy(option)
@@ -242,7 +242,7 @@ def value_selector_control(option: Option) -> None:
 
 
 def number_control(option: Option) -> None:
-    assert isinstance(option.info, NumberField)
+    assert isinstance(option.info, NumberFieldOption)
     start_value = option.info.value
     is_int = isinstance(start_value, int)
     step = 1 if is_int else 0.1
@@ -270,7 +270,7 @@ def number_control(option: Option) -> None:
 
 
 def field_control(option: Option) -> None:
-    assert isinstance(option.info, Field)
+    assert isinstance(option.info, FieldOption)
 
     def _change_option_value(option: Option, value: str) -> None:
         opt = deepcopy(option)
@@ -286,13 +286,13 @@ def field_control(option: Option) -> None:
 
 def render_option_control(option: Option) -> None:
     match option.type:
-        case "checkbox":
+        case CheckboxOption():
             checkbox_control(option)
-        case "value_selector":
+        case ValueSelectorOption():
             value_selector_control(option)
-        case "number_field":
+        case NumberFieldOption():
             number_control(option)
-        case "field":
+        case FieldOption():
             field_control(option)
         case _:
             ui.label("Unsupported option").classes("text-red-600")
@@ -322,7 +322,7 @@ def options_sidebar() -> None:
 def make_image_workspace() -> None:
     match state.layout_type:
         case LayoutType.OneDimensional:
-            with ui.column().classes(f"flex-1 h-full bg-effective overflow-hidden rounded-lg"):
+            with ui.column().classes(f"flex-1 gap-0 h-full bg-effective overflow-hidden rounded-lg"):
                 # Toolbar row: upload, defaults, transforms, reset, run
                 with ui.row().classes(f"w-full items-center gap-1 p-1"):
                     # 1) Upload a file
@@ -362,12 +362,12 @@ def make_image_workspace() -> None:
                     ui.space()
 
                     # 4) Plain reset button
-                    ui.button("Reset", on_click=reset_workspace).props("flat dense").classes(
-                        f"h-[28px] px-2 text-xs text-[{Colors.text1}] hover:text-white"
+                    ui.button(icon="replay", on_click=reset_workspace).props("flat dense").classes(
+                        f"h-[28px] px-2 text-xs text-[{Colors.text1}] hover:text-red"
                     )
                     # 5) Plain run button
-                    ui.button("Run", on_click=run_workspace).props("flat dense").classes(
-                        f"h-[28px] px-2 text-xs text-[{Colors.text2}] bg-primary/10 hover:bg-primary/20"
+                    ui.button(icon="play_arrow", on_click=run_workspace).props("flat dense").classes(
+                        f"h-[28px] px-2 text-xs text-[{Colors.text2}] bg-primary/10 hover:bg-primary/20 hover:text-[{Colors.text2}]"
                     )
 
                 # Main splitter area

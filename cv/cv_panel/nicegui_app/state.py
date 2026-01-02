@@ -12,12 +12,12 @@ def make_uuid() -> str:
 
 
 @dataclass
-class Checkbox:
+class CheckboxOption:
     value: bool
 
 
 @dataclass
-class NumberField:
+class NumberFieldOption:
     value: Number
     min_value: Number
     max_value: Number
@@ -32,7 +32,7 @@ class NumberField:
 
 
 @dataclass
-class ValueSelector:
+class ValueSelectorOption:
     values: List[str]
     selected_idx: int = 0
 
@@ -49,11 +49,11 @@ class ValueSelector:
 
 
 @dataclass
-class Field:
+class FieldOption:
     value: str
 
 
-OptionVariant = Union[NumberField, ValueSelector, Field, Checkbox]
+OptionVariant = Union[NumberFieldOption, ValueSelectorOption, FieldOption, CheckboxOption]
 
 
 @dataclass
@@ -64,20 +64,12 @@ class Option:
     id: str = field(default_factory=make_uuid)
 
     @property
-    def type(self) -> str:
-        if isinstance(self.info, NumberField):
-            return "number_field"
-        if isinstance(self.info, ValueSelector):
-            return "value_selector"
-        if isinstance(self.info, Field):
-            return "field"
-        if isinstance(self.info, Checkbox):
-            return "checkbox"
-        raise ValueError("Unsupported option type")
+    def type(self) -> OptionVariant:
+        return self.info
 
 
 @dataclass
-class Method:
+class Screen:
     name: str
     description: str
     options: List[Option]
@@ -121,49 +113,49 @@ def make_default_menu() -> List[Menu]:
     ]
 
 
-def make_methods() -> List[Method]:
+def make_methods() -> List[Screen]:
     return [
-        Method(
+        Screen(
             name="Image registration",
             description="Using homography and RANSAC to align one image into another",
             options=[
                 Option(
                     name="Ransac iterations",
-                    info=NumberField(value=20, min_value=1, max_value=1_000_000),
+                    info=NumberFieldOption(value=20, min_value=1, max_value=1_000_000),
                     description="Controls the number of RANSAC trials",
                 ),
                 Option(
                     name="Optimization strategy",
-                    info=ValueSelector(values=["One", "Two", "Free"]),
+                    info=ValueSelectorOption(values=["One", "Two", "Free"]),
                     description="Choose between preset strategies",
                 ),
                 Option(
                     name="Fast mode",
-                    info=Checkbox(value=False),
+                    info=CheckboxOption(value=False),
                     description="Trades accuracy for speed",
                 ),
                 Option(
                     name="Fast mode",
-                    info=Field(value="123"),
+                    info=FieldOption(value="123"),
                     description="Trades accuracy for speed",
                 ),
             ],
         ),
-        Method(
+        Screen(
             name="Histogram uniformity",
             description="Adjusts histogram histogram for visual improvements",
             options=[
                 Option(
                     name="Intensity",
-                    info=NumberField(value=1.0, min_value=0.0, max_value=5.0),
+                    info=NumberFieldOption(value=1.0, min_value=0.0, max_value=5.0),
                 ),
                 Option(
                     name="Verbose",
-                    info=Checkbox(value=True),
+                    info=CheckboxOption(value=True),
                 ),
             ],
         ),
-        Method(
+        Screen(
             name="HUI",
             description="Utility method without options",
             options=[],
@@ -219,7 +211,7 @@ Action = Union[OptionChanged, DidTapMenuItem, DidSelectMethod, DidSelectArea]
 class AppState:
     def __init__(self) -> None:
         self.menu: List[Menu] = make_default_menu()
-        self.methods: List[Method] = make_methods()
+        self.methods: List[Screen] = make_methods()
         self.selected_method_id: Optional[str] = self.methods[0].id if self.methods else None
         self.last_menu_action: Optional[str] = None
         self.is_left_sidebar_visible = True
@@ -228,7 +220,7 @@ class AppState:
         self.images = ImagesState()
 
     @property
-    def selected_method(self) -> Optional[Method]:
+    def selected_method(self) -> Optional[Screen]:
         return next((method for method in self.methods if method.id == self.selected_method_id))
 
     @property
@@ -239,7 +231,7 @@ class AppState:
     def handle(self, action: Action):
         match action:
             case OptionChanged(option):
-                idx = next(idx for idx, option in enumerate(self.selected_method.options) if option.id == option.id)
+                idx = next(idx for idx, opt in enumerate(self.selected_method.options) if option.id == opt.id)
                 if idx is not None:
                     self.selected_method.options[idx] = option
                 else:
