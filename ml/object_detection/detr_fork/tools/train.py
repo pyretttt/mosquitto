@@ -71,7 +71,7 @@ def train(args):
             os.path.join(train_config['task_name'],
                          train_config['ckpt_name']),
             map_location=device)
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
         print('Loading checkpoint as one exists')
 
     if not os.path.exists(train_config['task_name']):

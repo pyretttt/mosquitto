@@ -205,9 +205,13 @@ def load_model_and_dataset(args):
                                        train_config['ckpt_name'])), \
         "No checkpoint exists at {}".format(os.path.join(train_config['task_name'],
                                                          train_config['ckpt_name']))
-    model.load_state_dict(torch.load(os.path.join(train_config['task_name'],
-                                                       train_config['ckpt_name']),
-                                     map_location=device))
+    model.load_state_dict(
+        torch.load(
+            os.path.join(train_config['task_name'], train_config['ckpt_name']),
+            map_location=device,
+        ),
+        strict=False,
+    )
     return model, voc, test_dataset, config
 
 
@@ -227,8 +231,8 @@ def infer(args):
             use_nms=config['train_params']['use_nms_infer']
         )
         detr_detections = detr_output['detections']
-        enc_attn_weights = detr_output['enc_attn']
-        dec_attn_weights = detr_output['dec_attn']
+        # enc_attn_weights = detr_output['enc_attn']
+        # dec_attn_weights = detr_output['dec_attn']
 
         gt_im = cv2.imread(fname)
         h, w = gt_im.shape[:2]
