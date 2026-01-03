@@ -15,12 +15,10 @@ from nicegui_app.state import (
     NumberFieldOption,
     Option,
     ValueSelectorOption,
-    LayoutType,
-    OptionChanged,
     MenuAction,
-    DidSelectMethod,
-    DidSelectArea,
-    ValueAction,
+    WorkspaceState,
+    AppAction,
+    WorkspaceAction,
 )
 
 
@@ -63,16 +61,18 @@ ui.add_css(
 )
 
 
-def on_method_selected(method_id: str) -> None:
+def on_screen_selected(screen_id: str) -> None:
     global state
-    state = state.handle(DidSelectMethod(identifier=method_id))
-    methods_sidebar.refresh()
+    state = state.handle(AppAction(id=AppAction.ID.DidSelectScreen, data=screen_id))
+    screens_sidebar.refresh()
     options_sidebar.refresh()
 
 
 def toggle_left_sidebar():
-    state.handle(ValueAction(id=ValueAction.Action()))
-    state.is_left_sidebar_visible = not state.is_left_sidebar_visible
+    global state
+    state = state.handle(
+        AppAction(id=AppAction.ID.LeftSideBarVisibilityChanged, data=not state.is_left_sidebar_visible)
+    )
     build_layout.refresh()
 
 
@@ -80,8 +80,7 @@ def on_menu_action(action_id: str | None) -> None:
     global state
     if action_id is None:
         return
-    state = state.handle(MenuAction(MenuAction.Action.FileSave))
-    # Fix menu actions
+    state = state.handle(MenuAction(id=MenuAction.ID.FileSaved))
     ui.notify(f"Triggered action: {action_id}", position="top", type="positive")
 
 
@@ -132,18 +131,15 @@ def set_default_input_image(title: str, url: str) -> None:
 
 def reset_workspace() -> None:
     global state
-    state.images.input_image_src = None
-    state.images.output_image_src = None
-    state.images.selected_default_input = None
-    state.images.selected_default_output = None
+    state = state.handle(action=WorkspaceAction(id=WorkspaceAction.ID.Reset))
     make_image_workspace.refresh()
     ui.notify("Workspace reset", type="warning")
 
 
 def run_workspace() -> None:
-    # Placeholder hook for running current method/transform
-    method_name = state.selected_method.name if state.selected_method else "<none>"
-    ui.notify(f"Run: {method_name}", type="positive")
+    global state
+    state = state.handle(action=WorkspaceAction(id=WorkspaceAction.ID.Run))
+    ui.notify(f"Launched", type="positive")
 
 
 def default_tooltip(text: str):
@@ -187,13 +183,13 @@ def render_menu(menu: Menu) -> None:
 
 
 @ui.refreshable
-def methods_sidebar() -> None:
+def screens_sidebar() -> None:
     with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-1 overflow-y-auto") as col:
         col.set_visibility(state.is_left_sidebar_visible)
-        ui.dropdown_button("methods").props("flat dense").classes(f"text-[11px] uppercase text-[{Colors.text1}] px-1")
-        for method in state.methods:
-            is_selected = state.selected_method_id == method.id
-            button = ui.button(on_click=lambda m_id=method.id: on_method_selected(m_id)).props("flat dense")
+        ui.dropdown_button("screens").props("flat dense").classes(f"text-[11px] uppercase text-[{Colors.text1}] px-1")
+        for screen in state.screens:
+            is_selected = state.selected_screen_id == screen.id
+            button = ui.button(on_click=lambda m_id=screen.id: on_screen_selected(m_id)).props("flat dense")
             button.classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150").props(
                 'align="left"'
             )
@@ -203,9 +199,9 @@ def methods_sidebar() -> None:
                 button.classes(add="hover:bg-primary")
 
             with button:
-                ui.label(method.name).classes(f"text-[12px] font-medium text-[{Colors.text2}] leading-tight text-left")
-                if method.description:
-                    ui.label(method.description).classes(f"text-[10px] text-[{Colors.text1}] leading-tight text-left")
+                ui.label(screen.name).classes(f"text-[12px] font-medium text-[{Colors.text2}] leading-tight text-left")
+                if screen.description:
+                    ui.label(screen.description).classes(f"text-[10px] text-[{Colors.text1}] leading-tight text-left")
 
 
 def checkbox_control(option: Option) -> None:
@@ -214,8 +210,8 @@ def checkbox_control(option: Option) -> None:
     def _change_option_value(option: Option, value: bool) -> None:
         global state
         opt = replace(option, info=replace(option.info, value=value))
-        state = state.handle(OptionChanged(option=opt))
-        print(state.selected_method.options)
+        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        print(state.selected_screen.options)
 
     return (
         ui.checkbox(
@@ -232,10 +228,11 @@ def value_selector_control(option: Option) -> None:
     assert isinstance(option.info, ValueSelectorOption)
 
     def _change_option_value(option: Option, value: str) -> None:
+        global state
         new_idx = next(idx for idx, val in enumerate(option.info.values) if value == val)
         opt = replace(option, info=replace(option.info, selected_idx=new_idx))
-        state.handle(OptionChanged(option=opt))
-        print(state.selected_method.options)
+        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        print(state.selected_screen.options)
 
     (
         ui.select(
@@ -255,6 +252,7 @@ def number_control(option: Option) -> None:
     step = 1 if is_int else 0.1
 
     def update_value(e, option=option) -> None:
+        global state
         raw_value = e.value
         if raw_value is None or raw_value == "":
             return
@@ -264,7 +262,7 @@ def number_control(option: Option) -> None:
             return
         opt = replace(option, info=replace(option.info, value=option.info.clamp(new_value)))
         e.sender.value = opt.info.value
-        state.handle(OptionChanged(option=opt))
+        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
 
     ui.number(
         value=start_value,
@@ -279,9 +277,10 @@ def field_control(option: Option) -> None:
     assert isinstance(option.info, FieldOption)
 
     def _change_option_value(option: Option, value: str) -> None:
+        global state
         opt = replace(option, info=replace(option.info, value=value))
-        state.handle(OptionChanged(option=opt))
-        print(state.selected_method.options)
+        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        print(state.selected_screen.options)
 
     ui.input(
         value=option.info.value,
@@ -316,64 +315,41 @@ def render_option_card(option: Option) -> None:
 def options_sidebar() -> None:
     with ui.column().classes(f"w-[160px] h-full px-2 py-1 gap-2 overflow-y-auto "):
         ui.label("Settings").classes(f"text-[11px] uppercase font-medium text-[{Colors.text1}] leading-tight text-left")
-        if not state.selected_method_options:
+        if not state.selected_screen_options:
             ui.label("No options available").classes(f"text-sm text-[{Colors.text1}]")
         else:
-            for option in state.selected_method_options:
+            for option in state.selected_screen_options:
                 render_option_card(option)
+
+
+def render_workspace_widget(widget: WorkspaceState.Widget) -> None:
+    match widget:
+        case WorkspaceState.Uploader() as uploader:
+            with ui.upload(label=uploader.name, on_upload=handle_upload_input).classes(
+                "my-uploader text-xs max-w-[124px]"
+            ):
+                ui.tooltip("Drop and image").classes(
+                    f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
+                )
+        case WorkspaceState.Button() as button:
+            ui.button(button.name or "", icon=button.icon, on_click=reset_workspace).props("flat dense").classes(
+                f"h-[28px] px-1 text-xs text-[{Colors.text1}]"
+            )
+        case WorkspaceState.Spacer():
+            ui.space()
+        case WorkspaceState.Menu() as menu:
+            render_menu(menu)
 
 
 @ui.refreshable
 def make_image_workspace() -> None:
-    match state.layout_type:
-        case LayoutType.OneDimensional:
+    match state.selected_screen.workspace_state.layout:
+        case WorkspaceState.Layout.OneDimensional:
             with ui.column().classes(f"flex-1 gap-0 h-full bg-effective overflow-hidden rounded-lg"):
                 # Toolbar row: upload, defaults, transforms, reset, run
                 with ui.row().classes(f"w-full items-center gap-1 p-1"):
-                    # 1) Upload a file
-                    ui.upload(label="Upload image", on_upload=handle_upload_input).classes(
-                        "my-uploader text-xs max-w-[124px]"
-                    )
-                    ui.tooltip("Drop and image").classes(
-                        f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
-                    )
-
-                    # 2) Dropdown with default images
-                    with (
-                        ui.dropdown_button("Default images", auto_close=True)
-                        .props("flat dense")
-                        .classes(
-                            f"h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case"
-                        )
-                    ):
-                        ui.menu_item("Default Images").props("disable").classes(f"text-[{Colors.text1}] text-[10px]")
-                        for title, url in state.images.default_images.items():
-                            ui.menu_item(title, on_click=lambda t=title, u=url: set_default_input_image(t, u)).classes(
-                                f"text-[{Colors.text1}] hover:bg-accent text-xs min-h-[8px]"
-                            )
-
-                    # 3) Dropdown transforms button (uses existing menu structure)
-                    transforms_menu = next((m for m in state.menu if m.name == "Transforms"), None)
-                    if transforms_menu is not None:
-                        with (
-                            ui.dropdown_button("Transforms", auto_close=False)
-                            .props("flat dense")
-                            .classes(
-                                f"h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case"
-                            )
-                        ):
-                            render_menu_items(transforms_menu.submenus)
-
-                    ui.space()
-
-                    # 4) Plain reset button
-                    ui.button(icon="replay", on_click=reset_workspace).props("flat dense").classes(
-                        f"h-[28px] px-1 text-xs text-[{Colors.text1}]"
-                    )
-                    # 5) Plain run button
-                    ui.button(icon="play_arrow", on_click=run_workspace).props("flat dense").classes(
-                        f"h-[28px] px-1 text-xs text-[{Colors.text2}] hover:bg-red"
-                    )
+                    for widget in state.selected_screen.workspace_state.widgets:
+                        render_workspace_widget(widget)
 
                 # Main splitter area
                 with ui.splitter(
@@ -415,11 +391,11 @@ def build_layout() -> None:
                 ui.icon("toggle_on" if state.is_left_sidebar_visible else "toggle_off").classes(
                     f"text-[{Colors.text1}] px-2 text-2xl"
                 )
-            for menu in state.menu:
+            for menu in state.selected_screen.top_bar_menu:
                 render_menu(menu)
             ui.space()
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
-            methods_sidebar()
+            screens_sidebar()
             # with ui.column().classes(
             #     f"flex-1 h-full bg-effective gap-0 p-3 text-[{Colors.text1}] overflow-hidden rounded-md"
             # ):
@@ -432,7 +408,8 @@ def build_layout() -> None:
 
 def handle_key(e: KeyEventArguments):
     if e.key in ("1", "2", "3", "4") and not e.action.repeat:
-        state.handle(DidSelectArea(index=int(e.key)))
+        # state.handle(DidSelectArea(index=int(e.key)))
+        pass
 
 
 def main() -> None:

@@ -1,14 +1,66 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from numbers import Number
-from typing import List, Optional, Union, Dict, Self
+from typing import List, Optional, Union, Self, Any
 import uuid
 from enum import Enum
+
+from PIL.Image import Image
+
+DEFAULT_IMAGE_URLS = {
+    "Mountains": "https://picsum.photos/id/1015/1200/800",
+    "Forest": "https://picsum.photos/id/102/1200/800",
+    "City": "https://picsum.photos/id/1011/1200/800",
+    "Kitten": "https://placekitten.com/1200/800",
+}
 
 
 def make_uuid() -> str:
     return str(uuid.uuid4())
+
+
+@dataclass(frozen=True)
+class MenuAction:
+    class ID(str, Enum):
+        FileSaved = "saved_file"
+        Flip = "flip"
+
+    id: ID
+    data: Optional[Any] = None
+
+
+@dataclass(frozen=True)
+class WorkspaceAction:
+    class ID(str, Enum):
+        FlipInputHorizontally = "flip_h"
+        FlipInputVertically = "flip_v"
+        SelectedInputImage = "selected_input_image"
+        Reset = "reset"
+        Run = "run"
+
+    id: ID
+    data: Optional[Any] = None
+
+
+@dataclass(frozen=True)
+class AppAction:
+    class ID(str, Enum):
+        LeftSideBarVisibilityChanged = "left_sidebar_visibility_changed"
+        RightSideBarVisibilityChanged = "right_sidebar_visibility_changed"
+        OptionChanged = "option_changed"
+        DidSelectScreen = "select_screen"
+
+    id: ID
+    data: Optional[Any]
+
+
+Action = Union[MenuAction, WorkspaceAction, AppAction]
+
+
+@dataclass(frozen=True)
+class Spacer:
+    pass
 
 
 @dataclass(frozen=True)
@@ -69,25 +121,93 @@ class Option:
 
 
 @dataclass(frozen=True)
-class MenuAction:
-    class Action(Enum):
-        FileSave = 1
-        LeftSideBarValueChanged = 2
-
-    id: Action
-    data: Optional[Union[str, int, bool]] = None
-
-
-@dataclass(frozen=True)
 class Menu:
     name: str
-    action_id: MenuAction = None
+    action: Optional[MenuAction] = None
     submenus: List["Menu"] = field(default_factory=list)
     is_active: bool = True
+    id: str = field(default_factory=make_uuid)
 
     @property
     def is_leaf(self) -> bool:
-        return self.action_id is not None
+        return self.action is not None
+
+    @property
+    def action_id(self) -> Action.ID:
+        return self.action.id
+
+
+def append_to_default_menu(menu: List[Menu] = None) -> List[Menu]:
+    return [
+        Menu(
+            name="File",
+            submenus=[Menu(name="Save", action=MenuAction(id=MenuAction.ID.FileSaved))],
+        ),
+        Menu(
+            name="Transforms",
+            submenus=[
+                Menu(name="Flip horizontally", action=MenuAction(id=MenuAction.ID.Flip)),
+                Menu(name="Flip vertically", action=MenuAction(id=MenuAction.ID.Flip)),
+                Menu(
+                    name="Advanced",
+                    submenus=[
+                        Menu(name="Flip horizontally 2", action=MenuAction(id=MenuAction.ID.Flip)),
+                        Menu(name="Flip vertically 2", action=MenuAction(id=MenuAction.ID.Flip)),
+                    ],
+                ),
+            ],
+        ),
+    ] + (menu or [])
+
+
+def get_default_workspace_actions() -> List[WorkspaceState.Widget]:
+    return [
+        WorkspaceState.Uploader(name="Upload image"),
+        Menu(
+            name="Default Images",
+            submenus=[
+                Menu(name=name, action=WorkspaceAction(id=WorkspaceAction.ID.SelectedInputImage, data=url))
+                for name, url in DEFAULT_IMAGE_URLS.items()
+            ],
+        ),
+        Menu(
+            name="Transforms",
+            submenus=[
+                Menu(name="Flip horizontally", action=WorkspaceAction(id=WorkspaceAction.ID.FlipInputHorizontally)),
+                Menu(name="Flip vertically", action=WorkspaceAction(id=WorkspaceAction.ID.FlipInputVertically)),
+            ],
+        ),
+        Spacer(),
+        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Reset), icon="replay"),
+        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Run), icon="play_arrow"),
+    ]
+
+
+@dataclass(frozen=True)
+class WorkspaceState:
+    class Layout(Enum):
+        OneDimensional = 1
+
+    Spacer = Spacer
+    Menu = Menu
+
+    @dataclass(frozen=True)
+    class Button:
+        action: WorkspaceAction
+        id: str = field(default_factory=make_uuid)
+        name: Optional[str] = None
+        icon: Optional[str] = None
+
+    @dataclass(frozen=True)
+    class Uploader:
+        name: str
+
+    Widget = Union[Uploader, Button, Spacer, Menu]
+
+    widgets: List[Widget] = field(default_factory=get_default_workspace_actions)
+    input: List[Union[str | Image]] = field(default_factory=list)
+    output: Optional[Image] = None
+    layout: Layout = Layout.OneDimensional
 
 
 @dataclass(frozen=True)
@@ -96,36 +216,18 @@ class Screen:
     description: str
     options: List[Option]
     id: str = field(default_factory=make_uuid)
-    top_bar_menu: List[Menu] = field(default_factory=list)
+    top_bar_menu: List[Menu] = field(default_factory=append_to_default_menu)
+    workspace_state: WorkspaceState = field(default_factory=WorkspaceState)
+
+    def is_layout_allowed(self, layout: WorkspaceState.Layout) -> bool:
+        match layout:
+            case WorkspaceState.Layout.OneDimensional:
+                return True
+            case _:
+                return False
 
 
-def append_to_default_menu(menu: List[Menu]) -> List[Menu]:
-    return [
-        Menu(
-            name="File",
-            submenus=[
-                Menu(name="Save", action_id="save"),
-                Menu(name="Save As", action_id="save_as"),
-            ],
-        ),
-        Menu(
-            name="Transforms",
-            submenus=[
-                Menu(name="Flip horizontally", action_id="flip_h"),
-                Menu(name="Flip vertically", action_id="flip_v"),
-                Menu(
-                    name="Advanced",
-                    submenus=[
-                        Menu(name="Flip horizontally 2", action_id="flip_h2"),
-                        Menu(name="Flip vertically 2", action_id="flip_v2"),
-                    ],
-                ),
-            ],
-        ),
-    ] + menu
-
-
-def make_methods() -> List[Screen]:
+def get_screens() -> List[Screen]:
     return [
         Screen(
             name="Image registration",
@@ -168,88 +270,60 @@ def make_methods() -> List[Screen]:
             ],
         ),
         Screen(
-            name="HUI",
-            description="Utility method without options",
+            name="Utility",
+            description="Utility screen without options",
             options=[],
         ),
     ]
 
 
-class LayoutType(Enum):
-    OneDimensional = 1
+_screens = get_screens()
 
 
 @dataclass(frozen=True)
-class ImagesState:
-    # image workspace state
-    input_image_src: Optional[str] = None
-    output_image_src: Optional[str] = None
-    # default images (label -> url)
-    default_images: Dict[str, str] = field(
-        default_factory=lambda: {
-            "Mountains": "https://picsum.photos/id/1015/1200/800",
-            "Forest": "https://picsum.photos/id/102/1200/800",
-            "City": "https://picsum.photos/id/1011/1200/800",
-            "Kitten": "https://placekitten.com/1200/800",
-        }
-    )
-    selected_default_input: Optional[str] = None
-    selected_default_output: Optional[str] = None
-
-
-@dataclass(frozen=True)
-class OptionChanged:
-    option: Option
-
-
-@dataclass(frozen=True)
-class DidSelectMethod:
-    identifier: str
-
-
-@dataclass(frozen=True)
-class DidSelectArea:
-    index: int
-
-
-Action = Union[OptionChanged, MenuAction, DidSelectMethod, DidSelectArea]
-
-
 class AppState:
-    def __init__(self) -> None:
-        self.menu: List[Menu] = append_to_default_menu([])
-        self.methods: List[Screen] = make_methods()
-        self.selected_method_id: Optional[str] = self.methods[0].id if self.methods else None
-        self.last_menu_action: Optional[str] = None
-        self.is_left_sidebar_visible = True
-        self.layout_type = LayoutType.OneDimensional
-
-        self.images = ImagesState()
+    screens: List[Screen] = field(default_factory=lambda: _screens[:])
+    selected_screen_id: str = field(default=_screens[0].id)
+    last_menu_action: Optional[str] = None
+    is_left_sidebar_visible: bool = True
+    is_right_sidebar_visible: bool = True
 
     @property
-    def selected_method(self) -> Optional[Screen]:
-        return next((method for method in self.methods if method.id == self.selected_method_id))
+    def selected_screen(self) -> Optional[Screen]:
+        try:
+            return next((screen for screen in self.screens if screen.id == self.selected_screen_id))
+        except StopIteration:
+            return None
 
     @property
-    def selected_method_options(self) -> List[Option]:
-        method = self.selected_method
-        return method.options if method else []
+    def selected_screen_options(self) -> List[Option]:
+        screen = self.selected_screen
+        return screen.options if screen else []
 
     def handle(self, action: Action) -> Self:
         match action:
-            case OptionChanged(option):
-                idx = next(idx for idx, opt in enumerate(self.selected_method.options) if option.id == opt.id)
-                if idx is not None:
-                    self.selected_method.options[idx] = option
-                else:
-                    assert "Option not found"
+            case AppAction(id=action_id, data=value):
+                match action_id:
+                    case AppAction.ID.OptionChanged:
+                        new_option = value
+                        new_options = [
+                            new_option if new_option.id == opt.id else opt for opt in self.selected_screen.options
+                        ]
+                        new_screens = [
+                            replace(screen, options=new_options) if screen.id == self.selected_screen_id else screen
+                            for screen in self.screens
+                        ]
+                        return replace(self, screens=new_screens)
+                    case AppAction.ID.LeftSideBarVisibilityChanged:
+                        return replace(self, is_left_sidebar_visible=value)
+                    case AppAction.ID.RightSideBarVisibilityChanged:
+                        return replace(self, is_right_sidebar_visible="File saved")
+                    case AppAction.ID.DidSelectScreen:
+                        identifier = value
+                        return replace(self, selected_screen_id=identifier)
             case MenuAction(id=action, data=value):
-                match action:
-                    case MenuAction.Action.LeftSideBarValueChanged:
-                        self.is_left_sidebar_visible = value
-                    case MenuAction.Action.FileSave:
-                        self.last_menu_action = "File saved"
-            case DidSelectMethod(identifier):
-                self.selected_method_id = identifier
+                return self
+            case WorkspaceAction(id=action, data=value):
+                return self
 
-        return self
+        # assert False
