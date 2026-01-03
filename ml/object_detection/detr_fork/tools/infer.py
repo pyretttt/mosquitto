@@ -10,6 +10,10 @@ import cv2
 from dataset.voc import VOCDataset
 from torch.utils.data.dataloader import DataLoader
 
+from model.ab import AB
+from model.rtdetr_paper_aligned import build_rt_detr
+
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if torch.backends.mps.is_available():
     device = torch.device('mps')
@@ -182,11 +186,18 @@ def load_model_and_dataset(args):
                      im_size=dataset_config['im_size'])
     test_dataset = DataLoader(voc, batch_size=1, shuffle=False)
 
-    model = DETR(
-        config=model_config,
-        num_classes=dataset_config['num_classes'],
-        bg_class_idx=dataset_config['bg_class_idx']
-    )
+    if AB.use_rt_detr:
+        model = build_rt_detr(
+            num_classes=dataset_config['num_classes'],
+            bg_class_idx=dataset_config['bg_class_idx']
+        )
+    else:
+        model = DETR(
+            config=model_config,
+            num_classes=dataset_config['num_classes'],
+            bg_class_idx=dataset_config['bg_class_idx']
+        )
+    print("Model state dict: ", model.state_dict().keys())
     model.to(device=torch.device(device))
     model.eval()
 

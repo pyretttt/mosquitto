@@ -32,7 +32,7 @@ train_params:
   use_nms_infer : True
   seed: 1111
   acc_steps: 1
-  num_epochs: 300
+  num_epochs: 50
   batch_size: 16
   lr_steps: [ 200 ]
   lr: 0.0001

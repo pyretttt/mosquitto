@@ -867,7 +867,7 @@ def build_rt_detr(num_classes: int, bg_class_idx: int = 0, backbone: str = "mobi
     return RTDETR(
         num_classes=num_classes,
         bg_class_idx=bg_class_idx,
-        num_queries=300,  # Paper uses 300 queries
+        num_queries=25,  # Paper uses 300 queries
         d_model=256,  # Paper uses 256 for R50
         encoder_layers=1,  # Paper uses 1 AIFI layer
         decoder_layers=6,  # Paper uses 6 decoder layers (tunable for speed)
@@ -875,13 +875,13 @@ def build_rt_detr(num_classes: int, bg_class_idx: int = 0, backbone: str = "mobi
         ff_inner_dim=1024,
         dropout_prob=0.1,
         backbone=backbone,
-        pretrained_backbone=False,
-        freeze_backbone=False,
-        cls_cost_weight=2.0,
+        pretrained_backbone=True,
+        freeze_backbone=True,
+        cls_cost_weight=1.0,
         l1_cost_weight=5.0,
         giou_cost_weight=2.0,
         bg_class_weight=0.1,
-        nms_threshold=0.7,
+        nms_threshold=0.5,
         quality_loss="qfl",  # Use QFL as in paper
         use_encoder_idx=[2],  # Apply AIFI only to S5
     )

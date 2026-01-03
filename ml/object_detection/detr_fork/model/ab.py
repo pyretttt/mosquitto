@@ -11,6 +11,7 @@ class AB:
     custom_encoder: bool = True
     custom_decoder: bool = True
     custom_mha: bool = True
+    use_rt_detr: bool = True
 
 
 def get_spatial_position_embedding(emb_dim, feat_map):

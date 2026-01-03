@@ -10,6 +10,9 @@ from dataset.voc import VOCDataset
 from torch.utils.data.dataloader import DataLoader
 from torch.optim.lr_scheduler import MultiStepLR
 
+from model.ab import AB
+from model.rtdetr_paper_aligned import build_rt_detr
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 if torch.backends.mps.is_available():
     device = torch.device('mps')
@@ -47,11 +50,17 @@ def train(args):
                                collate_fn=collate_function)
 
     # Instantiate model and load checkpoint if present
-    model = DETR(
-        config=model_config,
-        num_classes=dataset_config['num_classes'],
-        bg_class_idx=dataset_config['bg_class_idx']
-    )
+    if AB.use_rt_detr:
+        model = build_rt_detr(
+            num_classes=dataset_config['num_classes'],
+            bg_class_idx=dataset_config['bg_class_idx']
+        )
+    else:
+        model = DETR(
+            config=model_config,
+            num_classes=dataset_config['num_classes'],
+            bg_class_idx=dataset_config['bg_class_idx']
+        )
     model.to(device)
     model.train()
 
