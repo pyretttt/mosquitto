@@ -256,8 +256,9 @@ class HybridEncoder(nn.Module):
         level_start_index = torch.cat(
             (
                 spatial_shapes.new_zeros((1,)),  # first level starts at zero
-                spatial_shapes.prod(1).cumsum(0)[  # Multiply height with width
-                      # Compute cumulative level sum
+                spatial_shapes
+                    .prod(1) # Multiply height with width
+                    .cumsum(0)[ # Compute cumulative level sum
                     :-1
                 ],  # Return all levels but last
             )
@@ -289,7 +290,7 @@ class MSDeformAttn(nn.Module):
         nn.init.constant_(self.attention_weights.bias, 0.0)
 
     def forward(
-        self, query: torch.Tensor, feats: list[torch.Tensor], reference_points: torch.Tensor
+        self, query: torch.Tensor, feats: list[torch.Tensor], reference_points: torch.Tensor,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         B, Q, D = query.shape
         Hs = [f.shape[2] for f in feats]
@@ -309,22 +310,22 @@ class MSDeformAttn(nn.Module):
         for lvl, feat in enumerate(feats):
             B_, D_, H_, W_ = feat.shape
             feat = feat.view(B_, self.num_heads, self.head_dim, H_, W_)
-            feat = feat.permute(0, 1, 2, 3, 4).reshape(B_ * self.num_heads, self.head_dim, H_, W_)
+            feat = feat.reshape(B_ * self.num_heads, self.head_dim, H_, W_)
 
             ref = reference_points
             ref_grid = ref * 2.0 - 1.0
-            off = offsets[:, :, :, lvl]
-            off = off.permute(0, 2, 1, 3, 4)
+            off = offsets[:, :, :, lvl, :] # B, Q, num_heads, 1, num_points
+            off = off.permute(0, 2, 1, 3, 4) # B, num_heads, Q, 1, num_points
             grid = ref_grid[:, None, :, None, :].expand(B, self.num_heads, Q, self.num_points, 2) + off
             grid = grid.reshape(B * self.num_heads, Q * self.num_points, 2)
-            grid = grid.view(B * self.num_heads, Q * self.num_points, 1, 2)
+            grid = grid.view(B * self.num_heads, Q * self.num_points, 1, 2) # B * num_heads, Q * num_ponts, 1, 2
 
-            grid = grid.permute(0, 2, 1, 3)
+            grid = grid.permute(0, 2, 1, 3) # B * num_heads, 1, Q * num_ponts, 2
             sampled = F.grid_sample(feat, grid, mode="bilinear", padding_mode="zeros", align_corners=True)
             sampled = sampled.squeeze(2)
             sampled = sampled.view(B, self.num_heads, self.head_dim, Q, self.num_points)
 
-            w = attn[:, :, :, lvl]
+            w = attn[:, :, :, lvl, :]
             w = w.permute(0, 2, 3, 1)
             w = w.unsqueeze(2)
             sampled_list.append(sampled)
@@ -368,7 +369,7 @@ class UncertaintyQuerySelection(nn.Module):
 
         # Prediction heads for query selection
         self.cls_embed = nn.Linear(d_model, num_classes)
-        self.box_embed = nn.Sequential(nn.Linear(d_model, d_model), nn.ReLU(), nn.Linear(d_model, 4))
+        self.box_embed = nn.Sequential(nn.Linear(d_model, d_model), nn.ReLU(), nn.Linear(d_model, 4),)
 
     def forward(self, memory, spatial_shapes, level_start_index):
         """
@@ -637,7 +638,6 @@ class RTDETR(nn.Module):
     def forward(self, x: torch.Tensor, targets=None, score_thresh: float = 0.0, use_nms: bool = False):
         # Backbone multi-scale features
         feats_list = self.backbone(x)  # S3, S4, S5
-        print("feats_list: ", [feat.shape for feat in feats_list])
 
         # Initialize encoder on first forward
         if self.encoder is None:
