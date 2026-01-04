@@ -19,6 +19,7 @@ from nicegui_app.state import (
     WorkspaceState,
     AppAction,
     WorkspaceAction,
+    Action,
 )
 
 
@@ -56,32 +57,11 @@ ui.add_css(
 .my-uploader .q-uploader__subtitle {
   font-size: 9px;
 }
-
+.nicegui-content {
+    padding: 0px;
+}
 """
 )
-
-
-def on_screen_selected(screen_id: str) -> None:
-    global state
-    state = state.handle(AppAction(id=AppAction.ID.DidSelectScreen, data=screen_id))
-    screens_sidebar.refresh()
-    options_sidebar.refresh()
-
-
-def toggle_left_sidebar():
-    global state
-    state = state.handle(
-        AppAction(id=AppAction.ID.LeftSideBarVisibilityChanged, data=not state.is_left_sidebar_visible)
-    )
-    build_layout.refresh()
-
-
-def on_menu_action(action_id: str | None) -> None:
-    global state
-    if action_id is None:
-        return
-    state = state.handle(MenuAction(id=MenuAction.ID.FileSaved))
-    ui.notify(f"Triggered action: {action_id}", position="top", type="positive")
 
 
 def _bytes_to_data_url(data: bytes, filename: str | None = None) -> str:
@@ -129,19 +109,6 @@ def set_default_input_image(title: str, url: str) -> None:
     ui.notify(f"Selected default: {title}", type="positive")
 
 
-def reset_workspace() -> None:
-    global state
-    state = state.handle(action=WorkspaceAction(id=WorkspaceAction.ID.Reset))
-    make_image_workspace.refresh()
-    ui.notify("Workspace reset", type="warning")
-
-
-def run_workspace() -> None:
-    global state
-    state = state.handle(action=WorkspaceAction(id=WorkspaceAction.ID.Run))
-    ui.notify(f"Launched", type="positive")
-
-
 def default_tooltip(text: str):
     ui.tooltip(text).classes(f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]")
 
@@ -151,7 +118,7 @@ def render_menu_items(items: List[Menu]) -> None:
     for item in items:
         if item.is_leaf:
             ui.menu_item(
-                item.name, on_click=lambda _=None, action=item.action_id: on_menu_action(action), auto_close=True
+                item.name, on_click=lambda _=None, action=item.action: ui_action_handler(action), auto_close=True
             ).classes(f"text-[{Colors.text1}] hover:bg-accent text-xs min-h-[8px]")
         else:
             with ui.menu_item(item.name, auto_close=True).classes(f"text-[{Colors.text1}] text-xs min-h-[8px]"):
@@ -166,7 +133,7 @@ def render_menu(menu: Menu) -> None:
     if menu.is_leaf:
         (
             ui.menu_item(
-                menu.name, on_click=lambda _=None, action=menu.action_id: on_menu_action(action), auto_close=True
+                menu.name, on_click=lambda _=None, action=menu.action: ui_action_handler(action), auto_close=True
             )
             .props("flat dense")
             .classes(f"text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case")
@@ -186,10 +153,15 @@ def render_menu(menu: Menu) -> None:
 def screens_sidebar() -> None:
     with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-1 overflow-y-auto") as col:
         col.set_visibility(state.is_left_sidebar_visible)
+
         ui.dropdown_button("screens").props("flat dense").classes(f"text-[11px] uppercase text-[{Colors.text1}] px-1")
         for screen in state.screens:
             is_selected = state.selected_screen_id == screen.id
-            button = ui.button(on_click=lambda m_id=screen.id: on_screen_selected(m_id)).props("flat dense")
+            button = ui.button(
+                on_click=lambda screen_id=screen.id: ui_action_handler(
+                    AppAction(id=AppAction.ID.DidSelectScreen, data=screen_id)
+                )
+            ).props("flat dense")
             button.classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150").props(
                 'align="left"'
             )
@@ -208,9 +180,8 @@ def checkbox_control(option: Option) -> None:
     assert isinstance(option.info, CheckboxOption)
 
     def _change_option_value(option: Option, value: bool) -> None:
-        global state
         opt = replace(option, info=replace(option.info, value=value))
-        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        ui_action_handler(AppAction(id=AppAction.ID.OptionChanged, data=opt))
         print(state.selected_screen.options)
 
     return (
@@ -231,7 +202,7 @@ def value_selector_control(option: Option) -> None:
         global state
         new_idx = next(idx for idx, val in enumerate(option.info.values) if value == val)
         opt = replace(option, info=replace(option.info, selected_idx=new_idx))
-        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        ui_action_handler(AppAction(id=AppAction.ID.OptionChanged, data=opt))
         print(state.selected_screen.options)
 
     (
@@ -262,7 +233,7 @@ def number_control(option: Option) -> None:
             return
         opt = replace(option, info=replace(option.info, value=option.info.clamp(new_value)))
         e.sender.value = opt.info.value
-        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        ui_action_handler(AppAction(id=AppAction.ID.OptionChanged, data=opt))
 
     ui.number(
         value=start_value,
@@ -279,7 +250,7 @@ def field_control(option: Option) -> None:
     def _change_option_value(option: Option, value: str) -> None:
         global state
         opt = replace(option, info=replace(option.info, value=value))
-        state = state.handle(AppAction(id=AppAction.ID.OptionChanged, data=opt))
+        ui_action_handler(AppAction(id=AppAction.ID.OptionChanged, data=opt))
         print(state.selected_screen.options)
 
     ui.input(
@@ -332,9 +303,11 @@ def render_workspace_widget(widget: WorkspaceState.Widget) -> None:
                     f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
                 )
         case WorkspaceState.Button() as button:
-            ui.button(button.name or "", icon=button.icon, on_click=reset_workspace).props("flat dense").classes(
-                f"h-[28px] px-1 text-xs text-[{Colors.text1}]"
-            )
+            ui.button(
+                button.name or "",
+                icon=button.icon,
+                on_click=lambda: ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.Reset)),
+            ).props("flat dense").classes(f"h-[28px] px-1 text-xs text-[{Colors.text1}]")
         case WorkspaceState.Spacer():
             ui.space()
         case WorkspaceState.Menu() as menu:
@@ -386,7 +359,13 @@ def build_layout() -> None:
     with ui.column().classes(f"h-screen w-screen p-0 gap-0"):
         with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
             with (
-                ui.button(on_click=toggle_left_sidebar).props("flat dense").classes("bg-transparent h-[32px] w-[32px]")
+                ui.button(
+                    on_click=lambda state=state: ui_action_handler(
+                        AppAction(id=AppAction.ID.LeftSideBarVisibilityChanged, data=not state.is_left_sidebar_visible)
+                    )
+                )
+                .props("flat dense")
+                .classes("bg-transparent h-[32px] w-[32px]")
             ):
                 ui.icon("toggle_on" if state.is_left_sidebar_visible else "toggle_off").classes(
                     f"text-[{Colors.text1}] px-2 text-2xl"
@@ -396,9 +375,6 @@ def build_layout() -> None:
             ui.space()
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
             screens_sidebar()
-            # with ui.column().classes(
-            #     f"flex-1 h-full bg-effective gap-0 p-3 text-[{Colors.text1}] overflow-hidden rounded-md"
-            # ):
             make_image_workspace()
             options_sidebar()
 
@@ -408,8 +384,33 @@ def build_layout() -> None:
 
 def handle_key(e: KeyEventArguments):
     if e.key in ("1", "2", "3", "4") and not e.action.repeat:
-        # state.handle(DidSelectArea(index=int(e.key)))
         pass
+
+
+def ui_action_handler(action: Action) -> AppState:
+    global state
+    state = state.handle(action)
+
+    match action:
+        case AppAction(id=action_id, data=_):
+            match action_id:
+                case AppAction.ID.OptionChanged:
+                    options_sidebar.refresh()
+                case AppAction.ID.LeftSideBarVisibilityChanged | AppAction.ID.RightSideBarVisibilityChanged:
+                    build_layout.refresh()
+                case AppAction.ID.DidSelectScreen:
+                    options_sidebar.refresh()
+                    screens_sidebar.refresh()
+        case MenuAction(id=action_id, data=_):
+            ui.notify(f"Triggered action: {action_id.value}", position="bottom", type="positive")
+            print("trigger action")
+        case WorkspaceAction(id=action_id, data=value):
+            match action.id:
+                case WorkspaceAction.ID.Reset:
+                    make_image_workspace.refresh()
+                    ui.notify("Workspace reset", type="warning")
+                case _:
+                    pass
 
 
 def main() -> None:
@@ -423,10 +424,9 @@ def main() -> None:
     )
     ui.keyboard(on_key=handle_key)
     build_layout()
-    ui.query(".nicegui-content").classes("p-0")
     dark_mode = ui.dark_mode()
     dark_mode.enable()
-    ui.run(title="Image Transform Panel (NiceGUI)")
+    ui.run(title="Computer Vision Panel")
 
 
 if __name__ in ("__main__", "__mp_main__"):
