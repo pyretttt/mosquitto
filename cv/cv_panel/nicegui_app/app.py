@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from typing import List
-import base64
+from typing import List, Optional
 from dataclasses import replace
+from io import BytesIO
+from PIL.Image import Image as Image
 
 from nicegui import ui
 from nicegui.events import KeyEventArguments, UploadEventArguments
@@ -21,6 +22,7 @@ from nicegui_app.state import (
     WorkspaceAction,
     Action,
 )
+from nicegui_app.utils import bytes_to_data_url
 
 
 class Colors:
@@ -64,35 +66,31 @@ ui.add_css(
 )
 
 
-def _bytes_to_data_url(data: bytes, filename: str | None = None) -> str:
-    """Convert bytes into a data URL; best effort for content type from filename."""
-    content_type = "image/png"
-    if filename and "." in filename:
-        ext = filename.lower().rsplit(".", 1)[-1]
-        if ext in ("jpg", "jpeg"):
-            content_type = "image/jpeg"
-        elif ext in ("png",):
-            content_type = "image/png"
-        elif ext in ("gif",):
-            content_type = "image/gif"
-        elif ext in ("webp",):
-            content_type = "image/webp"
-        elif ext in ("bmp",):
-            content_type = "image/bmp"
-        elif ext in ("tif", "tiff"):
-            content_type = "image/tiff"
-    b64 = base64.b64encode(data).decode("ascii")
-    return f"data:{content_type};base64,{b64}"
+def make_image_ui(source: Optional[Image], alt: Optional[str] = None) -> None:
+    if not source:
+        return ui.label(alt).classes(f"text-sm text-[{Colors.text1}] hover:text-[{Colors.text2}]")
+    match source:
+        case Image() as img:
+            try:
+                buf = BytesIO()
+                img.save(buf, format="PNG")
+                data_url = bytes_to_data_url(buf.getvalue(), filename="image.png")
+                ui.image(data_url).props("fit=contain").classes("w-full h-full ")
+                return
+            except Exception as ex:
+                ui.label(f"Image error: {ex}").classes(f"text-sm text-[{Colors.text1}]")
+                return
+        case _:
+            ui.label("Unsupported image type").classes(f"text-sm text-[{Colors.text1}] hover:text-[{Colors.text2}]")
 
 
 def handle_upload_input(e: UploadEventArguments) -> None:
     """Handle uploaded input image and update workspace state."""
-    global state
     try:
         content = e.content.read() if hasattr(e.content, "read") else e.content  # type: ignore[attr-defined]
         if isinstance(content, bytes):
-            state.images.input_image_src = _bytes_to_data_url(content, e.name)
-            state.images.selected_default_input = None
+            data_url = bytes_to_data_url(content, e.name)
+            ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.SelectedInputImage, data=data_url))
             make_image_workspace_ui.refresh()
             ui.notify(f"Loaded {e.name}", type="positive")
         else:
@@ -102,9 +100,7 @@ def handle_upload_input(e: UploadEventArguments) -> None:
 
 
 def set_default_input_image(title: str, url: str) -> None:
-    global state
-    state.images.input_image_src = url
-    state.images.selected_default_input = title
+    ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.SelectedInputImage, data=url))
     make_image_workspace_ui.refresh()
     ui.notify(f"Selected default: {title}", type="positive")
 
@@ -119,7 +115,7 @@ def make_menu_items_ui(items: List[Menu]) -> None:
         if item.is_leaf:
             ui.menu_item(
                 item.name, on_click=lambda _=None, action=item.action: ui_action_handler(action), auto_close=True
-            ).classes(f"text-[{Colors.text1}] hover:bg-accent text-xs min-h-[8px]")
+            ).classes(f"text-[{Colors.text1}] font-medium hover:bg-accent text-xs min-h-[8px]")
         else:
             with ui.menu_item(item.name, auto_close=True).classes(f"text-[{Colors.text1}] text-xs min-h-[8px]"):
                 with ui.item_section():
@@ -151,7 +147,7 @@ def make_menu_ui(menu: Menu) -> None:
 
 @ui.refreshable
 def make_screens_sidebar_ui() -> None:
-    with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-1 overflow-y-auto") as col:
+    with ui.column().classes(f"w-[130px] h-full px-3 py-1 gap-1 overflow-y-auto") as col:
         col.set_visibility(state.is_left_sidebar_visible)
 
         ui.dropdown_button("screens").props("flat dense").classes(f"text-[11px] uppercase text-[{Colors.text1}] px-1")
@@ -284,7 +280,7 @@ def make_render_option_card_ui(option: Option) -> None:
 
 @ui.refreshable
 def make_options_sidebar_ui() -> None:
-    with ui.column().classes(f"w-[160px] h-full px-2 py-1 gap-2 overflow-y-auto "):
+    with ui.column().classes(f"w-[130px] h-full px-2 py-1 gap-2 overflow-y-auto "):
         ui.label("Settings").classes(f"text-[11px] uppercase font-medium text-[{Colors.text1}] leading-tight text-left")
         if not state.selected_screen_options:
             ui.label("No options available").classes(f"text-sm text-[{Colors.text1}]")
@@ -303,11 +299,16 @@ def make_workspace_widget_ui(widget: WorkspaceState.Widget) -> None:
                     f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]"
                 )
         case WorkspaceState.Button() as button:
-            ui.button(
-                button.name or "",
-                icon=button.icon,
-                on_click=lambda: ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.Reset)),
-            ).props("flat dense").classes(f"h-[28px] px-1 text-xs text-[{Colors.text1}]")
+            with (
+                ui.button(
+                    "" if button.icon is not None else button.name,
+                    icon=button.icon,
+                    on_click=lambda action=button.action: ui_action_handler(action),
+                )
+                .props("flat dense")
+                .classes(f"h-[28px] px-1 text-xs text-[{Colors.text1}]")
+            ):
+                make_tooltip_ui(button.name)
         case WorkspaceState.Spacer():
             ui.space()
         case WorkspaceState.Menu() as menu:
@@ -318,7 +319,7 @@ def make_workspace_widget_ui(widget: WorkspaceState.Widget) -> None:
 def make_image_workspace_ui() -> None:
     match state.selected_screen.workspace_state.layout:
         case WorkspaceState.Layout.OneDimensional:
-            with ui.column().classes(f"flex-1 gap-0 p-1 h-full bg-effective overflow-hidden rounded-lg"):
+            with ui.column().classes(f"flex-1 gap-1 p-1 h-full bg-effective overflow-hidden rounded-lg"):
                 with ui.row().classes(f"w-full items-center gap-1"):
                     for widget in state.selected_screen.workspace_state.widgets:
                         make_workspace_widget_ui(widget)
@@ -335,21 +336,32 @@ def make_image_workspace_ui() -> None:
                             with splitter.before:
                                 # top pane (e.g., input)
                                 with ui.element("div").classes(
-                                    f"w-full h-full flex items-center justify-center text-[{Colors.text1}]"
+                                    f"w-full h-full flex items-center justify-center text-[{Colors.text1}] pl-2 pr-3"
                                 ):
-                                    ui.label("Input pane")
+                                    try:
+                                        first_input = (
+                                            state.selected_screen.workspace_state.input[0]
+                                            if state.selected_screen and state.selected_screen.workspace_state.input
+                                            else None
+                                        )
+                                    except Exception:
+                                        first_input = None
+                                    make_image_ui(first_input, alt="No input image")
                             with splitter.after:
                                 # bottom pane (e.g., output)
                                 with ui.element("div").classes(
-                                    f"w-full h-full rounded-md flex items-center justify-center text-[{Colors.text1}]"
+                                    f"w-full h-full rounded-md flex items-center justify-center text-[{Colors.text1}] pl-3 pr-2"
                                 ):
-                                    ui.label("Output pane")
+                                    output_img = (
+                                        state.selected_screen.workspace_state.output if state.selected_screen else None
+                                    )
+                                    make_image_ui(output_img, alt="Run transform!")
                             with splitter.separator:
                                 with ui.icon("swipe").classes(
-                                    f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
+                                    f"text-[{Colors.text1}] text-md hover:text-[{Colors.text2}] hover:text-xl"
                                 ) as icon:
                                     icon.on("dblclick", lambda: setattr(splitter, "value", 50))
-                                    ui.tooltip("Drag to resize. Double click to reset")
+                                    make_tooltip_ui("Drag to resize. Double click to reset")
                     else:
                         with ui.element("div").classes("w-full h-full flex items-center justify-center"):
                             ui.label("Select or drop an image").classes(
@@ -407,12 +419,14 @@ def ui_action_handler(action: Action) -> AppState:
                 case AppAction.ID.LeftSideBarVisibilityChanged | AppAction.ID.RightSideBarVisibilityChanged:
                     make_page_ui.refresh()
                 case AppAction.ID.DidSelectScreen:
-                    make_options_sidebar_ui.refresh()
-                    make_screens_sidebar_ui.refresh()
+                    make_page_ui.refresh()
         case MenuAction(id=action_id, data=value):
             match action_id:
                 case MenuAction.ID.ImageSelected:
+                    print("image selected")
                     make_image_workspace_ui.refresh()
+                case MenuAction.ID.DisableAutoRun | MenuAction.ID.EnableAutoRun:
+                    make_page_ui.refresh()
 
             ui.notify(f"Triggered action: {action_id.value}", position="bottom", type="positive")
 

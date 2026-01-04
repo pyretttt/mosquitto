@@ -2,18 +2,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from numbers import Number
-from typing import List, Optional, Union, Self, Any
+from typing import List, Optional, Union, Self, Any, Callable
 import uuid
 from enum import Enum
 
-from PIL.Image import Image
+from PIL.Image import Image as PILImage
+from PIL import Image
 
-DEFAULT_IMAGE_URLS = {
-    "Mountains": "https://picsum.photos/id/1015/1200/800",
-    "Forest": "https://picsum.photos/id/102/1200/800",
-    "City": "https://picsum.photos/id/1011/1200/800",
-    "Kitten": "https://placekitten.com/1200/800",
-}
+
+DEFAULT_IMAGE_URLS = {"Lenna": Image.open("nicegui_app/images/lenna.png")}
 
 
 def make_uuid() -> str:
@@ -24,6 +21,8 @@ def make_uuid() -> str:
 class MenuAction:
     class ID(str, Enum):
         FileSaved = "saved_file"
+        EnableAutoRun = "enable_autorun"
+        DisableAutoRun = "disable_autorun"
         FlipVertically = "flip_v"
         FlipHorizontally = "flip_h"
         ImageSelected = "image_selected"
@@ -139,25 +138,19 @@ class Menu:
         return self.action.id
 
 
-def append_to_default_menu(menu: List[Menu] = None) -> List[Menu]:
+def append_to_default_menu(enabled_auto_run: bool = True, menu: List[Menu] = None) -> List[Menu]:
     return [
+        Menu(
+            name="Settings",
+            submenus=[
+                Menu("Disable Autorun", action=MenuAction(id=MenuAction.ID.DisableAutoRun))
+                if enabled_auto_run
+                else Menu("Enable Autorun", action=MenuAction(id=MenuAction.ID.EnableAutoRun)),
+            ],
+        ),
         Menu(
             name="File",
             submenus=[Menu(name="Save", action=MenuAction(id=MenuAction.ID.FileSaved))],
-        ),
-        Menu(
-            name="Transforms",
-            submenus=[
-                Menu(name="Flip horizontally", action=MenuAction(id=MenuAction.ID.FlipHorizontally)),
-                Menu(name="Flip vertically", action=MenuAction(id=MenuAction.ID.FlipVertically)),
-                Menu(
-                    name="Advanced",
-                    submenus=[
-                        Menu(name="Flip horizontally 2", action=MenuAction(id=MenuAction.ID.FlipHorizontally)),
-                        Menu(name="Flip vertically 2", action=MenuAction(id=MenuAction.ID.FlipVertically)),
-                    ],
-                ),
-            ],
         ),
     ] + (menu or [])
 
@@ -180,8 +173,8 @@ def get_default_workspace_actions() -> List[WorkspaceState.Widget]:
             ],
         ),
         Spacer(),
-        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Reset), icon="replay"),
-        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Run), icon="play_arrow"),
+        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Reset), name="Reset", icon="replay"),
+        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Run), name="Run", icon="play_arrow"),
     ]
 
 
@@ -207,8 +200,8 @@ class WorkspaceState:
     Widget = Union[Uploader, Button, Spacer, Menu]
 
     widgets: List[Widget] = field(default_factory=get_default_workspace_actions)
-    input: List[Union[str | Image]] = field(default_factory=list)
-    output: Optional[Image] = None
+    input: List[PILImage] = field(default_factory=list)
+    output: Optional[PILImage] = None
     layout: Layout = Layout.OneDimensional
 
 
@@ -217,6 +210,7 @@ class Screen:
     name: str
     description: str
     options: List[Option]
+    run: Callable[[Self], Self]
     id: str = field(default_factory=make_uuid)
     top_bar_menu: List[Menu] = field(default_factory=append_to_default_menu)
     workspace_state: WorkspaceState = field(default_factory=WorkspaceState)
@@ -230,6 +224,8 @@ class Screen:
 
 
 def get_screens() -> List[Screen]:
+    from nicegui_app.screen_methods import grayscale
+
     return [
         Screen(
             name="Image registration",
@@ -256,6 +252,7 @@ def get_screens() -> List[Screen]:
                     description="Trades accuracy for speed",
                 ),
             ],
+            run=grayscale.run,
         ),
         Screen(
             name="Histogram uniformity",
@@ -270,12 +267,9 @@ def get_screens() -> List[Screen]:
                     info=CheckboxOption(value=True),
                 ),
             ],
+            run=grayscale.run,
         ),
-        Screen(
-            name="Utility",
-            description="Utility screen without options",
-            options=[],
-        ),
+        Screen(name="Utility", description="Utility screen without options", options=[], run=grayscale.run),
     ]
 
 
@@ -289,6 +283,7 @@ class AppState:
     last_menu_action: Optional[str] = None
     is_left_sidebar_visible: bool = True
     is_right_sidebar_visible: bool = True
+    is_autorun_enabled: bool = True
 
     @property
     def selected_screen(self) -> Optional[Screen]:
@@ -303,6 +298,9 @@ class AppState:
         return screen.options if screen else []
 
     def handle(self, action: Action) -> Self:
+        def replace_screen(updated_screen: Screen) -> List[Screen]:
+            return [updated_screen if screen.id == updated_screen.id else screen for screen in self.screens]
+
         match action:
             case AppAction(id=action_id, data=value):
                 match action_id:
@@ -311,10 +309,7 @@ class AppState:
                         new_options = [
                             new_option if new_option.id == opt.id else opt for opt in self.selected_screen.options
                         ]
-                        new_screens = [
-                            replace(screen, options=new_options) if screen.id == self.selected_screen_id else screen
-                            for screen in self.screens
-                        ]
+                        new_screens = replace_screen(replace(self.selected_screen, options=new_options))
                         return replace(self, screens=new_screens)
                     case AppAction.ID.LeftSideBarVisibilityChanged:
                         return replace(self, is_left_sidebar_visible=value)
@@ -322,7 +317,8 @@ class AppState:
                         return replace(self, is_right_sidebar_visible="File saved")
                     case AppAction.ID.DidSelectScreen:
                         identifier = value
-                        return replace(self, selected_screen_id=identifier)
+                        new_screen = replace(self.selected_screen, top_bar_menu=append_to_default_menu())
+                        return replace(self, selected_screen_id=identifier, screens=replace_screen(new_screen))
             case MenuAction(id=action_id, data=value):
                 match action_id:
                     case MenuAction.ID.FileSaved:
@@ -336,13 +332,42 @@ class AppState:
                             self.selected_screen,
                             workspace_state=replace(self.selected_screen.workspace_state, input=[value]),
                         )
-                        new_screens = [
-                            new_selected_screen if screen.id == self.selected_screen_id else screen
-                            for screen in self.screens
-                        ]
+                        new_selected_screen = (
+                            new_selected_screen.run(new_selected_screen)
+                            if self.is_autorun_enabled
+                            else new_selected_screen
+                        )
+                        new_screens = replace_screen(new_selected_screen)
                         return replace(self, screens=new_screens)
+                    case MenuAction.ID.DisableAutoRun:
+                        new_screen = replace(
+                            self.selected_screen, top_bar_menu=append_to_default_menu(enabled_auto_run=False)
+                        )
+                        return replace(self, screens=replace_screen(new_screen), is_autorun_enabled=False)
 
-            case WorkspaceAction(id=action, data=value):
-                return self
+                    case MenuAction.ID.EnableAutoRun:
+                        new_screen = replace(
+                            self.selected_screen, top_bar_menu=append_to_default_menu(enabled_auto_run=True)
+                        )
+                        return replace(self, screens=replace_screen(new_screen), is_autorun_enabled=True)
 
-        # assert False
+            case WorkspaceAction(id=action_id, data=value):
+                match action_id:
+                    case WorkspaceAction.ID.SelectedInputImage:
+                        new_selected_screen = replace(
+                            self.selected_screen,
+                            workspace_state=replace(self.selected_screen.workspace_state, input=[value]),
+                        )
+                        new_screens = replace_screen(new_selected_screen)
+                        return replace(self, screens=new_screens)
+                    case WorkspaceAction.ID.Reset:
+                        new_selected_screen = replace(
+                            self.selected_screen,
+                            workspace_state=replace(self.selected_screen.workspace_state, input=[], output=None),
+                        )
+                        new_screens = replace_screen(new_selected_screen)
+                        return replace(self, screens=new_screens)
+                    case _:
+                        return self
+
+        assert False
