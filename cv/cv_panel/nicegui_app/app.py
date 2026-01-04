@@ -93,7 +93,7 @@ def handle_upload_input(e: UploadEventArguments) -> None:
         if isinstance(content, bytes):
             state.images.input_image_src = _bytes_to_data_url(content, e.name)
             state.images.selected_default_input = None
-            make_image_workspace.refresh()
+            make_image_workspace_ui.refresh()
             ui.notify(f"Loaded {e.name}", type="positive")
         else:
             ui.notify("Unsupported upload content", type="warning")
@@ -105,15 +105,15 @@ def set_default_input_image(title: str, url: str) -> None:
     global state
     state.images.input_image_src = url
     state.images.selected_default_input = title
-    make_image_workspace.refresh()
+    make_image_workspace_ui.refresh()
     ui.notify(f"Selected default: {title}", type="positive")
 
 
-def default_tooltip(text: str):
+def make_tooltip_ui(text: str):
     ui.tooltip(text).classes(f"text-xs border border-[{Colors.brd}] bg-accent text-[{Colors.text2}]")
 
 
-def render_menu_items(items: List[Menu]) -> None:
+def make_menu_items_ui(items: List[Menu]) -> None:
     """Recursively render nested menu structures."""
     for item in items:
         if item.is_leaf:
@@ -126,10 +126,10 @@ def render_menu_items(items: List[Menu]) -> None:
                     ui.icon("keyboard_arrow_right").classes(f"text-[{Colors.text1}] pl-2")
 
                 with ui.menu().props('anchor="top end" self="top start"'):
-                    render_menu_items(item.submenus)
+                    make_menu_items_ui(item.submenus)
 
 
-def render_menu(menu: Menu) -> None:
+def make_menu_ui(menu: Menu) -> None:
     if menu.is_leaf:
         (
             ui.menu_item(
@@ -146,26 +146,27 @@ def render_menu(menu: Menu) -> None:
                 f"h-[32px] px-2 py-0 no-dropdown-icon text-xs tracking-wide text-[{Colors.text1}] hover:text-white normal-case"
             )
         ):
-            render_menu_items(menu.submenus)
+            make_menu_items_ui(menu.submenus)
 
 
 @ui.refreshable
-def screens_sidebar() -> None:
+def make_screens_sidebar_ui() -> None:
     with ui.column().classes(f"w-[160px] h-full px-3 py-1 gap-1 overflow-y-auto") as col:
         col.set_visibility(state.is_left_sidebar_visible)
 
         ui.dropdown_button("screens").props("flat dense").classes(f"text-[11px] uppercase text-[{Colors.text1}] px-1")
+
         for screen in state.screens:
-            is_selected = state.selected_screen_id == screen.id
-            button = ui.button(
-                on_click=lambda screen_id=screen.id: ui_action_handler(
-                    AppAction(id=AppAction.ID.DidSelectScreen, data=screen_id)
+            button = (
+                ui.button(
+                    on_click=lambda screen_id=screen.id: ui_action_handler(
+                        AppAction(id=AppAction.ID.DidSelectScreen, data=screen_id)
+                    )
                 )
-            ).props("flat dense")
-            button.classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150").props(
-                'align="left"'
+                .props("flat dense align='left'")
+                .classes("w-full px-2 py-1 rounded-xs normal-case transition-colors duration-150")
             )
-            if is_selected:
+            if state.selected_screen_id == screen.id:
                 button.classes(add=f"bg-effective")
             else:
                 button.classes(add="hover:bg-primary")
@@ -176,10 +177,10 @@ def screens_sidebar() -> None:
                     ui.label(screen.description).classes(f"text-[10px] text-[{Colors.text1}] leading-tight text-left")
 
 
-def checkbox_control(option: Option) -> None:
+def make_checkbox_ui(option: Option) -> None:
     assert isinstance(option.info, CheckboxOption)
 
-    def _change_option_value(option: Option, value: bool) -> None:
+    def change_option_value(option: Option, value: bool) -> None:
         opt = replace(option, info=replace(option.info, value=value))
         ui_action_handler(AppAction(id=AppAction.ID.OptionChanged, data=opt))
         print(state.selected_screen.options)
@@ -188,17 +189,17 @@ def checkbox_control(option: Option) -> None:
         ui.checkbox(
             "Enabled",
             value=option.info.value,
-            on_change=lambda event, option=option: _change_option_value(option, event.value),
+            on_change=lambda event, option=option: change_option_value(option, event.value),
         )
         .props("dense")
         .classes(f"text-[{Colors.text1}] text-[11px] font-medium")
     )
 
 
-def value_selector_control(option: Option) -> None:
+def make_value_selector_ui(option: Option) -> None:
     assert isinstance(option.info, ValueSelectorOption)
 
-    def _change_option_value(option: Option, value: str) -> None:
+    def change_option_value(option: Option, value: str) -> None:
         global state
         new_idx = next(idx for idx, val in enumerate(option.info.values) if value == val)
         opt = replace(option, info=replace(option.info, selected_idx=new_idx))
@@ -209,17 +210,16 @@ def value_selector_control(option: Option) -> None:
         ui.select(
             options=option.info.values,
             value=option.info.selected_value,
-            on_change=lambda event, option=option: _change_option_value(option, event.value),
+            on_change=lambda event, option=option: change_option_value(option, event.value),
         )
         .classes(f"w-full text-[{Colors.text1}] min-h-[12px] text-[11px]")
         .props("dense filled hide-bottom-space options-dense")
     )
 
 
-def number_control(option: Option) -> None:
+def make_number_field_ui(option: Option) -> None:
     assert isinstance(option.info, NumberFieldOption)
-    start_value = option.info.value
-    is_int = isinstance(start_value, int)
+    is_int = isinstance(option.info.value, int)
     step = 1 if is_int else 0.1
 
     def update_value(e, option=option) -> None:
@@ -236,7 +236,7 @@ def number_control(option: Option) -> None:
         ui_action_handler(AppAction(id=AppAction.ID.OptionChanged, data=opt))
 
     ui.number(
-        value=start_value,
+        value=option.info.value,
         min=option.info.min_value,
         max=option.info.max_value,
         step=step,
@@ -244,7 +244,7 @@ def number_control(option: Option) -> None:
     ).classes(f"w-full text-[{Colors.text1}] min-h-[12px] text-[11px]").props("dense filled dark ")
 
 
-def field_control(option: Option) -> None:
+def make_field_control_ui(option: Option) -> None:
     assert isinstance(option.info, FieldOption)
 
     def _change_option_value(option: Option, value: str) -> None:
@@ -259,41 +259,41 @@ def field_control(option: Option) -> None:
     ).classes(f"w-full text-[{Colors.text1}] min-h-[12px] text-[11px]").props("dense filled dark ")
 
 
-def render_option_control(option: Option) -> None:
+def make_option_control_ui(option: Option) -> None:
     match option.type:
         case CheckboxOption():
-            checkbox_control(option)
+            make_checkbox_ui(option)
         case ValueSelectorOption():
-            value_selector_control(option)
+            make_value_selector_ui(option)
         case NumberFieldOption():
-            number_control(option)
+            make_number_field_ui(option)
         case FieldOption():
-            field_control(option)
+            make_field_control_ui(option)
         case _:
             ui.label("Unsupported option").classes("text-red-600")
 
 
-def render_option_card(option: Option) -> None:
+def make_render_option_card_ui(option: Option) -> None:
     with ui.card().tight().classes(f"w-full gap-1 p-2").props("flat"):
         with ui.row().classes("gap-[4px] flex-1 w-full flex-nowrap"):
             ui.label(option.name).classes(f"text-xs font-medium text-[{Colors.text2}] flex-1")
             with ui.icon("info").classes(f"text-[{Colors.text1}] px-2 text-xl self-start hover:text-[{Colors.text2}]"):
-                default_tooltip(option.description or "No info")
-        render_option_control(option)
+                make_tooltip_ui(option.description or "No info")
+        make_option_control_ui(option)
 
 
 @ui.refreshable
-def options_sidebar() -> None:
+def make_options_sidebar_ui() -> None:
     with ui.column().classes(f"w-[160px] h-full px-2 py-1 gap-2 overflow-y-auto "):
         ui.label("Settings").classes(f"text-[11px] uppercase font-medium text-[{Colors.text1}] leading-tight text-left")
         if not state.selected_screen_options:
             ui.label("No options available").classes(f"text-sm text-[{Colors.text1}]")
         else:
             for option in state.selected_screen_options:
-                render_option_card(option)
+                make_render_option_card_ui(option)
 
 
-def render_workspace_widget(widget: WorkspaceState.Widget) -> None:
+def make_workspace_widget_ui(widget: WorkspaceState.Widget) -> None:
     match widget:
         case WorkspaceState.Uploader() as uploader:
             with ui.upload(label=uploader.name, on_upload=handle_upload_input).classes(
@@ -311,42 +311,50 @@ def render_workspace_widget(widget: WorkspaceState.Widget) -> None:
         case WorkspaceState.Spacer():
             ui.space()
         case WorkspaceState.Menu() as menu:
-            render_menu(menu)
+            make_menu_ui(menu)
 
 
 @ui.refreshable
-def make_image_workspace() -> None:
+def make_image_workspace_ui() -> None:
     match state.selected_screen.workspace_state.layout:
         case WorkspaceState.Layout.OneDimensional:
-            with ui.column().classes(f"flex-1 gap-0 h-full bg-effective overflow-hidden rounded-lg"):
-                # Toolbar row: upload, defaults, transforms, reset, run
-                with ui.row().classes(f"w-full items-center gap-1 p-1"):
+            with ui.column().classes(f"flex-1 gap-0 p-1 h-full bg-effective overflow-hidden rounded-lg"):
+                with ui.row().classes(f"w-full items-center gap-1"):
                     for widget in state.selected_screen.workspace_state.widgets:
-                        render_workspace_widget(widget)
+                        make_workspace_widget_ui(widget)
 
-                # Main splitter area
-                with ui.splitter(
-                    horizontal=False, reverse=False, value=50, limits=(25, 75), on_change=lambda e: ui.notify(e.value)
-                ).classes("w-full flex-1 h-full p-1 overflow-hidden bg-effective ") as splitter:
-                    with splitter.before:
-                        # top pane (e.g., input)
-                        with ui.element("div").classes(
-                            f"w-full h-full rounded-md border border-dashed border-[{Colors.brd}] flex items-center justify-center text-[{Colors.text1}]"
-                        ):
-                            ui.label("Input pane")
-                    with splitter.after:
-                        # bottom pane (e.g., output)
-                        with ui.element("div").classes(
-                            f"w-full h-full rounded-md border border-dashed border-[{Colors.brd}] flex items-center justify-center text-[{Colors.text1}]"
-                        ):
-                            ui.label("Output pane")
-                    with splitter.separator:
-                        with ui.icon("swipe").classes(
-                            f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
-                        ) as icon:
-                            icon.on("dblclick", lambda: setattr(splitter, "value", 50))
-                            ui.tooltip("Drag to resize. Double click to reset")
-
+                with ui.element("div").classes(f"flex-1 w-full rounded-md border border-dashed border-[{Colors.brd}] "):
+                    if len(state.selected_screen.workspace_state.input):
+                        with ui.splitter(
+                            horizontal=False,
+                            reverse=False,
+                            value=50,
+                            limits=(15, 85),
+                            on_change=lambda e: ui.notify(e.value),
+                        ).classes("h-full p-1 overflow-hidden bg-effective ") as splitter:
+                            with splitter.before:
+                                # top pane (e.g., input)
+                                with ui.element("div").classes(
+                                    f"w-full h-full flex items-center justify-center text-[{Colors.text1}]"
+                                ):
+                                    ui.label("Input pane")
+                            with splitter.after:
+                                # bottom pane (e.g., output)
+                                with ui.element("div").classes(
+                                    f"w-full h-full rounded-md flex items-center justify-center text-[{Colors.text1}]"
+                                ):
+                                    ui.label("Output pane")
+                            with splitter.separator:
+                                with ui.icon("swipe").classes(
+                                    f"text-[{Colors.text1}] text-2xl hover:text-[{Colors.text2}]"
+                                ) as icon:
+                                    icon.on("dblclick", lambda: setattr(splitter, "value", 50))
+                                    ui.tooltip("Drag to resize. Double click to reset")
+                    else:
+                        with ui.element("div").classes("w-full h-full flex items-center justify-center"):
+                            ui.label("Select or drop an image").classes(
+                                f"text-lg text-[{Colors.text1}] hover:text-[{Colors.text2}] transition-colors duration-150 "
+                            )
         case _:
             with ui.element("div").classes(
                 f"flex-1 w-full rounded-lg border border-dashed border-[{Colors.brd}] bg-[{Colors.accent_background}]"
@@ -355,7 +363,7 @@ def make_image_workspace() -> None:
 
 
 @ui.refreshable
-def build_layout() -> None:
+def make_page_ui() -> None:
     with ui.column().classes(f"h-screen w-screen p-0 gap-0"):
         with ui.row().classes(f"w-full px-4 bg-brand items-center gap-2 text-xs tracking-wide"):
             with (
@@ -371,12 +379,12 @@ def build_layout() -> None:
                     f"text-[{Colors.text1}] px-2 text-2xl"
                 )
             for menu in state.selected_screen.top_bar_menu:
-                render_menu(menu)
+                make_menu_ui(menu)
             ui.space()
         with ui.row().classes("flex-1 w-full bg-brand overflow-hidden gap-0"):
-            screens_sidebar()
-            make_image_workspace()
-            options_sidebar()
+            make_screens_sidebar_ui()
+            make_image_workspace_ui()
+            make_options_sidebar_ui()
 
         with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-brand"):
             ui.label("Footer")
@@ -395,19 +403,23 @@ def ui_action_handler(action: Action) -> AppState:
         case AppAction(id=action_id, data=_):
             match action_id:
                 case AppAction.ID.OptionChanged:
-                    options_sidebar.refresh()
+                    pass
                 case AppAction.ID.LeftSideBarVisibilityChanged | AppAction.ID.RightSideBarVisibilityChanged:
-                    build_layout.refresh()
+                    make_page_ui.refresh()
                 case AppAction.ID.DidSelectScreen:
-                    options_sidebar.refresh()
-                    screens_sidebar.refresh()
-        case MenuAction(id=action_id, data=_):
+                    make_options_sidebar_ui.refresh()
+                    make_screens_sidebar_ui.refresh()
+        case MenuAction(id=action_id, data=value):
+            match action_id:
+                case MenuAction.ID.ImageSelected:
+                    make_image_workspace_ui.refresh()
+
             ui.notify(f"Triggered action: {action_id.value}", position="bottom", type="positive")
-            print("trigger action")
+
         case WorkspaceAction(id=action_id, data=value):
             match action.id:
                 case WorkspaceAction.ID.Reset:
-                    make_image_workspace.refresh()
+                    make_image_workspace_ui.refresh()
                     ui.notify("Workspace reset", type="warning")
                 case _:
                     pass
@@ -423,7 +435,7 @@ def main() -> None:
         accent_background=Colors.accent_background,
     )
     ui.keyboard(on_key=handle_key)
-    build_layout()
+    make_page_ui()
     dark_mode = ui.dark_mode()
     dark_mode.enable()
     ui.run(title="Computer Vision Panel")

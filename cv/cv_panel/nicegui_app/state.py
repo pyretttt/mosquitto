@@ -24,7 +24,9 @@ def make_uuid() -> str:
 class MenuAction:
     class ID(str, Enum):
         FileSaved = "saved_file"
-        Flip = "flip"
+        FlipVertically = "flip_v"
+        FlipHorizontally = "flip_h"
+        ImageSelected = "image_selected"
 
     id: ID
     data: Optional[Any] = None
@@ -146,13 +148,13 @@ def append_to_default_menu(menu: List[Menu] = None) -> List[Menu]:
         Menu(
             name="Transforms",
             submenus=[
-                Menu(name="Flip horizontally", action=MenuAction(id=MenuAction.ID.Flip)),
-                Menu(name="Flip vertically", action=MenuAction(id=MenuAction.ID.Flip)),
+                Menu(name="Flip horizontally", action=MenuAction(id=MenuAction.ID.FlipHorizontally)),
+                Menu(name="Flip vertically", action=MenuAction(id=MenuAction.ID.FlipVertically)),
                 Menu(
                     name="Advanced",
                     submenus=[
-                        Menu(name="Flip horizontally 2", action=MenuAction(id=MenuAction.ID.Flip)),
-                        Menu(name="Flip vertically 2", action=MenuAction(id=MenuAction.ID.Flip)),
+                        Menu(name="Flip horizontally 2", action=MenuAction(id=MenuAction.ID.FlipHorizontally)),
+                        Menu(name="Flip vertically 2", action=MenuAction(id=MenuAction.ID.FlipVertically)),
                     ],
                 ),
             ],
@@ -166,15 +168,15 @@ def get_default_workspace_actions() -> List[WorkspaceState.Widget]:
         Menu(
             name="Default Images",
             submenus=[
-                Menu(name=name, action=WorkspaceAction(id=WorkspaceAction.ID.SelectedInputImage, data=url))
+                Menu(name=name, action=MenuAction(id=MenuAction.ID.ImageSelected, data=url))
                 for name, url in DEFAULT_IMAGE_URLS.items()
             ],
         ),
         Menu(
             name="Transforms",
             submenus=[
-                Menu(name="Flip horizontally", action=WorkspaceAction(id=WorkspaceAction.ID.FlipInputHorizontally)),
-                Menu(name="Flip vertically", action=WorkspaceAction(id=WorkspaceAction.ID.FlipInputVertically)),
+                Menu(name="Flip horizontally", action=MenuAction(id=MenuAction.ID.FlipHorizontally)),
+                Menu(name="Flip vertically", action=MenuAction(id=MenuAction.ID.FlipVertically)),
             ],
         ),
         Spacer(),
@@ -321,8 +323,25 @@ class AppState:
                     case AppAction.ID.DidSelectScreen:
                         identifier = value
                         return replace(self, selected_screen_id=identifier)
-            case MenuAction(id=action, data=value):
-                return self
+            case MenuAction(id=action_id, data=value):
+                match action_id:
+                    case MenuAction.ID.FileSaved:
+                        pass
+                    case MenuAction.ID.FlipVertically:
+                        pass
+                    case MenuAction.ID.FlipHorizontally:
+                        pass
+                    case MenuAction.ID.ImageSelected:
+                        new_selected_screen = replace(
+                            self.selected_screen,
+                            workspace_state=replace(self.selected_screen.workspace_state, input=[value]),
+                        )
+                        new_screens = [
+                            new_selected_screen if screen.id == self.selected_screen_id else screen
+                            for screen in self.screens
+                        ]
+                        return replace(self, screens=new_screens)
+
             case WorkspaceAction(id=action, data=value):
                 return self
 
