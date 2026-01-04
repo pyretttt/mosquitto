@@ -4,6 +4,7 @@ from typing import List, Optional
 from dataclasses import replace
 from io import BytesIO
 from PIL.Image import Image as Image
+import PIL.Image as PILImage
 
 from nicegui import ui
 from nicegui.events import KeyEventArguments, UploadEventArguments
@@ -21,6 +22,9 @@ from nicegui_app.state import (
     AppAction,
     WorkspaceAction,
     Action,
+    FooterWidget,
+    Spacer,
+    Label,
 )
 from nicegui_app.utils import bytes_to_data_url
 
@@ -84,25 +88,14 @@ def make_image_ui(source: Optional[Image], alt: Optional[str] = None) -> None:
             ui.label("Unsupported image type").classes(f"text-sm text-[{Colors.text1}] hover:text-[{Colors.text2}]")
 
 
-def handle_upload_input(e: UploadEventArguments) -> None:
+async def handle_upload_input(e: UploadEventArguments) -> None:
     """Handle uploaded input image and update workspace state."""
     try:
-        content = e.content.read() if hasattr(e.content, "read") else e.content  # type: ignore[attr-defined]
-        if isinstance(content, bytes):
-            data_url = bytes_to_data_url(content, e.name)
-            ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.SelectedInputImage, data=data_url))
-            make_image_workspace_ui.refresh()
-            ui.notify(f"Loaded {e.name}", type="positive")
-        else:
-            ui.notify("Unsupported upload content", type="warning")
+        content = BytesIO(await e.file.read())
+        image = PILImage.open(content)
+        ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.UploadedInputImage, data=image))
     except Exception as ex:
         ui.notify(f"Upload failed: {ex}", type="negative")
-
-
-def set_default_input_image(title: str, url: str) -> None:
-    ui_action_handler(WorkspaceAction(id=WorkspaceAction.ID.SelectedInputImage, data=url))
-    make_image_workspace_ui.refresh()
-    ui.notify(f"Selected default: {title}", type="positive")
 
 
 def make_tooltip_ui(text: str):
@@ -292,7 +285,7 @@ def make_options_sidebar_ui() -> None:
 def make_workspace_widget_ui(widget: WorkspaceState.Widget) -> None:
     match widget:
         case WorkspaceState.Uploader() as uploader:
-            with ui.upload(label=uploader.name, on_upload=handle_upload_input).classes(
+            with ui.upload(label=uploader.name, on_upload=handle_upload_input, auto_upload=True).classes(
                 "my-uploader text-xs max-w-[124px]"
             ):
                 ui.tooltip("Drop and image").classes(
@@ -374,6 +367,21 @@ def make_image_workspace_ui() -> None:
                 ui.label("Unsupported layout")
 
 
+def make_footer_widget_ui(widget: FooterWidget) -> None:
+    match widget:
+        case Spacer():
+            ui.space()
+        case Label(label=label):
+            ui.label(text=label).classes(f"text-xs font-medium text-[{Colors.text2}] flex-1")
+
+
+@ui.refreshable
+def make_footer_ui() -> None:
+    with ui.row().classes("h-[24px] w-full text-white px-6 items-center gap-3 text-xs bg-brand"):
+        for widget in state.footer.widgets:
+            make_footer_widget_ui(widget)
+
+
 @ui.refreshable
 def make_page_ui() -> None:
     with ui.column().classes(f"h-screen w-screen p-0 gap-0"):
@@ -398,8 +406,10 @@ def make_page_ui() -> None:
             make_image_workspace_ui()
             make_options_sidebar_ui()
 
-        with ui.row().classes("h-[24px] w-full text-white px-4 items-center gap-3 text-xs bg-brand"):
-            ui.label("Footer")
+        make_footer_ui()
+
+
+full_screen = ui.fullscreen()
 
 
 def handle_key(e: KeyEventArguments):
@@ -423,20 +433,21 @@ def ui_action_handler(action: Action) -> AppState:
         case MenuAction(id=action_id, data=value):
             match action_id:
                 case MenuAction.ID.ImageSelected:
-                    print("image selected")
                     make_image_workspace_ui.refresh()
+                    make_footer_ui.refresh()
                 case MenuAction.ID.DisableAutoRun | MenuAction.ID.EnableAutoRun:
                     make_page_ui.refresh()
 
             ui.notify(f"Triggered action: {action_id.value}", position="bottom", type="positive")
-
         case WorkspaceAction(id=action_id, data=value):
             match action.id:
                 case WorkspaceAction.ID.Reset:
-                    make_image_workspace_ui.refresh()
                     ui.notify("Workspace reset", type="warning")
-                case _:
-                    pass
+                case WorkspaceAction.ID.UploadedInputImage:
+                    make_footer_ui.refresh()
+                case WorkspaceAction.ID.Run:
+                    make_footer_ui.refresh()
+            make_image_workspace_ui.refresh()
 
 
 def main() -> None:

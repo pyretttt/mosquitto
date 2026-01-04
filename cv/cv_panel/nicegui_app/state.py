@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass, field, replace
 from numbers import Number
 from typing import List, Optional, Union, Self, Any, Callable
@@ -36,7 +37,7 @@ class WorkspaceAction:
     class ID(str, Enum):
         FlipInputHorizontally = "flip_h"
         FlipInputVertically = "flip_v"
-        SelectedInputImage = "selected_input_image"
+        UploadedInputImage = "uploaded_input_image"
         Reset = "reset"
         Run = "run"
 
@@ -62,6 +63,14 @@ Action = Union[MenuAction, WorkspaceAction, AppAction]
 @dataclass(frozen=True)
 class Spacer:
     pass
+
+
+@dataclass(frozen=True)
+class Label:
+    label: str
+
+
+FooterWidget = Union[Spacer, Label]
 
 
 @dataclass(frozen=True)
@@ -277,6 +286,11 @@ _screens = get_screens()
 
 
 @dataclass(frozen=True)
+class Footer:
+    widgets: List[FooterWidget] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
 class AppState:
     screens: List[Screen] = field(default_factory=lambda: _screens[:])
     selected_screen_id: str = field(default=_screens[0].id)
@@ -284,6 +298,7 @@ class AppState:
     is_left_sidebar_visible: bool = True
     is_right_sidebar_visible: bool = True
     is_autorun_enabled: bool = True
+    footer: Footer = field(default_factory=Footer)
 
     @property
     def selected_screen(self) -> Optional[Screen]:
@@ -297,10 +312,24 @@ class AppState:
         screen = self.selected_screen
         return screen.options if screen else []
 
-    def handle(self, action: Action) -> Self:
-        def replace_screen(updated_screen: Screen) -> List[Screen]:
-            return [updated_screen if screen.id == updated_screen.id else screen for screen in self.screens]
+    def run(self, screen: Screen) -> AppState:
+        start = time.perf_counter()
+        new_screen = screen.run(screen)
+        elapsed = time.perf_counter() - start
+        new_screens = self.replace_screen(new_screen)
 
+        return replace(
+            self,
+            screens=new_screens,
+            footer=replace(
+                self.footer, widgets=[Label(label=f"Last processing time: {elapsed:.6f} seconds"), Spacer()]
+            ),
+        )
+
+    def replace_screen(self, updated_screen: Screen) -> List[Screen]:
+        return [updated_screen if screen.id == updated_screen.id else screen for screen in self.screens]
+
+    def handle(self, action: Action) -> Self:
         match action:
             case AppAction(id=action_id, data=value):
                 match action_id:
@@ -309,7 +338,7 @@ class AppState:
                         new_options = [
                             new_option if new_option.id == opt.id else opt for opt in self.selected_screen.options
                         ]
-                        new_screens = replace_screen(replace(self.selected_screen, options=new_options))
+                        new_screens = self.replace_screen(replace(self.selected_screen, options=new_options))
                         return replace(self, screens=new_screens)
                     case AppAction.ID.LeftSideBarVisibilityChanged:
                         return replace(self, is_left_sidebar_visible=value)
@@ -318,7 +347,7 @@ class AppState:
                     case AppAction.ID.DidSelectScreen:
                         identifier = value
                         new_screen = replace(self.selected_screen, top_bar_menu=append_to_default_menu())
-                        return replace(self, selected_screen_id=identifier, screens=replace_screen(new_screen))
+                        return replace(self, selected_screen_id=identifier, screens=self.replace_screen(new_screen))
             case MenuAction(id=action_id, data=value):
                 match action_id:
                     case MenuAction.ID.FileSaved:
@@ -332,42 +361,46 @@ class AppState:
                             self.selected_screen,
                             workspace_state=replace(self.selected_screen.workspace_state, input=[value]),
                         )
-                        new_selected_screen = (
-                            new_selected_screen.run(new_selected_screen)
-                            if self.is_autorun_enabled
-                            else new_selected_screen
+                        new_app_state = replace(self, screens=self.replace_screen(new_selected_screen))
+                        new_app_state = (
+                            new_app_state.run(new_selected_screen) if self.is_autorun_enabled else new_app_state
                         )
-                        new_screens = replace_screen(new_selected_screen)
-                        return replace(self, screens=new_screens)
+                        return new_app_state
                     case MenuAction.ID.DisableAutoRun:
                         new_screen = replace(
                             self.selected_screen, top_bar_menu=append_to_default_menu(enabled_auto_run=False)
                         )
-                        return replace(self, screens=replace_screen(new_screen), is_autorun_enabled=False)
+                        return replace(self, screens=self.replace_screen(new_screen), is_autorun_enabled=False)
 
                     case MenuAction.ID.EnableAutoRun:
                         new_screen = replace(
                             self.selected_screen, top_bar_menu=append_to_default_menu(enabled_auto_run=True)
                         )
-                        return replace(self, screens=replace_screen(new_screen), is_autorun_enabled=True)
+                        return replace(self, screens=self.replace_screen(new_screen), is_autorun_enabled=True)
 
             case WorkspaceAction(id=action_id, data=value):
                 match action_id:
-                    case WorkspaceAction.ID.SelectedInputImage:
+                    case WorkspaceAction.ID.UploadedInputImage:
                         new_selected_screen = replace(
                             self.selected_screen,
                             workspace_state=replace(self.selected_screen.workspace_state, input=[value]),
                         )
-                        new_screens = replace_screen(new_selected_screen)
-                        return replace(self, screens=new_screens)
+                        new_app_state = replace(self, screens=self.replace_screen(new_selected_screen))
+                        new_app_state = (
+                            new_app_state.run(new_selected_screen) if self.is_autorun_enabled else new_app_state
+                        )
+                        return new_app_state
                     case WorkspaceAction.ID.Reset:
                         new_selected_screen = replace(
                             self.selected_screen,
                             workspace_state=replace(self.selected_screen.workspace_state, input=[], output=None),
                         )
-                        new_screens = replace_screen(new_selected_screen)
+                        new_screens = self.replace_screen(new_selected_screen)
                         return replace(self, screens=new_screens)
-                    case _:
-                        return self
+                    case WorkspaceAction.ID.Run:
+                        if not len(self.selected_screen.workspace_state.input):
+                            return self
+                        new_app_state = self.run(self.selected_screen)
+                        return new_app_state
 
         assert False
