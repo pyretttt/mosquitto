@@ -29,7 +29,7 @@ def get_spatial_position_embedding(pos_emb_dim: int, feat_map: torch.Tensor) -> 
     emb_h = torch.cat([torch.sin(emb_h), torch.cos(emb_h)], dim=-1)
     emb_w = torch.cat([torch.sin(emb_w), torch.cos(emb_w)], dim=-1)
     pos = torch.cat([emb_h, emb_w], dim=-1)
-    return pos
+    return pos # Number of grid cell tokens, pos_emb_dim
 
 
 class MultiScaleBackbone(nn.Module):
@@ -140,23 +140,17 @@ class CCFM(nn.Module):
         return outputs
 
 
-class AIFI(nn.Module):
-    """
-    Attention-based Intra-scale Feature Interaction (AIFI).
-    Applies transformer self-attention within a single scale.
-    Paper section: Efficient Hybrid Encoder - AIFI component
-    """
-
-    def __init__(self, d_model: int, num_heads: int, dropout: float = 0.0):
+class EncoderLayer(nn.Module):
+    def __init__(self, d_model: int, feed_forward_dim: int, num_heads: int, dropout: float = 0.0,):
         super().__init__()
         self.self_attn = nn.MultiheadAttention(d_model, num_heads, dropout=dropout, batch_first=True)
 
         self.norm1 = nn.LayerNorm(d_model)
         self.norm2 = nn.LayerNorm(d_model)
 
-        self.linear1 = nn.Linear(d_model, d_model * 4)
+        self.linear1 = nn.Linear(d_model, feed_forward_dim)
         self.dropout = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(d_model * 4, d_model)
+        self.linear2 = nn.Linear(feed_forward_dim, d_model)
         self.dropout1 = nn.Dropout(dropout)
         self.dropout2 = nn.Dropout(dropout)
         self.activation = nn.ReLU()
@@ -201,26 +195,24 @@ class HybridEncoder(nn.Module):
         self.use_encoder_idx = use_encoder_idx
         self.num_levels = len(in_channels_list)
 
-        self.input_proj = nn.ModuleList()
-        for in_channel in in_channels_list:
-            self.input_proj.append(
-                nn.Sequential(
-                    nn.Conv2d(in_channel, hidden_dim, kernel_size=1, bias=False),
-                    nn.BatchNorm2d(hidden_dim)
-                )
-            )
-
+        self.input_proj = nn.ModuleList([
+	        nn.Sequential(
+				nn.Conv2d(in_channel, hidden_dim, kernel_size=1, bias=False),
+				nn.BatchNorm2d(hidden_dim)
+			)
+			for in_channel in in_channels_list
+        ])
 
         # CCFM: CNN-based cross-scale feature fusion
         self.ccfm = CCFM(in_channels_list, hidden_dim)
 
-        # AIFI: Attention-based intra-scale feature interaction
-        # Applied only to selected scales (typically S5)
-        self.encoder_layers = nn.ModuleList([AIFI(hidden_dim, num_heads, dropout) for _ in range(num_encoder_layers)])
+        self.encoder_layers = nn.ModuleList([
+	        EncoderLayer(hidden_dim, hidden_dim * 4, num_heads, dropout)
+	        for _ in range(num_encoder_layers)
+        ])
 
         # Level embeddings for multi-scale awareness
-        self.level_embed = nn.Parameter(torch.zeros(self.num_levels, hidden_dim))
-        nn.init.normal_(self.level_embed)
+        self.level_embed = nn.Parameter(torch.randn(self.num_levels, hidden_dim))
 
     def forward(self, features):
         """
@@ -231,23 +223,29 @@ class HybridEncoder(nn.Module):
         """
         features = [proj(feat) for feat, proj in zip(features, self.input_proj)]
 
-        # Step 1: Apply AIFI to selected scales (decoupled intra-scale interaction)
+        # Step 1: Apply encoder layers to selected scales (decoupled intra-scale interaction)
         for idx, feat in enumerate(features):
-            if idx in self.use_encoder_idx:
-                # Apply AIFI for intra-scale feature interaction
-                bs, c, h, w = feat.shape
-                feat_flat = feat.flatten(2).permute(0, 2, 1)  # [B, HW, C]
+            if idx not in self.use_encoder_idx:
+                continue
+            bs, c, h, w = feat.shape
+            # Encoder is applied to each spatial point of feature map,
+            # so permute it, so that number of tokens are HW
+            feat_flat = feat.flatten(2).permute(0, 2, 1)  # [B, HW, C]
 
-                # Add positional encoding
-                pos_embed = get_spatial_position_embedding(c, feat).unsqueeze(0).expand(bs, -1, -1)
+            # Add positional encoding
+            pos_embed = (
+                get_spatial_position_embedding(c, feat) # HW, C
+                .unsqueeze(0) # 1, HW, C
+                .expand(bs, -1, -1) # B, HW, C
+            )
 
-                # Apply AIFI layers
-                for layer in self.encoder_layers:
-                    feat_flat = layer(feat_flat, pos_embed)
+            # Apply AIFI layers
+            for layer in self.encoder_layers:
+                feat_flat = layer(feat_flat, pos_embed)
 
-                # Reshape back
-                feat = feat_flat.permute(0, 2, 1).reshape(bs, c, h, w)
-                features[idx] = feat
+            # Reshape back
+            features[idx] = feat_flat.permute(0, 2, 1).reshape(bs, c, h, w) # B, C, H, W
+
 
         # Step 2: CCFM for cross-scale fusion
         fused_features = self.ccfm(features)
