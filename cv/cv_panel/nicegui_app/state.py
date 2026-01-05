@@ -40,6 +40,7 @@ class WorkspaceAction:
         UploadedInputImage = "uploaded_input_image"
         Reset = "reset"
         Run = "run"
+        SaveFile = "save"
 
     id: ID
     data: Optional[Any] = None
@@ -184,6 +185,7 @@ def get_default_workspace_actions() -> List[WorkspaceState.Widget]:
         Spacer(),
         WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Reset), name="Reset", icon="replay"),
         WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.Run), name="Run", icon="play_arrow"),
+        WorkspaceState.Button(WorkspaceAction(id=WorkspaceAction.ID.SaveFile), name="Save", icon="save"),
     ]
 
 
@@ -351,7 +353,7 @@ class AppState:
             case MenuAction(id=action_id, data=value):
                 match action_id:
                     case MenuAction.ID.FileSaved:
-                        pass
+                        return self
                     case MenuAction.ID.FlipVertically:
                         pass
                     case MenuAction.ID.FlipHorizontally:
@@ -402,5 +404,7 @@ class AppState:
                             return self
                         new_app_state = self.run(self.selected_screen)
                         return new_app_state
+                    case WorkspaceAction.ID.SaveFile:
+                        return self
 
         assert False

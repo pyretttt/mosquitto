@@ -432,6 +432,8 @@ def ui_action_handler(action: Action) -> AppState:
                     make_page_ui.refresh()
         case MenuAction(id=action_id, data=value):
             match action_id:
+                case MenuAction.ID.FileSaved:
+                    assert False
                 case MenuAction.ID.ImageSelected:
                     make_image_workspace_ui.refresh()
                     make_footer_ui.refresh()
@@ -446,7 +448,16 @@ def ui_action_handler(action: Action) -> AppState:
                 case WorkspaceAction.ID.UploadedInputImage:
                     make_footer_ui.refresh()
                 case WorkspaceAction.ID.Run:
+                    if not len(state.selected_screen.workspace_state.input):
+                        return ui.notify("Select screen first", position="bottom", type="negative")
                     make_footer_ui.refresh()
+                case WorkspaceAction.ID.SaveFile:
+                    if output := state.selected_screen.workspace_state.output:
+                        bytes = BytesIO()
+                        output.save(bytes, format="png")
+                        ui.download.content(bytes.getvalue(), state.selected_screen.name + ".png")
+                    else:
+                        ui.notify("Nothing to save", position="bottom", type="negative")
             make_image_workspace_ui.refresh()
 
 
