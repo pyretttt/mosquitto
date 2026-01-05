@@ -87,9 +87,9 @@ class CCFM(nn.Module):
         super().__init__()
 
         # Lateral convolutions to project all scales to same dimension
-        self.lateral_convs = nn.ModuleList(
-            [nn.Conv2d(in_ch, out_channels, 1, bias=False) for in_ch in in_channels_list]
-        )
+        # self.lateral_convs = nn.ModuleList(
+        #     [nn.Conv2d(in_ch, out_channels, 1, bias=False) for in_ch in in_channels_list]
+        # )
 
         # Top-down pathway: fusion blocks after upsampling
         self.fpn_blocks = nn.ModuleList(
@@ -119,22 +119,22 @@ class CCFM(nn.Module):
             List of fused multi-scale features [P3, P4, P5]
         """
         # Lateral connections
-        laterals = [conv(feat) for conv, feat in zip(self.lateral_convs, features)]
+        # laterals = [conv(feat) for conv, feat in zip(self.lateral_convs, features)]
 
         # Top-down pathway: P5 -> P4 -> P3. P5 upsamped to P4 and P4 is upsampled to P3 fusing info from all scales
-        for i in range(len(laterals) - 1, 0, -1):  # [2, 1]
-            laterals[i - 1] = (
-                laterals[i - 1]
+        for i in range(len(features) - 1, 0, -1):  # [2, 1]
+            features[i - 1] = (
+                features[i - 1]
                 + F.interpolate(  # P4 + P5, P3 + P4
-                    laterals[i], size=laterals[i - 1].shape[-2:], mode="nearest"
+                    features[i], size=features[i - 1].shape[-2:], mode="nearest"
                 )
             )
-            laterals[i - 1] = self.fpn_blocks[i - 1](laterals[i - 1])
+            features[i - 1] = self.fpn_blocks[i - 1](features[i - 1])
 
         # Bottom-up pathway: P3 -> P4 -> P5
-        outputs = [laterals[0]]  # P3 with info from P4 and P5
-        for i in range(len(laterals) - 1):  # 0, 1
-            outputs.append(self.downsample_convs[i](outputs[-1]) + laterals[i + 1])  # P3 + P4, P4 + P5
+        outputs = [features[0]]  # P3 with info from P4 and P5
+        for i in range(len(features) - 1):  # 0, 1
+            outputs.append(self.downsample_convs[i](outputs[-1]) + features[i + 1])  # P3 + P4, P4 + P5
 
         # It adds info in both ways P3 -> P4 -> P5, and P5 -> P4 -> P3. It also downsamples feature by factor of 2
         return outputs
@@ -201,6 +201,16 @@ class HybridEncoder(nn.Module):
         self.use_encoder_idx = use_encoder_idx
         self.num_levels = len(in_channels_list)
 
+        self.input_proj = nn.ModuleList()
+        for in_channel in in_channels_list:
+            self.input_proj.append(
+                nn.Sequential(
+                    nn.Conv2d(in_channel, hidden_dim, kernel_size=1, bias=False),
+                    nn.BatchNorm2d(hidden_dim)
+                )
+            )
+
+
         # CCFM: CNN-based cross-scale feature fusion
         self.ccfm = CCFM(in_channels_list, hidden_dim)
 
@@ -219,12 +229,10 @@ class HybridEncoder(nn.Module):
         Returns:
             Encoder output features and spatial information
         """
-        # Step 1: CCFM for cross-scale fusion
-        fused_features = self.ccfm(features)
+        features = [proj(feat) for feat, proj in zip(features, self.input_proj)]
 
-        # Step 2: Apply AIFI to selected scales (decoupled intra-scale interaction)
-        output_features = []
-        for idx, feat in enumerate(fused_features):
+        # Step 1: Apply AIFI to selected scales (decoupled intra-scale interaction)
+        for idx, feat in enumerate(features):
             if idx in self.use_encoder_idx:
                 # Apply AIFI for intra-scale feature interaction
                 bs, c, h, w = feat.shape
@@ -239,13 +247,15 @@ class HybridEncoder(nn.Module):
 
                 # Reshape back
                 feat = feat_flat.permute(0, 2, 1).reshape(bs, c, h, w)
+                features[idx] = feat
 
-            output_features.append(feat)
+        # Step 2: CCFM for cross-scale fusion
+        fused_features = self.ccfm(features)
 
         # Flatten for decoder
         src_flatten = []
         spatial_shapes = []
-        for feat in output_features:
+        for feat in fused_features:
             bs, c, h, w = feat.shape
             spatial_shapes.append((h, w))
             src_flatten.append(feat.flatten(2).transpose(1, 2))  # [B, HW, C]
@@ -262,7 +272,7 @@ class HybridEncoder(nn.Module):
             )
         )
 
-        return src_flatten, output_features, spatial_shapes, level_start_index
+        return src_flatten, fused_features, spatial_shapes, level_start_index
 
 
 class MSDeformAttn(nn.Module):
