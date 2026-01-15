@@ -241,7 +241,6 @@ def get_screens() -> List[Screen]:
     from nicegui_app.screen_methods import grayscale
     from nicegui_app.screen_methods import connected_components
 
-
     return [
         Screen(
             name="Image registration",
