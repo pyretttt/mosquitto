@@ -11,7 +11,10 @@ from PIL.Image import Image as PILImage
 from PIL import Image
 
 
-DEFAULT_IMAGE_URLS = {"Lenna": Image.open("nicegui_app/images/lenna.png")}
+DEFAULT_IMAGE_URLS = {
+    "Lenna": Image.open("nicegui_app/images/lenna.png"),
+    "Text": Image.open("nicegui_app/images/text_example.png"),
+}
 
 
 def make_uuid() -> str:
@@ -236,6 +239,8 @@ class Screen:
 
 def get_screens() -> List[Screen]:
     from nicegui_app.screen_methods import grayscale
+    from nicegui_app.screen_methods import connected_components
+
 
     return [
         Screen(
@@ -265,21 +270,8 @@ def get_screens() -> List[Screen]:
             ],
             run=grayscale.run,
         ),
-        Screen(
-            name="Histogram uniformity",
-            description="Adjusts histogram histogram for visual improvements",
-            options=[
-                Option(
-                    name="Intensity",
-                    info=NumberFieldOption(value=1.0, min_value=0.0, max_value=5.0),
-                ),
-                Option(
-                    name="Verbose",
-                    info=CheckboxOption(value=True),
-                ),
-            ],
-            run=grayscale.run,
-        ),
+        grayscale.screen,
+        connected_components.screen,
         Screen(name="Utility", description="Utility screen without options", options=[], run=grayscale.run),
     ]
 
