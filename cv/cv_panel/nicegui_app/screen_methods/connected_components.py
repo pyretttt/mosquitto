@@ -8,21 +8,21 @@ import matplotlib.cm as cm
 
 from nicegui_app.state import Screen
 
-cmap = cm.get_cmap("viridis", 1000000)
-colormap_array = cmap(np.linspace(0, 1, 1000000))[:, :3]
+cmap = cm.get_cmap("viridis", 15)
+colormap_array = cmap(np.linspace(0, 1, 15))[:, :3]
 
 
 def get_connected_components(image: np.array) -> np.array:
     offsets = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
 
-    if len(image.shape):
+    if len(image.shape) == 2:
         image = np.repeat(image[:, :, None], 3, axis=2)
 
     H, W = image.shape[:2]
-    ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     th = np.zeros((H + 2, W + 2))
-    th[1 : H + 1, 1 : W + 1] = thresh[:]
+    th[1 : H + 1, 1 : W + 1] = thresh[:, :, 0]
 
     visited = set()
     current_value = 0
@@ -42,7 +42,7 @@ def get_connected_components(image: np.array) -> np.array:
                 should_increment = True
                 result[current_idx] = colormap_array[current_value]
                 for offset in offsets:
-                    to_visit.append((row + offset[0], col + offset[1]))
+                    to_visit.append((current_idx[0] + offset[0], current_idx[1] + offset[1]))
 
             current_value += (0, 1)[should_increment]
     return (result * 255).astype(np.uint8)
