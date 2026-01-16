@@ -27,14 +27,15 @@ def get_connected_components(image: np.array, num_objects: int, colormap_name: s
         (1, -1),
     ]
 
-    if len(image.shape) == 2:
-        image = np.repeat(image[:, :, None], 3, axis=2)
+    if len(image.shape) == 3:
+        image = np.mean(image, axis=2)
+    image = image.astype(np.uint8)
 
     H, W = image.shape[:2]
-    ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY)
+    ret, thresh = cv2.threshold(image, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     thresh = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     th = np.zeros((H + 2, W + 2))
-    th[1 : H + 1, 1 : W + 1] = thresh[:, :, 0]
+    th[1 : H + 1, 1 : W + 1] = thresh[:, :]
 
     visited = set()
     current_value = 0
