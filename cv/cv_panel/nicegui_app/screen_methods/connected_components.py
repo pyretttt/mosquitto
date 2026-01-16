@@ -6,13 +6,14 @@ import PIL.Image as PILImage
 import matplotlib.cm as cm
 
 
-from nicegui_app.state import Screen, NumberFieldOption, Option
+from nicegui_app.state import Screen, NumberFieldOption, Option, FieldOption
 
 NUM_OBJECTS_ID = 0
+COLOR_MAP_ID = 1
 
 
-def get_connected_components(image: np.array, num_objects: int) -> np.array:
-    cmap = cm.get_cmap("viridis", num_objects)
+def get_connected_components(image: np.array, num_objects: int, colormap_name: str) -> np.array:
+    cmap = cm.get_cmap(colormap_name, num_objects)
     colormap_array = cmap(np.linspace(0, 1, num_objects))[:, :3]
 
     offsets = [
@@ -62,7 +63,11 @@ def get_connected_components(image: np.array, num_objects: int) -> np.array:
 def run(screen: Screen) -> Screen:
     input = screen.workspace_state.input[0]
     output = PILImage.fromarray(
-        get_connected_components(image=np.array(input), num_objects=screen.option_with_id(NUM_OBJECTS_ID).info.value),
+        get_connected_components(
+            image=np.array(input),
+            num_objects=screen.option_with_id(NUM_OBJECTS_ID).info.value,
+            colormap_name=screen.option_with_id(COLOR_MAP_ID).info.value,
+        ),
         mode="RGB",
     )
     return replace(screen, workspace_state=replace(screen.workspace_state, output=output))
@@ -77,7 +82,13 @@ screen = Screen(
             description="Expected number of different objects",
             info=NumberFieldOption(value=20, min_value=0, max_value=1e7),
             id=NUM_OBJECTS_ID,
-        )
+        ),
+        Option(
+            name="Color map name",
+            description="Matplolib colormap name",
+            info=FieldOption(value="viridis"),
+            id=COLOR_MAP_ID,
+        ),
     ],
     run=run,
 )
