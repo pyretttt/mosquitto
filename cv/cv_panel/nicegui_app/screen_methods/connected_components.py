@@ -6,14 +6,25 @@ import PIL.Image as PILImage
 import matplotlib.cm as cm
 
 
-from nicegui_app.state import Screen
+from nicegui_app.state import Screen, NumberFieldOption, Option
 
-cmap = cm.get_cmap("viridis", 15)
-colormap_array = cmap(np.linspace(0, 1, 15))[:, :3]
+NUM_OBJECTS_ID = 0
 
 
-def get_connected_components(image: np.array) -> np.array:
-    offsets = [(1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)]
+def get_connected_components(image: np.array, num_objects: int) -> np.array:
+    cmap = cm.get_cmap("viridis", num_objects)
+    colormap_array = cmap(np.linspace(0, 1, num_objects))[:, :3]
+
+    offsets = [
+        (1, 0),
+        (1, 1),
+        (0, 1),
+        (-1, 1),
+        (-1, 0),
+        (-1, -1),
+        (0, -1),
+        (1, -1),
+    ]
 
     if len(image.shape) == 2:
         image = np.repeat(image[:, :, None], 3, axis=2)
@@ -40,7 +51,7 @@ def get_connected_components(image: np.array) -> np.array:
                 if th[current_idx] == 0.0:
                     continue
                 should_increment = True
-                result[current_idx] = colormap_array[current_value]
+                result[current_idx] = colormap_array[current_value % num_objects]
                 for offset in offsets:
                     to_visit.append((current_idx[0] + offset[0], current_idx[1] + offset[1]))
 
@@ -50,13 +61,23 @@ def get_connected_components(image: np.array) -> np.array:
 
 def run(screen: Screen) -> Screen:
     input = screen.workspace_state.input[0]
-    output = PILImage.fromarray(get_connected_components(np.array(input)), mode="RGB")
+    output = PILImage.fromarray(
+        get_connected_components(image=np.array(input), num_objects=screen.option_with_id(NUM_OBJECTS_ID).info.value),
+        mode="RGB",
+    )
     return replace(screen, workspace_state=replace(screen.workspace_state, output=output))
 
 
 screen = Screen(
     name="Connected components labeling",
     description="Segmentation based on connected components",
-    options=[],
+    options=[
+        Option(
+            name="Number of objects",
+            description="Expected number of different objects",
+            info=NumberFieldOption(value=20, min_value=0, max_value=1e7),
+            id=NUM_OBJECTS_ID,
+        )
+    ],
     run=run,
 )

@@ -236,6 +236,9 @@ class Screen:
             case _:
                 return False
 
+    def option_with_id(self, id: str) -> Optional[Option]:
+        return next((option for option in self.options if option.id == id), None)
+
 
 def get_screens() -> List[Screen]:
     from nicegui_app.screen_methods import grayscale
