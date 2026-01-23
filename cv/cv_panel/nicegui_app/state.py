@@ -243,6 +243,7 @@ class Screen:
 def get_screens() -> List[Screen]:
     from nicegui_app.screen_methods import grayscale
     from nicegui_app.screen_methods import connected_components
+    from nicegui_app.screen_methods import dft
 
     return [
         Screen(
@@ -274,6 +275,7 @@ def get_screens() -> List[Screen]:
         ),
         grayscale.screen,
         connected_components.screen,
+        dft.screen,
         Screen(name="Utility", description="Utility screen without options", options=[], run=grayscale.run),
     ]
 
