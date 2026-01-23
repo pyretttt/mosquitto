@@ -346,7 +346,9 @@ def make_image_workspace_ui() -> None:
                                     f"w-full h-full rounded-md flex items-center justify-center text-[{Colors.text1}] pl-3 pr-2"
                                 ):
                                     output_img = (
-                                        state.selected_screen.workspace_state.output if state.selected_screen else None
+                                        state.selected_screen.workspace_state.output[0]
+                                        if state.selected_screen and state.selected_screen.workspace_state.output
+                                        else None
                                     )
                                     make_image_ui(output_img, alt="Run transform!")
                             with splitter.separator:

@@ -215,7 +215,7 @@ class WorkspaceState:
 
     widgets: List[Widget] = field(default_factory=get_default_workspace_actions)
     input: List[PILImage] = field(default_factory=list)
-    output: Optional[PILImage] = None
+    output: List[PILImage] = field(default_factory=list)
     layout: Layout = Layout.OneDimensional
 
 

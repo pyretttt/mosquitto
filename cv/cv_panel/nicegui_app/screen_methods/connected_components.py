@@ -71,7 +71,7 @@ def run(screen: Screen) -> Screen:
         ),
         mode="RGB",
     )
-    return replace(screen, workspace_state=replace(screen.workspace_state, output=output))
+    return replace(screen, workspace_state=replace(screen.workspace_state, output=[output]))
 
 
 screen = Screen(
