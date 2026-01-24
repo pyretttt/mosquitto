@@ -3,11 +3,14 @@ from __future__ import annotations
 from typing import List, Optional
 from dataclasses import replace
 from io import BytesIO
+
 from PIL.Image import Image as Image
 import PIL.Image as PILImage
 
+
 from nicegui import ui
 from nicegui.events import KeyEventArguments, UploadEventArguments
+
 
 from nicegui_app.state import (
     AppState,
@@ -285,7 +288,7 @@ def make_options_sidebar_ui() -> None:
 def make_workspace_widget_ui(widget: WorkspaceState.Widget) -> None:
     match widget:
         case WorkspaceState.Uploader() as uploader:
-            with ui.upload(label=uploader.name, on_upload=handle_upload_input, auto_upload=True).classes(
+            with ui.upload(multiple=True, label=uploader.name, on_upload=handle_upload_input, auto_upload=True).classes(
                 "my-uploader text-xs max-w-[124px]"
             ):
                 ui.tooltip("Drop and image").classes(
@@ -310,6 +313,24 @@ def make_workspace_widget_ui(widget: WorkspaceState.Widget) -> None:
 
 @ui.refreshable
 def make_image_workspace_ui() -> None:
+    def render_image_column(images, empty_text: str, extra_padding: str = "") -> None:
+        normalized_images = images or []
+        pane_classes = (
+            f"w-full h-full flex flex-col gap-3 overflow-y-auto justify-center text-[{Colors.text1}] {extra_padding}"
+        )
+        image_classes = f"w-full min-h-[30%] flex-1 flex items-center justify-center rounded-md"
+
+        with ui.element("div").classes(pane_classes):
+            if normalized_images:
+                for image in normalized_images:
+                    with ui.element("div").classes(image_classes):
+                        make_image_ui(image, alt=empty_text)
+            else:
+                with ui.element("div").classes("w-full h-full flex items-center justify-center"):
+                    ui.label(empty_text).classes(
+                        f"text-lg text-[{Colors.text1}] hover:text-[{Colors.text2}] transition-colors duration-150 "
+                    )
+
     match state.selected_screen.workspace_state.layout:
         case WorkspaceState.Layout.OneDimensional:
             with ui.column().classes(f"flex-1 gap-1 p-1 h-full bg-effective overflow-hidden rounded-lg"):
@@ -318,7 +339,11 @@ def make_image_workspace_ui() -> None:
                         make_workspace_widget_ui(widget)
 
                 with ui.element("div").classes(f"flex-1 w-full rounded-md border border-dashed border-[{Colors.brd}] "):
-                    if len(state.selected_screen.workspace_state.input):
+                    workspace_state = state.selected_screen.workspace_state
+                    input_images = workspace_state.input or []
+                    output_images = workspace_state.output or []
+
+                    if input_images:
                         with ui.splitter(
                             horizontal=False,
                             reverse=False,
@@ -328,29 +353,10 @@ def make_image_workspace_ui() -> None:
                         ).classes("h-full p-1 overflow-hidden bg-effective ") as splitter:
                             with splitter.before:
                                 # top pane (e.g., input)
-                                with ui.element("div").classes(
-                                    f"w-full h-full flex items-center justify-center text-[{Colors.text1}] pl-2 pr-3"
-                                ):
-                                    try:
-                                        first_input = (
-                                            state.selected_screen.workspace_state.input[0]
-                                            if state.selected_screen and state.selected_screen.workspace_state.input
-                                            else None
-                                        )
-                                    except Exception:
-                                        first_input = None
-                                    make_image_ui(first_input, alt="No input image")
+                                render_image_column(input_images, "No input image", "pl-2 pr-3")
                             with splitter.after:
                                 # bottom pane (e.g., output)
-                                with ui.element("div").classes(
-                                    f"w-full h-full rounded-md flex items-center justify-center text-[{Colors.text1}] pl-3 pr-2"
-                                ):
-                                    output_img = (
-                                        state.selected_screen.workspace_state.output[0]
-                                        if state.selected_screen and state.selected_screen.workspace_state.output
-                                        else None
-                                    )
-                                    make_image_ui(output_img, alt="Run transform!")
+                                render_image_column(output_images, "Run transform!", "pl-3 pr-2")
                             with splitter.separator:
                                 with ui.icon("swipe").classes(
                                     f"text-[{Colors.text1}] text-md hover:text-[{Colors.text2}] hover:text-xl"

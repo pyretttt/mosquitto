@@ -10,11 +10,19 @@ from enum import Enum
 from PIL.Image import Image as PILImage
 from PIL import Image
 
+from nicegui_app.logs import last_used_logger
 
 DEFAULT_IMAGE_URLS = {
     "Lenna": Image.open("nicegui_app/images/lenna.png"),
     "Text": Image.open("nicegui_app/images/text_example.png"),
+    "Stop sign": Image.open("nicegui_app/images/stop_sign.png"),
 }
+
+
+def sort_screens():
+    with open("nicegui_app/no_index/last_used_screen", "r") as f:
+        while s := f.readline():
+            date, name = s.split(":")
 
 
 def make_uuid() -> str:
@@ -345,6 +353,7 @@ class AppState:
                     case AppAction.ID.DidSelectScreen:
                         identifier = value
                         new_screen = replace(self.selected_screen, top_bar_menu=append_to_default_menu())
+                        last_used_logger.info(new_screen.name)
                         return replace(self, selected_screen_id=identifier, screens=self.replace_screen(new_screen))
             case MenuAction(id=action_id, data=value):
                 match action_id:

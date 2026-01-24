@@ -30,7 +30,13 @@ def run(screen: Screen) -> Screen:
 
     return replace(
         screen,
-        workspace_state=replace(screen.workspace_state, output=[PILImage.fromarray(amplitude).convert("L")]),
+        workspace_state=replace(
+            screen.workspace_state,
+            output=[
+                PILImage.fromarray(amplitude).convert("L"),
+                PILImage.fromarray(phase).convert("L"),
+            ],
+        ),
     )
 
 
