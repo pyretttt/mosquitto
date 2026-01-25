@@ -19,10 +19,19 @@ DEFAULT_IMAGE_URLS = {
 }
 
 
-def sort_screens():
-    with open("nicegui_app/no_index/last_used_screen", "r") as f:
-        while s := f.readline():
-            date, name = s.split(":")
+def sorted_screens(screens: "Screen") -> List["Screen"]:
+    with open("nicegui_app/no_index/last_used_screen", "r") as file:
+        recent_names: List[str] = []
+        for line in file.readlines()[-1:-5:-1]:
+            name = line.split(":")[-1].strip()
+            if name not in recent_names:
+                recent_names.append(name)
+        print(recent_names)
+
+    name_to_screen = {screen.name: screen for screen in screens}
+    recent_screens = [name_to_screen[name] for name in recent_names if name in name_to_screen]
+    remaining_screens = [screen for screen in screens if screen.name not in recent_names]
+    return recent_screens + remaining_screens
 
 
 def make_uuid() -> str:
@@ -298,7 +307,7 @@ class Footer:
 
 @dataclass(frozen=True)
 class AppState:
-    screens: List[Screen] = field(default_factory=lambda: _screens[:])
+    screens: List[Screen] = field(default_factory=lambda: sorted_screens(_screens[:]))
     selected_screen_id: str = field(default=_screens[0].id)
     last_menu_action: Optional[str] = None
     is_left_sidebar_visible: bool = True
@@ -352,9 +361,12 @@ class AppState:
                         return replace(self, is_right_sidebar_visible="File saved")
                     case AppAction.ID.DidSelectScreen:
                         identifier = value
-                        new_screen = replace(self.selected_screen, top_bar_menu=append_to_default_menu())
+                        new_state = replace(self, selected_screen_id=identifier)
+                        new_screen = replace(new_state.selected_screen, top_bar_menu=append_to_default_menu())
                         last_used_logger.info(new_screen.name)
-                        return replace(self, selected_screen_id=identifier, screens=self.replace_screen(new_screen))
+                        new_state = replace(new_state, screens=new_state.replace_screen(new_screen))
+                        return new_state
+
             case MenuAction(id=action_id, data=value):
                 match action_id:
                     case MenuAction.ID.FileSaved:
