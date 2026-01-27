@@ -2,8 +2,9 @@ from dataclasses import replace
 
 from nicegui_app.state import Screen, Option, NumberFieldOption
 
-from PIL.Image import Image as PILImage
+import PIL.Image as PILImage
 import numpy as np
+import cv2 as cv
 
 X_ID = 0
 Y_ID = 1
@@ -11,8 +12,20 @@ WIDTH_ID = 2
 HEIGHT_ID = 3
 
 
-def transform(input: PILImage, x: float, y: float, width: float, height: float) -> PILImage:
-    pass
+def transform(input: np.array, x: float, y: float, width: float, height: float) -> (np.array, np.array):
+    input = input[:, :, :3].copy()
+    H, W = input.shape[:2]
+    x_min = int(x * W)
+    y_min = int(y * H)
+    x_max = x_min + int(width * W)
+    y_max = y_min + int(height * H)
+    input_with_bbox = cv.rectangle(input, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
+
+    dx = cv.Sobel(input, cv.CV_64F, 1, 0, ksize=3)
+    dy = cv.Sobel(input, cv.CV_64F, 0, 1, ksize=3)
+    output = dx + dy
+    output = np.abs(output).astype(np.uint8)
+    return input_with_bbox, output
 
 
 def run(screen: Screen) -> Screen:

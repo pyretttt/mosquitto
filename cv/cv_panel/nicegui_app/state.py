@@ -261,6 +261,7 @@ def get_screens() -> List[Screen]:
     from nicegui_app.screen_methods import grayscale
     from nicegui_app.screen_methods import connected_components
     from nicegui_app.screen_methods import dft
+    from nicegui_app.screen_methods import derivative_inpainting
 
     return [
         Screen(
@@ -293,11 +294,12 @@ def get_screens() -> List[Screen]:
         grayscale.screen,
         connected_components.screen,
         dft.screen,
+        derivative_inpainting.screen,
         Screen(name="Utility", description="Utility screen without options", options=[], run=grayscale.run),
     ]
 
 
-_screens = get_screens()
+_screens = sorted_screens(get_screens())
 
 
 @dataclass(frozen=True)
@@ -307,7 +309,7 @@ class Footer:
 
 @dataclass(frozen=True)
 class AppState:
-    screens: List[Screen] = field(default_factory=lambda: sorted_screens(_screens[:]))
+    screens: List[Screen] = field(default_factory=lambda: _screens[:])
     selected_screen_id: str = field(default=_screens[0].id)
     last_menu_action: Optional[str] = None
     is_left_sidebar_visible: bool = True
