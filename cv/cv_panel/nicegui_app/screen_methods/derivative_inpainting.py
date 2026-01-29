@@ -12,8 +12,26 @@ WIDTH_ID = 2
 HEIGHT_ID = 3
 
 
-def transform(input: np.array, x: float, y: float, width: float, height: float) -> (np.array, np.array):
+def vectorize_image(image: np.array) -> np.array:
+    """
+    vectorizes grayscale input image info row vector of size H x W
+    """
+    return image.ravel()
+
+
+def sobel_kernel_for_vectorized_input(image_shape: tuple[int, int], vec_image: np.array, kernel: np.array) -> np.array:
+    """
+    Returns matrix for Ax. which convolves vectorized image with sobel kernel
+    """
+    H, W = image_shape
+    ksize = kernel.shape[0]
+    sparse_kernel = np.zeros((len(vec_image) - ksize + 1, len(vec_image)))
+
+
+def transform(input: np.array, x: float, y: float, width: float, height: float) -> tuple[np.array, np.array]:
     input = input[:, :, :3].copy()
+    gray_scale_input = input.mean(axis=-1)
+
     H, W = input.shape[:2]
     x_min = int(x * W)
     y_min = int(y * H)
@@ -21,8 +39,8 @@ def transform(input: np.array, x: float, y: float, width: float, height: float) 
     y_max = y_min + int(height * H)
     input_with_bbox = cv.rectangle(input, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
 
-    dx = cv.Sobel(input, cv.CV_64F, 1, 0, ksize=3)
-    dy = cv.Sobel(input, cv.CV_64F, 0, 1, ksize=3)
+    dx = cv.Sobel(gray_scale_input, cv.CV_64F, 1, 0, ksize=3)
+    dy = cv.Sobel(gray_scale_input, cv.CV_64F, 0, 1, ksize=3)
     output = dx + dy
     output = np.abs(output).astype(np.uint8)
     return input_with_bbox, output

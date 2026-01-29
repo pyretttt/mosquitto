@@ -7,7 +7,6 @@ from io import BytesIO
 from PIL.Image import Image as Image
 import PIL.Image as PILImage
 
-
 from nicegui import ui
 from nicegui.events import KeyEventArguments, UploadEventArguments
 
