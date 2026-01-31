@@ -11,6 +11,8 @@ Y_ID = 1
 WIDTH_ID = 2
 HEIGHT_ID = 3
 
+sobel_y = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+
 
 def vectorize_image(image: np.array) -> np.array:
     """
@@ -19,13 +21,26 @@ def vectorize_image(image: np.array) -> np.array:
     return image.ravel()
 
 
-def sobel_kernel_for_vectorized_input(image_shape: tuple[int, int], vec_image: np.array, kernel: np.array) -> np.array:
+def sobel_kernel_for_vectorized_input(
+    image_shape: tuple[int, int],
+    vec_image: np.array,
+    kernel: np.array,
+) -> np.array:
     """
     Returns matrix for Ax. which convolves vectorized image with sobel kernel
     """
     H, W = image_shape
     ksize = kernel.shape[0]
-    sparse_kernel = np.zeros((len(vec_image) - ksize + 1, len(vec_image)))
+
+    sparse_kernel_H, sparse_kernel_W = (H - ksize + 1) * (W - ksize + 1), len(vec_image)
+    sparse_kernel = np.zeros((sparse_kernel_H, sparse_kernel_W))
+    stride = W
+    for r in range(sparse_kernel_H):
+        for k in range(ksize):
+            column = r + k * stride
+            sparse_kernel[r : r + 1, column : column + ksize] = kernel[k, :]
+
+    return sparse_kernel
 
 
 def transform(input: np.array, x: float, y: float, width: float, height: float) -> tuple[np.array, np.array]:
@@ -39,10 +54,16 @@ def transform(input: np.array, x: float, y: float, width: float, height: float) 
     y_max = y_min + int(height * H)
     input_with_bbox = cv.rectangle(input, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
 
-    dx = cv.Sobel(gray_scale_input, cv.CV_64F, 1, 0, ksize=3)
-    dy = cv.Sobel(gray_scale_input, cv.CV_64F, 0, 1, ksize=3)
-    output = dx + dy
-    output = np.abs(output).astype(np.uint8)
+    # dx = cv.Sobel(gray_scale_input, cv.CV_64F, 1, 0, ksize=3)
+    # dy = cv.Sobel(gray_scale_input, cv.CV_64F, 0, 1, ksize=3)
+    # output = dx + dy
+    vectorized_grayscale = vectorize_image(gray_scale_input)
+    output = (
+        sobel_kernel_for_vectorized_input((H, W), vec_image=vectorize_image(gray_scale_input), kernel=sobel_y)
+        @ vectorized_grayscale
+    )
+
+    output = np.abs(output).reshape(H - 2, W - 2).astype(np.uint8)
     return input_with_bbox, output
 
 
