@@ -11,7 +11,13 @@ Y_ID = 1
 WIDTH_ID = 2
 HEIGHT_ID = 3
 
-sobel_y = np.array([[-1, 0, 1], [-2, 0, 2], [-1, 0, 1]])
+SOBEL_Y = np.array(
+    [
+        [-1, 0, 1],
+        [-2, 0, 2],
+        [-1, 0, 1],
+    ]
+)
 
 
 def vectorize_image(image: np.array) -> np.array:
@@ -21,7 +27,7 @@ def vectorize_image(image: np.array) -> np.array:
     return image.ravel()
 
 
-def sobel_kernel_for_vectorized_input(
+def kernel_for_vectorized_img(
     image_shape: tuple[int, int],
     vec_image: np.array,
     kernel: np.array,
@@ -30,22 +36,34 @@ def sobel_kernel_for_vectorized_input(
     Returns matrix for Ax. which convolves vectorized image with sobel kernel
     """
     H, W = image_shape
-    ksize = kernel.shape[0]
+    kH, kW = kernel.shape
+    assert vec_image.size == H * W, "vec_image must have length H*W"
 
-    sparse_kernel_H, sparse_kernel_W = (H - ksize + 1) * (W - ksize + 1), len(vec_image)
-    sparse_kernel = np.zeros((sparse_kernel_H, sparse_kernel_W))
-    stride = W
-    for r in range(sparse_kernel_H):
-        for k in range(ksize):
-            column = r + k * stride
-            sparse_kernel[r : r + 1, column : column + ksize] = kernel[k, :]
+    outH = H - kH + 1
+    outW = W - kW + 1
+    A = np.zeros((outH * outW, H * W), dtype=kernel.dtype)
 
-    return sparse_kernel
+    for out_idx in range(outH * outW):
+        out_r = out_idx // outW
+        out_c = out_idx % outW
+        base = out_r * W + out_c  # top-left input index for this patch
+
+        for kr in range(kH):
+            row_start = base + kr * W
+            A[out_idx, row_start : row_start + kW] = kernel[kr, :]
+    return A
+
+
+def pseudo_inverse(m: np.array):
+    U, S, V = np.linalg.svd(m, full_matrices=True)
+    S = 1.0 / S
+    return V, S, U.T
 
 
 def transform(input: np.array, x: float, y: float, width: float, height: float) -> tuple[np.array, np.array]:
     input = input[:, :, :3].copy()
     gray_scale_input = input.mean(axis=-1)
+    gray_scale_input = gray_scale_input[::4, ::4]
 
     H, W = input.shape[:2]
     x_min = int(x * W)
@@ -54,16 +72,18 @@ def transform(input: np.array, x: float, y: float, width: float, height: float) 
     y_max = y_min + int(height * H)
     input_with_bbox = cv.rectangle(input, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
 
-    # dx = cv.Sobel(gray_scale_input, cv.CV_64F, 1, 0, ksize=3)
-    # dy = cv.Sobel(gray_scale_input, cv.CV_64F, 0, 1, ksize=3)
-    # output = dx + dy
     vectorized_grayscale = vectorize_image(gray_scale_input)
-    output = (
-        sobel_kernel_for_vectorized_input((H, W), vec_image=vectorize_image(gray_scale_input), kernel=sobel_y)
-        @ vectorized_grayscale
+
+    kernel = kernel_for_vectorized_img(
+        gray_scale_input.shape, vec_image=vectorize_image(gray_scale_input), kernel=SOBEL_Y
     )
 
-    output = np.abs(output).reshape(H - 2, W - 2).astype(np.uint8)
+    output = np.matmul(
+        kernel_for_vectorized_img(gray_scale_input.shape, vec_image=vectorize_image(gray_scale_input), kernel=SOBEL_Y),
+        vectorized_grayscale,
+    )
+
+    output = np.abs(output).reshape(gray_scale_input.shape[0] - 2, gray_scale_input.shape[1] - 2).astype(np.uint8)
     return input_with_bbox, output
 
 
@@ -117,3 +137,6 @@ screen = Screen(
     ],
     run=run,
 )
+
+if __name__ == "__main__":
+    kernel_for_vectorized_img(image_shape=(420, 320), vec_image=np.random.randn(420 * 320), kernel=SOBEL_Y)
