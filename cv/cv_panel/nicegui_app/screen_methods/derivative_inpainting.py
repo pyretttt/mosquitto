@@ -4,7 +4,6 @@ from nicegui_app.state import Screen, Option, NumberFieldOption
 
 import PIL.Image as PILImage
 import numpy as np
-import cv2 as cv
 
 X_ID = 0
 Y_ID = 1
@@ -57,7 +56,7 @@ def kernel_for_vectorized_img(
 def pseudo_inverse(m: np.array):
     U, S, V = np.linalg.svd(m, full_matrices=True)
     S = 1.0 / S
-    return V, S, U.T
+    return V @ S @ U.T
 
 
 def transform(input: np.array, x: float, y: float, width: float, height: float) -> tuple[np.array, np.array]:
@@ -65,26 +64,33 @@ def transform(input: np.array, x: float, y: float, width: float, height: float) 
     gray_scale_input = input.mean(axis=-1)
     gray_scale_input = gray_scale_input[::4, ::4]
 
-    H, W = input.shape[:2]
+    H, W = gray_scale_input.shape[:2]
     x_min = int(x * W)
     y_min = int(y * H)
     x_max = x_min + int(width * W)
     y_max = y_min + int(height * H)
-    input_with_bbox = cv.rectangle(input, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
+    # input_with_bbox = cv.rectangle(cv.cvtColor(gray_scale_input, cv.COLOR_GRAY2BGR), (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
 
     vectorized_grayscale = vectorize_image(gray_scale_input)
-
     kernel = kernel_for_vectorized_img(
         gray_scale_input.shape, vec_image=vectorize_image(gray_scale_input), kernel=SOBEL_Y
     )
-
     output = np.matmul(
-        kernel_for_vectorized_img(gray_scale_input.shape, vec_image=vectorize_image(gray_scale_input), kernel=SOBEL_Y),
+        kernel,
         vectorized_grayscale,
     )
+    # output = output.reshape((H - kernel.shape[0] + 1, W - kernel.shape[0] + 1))
+    # output[y_min: y_max, x_min: x_max] = 0
 
-    output = np.abs(output).reshape(gray_scale_input.shape[0] - 2, gray_scale_input.shape[1] - 2).astype(np.uint8)
-    return input_with_bbox, output
+    kernel_inv = pseudo_inverse(kernel)
+    grayscale_inpainted = np.matmul(kernel_inv, output)
+
+    output = (
+        np.abs(grayscale_inpainted)
+        .reshape(gray_scale_input.shape[0] - 2, gray_scale_input.shape[1] - 2)
+        .astype(np.uint8)
+    )
+    return input, output
 
 
 def run(screen: Screen) -> Screen:
