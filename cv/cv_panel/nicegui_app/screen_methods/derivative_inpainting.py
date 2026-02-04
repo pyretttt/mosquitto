@@ -4,6 +4,7 @@ from nicegui_app.state import Screen, Option, NumberFieldOption
 
 import PIL.Image as PILImage
 import numpy as np
+import cv2 as cv
 
 X_ID = 0
 Y_ID = 1
@@ -36,11 +37,15 @@ def kernel_for_vectorized_img(
     """
     H, W = image_shape
     kH, kW = kernel.shape
-    assert vec_image.size == H * W, "vec_image must have length H*W"
+    if vec_image.ndim != 1 or vec_image.size != H * W:
+        raise ValueError("vec_image must be a 1D array of length H*W")
+    if kH > H or kW > W:
+        raise ValueError("kernel must fit within image dimensions")
 
     outH = H - kH + 1
     outW = W - kW + 1
-    A = np.zeros((outH * outW, H * W), dtype=kernel.dtype)
+    dtype = np.result_type(kernel.dtype, np.float64)
+    A = np.zeros((outH * outW, H * W), dtype=dtype)
 
     for out_idx in range(outH * outW):
         out_r = out_idx // outW
@@ -54,43 +59,48 @@ def kernel_for_vectorized_img(
 
 
 def pseudo_inverse(m: np.array):
-    U, S, V = np.linalg.svd(m, full_matrices=True)
+    print("Before svd")
+
+    U, S, V = np.linalg.svd(m)
     S = 1.0 / S
+    print("Computed svd")
     return V @ S @ U.T
 
 
 def transform(input: np.array, x: float, y: float, width: float, height: float) -> tuple[np.array, np.array]:
-    input = input[:, :, :3].copy()
+    input = input[::8, ::8, :3].copy()
     gray_scale_input = input.mean(axis=-1)
-    gray_scale_input = gray_scale_input[::4, ::4]
 
     H, W = gray_scale_input.shape[:2]
-    x_min = int(x * W)
-    y_min = int(y * H)
-    x_max = x_min + int(width * W)
-    y_max = y_min + int(height * H)
-    # input_with_bbox = cv.rectangle(cv.cvtColor(gray_scale_input, cv.COLOR_GRAY2BGR), (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, lineType=cv.LINE_8)
+    kH, kW = SOBEL_Y.shape
+    outH = H - kH + 1
+    outW = W - kW + 1
+    if outH <= 0 or outW <= 0:
+        return input, gray_scale_input.astype(np.uint8)
+    x_min = int(x * outW)
+    y_min = int(y * outH)
+    x_max = x_min + int(width * outW)
+    y_max = y_min + int(height * outH)
+    x_min = max(0, min(outW, x_min))
+    y_min = max(0, min(outH, y_min))
+    x_max = max(x_min, min(outW, x_max))
+    y_max = max(y_min, min(outH, y_max))
 
     vectorized_grayscale = vectorize_image(gray_scale_input)
-    kernel = kernel_for_vectorized_img(
-        gray_scale_input.shape, vec_image=vectorize_image(gray_scale_input), kernel=SOBEL_Y
-    )
+    conv_matrix = kernel_for_vectorized_img(gray_scale_input.shape, vec_image=vectorized_grayscale, kernel=SOBEL_Y)
     output = np.matmul(
-        kernel,
-        vectorized_grayscale,
+        conv_matrix,
+        vectorized_grayscale.astype(np.float32),
     )
-    # output = output.reshape((H - kernel.shape[0] + 1, W - kernel.shape[0] + 1))
-    # output[y_min: y_max, x_min: x_max] = 0
+    output = output.reshape((outH, outW))
+    output[y_min:y_max, x_min:x_max] = 0
 
-    kernel_inv = pseudo_inverse(kernel)
-    grayscale_inpainted = np.matmul(kernel_inv, output)
+    kernel_inv = np.linalg.pinv(conv_matrix)
+    grayscale_inpainted = np.matmul(kernel_inv, output.ravel())
 
-    output = (
-        np.abs(grayscale_inpainted)
-        .reshape(gray_scale_input.shape[0] - 2, gray_scale_input.shape[1] - 2)
-        .astype(np.uint8)
-    )
-    return input, output
+    output = np.abs(grayscale_inpainted).reshape(H, W)
+    output = np.clip(output, 0, 255).astype(np.uint8)
+    return cv.rectangle(input, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2, cv.LINE_8), output
 
 
 def run(screen: Screen) -> Screen:
