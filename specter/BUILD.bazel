@@ -1,1 +1,19 @@
 package(default_visibility = ["//visibility:public"])
+load(
+    "@rules_xcodeproj//xcodeproj:defs.bzl",
+    "top_level_target",
+    "xcodeproj",
+)
+exports_files(["ios"])
+
+xcodeproj(
+    name = "xcodeproj",
+    project_name = "specter",
+    tags = ["manual"],
+    top_level_targets = [
+        top_level_target(
+            "//ios",
+            target_environments = ["device", "simulator"],
+        ),
+    ],
+)

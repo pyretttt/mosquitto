@@ -1,4 +1,3 @@
 [tools]
 bazelisk = "latest"
 rust = "stable"
-bazel = "latest"
