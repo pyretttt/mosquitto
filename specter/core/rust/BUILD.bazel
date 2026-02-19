@@ -1,9 +1,8 @@
 load("@rules_rust//rust:defs.bzl", "rust_library")
 
 rust_library(
-    name = "hello_rust",
+    name = "core_rust",
     srcs = ["src/lib.rs"],
-    crate_root = "src/lib.rs",
     edition = "2021",
     visibility = ["//visibility:public"],
 )

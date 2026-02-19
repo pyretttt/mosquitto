@@ -1,6 +1,0 @@
-cc_library(
-    name = "hello_cpp",
-    srcs = ["hello.cc"],
-    hdrs = ["hello.h"],
-    visibility = ["//visibility:public"],
-)

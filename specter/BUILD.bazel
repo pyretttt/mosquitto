@@ -1,10 +1,15 @@
 package(default_visibility = ["//visibility:public"])
+
 load(
     "@rules_xcodeproj//xcodeproj:defs.bzl",
     "top_level_target",
     "xcodeproj",
 )
-exports_files(["ios"])
+
+alias(
+    name = "ios_app",
+    actual = "//ios:app",
+)
 
 xcodeproj(
     name = "xcodeproj",
@@ -12,8 +17,8 @@ xcodeproj(
     tags = ["manual"],
     top_level_targets = [
         top_level_target(
-            "//ios",
-            target_environments = ["device", "simulator"],
+            ":ios_app",
+            target_environments = ["simulator"], 
         ),
     ],
 )
