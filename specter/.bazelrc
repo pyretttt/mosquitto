@@ -1,4 +1,4 @@
 common --enable_bzlmod
-build --cxxopt=-std=c++17
+build --cxxopt=-std=c++23
 build:ios --apple_platform_type=ios
 build:ios --ios_multi_cpus=arm64,sim_arm64
