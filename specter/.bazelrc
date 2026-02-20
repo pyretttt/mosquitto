@@ -2,3 +2,6 @@ common --enable_bzlmod
 build --cxxopt=-std=c++23
 build:ios --apple_platform_type=ios
 build:ios --ios_multi_cpus=arm64,sim_arm64
+# So xcode could modify plits file
+build:rules_xcodeproj --remote_download_toplevel
+build:rules_xcodeproj --experimental_writable_outputs
