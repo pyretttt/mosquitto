@@ -10,15 +10,13 @@ import SwiftUI
 
 struct MainView: View {
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Hello from MainView")
-                .font(.title2)
-                .fontWeight(.semibold)
-            Text("This SwiftUI view is hosted inside ViewController.")
-                .font(.body)
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
+//        List.init([1, 2, 3], id: \.self) { id in
+//            Text("\(id)")
+//        }
+        Text("124")
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(alignment: .center) {
+            Color.red
         }
-        .padding()
     }
 }
