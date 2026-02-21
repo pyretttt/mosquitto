@@ -3,22 +3,47 @@ module(
     version = "0.1.0",
 )
 
-bazel_dep(name = "apple_support", version = "1.24.5")
-bazel_dep(name = "rules_apple", version = "4.3.3")
-bazel_dep(name = "rules_swift", version = "3.4.2")
-bazel_dep(name = "bazel_skylib", version = "1.6.1")
-bazel_dep(name = "rules_xcodeproj", version = "3.0.0")
+# Rust
 bazel_dep(name = "rules_rust", version = "0.68.1")
 
-apple = use_extension("@rules_apple//apple:extensions.bzl", "apple")
-use_repo(apple, "rules_apple_dependencies")
-
-swift = use_extension("@rules_swift//swift:extensions.bzl", "swift_deps")
-use_repo(swift, "rules_swift_dependencies")
-
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
+
 # The rust extension only generates the toolchain repo; the old WORKSPACE macro
 # `rules_rust_dependencies` is not a module-extension repo, so drop it here.
 rust.toolchain(edition = "2021")
 use_repo(rust, "rust_toolchains")
+
 register_toolchains("@rust_toolchains//:all")
+
+# iOS
+bazel_dep(name = "apple_support", version = "1.24.5")
+bazel_dep(name = "rules_apple", version = "4.3.3")
+bazel_dep(name = "rules_swift", version = "3.4.2")
+bazel_dep(name = "rules_xcodeproj", version = "3.0.0")
+bazel_dep(name = "rules_swift_package_manager", version = "1.12.0")
+
+swift_deps = use_extension(
+    "@rules_swift_package_manager//:extensions.bzl",
+    "swift_deps",
+)
+swift_deps.configure_swift_package(
+    build_path = "spm-build",
+    cache_path = "spm-cache",
+    dependency_caching = True,
+    manifest_caching = True,
+)
+swift_deps.from_package(
+    resolved = "//:Package.resolved",
+    swift = "//:Package.swift",
+)
+use_repo(
+    swift_deps,
+    "swift_package",
+    "swiftpkg_snapkit",
+    # The name of the Swift package repositories will be added to this declaration in step 4 after
+    # running `bazel mod tidy`.
+    # NOTE: The name of the Bazel external repository for a Swift package is `swiftpkg_xxx` where
+    # `xxx` is the Swift package identity, lowercase, with punctuation replaced by `hyphen`. For
+    # example, the repository name for apple/swift-nio is `swiftpkg_swift_nio`.
+)
+

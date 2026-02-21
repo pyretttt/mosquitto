@@ -8,6 +8,7 @@ swift_library(
     srcs = glob(["Sources/**/*.swift"]),
     deps = [
         "//core/cpp:core_cpp",
+        "@swiftpkg_snapkit//:SnapKit",
     ],
 )
 

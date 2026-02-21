@@ -22,6 +22,7 @@ godot_playground/**/android/
 ml/object_detection/faster_rcnn_fork/VOC2007
 ml/object_detection/faster_rcnn_fork/VOC2007-test
 
-bazel-*
+**/bazel-*
+**/.build
 
 /specter/specter.xcodeproj
