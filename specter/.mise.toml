@@ -4,7 +4,10 @@ rust = "stable"
 
 
 [tasks.gen_xcode]
-run = 'bazelisk run //:xcodeproj build'
+run = 'bazelisk run //:xcodeproj && xed specter.xcodeproj'
 
 [tasks.build_ios]
 run = 'bazelisk build //ios:app'
+
+[tasks.clean]
+run = 'bazelisk clean && rm -rf specter.xcodeproj'

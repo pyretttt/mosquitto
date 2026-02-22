@@ -19,7 +19,7 @@ register_toolchains("@rust_toolchains//:all")
 bazel_dep(name = "apple_support", version = "1.24.5")
 bazel_dep(name = "rules_apple", version = "4.3.3")
 bazel_dep(name = "rules_swift", version = "3.4.2")
-bazel_dep(name = "rules_xcodeproj", version = "3.0.0")
+bazel_dep(name = "rules_xcodeproj", version = "3.6.0")
 bazel_dep(name = "rules_swift_package_manager", version = "1.12.0")
 
 swift_deps = use_extension(
@@ -46,4 +46,3 @@ use_repo(
     # `xxx` is the Swift package identity, lowercase, with punctuation replaced by `hyphen`. For
     # example, the repository name for apple/swift-nio is `swiftpkg_swift_nio`.
 )
-

@@ -3,10 +3,15 @@ import SwiftUI
 import SnapKit
 
 class ViewController: UIViewController {
+    
+    let moduleService = ModuleService()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        let hostingController = UIHostingController(rootView: MainView())
+        let hostingController = UIHostingController(
+            rootView: MainView(moduleService: moduleService)
+        )
 
         addChild(hostingController)
         view.addSubview(hostingController.view)
@@ -15,8 +20,6 @@ class ViewController: UIViewController {
             make.leading.trailing.equalTo(self.view)
             make.top.bottom.equalTo(self.view)
          }
-        
-        print("Zalupa")
         
         hostingController.didMove(toParent: self)
     }
