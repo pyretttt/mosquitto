@@ -16,6 +16,9 @@ struct Module: Hashable {
 final class ModuleService: ObservableObject {
     @Published
     var modules: [Module] = allModules
+    
+    // Callback invoked when user taps a module in the UI
+    var didTapModule: (Module) -> Void = { _ in }
 }
 
 private let allModules = [

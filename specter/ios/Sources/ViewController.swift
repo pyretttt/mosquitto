@@ -8,6 +8,13 @@ class ViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        moduleService.didTapModule = { [weak self] module in
+            let moduleViewController = ModuleDetailViewController()
+            moduleViewController.title = module.name
+            moduleViewController.modalPresentationStyle = .fullScreen
+            self?.present(moduleViewController, animated: true)
+        }
 
         let hostingController = UIHostingController(
             rootView: MainView(moduleService: moduleService)

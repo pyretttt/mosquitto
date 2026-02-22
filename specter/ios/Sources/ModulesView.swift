@@ -32,6 +32,9 @@ struct ModulesView: View {
                 Text(item.name)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .listRowSeparator(.hidden)
+                    .onTapGesture {
+                        moduleService.didTapModule(item)
+                    }
             }
             .listStyle(.plain)
             .navigationBarTitleDisplayMode(.inline)
