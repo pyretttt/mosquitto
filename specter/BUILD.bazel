@@ -17,7 +17,7 @@ xcodeproj(
     tags = ["manual"],
     # Ensure Xcode launches Bazel with the default toolchain by clearing any
     # TOOLCHAINS value it might inject (e.g., Metal). An empty string makes
-    # rules_xcodeproj treat it as unset. Otherwise it errors out when compiling cpp_core =(
+    # rules_xcodeproj treat it as unset. Otherwise it errors out when compiling cpp_core
     bazel_env = {
         "TOOLCHAINS": "",
     },
