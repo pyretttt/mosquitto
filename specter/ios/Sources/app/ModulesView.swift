@@ -27,21 +27,25 @@ struct ModulesView: View {
     }
     
     var body: some View {
-        NavigationStack {
-            List(filteredItems, id: \.self) { item in
-                Text(item.name)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                    .listRowSeparator(.hidden)
-                    .onTapGesture {
-                        moduleService.didTapModule(item)
-                    }
-                    .listRowBackground(Color.clear)
+            NavigationStack {
+                List(filteredItems, id: \.self) { item in
+                    Text(item.name)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .listRowSeparator(.hidden)
+                        .onTapGesture {
+                            moduleService.didTapModule(item)
+                        }
+                        .listRowBackground(Color.clear)
+                }
+                .listStyle(.plain)
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationTitle("Modules")
+                .containerBackground(for: .navigation) {
+                    Rectangle()
+                        .colorEffect(ShaderLibrary.identity())
+                        .ignoresSafeArea()
+                }
             }
-            .listStyle(.plain)
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationTitle("Modules")
-            .background(Color.green)
-        }
-        .searchable(text: $searchText, prompt: "Pick module")
+            .searchable(text: $searchText, prompt: "Pick module")
     }
 }

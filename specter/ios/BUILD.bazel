@@ -1,7 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
 load("@rules_apple//apple:ios.bzl", "ios_application")
+load("@rules_apple//apple:resources.bzl", "apple_metal_library")
 load("@rules_swift//swift:swift.bzl", "swift_library")
+
+apple_metal_library(
+    name = "Shaders",
+    srcs = ["Sources/shaders/Identity.metal"],
+)
 
 swift_library(
     name = "ios_app_lib",
@@ -9,7 +15,7 @@ swift_library(
     deps = [
         "//core/cpp:core_cpp",
         "@swiftpkg_snapkit//:SnapKit",
-        ":Base"
+        ":Base",
     ],
 )
 
@@ -27,5 +33,5 @@ ios_application(
     infoplists = ["Info.plist"],
     minimum_os_version = "18.0",
     deps = [":ios_app_lib"],
-    resources = glob(["Resources/**"]),
+    resources = glob(["Resources/**"]) + [":Shaders"],
 )
