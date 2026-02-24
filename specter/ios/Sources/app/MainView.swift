@@ -14,11 +14,11 @@ struct MainView: View {
     
     var body: some View {
         TabView {
-            Tab("Modules", systemImage: "airplane.departure") {
+            Tab("Modules", systemImage: "camera") {
                 ModulesView()
             }
                     
-            Tab("Settings", systemImage: "suitcase") {
+            Tab("Settings", systemImage: "settings") {
                 EmptyView()
             }
         }

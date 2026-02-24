@@ -17,11 +17,18 @@ final class ModuleService: ObservableObject {
     @Published
     var modules: [Module] = allModules
     
-    // Callback invoked when user taps a module in the UI
-    var didTapModule: (Module) -> Void = { _ in }
+    var didTapModule: (Module) -> Void
+    
+    init(
+        modules: [Module],
+        didTapModule: @escaping (Module) -> Void
+    ) {
+        self.modules = modules
+        self.didTapModule = didTapModule
+    }
 }
 
-private let allModules = [
+let allModules = [
     Module(
         name: "Camera playground",
         icon: "",

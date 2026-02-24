@@ -35,12 +35,13 @@ struct ModulesView: View {
                     .onTapGesture {
                         moduleService.didTapModule(item)
                     }
+                    .listRowBackground(Color.clear)
             }
             .listStyle(.plain)
             .navigationBarTitleDisplayMode(.inline)
             .navigationTitle("Modules")
+            .background(Color.green)
         }
         .searchable(text: $searchText, prompt: "Pick module")
-        .toolbarBackground(.visible, for: .navigationBar)
     }
 }
