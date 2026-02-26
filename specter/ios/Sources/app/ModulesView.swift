@@ -41,11 +41,34 @@ struct ModulesView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .navigationTitle("Modules")
                 .containerBackground(for: .navigation) {
-                    Rectangle()
-                        .colorEffect(ShaderLibrary.identity())
-                        .ignoresSafeArea()
+                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { context in
+                        let time = Float(refDate.timeIntervalSinceNow)
+                        Rectangle()
+                            .visualEffect { view, proxy in
+                                view.colorEffect(
+                                    ShaderLibrary.identity(
+                                        proxy.frame(in: .global).shaderArg,
+                                        .float(time)
+                                    )
+                                )
+                            }
+                    }
+                    .ignoresSafeArea()
                 }
             }
             .searchable(text: $searchText, prompt: "Pick module")
     }
 }
+
+extension CGRect {
+    var shaderArg: Shader.Argument {
+        .float4(
+            origin.x,
+            origin.y,
+            size.width,
+            size.height
+        )
+    }
+}
+
+private let refDate = Date()
