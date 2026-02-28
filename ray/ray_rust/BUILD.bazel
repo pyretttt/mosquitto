@@ -4,14 +4,20 @@ package(default_visibility = ["//visibility:public"])
 
 rust_library(
     name = "ray_rust",
-    srcs = ["src/lib.rs"],
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "@crates//:gltf",
+    ],
     edition = "2021",
 )
 
 rust_binary(
     name = "app",
     srcs = ["src/main.rs"],
-    deps = [":ray_rust"],
+    deps = [
+        ":ray_rust",
+        "@crates//:winit",
+    ],
     edition = "2021",
 )
 
@@ -21,4 +27,3 @@ rust_test(
     deps = [":ray_rust"],
     edition = "2021",
 )
-

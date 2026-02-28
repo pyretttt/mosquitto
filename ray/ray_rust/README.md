@@ -29,6 +29,14 @@ bazel test //:smoke_test
 bazel run //:app
 ```
 
+## GLTF Loading
+
+The app can parse a GLTF/GLB file at startup and print a summary:
+
+```bash
+RAY_GLTF=/absolute/path/to/model.gltf bazel run //:app
+```
+
 ## Files added
 
 - `MODULE.bazel`: Bazel module + `rules_rust` toolchain registration.

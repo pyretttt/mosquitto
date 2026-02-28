@@ -3,7 +3,7 @@ module(
     version = "0.1.0",
 )
 
-bazel_dep(name = "rules_rust", version = "0.57.0")
+bazel_dep(name = "rules_rust", version = "0.68.1")
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
 rust.toolchain(
@@ -13,3 +13,16 @@ rust.toolchain(
 use_repo(rust, "rust_toolchains")
 register_toolchains("@rust_toolchains//:all")
 
+crate = use_extension("@rules_rust//crate_universe:extensions.bzl", "crate")
+crate.spec(
+    package = "gltf",
+    version = "1.4.1",
+    default_features = False,
+)
+crate.spec(
+    package = "winit",
+    version = "0.30.12",
+)
+crate.from_specs()
+
+use_repo(crate, "crates")
