@@ -1,0 +1,20 @@
+[tools]
+bazel = "8.6.0"
+buildifier = "8.5.1"
+rust = "1.93.1"
+
+[tasks.setup]
+description = "Install Bazel and Rust toolchain"
+run = "mise install"
+
+[tasks.build]
+description = "Build Rust app with Bazel"
+run = "bazel build //:app"
+
+[tasks.test]
+description = "Run Bazel smoke test"
+run = "bazel test //:smoke_test"
+
+[tasks.run]
+description = "Run Rust app with Bazel"
+run = "bazel run //:app"
