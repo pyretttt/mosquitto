@@ -49,7 +49,7 @@ half4 identity(float2 position, half4 color, float4 frame, float time) {
     float aspect = frame.z / frame.w;
 
     float2 p = (uv - 0.5) * 2.0 * float2(aspect, 1.0);
-    float t = time;
+    float t = time * 0.22;
 
     float2 q = rotate(p, sin(t * 0.35) * M_PI_F); // Rotates fragment
     float2 flow = float2(
@@ -75,8 +75,13 @@ half4 identity(float2 position, half4 color, float4 frame, float time) {
     float3 base = mix(c1, c2, g1);
     base = mix(base, c4, g2 * (0.5 + 0.35 * motion));
 
-    float pool = smoothstep(0.2, 0.85, length(q - float2(0.6, -0.2)) + n * 0.2);
-    base = mix(base, c3, (1.0 - pool) * 0.85);
+    // Multiple dark cloudlets; each pool shapes a dark region blended with the base
+    float poolA = smoothstep(0.2, 0.85, length(q - float2(0.6, -0.2)) + n * 0.2);
+    float poolB = smoothstep(0.18, 0.8, length(q - float2(-0.45, 0.25)) + m * 0.25);
+    float poolC = smoothstep(0.22, 0.95, length(q - float2(0.05, 0.55)) + n * 0.18);
+
+    float darkMask = clamp((1.0 - poolA) * 0.4 + (1.0 - poolB) * 0.35 + (1.0 - poolC) * 0.35, 0.0, 1.0);
+    base = mix(base, c3, darkMask * 0.9);
 
     float vignette = smoothstep(1.25, 0.5, length(p));
     base = mix(c3, base, vignette);
