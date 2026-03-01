@@ -31,14 +31,18 @@ struct ModulesView: View {
                 List(filteredItems, id: \.self) { item in
                     Text(item.name)
                         .frame(maxWidth: .infinity, alignment: .center)
+                        .padding(.all, 16)
                         .listRowSeparator(.hidden)
                         .onTapGesture {
                             moduleService.didTapModule(item)
                         }
-                        .listRowBackground(Color.clear)
+                        .listRowBackground(
+                            backgroundColor.opacity(0.55)
+                        )
                 }
-                .listStyle(.plain)
+                .listStyle(.insetGrouped)
                 .navigationBarTitleDisplayMode(.inline)
+                .scrollContentBackground(.hidden)
                 .navigationTitle("Modules")
                 .containerBackground(for: .navigation) {
                     TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { context in
@@ -72,3 +76,5 @@ extension CGRect {
 }
 
 private let refDate = Date()
+
+private let backgroundColor: SwiftUI.Color = Color(hex: "#D2B9FF")
