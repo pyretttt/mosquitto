@@ -7,10 +7,15 @@ module(
 bazel_dep(name = "rules_rust", version = "0.68.1")
 
 rust = use_extension("@rules_rust//rust:extensions.bzl", "rust")
-
-# The rust extension only generates the toolchain repo; the old WORKSPACE macro
-# `rules_rust_dependencies` is not a module-extension repo, so drop it here.
-rust.toolchain(edition = "2021")
+rust.toolchain(
+    edition = "2021",
+    # Enable Rust toolchains for iOS device & simulator targets
+    extra_target_triples = [
+        "aarch64-apple-ios",
+        "aarch64-apple-ios-sim",
+        "x86_64-apple-ios",
+    ],
+)
 use_repo(rust, "rust_toolchains")
 
 register_toolchains("@rust_toolchains//:all")
