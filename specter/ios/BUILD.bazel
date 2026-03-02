@@ -13,12 +13,12 @@ swift_library(
     name = "ios_app_lib",
     srcs = glob(["Sources/app/**/*.swift"]),
     deps = [
-        "//core/cpp:core_cpp",
-        "//core/rust:core_rust",
         "@swiftpkg_snapkit//:SnapKit",
         ":Base",
+        "//core/cpp:core_cpp",
         "//core/bridge:rust_ffi",
     ],
+    copts=["-cxx-interoperability-mode=default"]
 )
 
 swift_library(

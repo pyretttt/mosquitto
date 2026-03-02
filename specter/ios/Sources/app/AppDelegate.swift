@@ -1,4 +1,5 @@
 import UIKit
+import core_cpp
 
 @main
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +9,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
+        Check.sayHello();
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = ViewController()
         window.makeKeyAndVisible()
