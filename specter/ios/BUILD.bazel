@@ -17,6 +17,7 @@ swift_library(
         "//core/rust:core_rust",
         "@swiftpkg_snapkit//:SnapKit",
         ":Base",
+        "//core/bridge:rust_ffi",
     ],
 )
 
