@@ -30,6 +30,7 @@ struct ModulesView: View {
             NavigationStack {
                 List(filteredItems, id: \.self) { item in
                     Text(item.name)
+                        .foregroundStyle(.black)
                         .frame(maxWidth: .infinity, alignment: .center)
                         .padding(.all, 16)
                         .listRowSeparator(.hidden)
@@ -37,7 +38,7 @@ struct ModulesView: View {
                             moduleService.didTapModule(item)
                         }
                         .listRowBackground(
-                            backgroundColor.opacity(0.55)
+                            backgroundColor.opacity(0.75)
                         )
                 }
                 .listStyle(.insetGrouped)
@@ -61,6 +62,7 @@ struct ModulesView: View {
                 }
             }
             .searchable(text: $searchText, prompt: "Pick module")
+            .preferredColorScheme(.dark)
     }
 }
 

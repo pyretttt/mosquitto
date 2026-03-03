@@ -66,14 +66,15 @@ half4 identity(float2 position, half4 color, float4 frame, float time) {
     float g1 = smoothstep(-0.7, 0.8, diag + n * 0.6);
     float g2 = smoothstep(-0.2, 1.0, (q.y * 0.6 - q.x * 0.25) + m * 0.4);
 
-    // Colors
-    float3 c1 = float3(0.87, 0.79, 1.0);
-    float3 c2 = float3(0.57, 0.40, 0.98);
+    // Colors (slightly dimmed for a darker overall tone)
+    float3 c1 = float3(0.75, 0.68, 0.94);
+    float3 c2 = float3(0.47, 0.32, 0.86);
     float3 c3 = float3(0.16, 0.09, 0.28);
-    float3 c4 = float3(0.73, 0.52, 0.98);
+    float3 c4 = float3(0.62, 0.43, 0.88);
 
     float3 base = mix(c1, c2, g1);
     base = mix(base, c4, g2 * (0.5 + 0.35 * motion));
+    base *= 0.92; // global darkening without killing contrast
 
     // Multiple dark cloudlets; each pool shapes a dark region blended with the base
     float poolA = smoothstep(0.2, 0.85, length(q - float2(0.6, -0.2)) + n * 0.2);

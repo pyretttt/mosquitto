@@ -5,5 +5,6 @@ rust_static_library(
     srcs = ["src/lib.rs"],
     edition = "2021",
     crate_name = "core_rust",
+    deps = [],
     visibility = ["//visibility:public"],
 )
