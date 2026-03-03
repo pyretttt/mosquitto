@@ -1,5 +1,8 @@
 #include "hello.h"
+
 #include <iostream>
+
+#include <opencv2/core/version.hpp>
 
 std::string cpp_hello() {
     return "Hello from C++";

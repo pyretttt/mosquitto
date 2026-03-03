@@ -5,6 +5,11 @@ cc_library(
     name = "core_cpp",
     hdrs = glob(["include/**/*.h", "include/**/*.hpp"]),
     srcs = glob(["src/**/*.cc", "src/**/*.cpp"]),
+    deps = [
+        "@opencv//:opencv",
+        "@ceres-solver//:ceres",
+        "@eigen//:eigen",
+    ],
     includes = ["include"],
     visibility = ["//visibility:public"],
     aspect_hints = [":core_cpp_ffi_interop"],

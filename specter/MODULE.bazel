@@ -51,3 +51,8 @@ use_repo(
     # `xxx` is the Swift package identity, lowercase, with punctuation replaced by `hyphen`. For
     # example, the repository name for apple/swift-nio is `swiftpkg_swift_nio`.
 )
+
+# c++
+bazel_dep(name = "opencv", version = "4.13.0")
+bazel_dep(name = "ceres-solver", version = "2.2.0")
+bazel_dep(name = "eigen", version = "3.4.0")
