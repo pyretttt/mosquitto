@@ -3,6 +3,11 @@ package(default_visibility = ["//visibility:public"])
 load("@rules_apple//apple:ios.bzl", "ios_application")
 load("@rules_apple//apple:resources.bzl", "apple_metal_library")
 load("@rules_swift//swift:swift.bzl", "swift_library")
+load("@rules_apple//apple:apple.bzl", "local_provisioning_profile")
+load(
+    "@rules_xcodeproj//xcodeproj:defs.bzl",
+    "xcode_provisioning_profile",
+)
 
 apple_metal_library(
     name = "Shaders",
@@ -28,6 +33,18 @@ swift_library(
     ],
 )
 
+xcode_provisioning_profile(
+   name = "xcode_profile",
+   managed_by_xcode = True,
+   provisioning_profile = ":provisioning_profile",
+)
+
+local_provisioning_profile(
+    name = "provisioning_profile",
+    profile_name = "iOS Team Provisioning Profile: com.example.specter",
+    team_id = "A12B3CDEFG",
+)
+
 ios_application(
     name = "app",
     bundle_id = "com.example.specter",
@@ -36,4 +53,5 @@ ios_application(
     minimum_os_version = "18.0",
     deps = [":ios_app_lib"],
     resources = glob(["Resources/**"]) + [":Shaders"],
+    provisioning_profile = ":xcode_profile",
 )
