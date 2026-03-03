@@ -9,7 +9,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
-        print(opencv_version())
         Check.sayHello();
         let window = UIWindow(frame: UIScreen.main.bounds)
         window.rootViewController = ViewController()

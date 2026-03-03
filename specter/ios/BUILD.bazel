@@ -42,7 +42,7 @@ xcode_provisioning_profile(
 local_provisioning_profile(
     name = "provisioning_profile",
     profile_name = "iOS Team Provisioning Profile: com.example.specter",
-    team_id = "A12B3CDEFG",
+    team_id = "P6KS79CKQD",
 )
 
 ios_application(
