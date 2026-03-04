@@ -49,7 +49,7 @@ half4 identity(float2 position, half4 color, float4 frame, float time) {
     float aspect = frame.z / frame.w;
 
     float2 p = (uv - 0.5) * 2.0 * float2(aspect, 1.0);
-    float t = time * 0.22;
+    float t = time * 0.5;
 
     float2 q = rotate(p, sin(t * 0.35) * M_PI_F); // Rotates fragment
     float2 flow = float2(

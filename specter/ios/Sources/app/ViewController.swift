@@ -10,7 +10,7 @@ class ViewController: UIViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         weak var weakSelf: ViewController?
         self.moduleService = ModuleService(modules: allModules) { module in
-            let moduleViewController = modify(ModuleDetailViewController()) {
+            let moduleViewController = modify(CameraStreamViewController(bottomPanel: .shutter)) {
                 $0.modalPresentationStyle = .fullScreen
             }
             weakSelf?.present(moduleViewController, animated: true)

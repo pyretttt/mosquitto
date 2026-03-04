@@ -7,6 +7,7 @@
 
 import Foundation
 
+@discardableResult
 public func modify<T>(_ object: T, mutation: (inout T) -> Void) -> T {
     var obj = object
     mutation(&obj)

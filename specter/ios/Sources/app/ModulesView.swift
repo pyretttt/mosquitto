@@ -30,15 +30,18 @@ struct ModulesView: View {
             NavigationStack {
                 List(filteredItems, id: \.self) { item in
                     Text(item.name)
-                        .foregroundStyle(.black)
+                        .font(.system(size: 18, weight: .regular, design: .default))
+                        .foregroundStyle(textColor)
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.all, 16)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 6)
                         .listRowSeparator(.hidden)
                         .onTapGesture {
                             moduleService.didTapModule(item)
                         }
                         .listRowBackground(
-                            backgroundColor.opacity(0.75)
+                            tableBackgroundColor
+                                .opacity(0.9)
                         )
                 }
                 .listStyle(.insetGrouped)
@@ -79,4 +82,5 @@ extension CGRect {
 
 private let refDate = Date()
 
-private let backgroundColor: SwiftUI.Color = Color(hex: "#D2B9FF")
+private let tableBackgroundColor: SwiftUI.Color = Color(hex: "#2B2534")
+private let textColor: SwiftUI.Color = Color(hex: "#94919E")
