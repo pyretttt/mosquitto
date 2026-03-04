@@ -12,25 +12,35 @@ import ios_Base
 
 @MainActor
 final class CameraStreamViewController: UIViewController {
-    enum BottomPanel {
-        case shutter
+    struct InputActions {
+        var didTapShutter: () -> Void
+    }
+    
+    struct OutputActions {
+        var didReceiveNewBuffer: () -> Void
     }
 
-    private let bottomPanel: BottomPanel
     private let captureSession = AVCaptureSession()
     private var previewLayer: AVCaptureVideoPreviewLayer
     private let closeButton = UIButton(configuration: .plain())
-    private let bottomContainer = UIView()
-    private var shutterButton: UIButton = UIButton(type: .custom)
-    private var permissionDeniedLabel: UILabel?
+    
+    private let outputActions: OutputActions
+    
+    
+    var inputActions: InputActions {
+        InputActions(
+            didTapShutter: {},
+        )
+    }
 
-    init(bottomPanel: BottomPanel = .shutter) {
-        self.bottomPanel = bottomPanel
+    init(
+        outputActions: OutputActions
+    ) {
+        self.outputActions = outputActions
         previewLayer = modify(AVCaptureVideoPreviewLayer(session: captureSession)) {
             $0.videoGravity = .resizeAspectFill
         }
         super.init(nibName: nil, bundle: nil)
-        modalPresentationStyle = .fullScreen
     }
 
     @available(*, unavailable)
@@ -65,45 +75,6 @@ final class CameraStreamViewController: UIViewController {
 private extension CameraStreamViewController {
     func setupUI() {
         view.layer.insertSublayer(previewLayer, at: 0)
-        
-        modify(closeButton) {
-            $0.setImage(UIImage(systemName: "xmark"), for: .normal)
-            $0.tintColor = .white
-            $0.backgroundColor = UIColor.black.withAlphaComponent(0.6)
-            $0.layer.cornerRadius = 16
-            $0.configuration?.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 8, bottom: 8, trailing: 8)
-            $0.addTarget(self, action: #selector(didTapClose), for: .touchUpInside)
-        }
-        view.addSubview(closeButton)
-        closeButton.snp.makeConstraints { make in
-            make.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(12)
-            make.leading.equalTo(view.safeAreaLayoutGuide.snp.leading).offset(12)
-        }
-        
-        bottomContainer.backgroundColor = UIColor.black.withAlphaComponent(0.4)
-        view.addSubview(bottomContainer)
-
-        bottomContainer.snp.makeConstraints { make in
-            make.leading.trailing.equalTo(view)
-            make.bottom.equalTo(view.safeAreaLayoutGuide)
-            make.height.equalTo(120)
-        }
-
-        switch bottomPanel {
-        case .shutter:
-            _ = modify(shutterButton) {
-                $0.backgroundColor = .white
-                $0.layer.cornerRadius = 34
-                $0.layer.borderColor = UIColor.lightGray.cgColor
-                $0.layer.borderWidth = 3
-                $0.addTarget(self, action: #selector(didTapShutter), for: .touchUpInside)
-                bottomContainer.addSubview($0)
-                $0.snp.makeConstraints { make in
-                    make.centerX.centerY.equalTo(bottomContainer)
-                    make.width.height.equalTo(68)
-                }
-            }
-        }
     }
 }
 
@@ -130,34 +101,16 @@ private extension CameraStreamViewController {
     }
 }
 
-// MARK: - Actions
-private extension CameraStreamViewController {
-    @objc func didTapClose() {
-        dismiss(animated: true)
-    }
-
-    @objc func didTapShutter(_ sender: UIButton) {
-        // Default behavior is to take a simple flash animation
-        UIView.animate(withDuration: 0.1, animations: {
-            self.view.backgroundColor = .white
-        }, completion: { _ in
-            UIView.animate(withDuration: 0.25) {
-                self.view.backgroundColor = .black
-            }
-        })
-    }
-}
-
 extension AVCaptureSession {
     fileprivate func startSessionIfNeeded() {
         if isRunning { return }
         Task(operation: startRunning)
     }
-    
+
     fileprivate func configureSession(onError: () -> Void) {
         beginConfiguration()
         sessionPreset = .high
-        
+
         if let device = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back),
            let input = try? AVCaptureDeviceInput(device: device),
            canAddInput(input) {
@@ -166,12 +119,12 @@ extension AVCaptureSession {
             commitConfiguration()
             return onError()
         }
-        
+
         let output = AVCaptureVideoDataOutput()
         if canAddOutput(output) {
             addOutput(output)
         }
-        
+
         commitConfiguration()
         startSessionIfNeeded()
     }

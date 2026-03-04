@@ -50,7 +50,7 @@ ios_application(
     bundle_id = "com.example.specter",
     families = ["iphone", "ipad"],
     infoplists = ["Info.plist"],
-    minimum_os_version = "18.0",
+    minimum_os_version = "26.0",
     deps = [":ios_app_lib"],
     resources = glob(["Resources/**"]) + [":Shaders"],
     provisioning_profile = ":xcode_profile",

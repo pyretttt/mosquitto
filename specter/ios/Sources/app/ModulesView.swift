@@ -14,7 +14,7 @@ struct ModulesView: View {
 
     @State private var searchText: String = ""
 
-    private var filteredItems: [Module] {
+    private var filteredItems: [ModuleDescription] {
         let search = searchText.trimmingCharacters(in: .whitespaces).lowercased()
         if search.isEmpty {
             return moduleService.modules
@@ -40,8 +40,7 @@ struct ModulesView: View {
                             moduleService.didTapModule(item)
                         }
                         .listRowBackground(
-                            tableBackgroundColor
-                                .opacity(0.9)
+                            tableBackgroundColor.opacity(0.95)
                         )
                 }
                 .listStyle(.insetGrouped)
@@ -82,5 +81,6 @@ extension CGRect {
 
 private let refDate = Date()
 
-private let tableBackgroundColor: SwiftUI.Color = Color(hex: "#2B2534")
+// Match the default search field fill color so rows blend with the search bar
+private let tableBackgroundColor: SwiftUI.Color = Color(uiColor: .systemGray5)
 private let textColor: SwiftUI.Color = Color(hex: "#94919E")

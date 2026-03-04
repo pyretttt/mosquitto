@@ -7,34 +7,27 @@
 
 import Foundation
 
-struct Module: Hashable {
-    var name: String
-    var icon: String
-    var searchTags: [String]
-}
 
 final class ModuleService: ObservableObject {
     @Published
-    var modules: [Module] = allModules
+    var modules: [ModuleDescription] = allModules
     
-    var didTapModule: (Module) -> Void
+    var didTapModule: (ModuleDescription) -> Void
     
     init(
-        modules: [Module],
-        didTapModule: @escaping (Module) -> Void
+        modules: [ModuleDescription],
+        didTapModule: @escaping (ModuleDescription) -> Void
     ) {
         self.modules = modules
         self.didTapModule = didTapModule
     }
 }
 
+let playgroundModule = PlaygroundModuleGraph()
+
 let allModules = [
-    Module(
-        name: "Camera playground",
-        icon: "",
-        searchTags: ["camera"]
-    ),
-    Module(
+    playgroundModule.moduleDescription,
+    ModuleDescription(
         name: "SFM",
         icon: "",
         searchTags: ["sfm"]
