@@ -28,14 +28,20 @@ final class CommonModuleViewController: PassThroughViewController {
         weak var weakSelf: CommonModuleViewController?
         self.cameraModule = cameraModule
         topBarHost = modify(UIHostingController(
-            rootView: TopBarView { weakSelf?.dismiss(animated: true) }
+            rootView: TopBarView {
+                weakSelf?.dismiss(animated: true)
+            }
         )) {
             $0.view.backgroundColor = .clear
         }
         bottomBarHost = modify(UIHostingController(
             rootView: CommonBottomBar(
-                onShutter: { weakSelf?.onShutter?() },
-                onOpenGallery: { weakSelf?.onOpenGallery?() }
+                onShutter: { [cameraActions = weakSelf?.cameraModule.inputActions] in
+                    cameraActions?.didTapShutter()
+                },
+                onOpenGallery: {
+                    weakSelf?.onOpenGallery?()
+                }
             )
         )) {
             $0.view.backgroundColor = .clear
@@ -72,7 +78,8 @@ private extension CommonModuleViewController {
         addChild(topBarHost)
         view.addSubview(topBarHost.view)
         topBarHost.view.snp.makeConstraints {
-            $0.top.leading.trailing.equalToSuperview()
+            $0.leading.trailing.equalToSuperview()
+            $0.top.equalTo(view.safeAreaLayoutGuide.snp.top)
             $0.height.equalTo(44)
         }
         addChild(bottomBarHost)
@@ -94,8 +101,9 @@ private struct TopBarView: View {
         HStack {
             Button(action: onClose) {
                 Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 22, weight: .semibold))
                     .padding(12)
+                    .blendMode(.difference)
             }
             .buttonStyle(.plain)
 

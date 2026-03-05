@@ -27,6 +27,7 @@ struct ModulesView: View {
     }
     
     var body: some View {
+        // Frezes view start, and there're some hangs, so don't use it for now
             NavigationStack {
                 List(filteredItems, id: \.self) { item in
                     Text(item.name)
@@ -42,24 +43,26 @@ struct ModulesView: View {
                         .listRowBackground(
                             tableBackgroundColor.opacity(0.95)
                         )
+                        .hoverEffect(.highlight)
                 }
                 .listStyle(.insetGrouped)
                 .navigationBarTitleDisplayMode(.inline)
                 .scrollContentBackground(.hidden)
                 .navigationTitle("Modules")
                 .containerBackground(for: .navigation) {
-                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { context in
-                        let time = Float(refDate.timeIntervalSinceNow)
-                        Rectangle()
-                            .visualEffect { view, proxy in
-                                view.colorEffect(
-                                    ShaderLibrary.identity(
-                                        proxy.frame(in: .global).shaderArg,
-                                        .float(time)
-                                    )
-                                )
-                            }
-                    }
+//                    TimelineView(.periodic(from: .now, by: 1.0 / 30.0)) { context in
+//                        let time = Float(refDate.timeIntervalSinceNow)
+//                        Rectangle()
+//                            .visualEffect { view, proxy in
+//                                view.colorEffect(
+//                                    ShaderLibrary.identity(
+//                                        proxy.frame(in: .global).shaderArg,
+//                                        .float(time)
+//                                    )
+//                                )
+//                            }
+//                    }
+                    Color.white
                     .ignoresSafeArea()
                 }
             }
@@ -83,4 +86,4 @@ private let refDate = Date()
 
 // Match the default search field fill color so rows blend with the search bar
 private let tableBackgroundColor: SwiftUI.Color = Color(uiColor: .systemGray5)
-private let textColor: SwiftUI.Color = Color(hex: "#94919E")
+private let textColor: SwiftUI.Color = Color.white

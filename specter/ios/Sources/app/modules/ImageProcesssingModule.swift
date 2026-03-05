@@ -5,14 +5,17 @@
 //
 
 import Foundation
+import core_cpp
 
-final class PlaygroundModuleGraph {
-    
-    
-    
+final class ImageProcessingModuleGraph {
+    var options: ip_tool.IpToolDescription = ip_tool.IpToolDescription.init(
+        name: "123",
+        options: [],
+        selectors: []
+    )
 }
 
-extension PlaygroundModuleGraph {
+extension ImageProcessingModuleGraph {
     var moduleDescription: ModuleDescription {
         ModuleDescription(
             name: "Camera playground",
@@ -20,4 +23,7 @@ extension PlaygroundModuleGraph {
             searchTags: ["camera"]
         )
     }
+}
+
+extension ImageProcessingModuleGraph {
 }

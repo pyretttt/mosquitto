@@ -18,7 +18,7 @@ struct MainView: View {
                 ModulesView()
             }
                     
-            Tab("Settings", systemImage: "settings") {
+            Tab("Settings", systemImage: "gearshape.fill") {
                 EmptyView()
             }
         }

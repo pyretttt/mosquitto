@@ -7,7 +7,6 @@
 
 import Foundation
 
-
 final class ModuleService: ObservableObject {
     @Published
     var modules: [ModuleDescription] = allModules
@@ -23,10 +22,10 @@ final class ModuleService: ObservableObject {
     }
 }
 
-let playgroundModule = PlaygroundModuleGraph()
+let imageProcessingModule = ImageProcessingModuleGraph()
 
 let allModules = [
-    playgroundModule.moduleDescription,
+    imageProcessingModule.moduleDescription,
     ModuleDescription(
         name: "SFM",
         icon: "",

@@ -9,11 +9,20 @@ import UIKit
 import AVFoundation
 import SnapKit
 import ios_Base
+import Combine
 
 @MainActor
 final class CameraStreamViewController: UIViewController {
+    enum State {
+        case notInitialized
+        case initializationFailure
+        case streaming
+        case frozen
+    }
+    
     struct InputActions {
         var didTapShutter: () -> Void
+        var pauseStream: () -> Void
     }
     
     struct OutputActions {
@@ -30,8 +39,11 @@ final class CameraStreamViewController: UIViewController {
     var inputActions: InputActions {
         InputActions(
             didTapShutter: {},
+            pauseStream: {}
         )
     }
+    
+    let cameraState = CurrentValueSubject<State, Never>(.notInitialized)
 
     init(
         outputActions: OutputActions
@@ -52,7 +64,10 @@ final class CameraStreamViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         setupUI()
-        setupDeviceWithAccess()
+        captureSession.setupDeviceWithAccess() {
+            self.cameraState.send(.initializationFailure)
+            self.showAlert("Failed to setup camera configuration")
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -63,45 +78,44 @@ final class CameraStreamViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         captureSession.startSessionIfNeeded()
+        cameraState.send(.streaming)
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         captureSession.stopRunning()
+        cameraState.send(.frozen)
     }
 }
 
-// MARK: - UI setup
+
 private extension CameraStreamViewController {
     func setupUI() {
         view.layer.insertSublayer(previewLayer, at: 0)
     }
 }
 
-// MARK: - Camera handling
-private extension CameraStreamViewController {
-    func setupDeviceWithAccess() {
-        let onError = { self.showAlert("Failed to setup camera configuration") }
+extension AVCaptureSession {
+    fileprivate func setupDeviceWithAccess(onError: @escaping () -> Void) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            captureSession.configureSession(onError: onError)
+            configureSession(onError: onError)
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 Task { @MainActor in
                     granted
-                        ? self?.captureSession.configureSession(onError: onError)
-                        : self?.showAlert("Camera permission is not granted")
+                        ? self?.configureSession(onError: onError)
+                        : onError()
                 }
             }
         case .restricted, .denied:
-            showAlert("Camera permission denied, grant access in settings")
+            onError()
         @unknown default:
             assertionFailure("Unknown case")
         }
     }
-}
 
-extension AVCaptureSession {
+    
     fileprivate func startSessionIfNeeded() {
         if isRunning { return }
         Task(operation: startRunning)
