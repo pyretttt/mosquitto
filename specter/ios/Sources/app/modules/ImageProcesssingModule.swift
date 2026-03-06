@@ -6,13 +6,19 @@
 
 import Foundation
 import core_cpp
+import ios_Base
 
 final class ImageProcessingModuleGraph {
-    var options: ip_tool.IpToolDescription = ip_tool.IpToolDescription.init(
-        name: "123",
-        options: [],
-        selectors: []
-    )
+//    var options: cv.IpToolDescription = cv.IpToolDescription(
+//        name: "123",
+//        options: [
+//            
+//        ]
+//    )
+    var floatOption = cv.makeIntPtr(cModify(cv.IntOption()) {
+        $0.value = 32
+        return $0
+    })
 }
 
 extension ImageProcessingModuleGraph {
