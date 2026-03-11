@@ -13,9 +13,3 @@ public func modify<T>(_ object: T, mutation: (inout T) -> Void) -> T {
     mutation(&obj)
     return obj
 }
-
-@discardableResult
-public func cModify<T>(_ object: T, mutation: (T) -> T) -> T {
-    mutation(object)
-}
-
