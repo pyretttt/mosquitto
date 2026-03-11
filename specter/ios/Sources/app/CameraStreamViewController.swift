@@ -13,25 +13,34 @@ import Combine
 
 @MainActor
 final class CameraStreamViewController: UIViewController {
-    enum State {
+    enum State: Equatable {
+        struct Streaming: Equatable {
+            var frameBuffer: CMSampleBuffer?
+        }
+        
         case notInitialized
         case initializationFailure
-        case streaming
+        case streaming(Streaming)
         case frozen
     }
     
-    struct InputActions {
-        var didTapShutter: () -> Void
-        var pauseStream: () -> Void
+    struct InputActions: Sendable {
+        var didTapShutter: @Sendable () -> Void
+        var pauseStream: @Sendable () -> Void
+        var replaceContent: @Sendable () -> Void
     }
     
-    struct OutputActions {
-        var didReceiveNewBuffer: () -> Void
+    struct OutputActions: Sendable {
+        var didReceiveNewBuffer: @Sendable (CVImageBuffer) -> Void
     }
 
     private let captureSession = AVCaptureSession()
     private var previewLayer: AVCaptureVideoPreviewLayer
     private let closeButton = UIButton(configuration: .plain())
+    private let videoOutputQueue = DispatchQueue(
+        label: "camera.video.output.queue",
+        qos: .userInitiated
+    )
     
     private let outputActions: OutputActions
     
@@ -39,7 +48,8 @@ final class CameraStreamViewController: UIViewController {
     var inputActions: InputActions {
         InputActions(
             didTapShutter: {},
-            pauseStream: {}
+            pauseStream: {},
+            replaceContent: {}
         )
     }
     
@@ -64,7 +74,10 @@ final class CameraStreamViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .black
         setupUI()
-        captureSession.setupDeviceWithAccess() {
+        captureSession.setupDeviceWithAccess(
+            sampleBufferDelegate: self,
+            queue: videoOutputQueue
+        ) {
             self.cameraState.send(.initializationFailure)
             self.showAlert("Failed to setup camera configuration")
         }
@@ -78,7 +91,7 @@ final class CameraStreamViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         captureSession.startSessionIfNeeded()
-        cameraState.send(.streaming)
+        cameraState.send(.streaming(State.Streaming(frameBuffer: nil)))
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -96,15 +109,23 @@ private extension CameraStreamViewController {
 }
 
 extension AVCaptureSession {
-    fileprivate func setupDeviceWithAccess(onError: @escaping () -> Void) {
+    fileprivate func setupDeviceWithAccess(
+        sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate,
+        queue: DispatchQueue,
+        onError: @escaping () -> Void
+    ) {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            configureSession(onError: onError)
+            configureSession(sampleBufferDelegate: sampleBufferDelegate, queue: queue, onError: onError)
         case .notDetermined:
             AVCaptureDevice.requestAccess(for: .video) { [weak self] granted in
                 Task { @MainActor in
                     granted
-                        ? self?.configureSession(onError: onError)
+                        ? self?.configureSession(
+                            sampleBufferDelegate: sampleBufferDelegate,
+                            queue: queue,
+                            onError: onError
+                        )
                         : onError()
                 }
             }
@@ -121,7 +142,11 @@ extension AVCaptureSession {
         Task(operation: startRunning)
     }
 
-    fileprivate func configureSession(onError: () -> Void) {
+    fileprivate func configureSession(
+        sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate,
+        queue: DispatchQueue,
+        onError: () -> Void
+    ) {
         beginConfiguration()
         sessionPreset = .high
 
@@ -135,6 +160,11 @@ extension AVCaptureSession {
         }
 
         let output = AVCaptureVideoDataOutput()
+        output.alwaysDiscardsLateVideoFrames = true
+        output.videoSettings = [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ]
+        output.setSampleBufferDelegate(sampleBufferDelegate, queue: queue)
         if canAddOutput(output) {
             addOutput(output)
         }
@@ -143,6 +173,17 @@ extension AVCaptureSession {
         startSessionIfNeeded()
     }
 
+}
+
+extension CameraStreamViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
+    nonisolated func captureOutput(
+        _ output: AVCaptureOutput,
+        didOutput sampleBuffer: CMSampleBuffer,
+        from connection: AVCaptureConnection
+    ) {
+        guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
+        outputActions.didReceiveNewBuffer(imageBuffer)
+    }
 }
 
 extension UIViewController {

@@ -10,7 +10,7 @@ class ViewController: UIViewController {
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         weak var weakSelf: ViewController?
         let defaultCameraOutputActions = CameraStreamViewController.OutputActions(
-            didReceiveNewBuffer: {}
+            didReceiveNewBuffer: { _ in }
         )
         self.moduleService = ModuleService(modules: allModules) { module in
             let cameraVC = CameraStreamViewController(outputActions: defaultCameraOutputActions)

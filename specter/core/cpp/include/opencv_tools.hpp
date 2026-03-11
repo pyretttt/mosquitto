@@ -3,7 +3,6 @@
 namespace cv {
     namespace opencv {
         
-        const inline 
 
     }
 }
