@@ -4,9 +4,14 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <cstdint>
+
+#include <CoreVideo/CoreVideo.h>
 
 
 namespace cv {
+    class Mat;
+
     struct BaseOption {};
 
     struct IntOption final : public BaseOption {
@@ -124,7 +129,64 @@ namespace cv {
     }
 
     struct SingleFrameInput {
+        CVImageBufferRef imageBuffer = nullptr;
 
+        SingleFrameInput() = default;
+        explicit SingleFrameInput(CVImageBufferRef buffer) : imageBuffer(buffer) {
+            if (imageBuffer) {
+                CVPixelBufferRetain(reinterpret_cast<CVPixelBufferRef>(imageBuffer));
+            }
+        }
+
+        SingleFrameInput(const SingleFrameInput &other)
+            : imageBuffer(other.imageBuffer) {
+            if (imageBuffer) {
+                CVPixelBufferRetain(reinterpret_cast<CVPixelBufferRef>(imageBuffer));
+            }
+        }
+
+        SingleFrameInput &operator=(const SingleFrameInput &other) {
+            if (this == &other) {
+                return *this;
+            }
+            if (imageBuffer) {
+                CVPixelBufferRelease(reinterpret_cast<CVPixelBufferRef>(imageBuffer));
+            }
+            imageBuffer = other.imageBuffer;
+            if (imageBuffer) {
+                CVPixelBufferRetain(reinterpret_cast<CVPixelBufferRef>(imageBuffer));
+            }
+            return *this;
+        }
+
+        SingleFrameInput(SingleFrameInput &&other) noexcept
+            : imageBuffer(other.imageBuffer) {
+            other.imageBuffer = nullptr;
+        }
+
+        SingleFrameInput &operator=(SingleFrameInput &&other) noexcept {
+            if (this == &other) {
+                return *this;
+            }
+            if (imageBuffer) {
+                CVPixelBufferRelease(reinterpret_cast<CVPixelBufferRef>(imageBuffer));
+            }
+            imageBuffer = other.imageBuffer;
+            other.imageBuffer = nullptr;
+            return *this;
+        }
+
+        ~SingleFrameInput() {
+            if (imageBuffer) {
+                CVPixelBufferRelease(reinterpret_cast<CVPixelBufferRef>(imageBuffer));
+            }
+        }
+
+        CVImageBufferRef buffer() const {
+            return imageBuffer;
+        }
+
+        cv::Mat toMatBGRA() const;
     };
 
     template<typename Input, typename Output>

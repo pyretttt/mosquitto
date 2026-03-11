@@ -136,7 +136,6 @@ extension AVCaptureSession {
         }
     }
 
-    
     fileprivate func startSessionIfNeeded() {
         if isRunning { return }
         Task(operation: startRunning)
