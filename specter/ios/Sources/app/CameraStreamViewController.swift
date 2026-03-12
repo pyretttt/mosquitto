@@ -16,22 +16,41 @@ final class CameraStreamViewController: UIViewController {
     enum State: Equatable {
         struct Streaming: Equatable {
             var frameBuffer: CMSampleBuffer?
+            var shutterState: ShutterKind?
         }
         
         case notInitialized
         case initializationFailure
         case streaming(Streaming)
         case frozen
+        
+        var streamingState: Streaming? {
+            switch self {
+            case .frozen, .notInitialized, .initializationFailure: nil
+            case .streaming(let streaming): streaming
+            }
+        }
+    }
+    
+    enum ShutterKind: Equatable {
+        enum UIAction: Equatable {
+            case touchDown
+            case touchUpInside
+        }
+        case photoTouchUpInside
+        case video(UIAction)
     }
     
     struct InputActions: Sendable {
-        var didTapShutter: @Sendable () -> Void
-        var pauseStream: @Sendable () -> Void
-        var replaceContent: @Sendable () -> Void
+        var didTapShutter: @Sendable @MainActor (ShutterKind) -> Void
+        var pauseStream: @Sendable @MainActor () -> Void
+        var resumeStream: @Sendable @MainActor () -> Void
+        var replaceContent: @Sendable @MainActor () -> Void
     }
     
     struct OutputActions: Sendable {
         var didReceiveNewBuffer: @Sendable (CVImageBuffer) -> Void
+        var didTakeAShot: @Sendable (CVImageBuffer) -> Void
     }
 
     private let captureSession = AVCaptureSession()
@@ -44,12 +63,27 @@ final class CameraStreamViewController: UIViewController {
     
     private let outputActions: OutputActions
     
-    
     var inputActions: InputActions {
         InputActions(
-            didTapShutter: {},
-            pauseStream: {},
-            replaceContent: {}
+            didTapShutter: { [weak self] shutterKind in
+                guard let state = self?.cameraState.value.streamingState else { return }
+                self?.cameraState.send(
+                    .streaming(
+                        modify(state) {
+                            $0.shutterState = shutterKind
+                        }
+                    )
+                )
+            },
+            pauseStream: { [captureSession] in
+                captureSession.stopRunning()
+            },
+            resumeStream: { [captureSession] in
+                captureSession.startIfNeeded()
+            },
+            replaceContent: {
+                
+            }
         )
     }
     
@@ -90,7 +124,7 @@ final class CameraStreamViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        captureSession.startSessionIfNeeded()
+        captureSession.startIfNeeded()
         cameraState.send(.streaming(State.Streaming(frameBuffer: nil)))
     }
 
@@ -100,7 +134,6 @@ final class CameraStreamViewController: UIViewController {
         cameraState.send(.frozen)
     }
 }
-
 
 private extension CameraStreamViewController {
     func setupUI() {
@@ -136,7 +169,7 @@ extension AVCaptureSession {
         }
     }
 
-    fileprivate func startSessionIfNeeded() {
+    fileprivate func startIfNeeded() {
         if isRunning { return }
         Task(operation: startRunning)
     }
@@ -169,9 +202,8 @@ extension AVCaptureSession {
         }
 
         commitConfiguration()
-        startSessionIfNeeded()
+        startIfNeeded()
     }
-
 }
 
 extension CameraStreamViewController: AVCaptureVideoDataOutputSampleBufferDelegate {
@@ -182,6 +214,27 @@ extension CameraStreamViewController: AVCaptureVideoDataOutputSampleBufferDelega
     ) {
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         outputActions.didReceiveNewBuffer(imageBuffer)
+        Task { @MainActor in
+            guard let streamingState = cameraState.value.streamingState else { return }
+            switch streamingState.shutterState {
+            case .photoTouchUpInside:
+                cameraState.send(
+                    .streaming(
+                        modify(streamingState) {
+                            $0.shutterState = nil
+                        }
+                    )
+                )
+            case .video(.touchDown):
+                break
+            case .video(.touchUpInside):
+                break
+            case .none:
+                break
+            }
+            
+            
+        }
     }
 }
 
