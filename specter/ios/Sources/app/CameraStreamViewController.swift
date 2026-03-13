@@ -15,7 +15,6 @@ import Combine
 final class CameraStreamViewController: UIViewController {
     enum State: Equatable {
         struct Streaming: Equatable {
-            var frameBuffer: CMSampleBuffer?
             var shutterState: ShutterKind?
         }
         
@@ -38,7 +37,7 @@ final class CameraStreamViewController: UIViewController {
             case touchUpInside
         }
         case photoTouchUpInside
-        case video(UIAction)
+        // case video(UIAction)
     }
     
     struct InputActions: Sendable {
@@ -125,7 +124,7 @@ final class CameraStreamViewController: UIViewController {
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         captureSession.startIfNeeded()
-        cameraState.send(.streaming(State.Streaming(frameBuffer: nil)))
+        cameraState.send(.streaming(State.Streaming()))
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -225,10 +224,11 @@ extension CameraStreamViewController: AVCaptureVideoDataOutputSampleBufferDelega
                         }
                     )
                 )
-            case .video(.touchDown):
-                break
-            case .video(.touchUpInside):
-                break
+                outputActions.didTakeAShot(imageBuffer)
+            // case .video(.touchDown):
+            //     break
+            // case .video(.touchUpInside):
+            //     break
             case .none:
                 break
             }

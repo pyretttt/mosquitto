@@ -5,7 +5,7 @@
 //  Created by Бакулин Семен Александрович on 22.02.2026.
 //
 
-import Foundation
+import UIKit
 
 final class ModuleService: ObservableObject {
     @Published
@@ -22,14 +22,17 @@ final class ModuleService: ObservableObject {
     }
 }
 
+struct ModuleHolder {
+    var description: () -> ModuleDescription
+    var makeScreen: () -> UIViewController
+}
+
 let imageProcessingModule = ImageProcessingModuleGraph()
 
 let allModules = [
-    imageProcessingModule.moduleDescription,
     ModuleDescription(
         name: "SFM",
         icon: "",
         searchTags: ["sfm"]
     )
-
 ]
