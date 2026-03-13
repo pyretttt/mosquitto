@@ -13,6 +13,6 @@ struct ModuleDescription: Hashable {
 }
 
 struct ModuleAPI {
-    var description: () -> ModuleDescription
+    var description: ModuleDescription
     var makeScreen: @Sendable @MainActor () -> UIViewController
 }

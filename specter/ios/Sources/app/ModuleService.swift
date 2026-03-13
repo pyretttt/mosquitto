@@ -9,15 +9,13 @@ import UIKit
 
 final class ModuleService: ObservableObject {
     @Published
-    var modules: [ModuleDescription] = allModules
+    var modules: [ModuleDescription] = allModules.map(\.description)
     
     var didTapModule: (ModuleDescription) -> Void
     
     init(
-        modules: [ModuleDescription],
         didTapModule: @escaping (ModuleDescription) -> Void
     ) {
-        self.modules = modules
         self.didTapModule = didTapModule
     }
 }
@@ -30,9 +28,5 @@ struct ModuleHolder {
 let imageProcessingModule = ImageProcessingModuleGraph()
 
 let allModules = [
-    ModuleDescription(
-        name: "SFM",
-        icon: "",
-        searchTags: ["sfm"]
-    )
+    imageProcessingModule.moduleAPI
 ]

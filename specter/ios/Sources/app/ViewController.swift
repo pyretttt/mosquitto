@@ -9,16 +9,13 @@ class ViewController: UIViewController {
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
         weak var weakSelf: ViewController?
-        let defaultCameraOutputActions = CameraStreamViewController.OutputActions(
-            didReceiveNewBuffer: { _ in },
-            didTakeAShot: { _ in }
-        )
-        self.moduleService = ModuleService(modules: allModules) { module in
-            let cameraVC = CameraStreamViewController(outputActions: defaultCameraOutputActions)
-            let moduleVC = modify(CommonModuleViewController(cameraModule: cameraVC)) {
-                $0.modalPresentationStyle = .overFullScreen
+        self.moduleService = ModuleService() { moduleDesc in
+            guard let moduleAPI = allModules.first(where: { $0.description == moduleDesc }) else {
+                assertionFailure()
+                return
             }
-            weakSelf?.present(moduleVC, animated: true)
+            
+            weakSelf?.present(moduleAPI.makeScreen(), animated: true)
         }
 
         super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)

@@ -10,6 +10,7 @@ import AVFoundation
 import SnapKit
 import ios_Base
 import Combine
+import CoreImage
 
 @MainActor
 final class CameraStreamViewController: UIViewController {
@@ -44,12 +45,12 @@ final class CameraStreamViewController: UIViewController {
         var didTapShutter: @Sendable @MainActor (ShutterKind) -> Void
         var pauseStream: @Sendable @MainActor () -> Void
         var resumeStream: @Sendable @MainActor () -> Void
-        var replaceContent: @Sendable @MainActor () -> Void
+        var replaceContent: @Sendable @MainActor (CVImageBuffer) -> Void
     }
     
     struct OutputActions: Sendable {
         var didReceiveNewBuffer: @Sendable (CVImageBuffer) -> Void
-        var didTakeAShot: @Sendable (CVImageBuffer) -> Void
+        var didTakeAShot: @Sendable @MainActor (CVImageBuffer) -> Void
     }
 
     private let captureSession = AVCaptureSession()
@@ -59,6 +60,11 @@ final class CameraStreamViewController: UIViewController {
         label: "camera.video.output.queue",
         qos: .userInitiated
     )
+    private let frozenImageView = modify(UIImageView()) {
+        $0.contentMode = .scaleAspectFill
+        $0.clipsToBounds = true
+        $0.alpha = 0
+    }
     
     private let outputActions: OutputActions
     
@@ -80,8 +86,11 @@ final class CameraStreamViewController: UIViewController {
             resumeStream: { [captureSession] in
                 captureSession.startIfNeeded()
             },
-            replaceContent: {
-                
+            replaceContent: { [weak self, captureSession] imageBuffer in
+                captureSession.stopRunning()
+                self?.cameraState.send(.frozen)
+                guard let uiImage = imageBuffer.ciImage?.cgImage?.uiImage else { return }
+                self?.showFrozenImage(uiImage)
             }
         )
     }
@@ -119,6 +128,7 @@ final class CameraStreamViewController: UIViewController {
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         previewLayer.frame = view.bounds
+        frozenImageView.frame = view.bounds
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -137,6 +147,32 @@ final class CameraStreamViewController: UIViewController {
 private extension CameraStreamViewController {
     func setupUI() {
         view.layer.insertSublayer(previewLayer, at: 0)
+        view.addSubview(frozenImageView)
+    }
+
+    func showFrozenImage(_ image: UIImage) {
+        frozenImageView.image = image
+        frozenImageView.alpha = 0
+        frozenImageView.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
+
+        let flashView = modify(UIView()) {
+            $0.backgroundColor = .white
+            $0.frame = view.bounds
+            $0.alpha = 0
+        }
+        view.addSubview(flashView)
+
+        UIView.animate(withDuration: 0.08) {
+            flashView.alpha = 1
+        } completion: { _ in
+            UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5) {
+                flashView.alpha = 0
+                self.frozenImageView.alpha = 1
+                self.frozenImageView.transform = .identity
+            } completion: { _ in
+                flashView.removeFromSuperview()
+            }
+        }
     }
 }
 
@@ -246,3 +282,23 @@ extension UIViewController {
         present(alert, animated: true)
     }
 }
+
+extension CVImageBuffer {
+    var ciImage: CIImage? {
+        CIImage(cvImageBuffer: self)
+    }
+}
+
+extension CIImage {
+    var cgImage: CGImage? {
+        ciContext.createCGImage(self, from: extent)
+    }
+}
+
+extension CGImage {
+    var uiImage: UIImage? {
+        UIImage(cgImage: self)
+    }
+}
+
+private let ciContext = CIContext()

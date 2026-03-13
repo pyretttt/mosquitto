@@ -36,8 +36,8 @@ final class CommonModuleViewController: PassThroughViewController {
         }
         bottomBarHost = modify(UIHostingController(
             rootView: CommonBottomBar(
-                onShutter: { [cameraActions = weakSelf?.cameraModule.inputActions] in
-                    cameraActions?.didTapShutter()
+                onShutter: {
+                    weakSelf?.cameraModule.inputActions.didTapShutter(.photoTouchUpInside)
                 },
                 onOpenGallery: {
                     weakSelf?.onOpenGallery?()

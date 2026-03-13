@@ -11,7 +11,7 @@ import core_cpp
 
 final class ImageProcessingModuleGraph {
     
-    @MainActor weak var cameraVC: CameraStreamViewController?
+    @MainActor weak var camera: CameraStreamViewController?
     @MainActor weak var moduleVC: CommonModuleViewController?
     
     private let binarizationTool = cv.opencv.makeBinarizationTool(127)
@@ -23,28 +23,28 @@ final class ImageProcessingModuleGraph {
 extension ImageProcessingModuleGraph {
     var moduleAPI: ModuleAPI {
         ModuleAPI(
-            description: {
-                ModuleDescription(
-                    name: "Camera playground",
-                    icon: "",
-                    searchTags: ["camera"]
-                )
-            },
+            description: ModuleDescription(
+                name: "Camera playground",
+                icon: "",
+                searchTags: ["camera"]
+            ),
             makeScreen: { [weak self] in
                 let cameraVC = CameraStreamViewController(
                     outputActions: CameraStreamViewController.OutputActions(
                         didReceiveNewBuffer: { _ in },
-                        didTakeAShot: { buffer in
+                        didTakeAShot: { [weak self] buffer in
+                            guard let self, let camera = self.camera else { assertionFailure(); return }
                             let output = binarizationTool.process.callAsFunction(cv.SingleFrameInput(buffer))
-                            Task { @MainActor [weak self] in
-                                self?.cameraVC?.inputActions.replaceContent(output.imageBuffer)
+                            Task { @MainActor in
+                                camera.inputActions
+                                    .replaceContent(output.imageBuffer.takeUnretainedValue())
                             }
                         })
                 )
                 let moduleVC = modify(CommonModuleViewController(cameraModule: cameraVC)) {
                     $0.modalPresentationStyle = .overFullScreen
                 }
-                self?.cameraVC = cameraVC
+                self?.camera = cameraVC
                 self?.moduleVC = moduleVC
                 
                 return moduleVC
