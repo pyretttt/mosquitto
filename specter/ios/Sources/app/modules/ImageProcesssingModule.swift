@@ -37,7 +37,7 @@ extension ImageProcessingModuleGraph {
                             let output = binarizationTool.process.callAsFunction(cv.SingleFrameInput(buffer))
                             Task { @MainActor in
                                 camera.inputActions
-                                    .replaceContent(output.imageBuffer.takeUnretainedValue())
+                                    .replaceContent(output.imageBuffer.retain().takeRetainedValue())
                             }
                         })
                 )
@@ -56,3 +56,4 @@ extension ImageProcessingModuleGraph {
 
 extension ImageProcessingModuleGraph {
 }
+

@@ -81,13 +81,13 @@ final class CameraStreamViewController: UIViewController {
                 )
             },
             pauseStream: { [captureSession] in
-                captureSession.stopRunning()
+                captureSession.stopRunningDetached()
             },
             resumeStream: { [captureSession] in
                 captureSession.startIfNeeded()
             },
             replaceContent: { [weak self, captureSession] imageBuffer in
-                captureSession.stopRunning()
+                captureSession.stopRunningDetached()
                 self?.cameraState.send(.frozen)
                 guard let uiImage = imageBuffer.ciImage?.cgImage?.uiImage else { return }
                 self?.showFrozenImage(uiImage)
@@ -133,13 +133,15 @@ final class CameraStreamViewController: UIViewController {
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        captureSession.startIfNeeded()
-        cameraState.send(.streaming(State.Streaming()))
+        Task {
+            await captureSession.startIfNeeded()?.value
+            cameraState.send(.streaming(State.Streaming()))
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        captureSession.stopRunning()
+        captureSession.stopRunningDetached()
         cameraState.send(.frozen)
     }
 }
@@ -177,6 +179,13 @@ private extension CameraStreamViewController {
 }
 
 extension AVCaptureSession {
+    @discardableResult
+    fileprivate func stopRunningDetached() -> Task<Void, Never> {
+        Task.detached {
+            self.stopRunning()
+        }
+    }
+    
     fileprivate func setupDeviceWithAccess(
         sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate,
         queue: DispatchQueue,
@@ -204,9 +213,10 @@ extension AVCaptureSession {
         }
     }
 
-    fileprivate func startIfNeeded() {
-        if isRunning { return }
-        Task(operation: startRunning)
+    @discardableResult
+    fileprivate func startIfNeeded() -> Task<Void, Never>? {
+        if isRunning { return nil }
+        return Task(operation: startRunning)
     }
 
     fileprivate func configureSession(
@@ -234,6 +244,11 @@ extension AVCaptureSession {
         output.setSampleBufferDelegate(sampleBufferDelegate, queue: queue)
         if canAddOutput(output) {
             addOutput(output)
+            if let connection = output.connection(with: .video) {
+                if connection.isVideoRotationAngleSupported(90) {
+                    connection.videoRotationAngle = 90
+                }
+            }
         }
 
         commitConfiguration()
@@ -261,15 +276,9 @@ extension CameraStreamViewController: AVCaptureVideoDataOutputSampleBufferDelega
                     )
                 )
                 outputActions.didTakeAShot(imageBuffer)
-            // case .video(.touchDown):
-            //     break
-            // case .video(.touchUpInside):
-            //     break
             case .none:
                 break
             }
-            
-            
         }
     }
 }

@@ -62,7 +62,6 @@ final class CommonModuleViewController: PassThroughViewController {
         view.backgroundColor = .clear
         setupUI()
     }
-
 }
 
 // MARK: - Bars
