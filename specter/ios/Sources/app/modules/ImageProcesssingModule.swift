@@ -17,6 +17,7 @@ final class ImageProcessingModuleGraph {
     private let binarizationTool = cv.opencv.makeBinarizationTool(127)
     
     init() {
+        
     }
 }
 
@@ -32,11 +33,11 @@ extension ImageProcessingModuleGraph {
                 let cameraVC = CameraStreamViewController(
                     outputActions: CameraStreamViewController.OutputActions(
                         didReceiveNewBuffer: { _ in },
-                        didTakeAShot: { [weak self] buffer in
-                            guard let self, let camera = self.camera else { assertionFailure(); return }
-                            let output = binarizationTool.process.callAsFunction(cv.SingleFrameInput(buffer))
-                            Task { @MainActor in
-                                camera.inputActions
+                        didTakeAShot: { buffer in
+                            Task.detached { [weak self] in
+                                guard let self, let camera = await self.camera else { assertionFailure(); return }
+                                let output = self.binarizationTool.process.callAsFunction(cv.SingleFrameInput(buffer))
+                                await camera.inputActions
                                     .replaceContent(output.imageBuffer.retain().takeRetainedValue())
                             }
                         })
@@ -44,8 +45,10 @@ extension ImageProcessingModuleGraph {
                 let moduleVC = modify(CommonModuleViewController(cameraModule: cameraVC)) {
                     $0.modalPresentationStyle = .overFullScreen
                 }
-                self?.camera = cameraVC
-                self?.moduleVC = moduleVC
+                modify(self) {
+                    $0?.camera = cameraVC
+                    $0?.moduleVC = moduleVC
+                }
                 
                 return moduleVC
             }

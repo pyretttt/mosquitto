@@ -13,7 +13,7 @@ import Combine
 import CoreImage
 
 @MainActor
-final class CameraStreamViewController: UIViewController {
+final class CameraStreamViewController: UIViewController, Sendable {
     enum State: Equatable {
         struct Streaming: Equatable {
             var shutterState: ShutterKind?
@@ -299,6 +299,10 @@ extension CVImageBuffer {
 }
 
 extension CIImage {
+    var uiImage: UIImage? {
+        UIImage(ciImage: self)
+    }
+    
     var cgImage: CGImage? {
         ciContext.createCGImage(self, from: extent)
     }
@@ -310,4 +314,4 @@ extension CGImage {
     }
 }
 
-private let ciContext = CIContext()
+private let ciContext = CIContext(mtlDevice: MTLCreateSystemDefaultDevice()!)
