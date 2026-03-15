@@ -12,24 +12,24 @@ import SnapKit
 
 @MainActor
 final class CommonModuleViewController: PassThroughViewController {
-    
-    struct Actions {
-        
-    }
-    var onShutter: (() -> Void)?
-    var onOpenGallery: (() -> Void)?
 
     private var topBarHost: UIHostingController<TopBarView>
     private var bottomBarHost: UIHostingController<CommonBottomBar>
-    
+
     private let cameraModule: CameraStreamViewController
-    
+
     init(cameraModule: CameraStreamViewController) {
         weak var weakSelf: CommonModuleViewController?
         self.cameraModule = cameraModule
         topBarHost = modify(UIHostingController(
-            rootView: TopBarView {
-                weakSelf?.dismiss(animated: true)
+            rootView: TopBarView { [cameraModule] in
+                switch cameraModule.cameraState.value {
+                case .notInitialized, .failedToInitialize, .streaming:
+                    weakSelf?.dismiss(animated: true)
+                case .frozen:
+                    cameraModule.resetBufferContent()
+                    cameraModule.resumeStream()
+                }
             }
         )) {
             $0.view.backgroundColor = .clear
@@ -47,16 +47,15 @@ final class CommonModuleViewController: PassThroughViewController {
             $0.view.backgroundColor = .clear
         }
 
-
         super.init(nibName: nil, bundle: nil)
         weakSelf = self
     }
-    
+
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
         view.backgroundColor = .clear
@@ -73,7 +72,7 @@ private extension CommonModuleViewController {
         cameraModule.view.snp.makeConstraints {
             $0.edges.equalToSuperview()
         }
-        
+
         addChild(topBarHost)
         view.addSubview(topBarHost.view)
         topBarHost.view.snp.makeConstraints {

@@ -18,20 +18,20 @@ final class CameraStreamViewController: UIViewController, Sendable {
         struct Streaming: Equatable {
             var shutterState: ShutterKind?
         }
-        
+
         case notInitialized
-        case initializationFailure
+        case failedToInitialize
         case streaming(Streaming)
         case frozen
-        
+
         var streamingState: Streaming? {
             switch self {
-            case .frozen, .notInitialized, .initializationFailure: nil
+            case .frozen, .notInitialized, .failedToInitialize: nil
             case .streaming(let streaming): streaming
             }
         }
     }
-    
+
     enum ShutterKind: Equatable {
         enum UIAction: Equatable {
             case touchDown
@@ -40,14 +40,15 @@ final class CameraStreamViewController: UIViewController, Sendable {
         case photoTouchUpInside
         // case video(UIAction)
     }
-    
+
     struct InputActions: Sendable {
         var didTapShutter: @Sendable @MainActor (ShutterKind) -> Void
         var pauseStream: @Sendable @MainActor () -> Void
         var resumeStream: @Sendable @MainActor () -> Void
-        var replaceContent: @Sendable @MainActor (CVImageBuffer) -> Void
+        var setBufferContent: @Sendable @MainActor (CVImageBuffer) -> Void
+        var resetBufferContent: @Sendable @MainActor () -> Void
     }
-    
+
     struct OutputActions: Sendable {
         var didReceiveNewBuffer: @Sendable (CVImageBuffer) -> Void
         var didTakeAShot: @Sendable @MainActor (CVImageBuffer) -> Void
@@ -65,9 +66,9 @@ final class CameraStreamViewController: UIViewController, Sendable {
         $0.clipsToBounds = true
         $0.alpha = 0
     }
-    
+
     private let outputActions: OutputActions
-    
+
     var inputActions: InputActions {
         InputActions(
             didTapShutter: { [weak self] shutterKind in
@@ -86,15 +87,18 @@ final class CameraStreamViewController: UIViewController, Sendable {
             resumeStream: { [captureSession] in
                 captureSession.startIfNeeded()
             },
-            replaceContent: { [weak self, captureSession] imageBuffer in
+            setBufferContent: { [weak self, captureSession] imageBuffer in
                 captureSession.stopRunningDetached()
                 self?.cameraState.send(.frozen)
                 guard let uiImage = imageBuffer.ciImage?.cgImage?.uiImage else { return }
-                self?.showFrozenImage(uiImage)
+                self?.toggleFrozenContent(visible: true, image: uiImage)
+            },
+            resetBufferContent: { [weak self] in
+                self?.toggleFrozenContent(visible: false, image: nil)
             }
         )
     }
-    
+
     let cameraState = CurrentValueSubject<State, Never>(.notInitialized)
 
     init(
@@ -152,28 +156,14 @@ private extension CameraStreamViewController {
         view.addSubview(frozenImageView)
     }
 
-    func showFrozenImage(_ image: UIImage) {
+    func toggleFrozenContent(visible: bool, image: UIImage?) {
         frozenImageView.image = image
-        frozenImageView.alpha = 0
+        frozenImageView.alpha = visible ? 0.0 : 1.0
         frozenImageView.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
 
-        let flashView = modify(UIView()) {
-            $0.backgroundColor = .white
-            $0.frame = view.bounds
-            $0.alpha = 0
-        }
-        view.addSubview(flashView)
-
-        UIView.animate(withDuration: 0.08) {
-            flashView.alpha = 1
-        } completion: { _ in
-            UIView.animate(withDuration: 0.35, delay: 0, usingSpringWithDamping: 0.85, initialSpringVelocity: 0.5) {
-                flashView.alpha = 0
-                self.frozenImageView.alpha = 1
-                self.frozenImageView.transform = .identity
-            } completion: { _ in
-                flashView.removeFromSuperview()
-            }
+        UIView.animate(withDuration: 0.25) {
+            self.frozenImageView.alpha = visible ? 1.0 : -.0
+            self.frozenImageView.transform = .identity
         }
     }
 }
@@ -185,7 +175,7 @@ extension AVCaptureSession {
             self.stopRunning()
         }
     }
-    
+
     fileprivate func setupDeviceWithAccess(
         sampleBufferDelegate: AVCaptureVideoDataOutputSampleBufferDelegate,
         queue: DispatchQueue,
@@ -302,7 +292,7 @@ extension CIImage {
     var uiImage: UIImage? {
         UIImage(ciImage: self)
     }
-    
+
     var cgImage: CGImage? {
         ciContext.createCGImage(self, from: extent)
     }
