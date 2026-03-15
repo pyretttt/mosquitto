@@ -87,7 +87,7 @@ SingleFrameInput binarize(const SingleFrameInput &input, int threshold) {
 SingleFrameIpTool makeBinarizationTool(int threshold) {
     const int clampedThreshold = clampThreshold(threshold);
     auto options = std::vector<std::shared_ptr<BaseOption>>{
-        makePtr(IntOption(clampedThreshold))
+        makePtr(IntOption("Threshold", clampedThreshold))
     };
     return SingleFrameIpTool{
         "Binarization",

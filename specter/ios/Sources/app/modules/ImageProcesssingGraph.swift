@@ -37,8 +37,6 @@ extension ImageProcessingGraph {
                             Task.detached { [weak self] in
                                 guard let self, let camera = await self.camera else { assertionFailure(); return }
                                 let tool = tools[self.selectedTool]
-                                let option = tool.options.first
-                                
                                 let output = tool.process.callAsFunction(cv.SingleFrameInput(buffer))
                                 await camera.inputActions
                                     .setBufferContent(output.imageBuffer.retain().takeRetainedValue())
