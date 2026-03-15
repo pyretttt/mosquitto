@@ -1,0 +1,13 @@
+---
+paths:
+  - "core/cpp/*.hpp"
+  - "core/cpp/*.cpp"
+---
+
+# Code Rules
+
+1. Use smart pointes instead of raw pointers when possible.
+
+2. Place `const` modifier at the right of modifiable type, i.e. `Type const`, not `const Type`.
+
+3. Prefer composition over inheritance.
