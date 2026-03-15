@@ -17,6 +17,8 @@ final class CameraStreamViewController: UIViewController, Sendable {
     enum State: Equatable {
         struct Streaming: Equatable {
             var shutterState: ShutterKind?
+            
+            static let empty = Streaming()
         }
 
         case notInitialized
@@ -81,11 +83,15 @@ final class CameraStreamViewController: UIViewController, Sendable {
                     )
                 )
             },
-            pauseStream: { [captureSession] in
+            pauseStream: { [weak self, captureSession] in
+                self?.cameraState.send(.frozen)
                 captureSession.stopRunningDetached()
             },
-            resumeStream: { [captureSession] in
-                captureSession.startIfNeeded()
+            resumeStream: { [weak self, captureSession] in
+                Task {
+                    await captureSession.startIfNeeded()?.value
+                    self?.cameraState.send(.streaming(.empty))
+                }
             },
             setBufferContent: { [weak self, captureSession] imageBuffer in
                 captureSession.stopRunningDetached()
@@ -124,7 +130,7 @@ final class CameraStreamViewController: UIViewController, Sendable {
             sampleBufferDelegate: self,
             queue: videoOutputQueue
         ) {
-            self.cameraState.send(.initializationFailure)
+            self.cameraState.send(.failedToInitialize)
             self.showAlert("Failed to setup camera configuration")
         }
     }
@@ -156,13 +162,13 @@ private extension CameraStreamViewController {
         view.addSubview(frozenImageView)
     }
 
-    func toggleFrozenContent(visible: bool, image: UIImage?) {
+    func toggleFrozenContent(visible: Bool, image: UIImage?) {
         frozenImageView.image = image
         frozenImageView.alpha = visible ? 0.0 : 1.0
         frozenImageView.transform = CGAffineTransform(scaleX: 1.05, y: 1.05)
 
         UIView.animate(withDuration: 0.25) {
-            self.frozenImageView.alpha = visible ? 1.0 : -.0
+            self.frozenImageView.alpha = visible ? 1.0 : 0.0
             self.frozenImageView.transform = .identity
         }
     }

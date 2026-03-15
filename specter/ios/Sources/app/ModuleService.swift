@@ -25,7 +25,7 @@ struct ModuleHolder {
     var makeScreen: () -> UIViewController
 }
 
-let imageProcessingModule = ImageProcessingModuleGraph()
+let imageProcessingModule = ImageProcessingGraph()
 
 let allModules = [
     imageProcessingModule.moduleAPI

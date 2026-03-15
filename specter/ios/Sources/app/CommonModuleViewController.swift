@@ -27,8 +27,8 @@ final class CommonModuleViewController: PassThroughViewController {
                 case .notInitialized, .failedToInitialize, .streaming:
                     weakSelf?.dismiss(animated: true)
                 case .frozen:
-                    cameraModule.resetBufferContent()
-                    cameraModule.resumeStream()
+                    cameraModule.inputActions.resetBufferContent()
+                    cameraModule.inputActions.resumeStream()
                 }
             }
         )) {
@@ -40,7 +40,7 @@ final class CommonModuleViewController: PassThroughViewController {
                     weakSelf?.cameraModule.inputActions.didTapShutter(.photoTouchUpInside)
                 },
                 onOpenGallery: {
-                    weakSelf?.onOpenGallery?()
+                    // TODO
                 }
             )
         )) {

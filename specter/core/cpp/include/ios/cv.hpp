@@ -12,7 +12,14 @@
 namespace cv {
     class Mat;
 
-    struct BaseOption {};
+    enum class OptionKind {
+        Int, Float, Bool, String, MultiString, MultiInteger, MultiFloat
+    };
+
+    struct BaseOption {
+        virtual OptionKind kind() const noexcept;
+        virtual ~BaseOption() = default;
+    };
 
     struct IntOption final : public BaseOption {
         int value = 0;
@@ -22,6 +29,8 @@ namespace cv {
         IntOption(int value) {
             this->value = value;
         };
+
+        OptionKind kind() const noexcept override { return OptionKind::Int; }
     };
 
     struct FloatOption final : public BaseOption {
@@ -32,6 +41,8 @@ namespace cv {
         FloatOption(float value) {
             this->value = value;
         };
+
+        OptionKind kind() const noexcept override { return OptionKind::Float; }
     };
 
     struct BoolOption final : public BaseOption {
@@ -42,7 +53,7 @@ namespace cv {
         BoolOption(bool value) {
             this->value = value;
         };
-
+        OptionKind kind() const noexcept override { return OptionKind::Bool; }
     };
 
     struct StringOption final : public BaseOption {
@@ -53,6 +64,7 @@ namespace cv {
         StringOption(std::string value) {
             this->value = std::move(value);
         };
+        OptionKind kind() const noexcept override { return OptionKind::String; }
     };
 
     struct MultiStringOption final : public BaseOption {
@@ -68,6 +80,7 @@ namespace cv {
             this->values = std::move(values);
             this->selected = selected;
         }
+        OptionKind kind() const noexcept override { return OptionKind::MultiString; }
     };
 
     struct MultiIntegerOption final : public BaseOption {
@@ -83,6 +96,7 @@ namespace cv {
             this->values = std::move(values);
             this->selected = selected;
         }
+        OptionKind kind() const noexcept override { return OptionKind::MultiInteger; }
     };
 
     struct MultiFloatOption final : public BaseOption {
@@ -98,6 +112,7 @@ namespace cv {
             this->values = std::move(values);
             this->selected = selected;
         }
+        OptionKind kind() const noexcept override { return OptionKind::MultiFloat; }
     };
 
     inline std::shared_ptr<BaseOption> makePtr(IntOption obj) {
@@ -126,6 +141,34 @@ namespace cv {
 
     inline std::shared_ptr<BaseOption> makePtr(MultiFloatOption obj) {
         return std::make_shared<MultiFloatOption>(std::move(obj));
+    }
+
+    inline std::shared_ptr<IntOption> asInt(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<IntOption>>(std::move(ptr));
+    }
+
+    inline std::shared_ptr<FloatOption> asFloat(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<FloatOption>>(std::move(ptr));
+    }
+
+    inline std::shared_ptr<BoolOption> asBool(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<BoolOption>>(std::move(ptr));
+    }
+
+    inline std::shared_ptr<StringOption> asString(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<StringOption>>(std::move(ptr));
+    }
+
+    inline std::shared_ptr<MultiStringOption> asMultiString(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<MultiStringOption>>(std::move(ptr));
+    }
+
+    inline std::shared_ptr<MultiIntegerOption> asMultiInteger(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<MultiIntegerOption>>(std::move(ptr));
+    }
+
+    inline std::shared_ptr<MultiFloatOption> asMultiFloat(std::shared_ptr<BaseOption> ptr) {
+        return std::static_pointer_cast<std::shared_ptr<MultiFloatOption>>(std::move(ptr));
     }
 
     struct SingleFrameInput {
@@ -197,6 +240,4 @@ namespace cv {
     };
 
     using SingleFrameIpTool = IpTool<SingleFrameInput, SingleFrameInput>;
-
-    
 }

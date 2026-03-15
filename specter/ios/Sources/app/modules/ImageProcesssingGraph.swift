@@ -9,19 +9,19 @@ import core_cpp
 import ios_Base
 import core_cpp
 
-final class ImageProcessingModuleGraph {
+final class ImageProcessingGraph {
     
     @MainActor weak var camera: CameraStreamViewController?
     @MainActor weak var moduleVC: CommonModuleViewController?
     
-    private let binarizationTool = cv.opencv.makeBinarizationTool(127)
+    private let selectedTool = 0
     
     init() {
         
     }
 }
 
-extension ImageProcessingModuleGraph {
+extension ImageProcessingGraph {
     var moduleAPI: ModuleAPI {
         ModuleAPI(
             description: ModuleDescription(
@@ -36,9 +36,12 @@ extension ImageProcessingModuleGraph {
                         didTakeAShot: { buffer in
                             Task.detached { [weak self] in
                                 guard let self, let camera = await self.camera else { assertionFailure(); return }
-                                let output = self.binarizationTool.process.callAsFunction(cv.SingleFrameInput(buffer))
+                                let tool = tools[self.selectedTool]
+                                let option = tool.options.first
+                                
+                                let output = tool.process.callAsFunction(cv.SingleFrameInput(buffer))
                                 await camera.inputActions
-                                    .replaceContent(output.imageBuffer.retain().takeRetainedValue())
+                                    .setBufferContent(output.imageBuffer.retain().takeRetainedValue())
                             }
                         })
                 )
@@ -54,9 +57,8 @@ extension ImageProcessingModuleGraph {
             }
         )
     }
-
 }
 
-extension ImageProcessingModuleGraph {
-}
-
+private let tools: [cv.SingleFrameIpTool] = [
+    cv.opencv.makeBinarizationTool(127),
+]

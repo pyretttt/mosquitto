@@ -74,3 +74,5 @@ struct A {
 10. Mark closures as `@Sendable` when possible.
 
 11. Mark closures as `@MainActor` when possible.
+
+12. Do not use `let` unless property is private, prefer to make it `var`.
