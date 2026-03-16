@@ -23,35 +23,41 @@ enum OptionModel {
     case multiFloat(name: String, ptr: cv.MultiFloatOptionPtr)
 }
 
-// TODO(human): implement buildModels(from:) — iterate the C++ vector, read each
-// element's `.kind()` to identify its concrete type, cast via `cv.asInt` / `cv.asFloat`
-// etc., and return the corresponding OptionModel case.
-// Use the option's `.name` field (a std::string bridged to Swift String) as the label.
-//
-// Signature:
-// private func buildModels(
-//     from options: std.vector<std.__shared_ptr<cv.BaseOption>>
-// ) -> [OptionModel]
+private enum Section { case main }
+private typealias Item = IdentifiableValue<UUID, OptionModel>
 
 // MARK: - ViewController
 
 @MainActor
 final class OptionsViewController: UIViewController {
 
-    private var options: [OptionModel]
+    private var items: [Item] {
+        didSet {
+            itemsMap = Dictionary(uniqueKeysWithValues: items.map { ($0.left, $0.right) })
+        }
+    }
+    private var itemsMap: [UUID: OptionModel]
 
-    private lazy var tableView = modify(UITableView(frame: .zero, style: .insetGrouped)) {
+    private let tableView = modify(UITableView(frame: .zero, style: .insetGrouped)) {
         $0.register(TextFieldOptionCell.self, forCellReuseIdentifier: TextFieldOptionCell.reuseId)
         $0.register(SwitchOptionCell.self, forCellReuseIdentifier: SwitchOptionCell.reuseId)
         $0.register(SegmentedOptionCell.self, forCellReuseIdentifier: SegmentedOptionCell.reuseId)
-        $0.dataSource = self
         $0.rowHeight = UITableView.automaticDimension
         $0.estimatedRowHeight = 56
         $0.backgroundColor = .systemGroupedBackground
     }
 
+    private lazy var dataSource = UITableViewDiffableDataSource<Section, UUID>(
+        tableView: tableView
+    ) { [weak self] tableView, indexPath, item in
+        guard let self,
+              let value = self.itemsMap[item] else { assertionFailure(); return UITableViewCell() }
+        return value.cell(in: tableView, at: indexPath)
+    }
+
     init(options: [OptionModel]) {
-        self.options = options
+        self.items = options.map { makeIdentifiable(value: $0) }
+        self.itemsMap = Dictionary(uniqueKeysWithValues: items.map { ($0.left, $0.right) })
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -63,18 +69,23 @@ final class OptionsViewController: UIViewController {
         view.backgroundColor = .systemGroupedBackground
         view.addSubview(tableView)
         tableView.snp.makeConstraints { $0.edges.equalToSuperview() }
+        applySnapshot()
+    }
+
+    private func applySnapshot() {
+        var snapshot = NSDiffableDataSourceSnapshot<Section, UUID>()
+        snapshot.appendSections([.main])
+        snapshot.appendItems(items.map(\.left))
+        dataSource.apply(snapshot, animatingDifferences: false)
     }
 }
 
-// MARK: - UITableViewDataSource
+// MARK: - Cell Provider
 
-extension OptionsViewController: UITableViewDataSource {
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        options.count
-    }
-
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        switch options[indexPath.row] {
+extension OptionModel {
+    @MainActor
+    fileprivate func cell(in tableView: UITableView, at indexPath: IndexPath) -> UITableViewCell {
+        switch self {
         case .int(let name, let ptr):
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: TextFieldOptionCell.reuseId, for: indexPath
@@ -149,6 +160,7 @@ extension OptionsViewController: UITableViewDataSource {
 
 // MARK: - Cells
 
+@MainActor
 private final class TextFieldOptionCell: UITableViewCell {
     fileprivate static let reuseId = "TextFieldOptionCell"
 
@@ -199,10 +211,11 @@ private final class TextFieldOptionCell: UITableViewCell {
 
     @objc private func textChanged() {
         let text = textField.text ?? ""
-        Task { @MainActor in onChange(text) }
+        Task { onChange(text) }
     }
 }
 
+@MainActor
 private final class SwitchOptionCell: UITableViewCell {
     fileprivate static let reuseId = "SwitchOptionCell"
 
@@ -246,10 +259,11 @@ private final class SwitchOptionCell: UITableViewCell {
 
     @objc private func toggled() {
         let value = toggle.isOn
-        Task { @MainActor in onChange(value) }
+        Task { onChange(value) }
     }
 }
 
+@MainActor
 private final class SegmentedOptionCell: UITableViewCell {
     fileprivate static let reuseId = "SegmentedOptionCell"
 
@@ -294,9 +308,10 @@ private final class SegmentedOptionCell: UITableViewCell {
         self.onChange = onChange
     }
 
-    @objc private func segmentChanged() {
+    @objc 
+    private func segmentChanged() {
         let idx = segmented.selectedSegmentIndex
-        Task { @MainActor in onChange(idx) }
+        Task { onChange(idx) }
     }
 }
 
