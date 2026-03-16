@@ -64,6 +64,8 @@ SingleFrameInput makeOutputFromMatBGRA(const cv::Mat &mat) {
     CVPixelBufferRelease(outputBuffer);
     return output;
 }
+
+inline const std::string thresholdOptionKey = "Threshold";
 } // namespace
 
 SingleFrameInput binarize(const SingleFrameInput &input, int threshold) {
@@ -84,16 +86,21 @@ SingleFrameInput binarize(const SingleFrameInput &input, int threshold) {
     return makeOutputFromMatBGRA(out);
 }
 
-SingleFrameIpTool makeBinarizationTool(int threshold) {
-    const int clampedThreshold = clampThreshold(threshold);
+SingleFrameIpTool makeBinarizationTool() {
     auto options = std::vector<std::shared_ptr<BaseOption>>{
-        makePtr(IntOption("Threshold", clampedThreshold))
+        makePtr(IntOption(thresholdOptionKey, 127))
     };
+    std::unordered_map<std::string, std::shared_ptr<BaseOption>> optionsMap;
+    for (auto const &opt : options) {
+        optionsMap.emplace(opt->name, opt);
+    }
+    
     return SingleFrameIpTool{
         "Binarization",
         options,
-        [clampedThreshold, options](SingleFrameInput input) {
-            return binarize(input, clampedThreshold);
+        [optionsMap](SingleFrameInput input) {
+            auto threshold = cv::asInt(optionsMap.at(thresholdOptionKey));
+            return binarize(input, threshold->value);
         },
     };
 }

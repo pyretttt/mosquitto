@@ -34,7 +34,7 @@ final class CommonModuleViewController: PassThroughViewController {
                         weakSelf?.dismiss(animated: true)
                     case .frozen:
                         cameraModule.inputActions.resetBufferContent()
-                        cameraModule.inputActions.resumeStream()
+                        let _ = cameraModule.inputActions.resumeStream()
                     }
                 },
                 onOptions: {
@@ -77,9 +77,12 @@ final class CommonModuleViewController: PassThroughViewController {
 
 private extension CommonModuleViewController {
     private func presentOptionsPanel() {
-        let optionsVC = OptionsViewController(options: optionsProvider())
-        optionsVC.modalPresentationStyle = .fullScreen
-        present(optionsVC, animated: true)
+        Task {
+            await cameraModule.inputActions.pauseStream().value
+            let optionsVC = OptionsViewController(options: optionsProvider())
+            optionsVC.modalPresentationStyle = .fullScreen
+            present(optionsVC, animated: true)
+        }
     }
 
     private func setupUI() {

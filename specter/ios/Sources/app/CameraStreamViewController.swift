@@ -45,8 +45,8 @@ final class CameraStreamViewController: UIViewController, Sendable {
 
     struct InputActions: Sendable {
         var didTapShutter: @Sendable @MainActor (ShutterKind) -> Void
-        var pauseStream: @Sendable @MainActor () -> Void
-        var resumeStream: @Sendable @MainActor () -> Void
+        var pauseStream: @Sendable @MainActor () -> Task<Void, Never>
+        var resumeStream: @Sendable @MainActor () -> Task<Void, Never>
         var setBufferContent: @Sendable @MainActor (CVImageBuffer) -> Void
         var resetBufferContent: @Sendable @MainActor () -> Void
     }
@@ -85,10 +85,10 @@ final class CameraStreamViewController: UIViewController, Sendable {
             },
             pauseStream: { [weak self, captureSession] in
                 self?.cameraState.send(.frozen)
-                captureSession.stopRunningDetached()
+                return captureSession.stopRunningDetached()
             },
             resumeStream: { [weak self, captureSession] in
-                Task {
+                return Task {
                     await captureSession.startIfNeeded()?.value
                     self?.cameraState.send(.streaming(.empty))
                 }

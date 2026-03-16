@@ -109,8 +109,10 @@ extension OptionModel {
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: TextFieldOptionCell.reuseId, for: indexPath
             ) as! TextFieldOptionCell
-            cell.configure(name: name, text: "\(ptr.pointee.value)", keyboardType: .numberPad) { text in
-                if let v = Int32(text) { ptr.pointee.value = v }
+            cell.configure(name: name, text: String(ptr.pointee.value), keyboardType: .numberPad) { text in
+                if let v = Int32(text) { 
+                    ptr.pointee.value = v 
+                }
             }
             return cell
 
@@ -118,7 +120,7 @@ extension OptionModel {
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: TextFieldOptionCell.reuseId, for: indexPath
             ) as! TextFieldOptionCell
-            cell.configure(name: name, text: "\(ptr.pointee.value)", keyboardType: .decimalPad) { text in
+            cell.configure(name: name, text: String(ptr.pointee.value), keyboardType: .decimalPad) { text in
                 if let v = Float(text) { ptr.pointee.value = v }
             }
             return cell
@@ -158,7 +160,7 @@ extension OptionModel {
             ) as! SegmentedOptionCell
             cell.configure(
                 name: name,
-                items: ptr.pointee.values.map { "\($0)" },
+                items: ptr.pointee.values.map { String($0) },
                 selected: Int(ptr.pointee.selected)
             ) { idx in ptr.pointee.selected = size_t(idx) }
             return cell
@@ -169,7 +171,7 @@ extension OptionModel {
             ) as! SegmentedOptionCell
             cell.configure(
                 name: name,
-                items: ptr.pointee.values.map { "\($0)" },
+                items: ptr.pointee.values.map { String($0) },
                 selected: Int(ptr.pointee.selected)
             ) { idx in ptr.pointee.selected = size_t(idx) }
             return cell

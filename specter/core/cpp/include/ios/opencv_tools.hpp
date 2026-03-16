@@ -11,6 +11,6 @@ namespace cv {
         );
 
         // Tools
-        SingleFrameIpTool makeBinarizationTool(int threshold = 128);
+        SingleFrameIpTool makeBinarizationTool();
     }
 }

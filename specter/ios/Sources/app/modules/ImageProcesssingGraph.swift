@@ -66,7 +66,7 @@ extension ImageProcessingGraph {
 }
 
 private let tools: [cv.SingleFrameIpTool] = [
-    cv.opencv.makeBinarizationTool(127),
+    cv.opencv.makeBinarizationTool(),
 ]
 
 func buildOptionModels(
