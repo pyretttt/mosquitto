@@ -46,6 +46,13 @@ final class OptionsViewController: UIViewController {
         $0.estimatedRowHeight = 56
         $0.backgroundColor = .systemGroupedBackground
     }
+    private let closeButton = modify(UIButton(type: .system)) {
+        $0.setImage(UIImage(systemName: "xmark"), for: .normal)
+        $0.tintColor = .label
+        $0.backgroundColor = .secondarySystemBackground
+        $0.layer.cornerRadius = 16
+        $0.accessibilityLabel = "Close options"
+    }
 
     private lazy var dataSource = UITableViewDiffableDataSource<Section, UUID>(
         tableView: tableView
@@ -68,7 +75,14 @@ final class OptionsViewController: UIViewController {
         super.viewDidLoad()
         view.backgroundColor = .systemGroupedBackground
         view.addSubview(tableView)
+        view.addSubview(closeButton)
         tableView.snp.makeConstraints { $0.edges.equalToSuperview() }
+        closeButton.snp.makeConstraints {
+            $0.top.equalTo(view.safeAreaLayoutGuide.snp.top).offset(8)
+            $0.trailing.equalToSuperview().inset(16)
+            $0.width.height.equalTo(32)
+        }
+        closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         applySnapshot()
     }
 
@@ -77,6 +91,11 @@ final class OptionsViewController: UIViewController {
         snapshot.appendSections([.main])
         snapshot.appendItems(items.map(\.left))
         dataSource.apply(snapshot, animatingDifferences: false)
+    }
+
+    @objc
+    private func closeTapped() {
+        dismiss(animated: true)
     }
 }
 
@@ -312,31 +331,5 @@ private final class SegmentedOptionCell: UITableViewCell {
     private func segmentChanged() {
         let idx = segmented.selectedSegmentIndex
         Task { onChange(idx) }
-    }
-}
-
-private func buildModels(
-    from options: cv.OptionList
-) -> [OptionModel] {
-    options.map {
-        let name = String($0.pointee.name)
-        return switch $0.pointee.kind() {
-        case cv.OptionKind.Int:
-            OptionModel.int(name: name, ptr: cv.asInt($0))
-        case .Float:
-            OptionModel.float(name: name, ptr: cv.asFloat($0))
-        case .Bool:
-            OptionModel.bool(name: name, ptr: cv.asBool($0))
-        case .String:
-            OptionModel.string(name: name, ptr: cv.asString($0))
-        case .MultiString:
-            OptionModel.multiString(name: name, ptr: cv.asMultiString($0))
-        case .MultiInteger:
-            OptionModel.multiInt(name: name, ptr: cv.asMultiInteger($0))
-        case .MultiFloat:
-            OptionModel.multiFloat(name: name, ptr: cv.asMultiFloat($0))
-        @unknown default:
-            fatalError()
-        }
     }
 }

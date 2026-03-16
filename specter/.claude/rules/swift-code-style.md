@@ -76,3 +76,5 @@ struct A {
 11. Mark closures as `@MainActor` when possible.
 
 12. Do not use `let` unless property is private, prefer to make it `var`.
+
+13. Prefer file private level constants, instead of bouding constant to some type.

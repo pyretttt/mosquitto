@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <stdexcept>
 #include <string>
 #include <vector>
 #include <memory>
@@ -19,97 +18,83 @@ namespace cv {
 
     struct BaseOption {
         std::string name;
+        OptionKind kind;
 
         BaseOption() = default;
-        explicit BaseOption(std::string name) : name(std::move(name)) {}
+        BaseOption(OptionKind kind, std::string name) : name(std::move(name)), kind(kind) {}
         virtual ~BaseOption() = default;
-        virtual OptionKind kind() const noexcept { throw std::runtime_error("Should be called"); };
     };
 
     struct IntOption final : public BaseOption {
         int value = 0;
 
-        IntOption() = default;
+        IntOption() : BaseOption(OptionKind::Int, {}) {}
         IntOption(IntOption &&) = default;
-        IntOption(int value) : value(value) {}
-        IntOption(std::string name, int value) : BaseOption(std::move(name)), value(value) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::Int; }
+        IntOption(int value) : BaseOption(OptionKind::Int, {}), value(value) {}
+        IntOption(std::string name, int value) : BaseOption(OptionKind::Int, std::move(name)), value(value) {}
     };
 
     struct FloatOption final : public BaseOption {
         float value = 0.f;
 
-        FloatOption() = default;
+        FloatOption() : BaseOption(OptionKind::Float, {}) {}
         FloatOption(FloatOption &&) = default;
-        FloatOption(float value) : value(value) {}
-        FloatOption(std::string name, float value) : BaseOption(std::move(name)), value(value) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::Float; }
+        FloatOption(float value) : BaseOption(OptionKind::Float, {}), value(value) {}
+        FloatOption(std::string name, float value) : BaseOption(OptionKind::Float, std::move(name)), value(value) {}
     };
 
     struct BoolOption final : public BaseOption {
         bool value = false;
 
-        BoolOption() = default;
+        BoolOption() : BaseOption(OptionKind::Bool, {}) {}
         BoolOption(BoolOption &&) = default;
-        BoolOption(bool value) : value(value) {}
-        BoolOption(std::string name, bool value) : BaseOption(std::move(name)), value(value) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::Bool; }
+        BoolOption(bool value) : BaseOption(OptionKind::Bool, {}), value(value) {}
+        BoolOption(std::string name, bool value) : BaseOption(OptionKind::Bool, std::move(name)), value(value) {}
     };
 
     struct StringOption final : public BaseOption {
         std::string value;
 
-        StringOption() = default;
+        StringOption() : BaseOption(OptionKind::String, {}) {}
         StringOption(StringOption &&) = default;
-        StringOption(std::string value) : value(std::move(value)) {}
-        StringOption(std::string name, std::string value) : BaseOption(std::move(name)), value(std::move(value)) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::String; }
+        StringOption(std::string value) : BaseOption(OptionKind::String, {}), value(std::move(value)) {}
+        StringOption(std::string name, std::string value) : BaseOption(OptionKind::String, std::move(name)), value(std::move(value)) {}
     };
 
     struct MultiStringOption final : public BaseOption {
         std::vector<std::string> values;
         size_t selected = 0;
 
-        MultiStringOption() = default;
+        MultiStringOption() : BaseOption(OptionKind::MultiString, {}) {}
         MultiStringOption(MultiStringOption &&) = default;
         MultiStringOption(std::vector<std::string> values, size_t selected = 0)
-            : values(std::move(values)), selected(selected) {}
+            : BaseOption(OptionKind::MultiString, {}), values(std::move(values)), selected(selected) {}
         MultiStringOption(std::string name, std::vector<std::string> values, size_t selected = 0)
-            : BaseOption(std::move(name)), values(std::move(values)), selected(selected) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::MultiString; }
+            : BaseOption(OptionKind::MultiString, std::move(name)), values(std::move(values)), selected(selected) {}
     };
 
     struct MultiIntegerOption final : public BaseOption {
         std::vector<int> values;
         size_t selected = 0;
 
-        MultiIntegerOption() = default;
+        MultiIntegerOption() : BaseOption(OptionKind::MultiInteger, {}) {}
         MultiIntegerOption(MultiIntegerOption &&) = default;
         MultiIntegerOption(std::vector<int> values, size_t selected = 0)
-            : values(std::move(values)), selected(selected) {}
+            : BaseOption(OptionKind::MultiInteger, {}), values(std::move(values)), selected(selected) {}
         MultiIntegerOption(std::string name, std::vector<int> values, size_t selected = 0)
-            : BaseOption(std::move(name)), values(std::move(values)), selected(selected) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::MultiInteger; }
+            : BaseOption(OptionKind::MultiInteger, std::move(name)), values(std::move(values)), selected(selected) {}
     };
 
     struct MultiFloatOption final : public BaseOption {
         std::vector<float> values;
         size_t selected = 0;
 
-        MultiFloatOption() = default;
+        MultiFloatOption() : BaseOption(OptionKind::MultiFloat, {}) {}
         MultiFloatOption(MultiFloatOption &&) = default;
         MultiFloatOption(std::vector<float> values, size_t selected = 0)
-            : values(std::move(values)), selected(selected) {}
+            : BaseOption(OptionKind::MultiFloat, {}), values(std::move(values)), selected(selected) {}
         MultiFloatOption(std::string name, std::vector<float> values, size_t selected = 0)
-            : BaseOption(std::move(name)), values(std::move(values)), selected(selected) {}
-
-        OptionKind kind() const noexcept override { return OptionKind::MultiFloat; }
+            : BaseOption(OptionKind::MultiFloat, std::move(name)), values(std::move(values)), selected(selected) {}
     };
 
     using IntOptionPtr = std::shared_ptr<IntOption>;

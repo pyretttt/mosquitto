@@ -17,20 +17,30 @@ final class CommonModuleViewController: PassThroughViewController {
     private var bottomBarHost: UIHostingController<CommonBottomBar>
 
     private let cameraModule: CameraStreamViewController
+    private let optionsProvider: @MainActor @Sendable () -> [OptionModel]
 
-    init(cameraModule: CameraStreamViewController) {
+    init(
+        cameraModule: CameraStreamViewController,
+        optionsProvider: @escaping @MainActor @Sendable () -> [OptionModel]
+    ) {
         weak var weakSelf: CommonModuleViewController?
         self.cameraModule = cameraModule
+        self.optionsProvider = optionsProvider
         topBarHost = modify(UIHostingController(
-            rootView: TopBarView { [cameraModule] in
-                switch cameraModule.cameraState.value {
-                case .notInitialized, .failedToInitialize, .streaming:
-                    weakSelf?.dismiss(animated: true)
-                case .frozen:
-                    cameraModule.inputActions.resetBufferContent()
-                    cameraModule.inputActions.resumeStream()
+            rootView: TopBarView(
+                onClose: { [cameraModule] in
+                    switch cameraModule.cameraState.value {
+                    case .notInitialized, .failedToInitialize, .streaming:
+                        weakSelf?.dismiss(animated: true)
+                    case .frozen:
+                        cameraModule.inputActions.resetBufferContent()
+                        cameraModule.inputActions.resumeStream()
+                    }
+                },
+                onOptions: {
+                    weakSelf?.presentOptionsPanel()
                 }
-            }
+            )
         )) {
             $0.view.backgroundColor = .clear
         }
@@ -66,6 +76,12 @@ final class CommonModuleViewController: PassThroughViewController {
 // MARK: - Bars
 
 private extension CommonModuleViewController {
+    private func presentOptionsPanel() {
+        let optionsVC = OptionsViewController(options: optionsProvider())
+        optionsVC.modalPresentationStyle = .fullScreen
+        present(optionsVC, animated: true)
+    }
+
     private func setupUI() {
         addChild(cameraModule)
         view.addSubview(cameraModule.view)
@@ -94,6 +110,7 @@ private extension CommonModuleViewController {
 /// Transparent top bar with a single close button on the leading edge.
 private struct TopBarView: View {
     var onClose: () -> Void
+    var onOptions: () -> Void
 
     var body: some View {
         HStack {
@@ -106,6 +123,14 @@ private struct TopBarView: View {
             .buttonStyle(.plain)
 
             Spacer()
+
+            Button(action: onOptions) {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 20, weight: .medium))
+                    .padding(12)
+                    .blendMode(.difference)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 12)
         .frame(maxWidth: .infinity)
