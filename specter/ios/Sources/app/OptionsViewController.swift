@@ -87,6 +87,7 @@ final class OptionsViewController: UIViewController {
             $0.trailing.equalToSuperview().inset(16)
             $0.width.height.equalTo(32)
         }
+        tableView.contentInset.top = 48
         closeButton.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         applySnapshot()
     }
@@ -106,18 +107,21 @@ final class OptionsViewController: UIViewController {
 
 // MARK: - Cell Provider
 
-@MainActor
 extension OptionModel {
+    @MainActor
     fileprivate func cell(in tableView: UITableView, at indexPath: IndexPath) -> UITableViewCell {
         switch self {
         case .int(let name, let ptr):
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: TextFieldOptionCell.reuseId, for: indexPath
             ) as! TextFieldOptionCell
-            cell.configure(name: name, text: String(ptr.pointee.value), keyboardType: .numberPad) { text in
-                if let v = Int32(text) { 
-                    ptr.pointee.value = v 
-                }
+            cell.configure(
+                name: name,
+                text: String(ptr.pointee.value),
+                keyboardType: .numberPad,
+                validate: { Int32($0) == nil ? "Expected integer" : nil }
+            ) { text in
+                if let v = Int32(text) { ptr.pointee.value = v }
             }
             return cell
 
@@ -125,7 +129,12 @@ extension OptionModel {
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: TextFieldOptionCell.reuseId, for: indexPath
             ) as! TextFieldOptionCell
-            cell.configure(name: name, text: String(ptr.pointee.value), keyboardType: .decimalPad) { text in
+            cell.configure(
+                name: name,
+                text: String(ptr.pointee.value),
+                keyboardType: .decimalPad,
+                validate: { Float($0) == nil ? "Expected number" : nil }
+            ) { text in
                 if let v = Float(text) { ptr.pointee.value = v }
             }
             return cell
@@ -143,7 +152,12 @@ extension OptionModel {
             let cell = tableView.dequeueReusableCell(
                 withIdentifier: TextFieldOptionCell.reuseId, for: indexPath
             ) as! TextFieldOptionCell
-            cell.configure(name: name, text: String(ptr.pointee.value), keyboardType: .default) { text in
+            cell.configure(
+                name: name,
+                text: String(ptr.pointee.value),
+                keyboardType: .default,
+                validate: { _ in nil }
+            ) { text in
                 ptr.pointee.value = std.string(text)
             }
             return cell
@@ -191,32 +205,54 @@ private final class TextFieldOptionCell: UITableViewCell {
     fileprivate static let reuseId = "TextFieldOptionCell"
 
     fileprivate var onChange: @MainActor @Sendable (String) -> Void = { _ in }
+    fileprivate var validate: @MainActor @Sendable (String) -> String? = { _ in nil }
 
     private var nameLabel = modify(UILabel()) {
-        $0.font = .systemFont(ofSize: 15, weight: .medium)
+        $0.font = .systemFont(ofSize: 13, weight: .medium)
         $0.textColor = .secondaryLabel
     }
     private var textField = modify(UITextField()) {
-        $0.borderStyle = .roundedRect
-        $0.font = .systemFont(ofSize: 14)
+        $0.borderStyle = .none
+        $0.font = .systemFont(ofSize: 15)
         $0.clearButtonMode = .whileEditing
+        $0.backgroundColor = .tertiarySystemFill
+        $0.layer.cornerRadius = 16
+        $0.clipsToBounds = true
+        let spacer = UIView(frame: CGRect(x: 0, y: 0, width: 12, height: 1))
+        $0.leftView = spacer
+        $0.leftViewMode = .always
     }
+    private var errorLabel = modify(UILabel()) {
+        $0.font = .systemFont(ofSize: 12, weight: .regular)
+        $0.textColor = .systemRed
+        $0.numberOfLines = 0
+        $0.isHidden = true
+    }
+
+    private var errorHeightConstraint: Constraint?
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         selectionStyle = .none
         contentView.addSubview(nameLabel)
         contentView.addSubview(textField)
+        contentView.addSubview(errorLabel)
         nameLabel.snp.makeConstraints {
             $0.leading.trailing.equalToSuperview().inset(16)
-            $0.top.equalToSuperview().inset(10)
+            $0.top.equalToSuperview().inset(14)
         }
         textField.snp.makeConstraints {
-            $0.leading.trailing.equalToSuperview().inset(24)
-            $0.top.equalTo(nameLabel.snp.bottom).offset(4)
-            $0.bottom.equalToSuperview().inset(10)
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.top.equalTo(nameLabel.snp.bottom).offset(8)
             $0.height.equalTo(44)
         }
+        errorLabel.snp.makeConstraints {
+            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.top.equalTo(textField.snp.bottom).offset(4)
+            $0.bottom.equalToSuperview().inset(14)
+            errorHeightConstraint = $0.height.equalTo(0).constraint
+        }
+        errorHeightConstraint?.activate()
         textField.addTarget(self, action: #selector(textChanged), for: .editingChanged)
     }
 
@@ -227,17 +263,33 @@ private final class TextFieldOptionCell: UITableViewCell {
         name: String,
         text: String,
         keyboardType: UIKeyboardType,
+        validate: @escaping @MainActor @Sendable (String) -> String?,
         onChange: @escaping @MainActor @Sendable (String) -> Void
     ) {
         nameLabel.text = name
         textField.text = text
         textField.keyboardType = keyboardType
+        self.validate = validate
         self.onChange = onChange
+        applyValidation(for: text)
     }
 
     @objc private func textChanged() {
         let text = textField.text ?? ""
         onChange(text)
+        applyValidation(for: text)
+    }
+
+    private func applyValidation(for text: String) {
+        if let error = validate(text) {
+            errorLabel.text = error
+            errorLabel.isHidden = false
+            errorHeightConstraint?.deactivate()
+        } else {
+            errorLabel.text = nil
+            errorLabel.isHidden = true
+            errorHeightConstraint?.activate()
+        }
     }
 }
 
@@ -265,7 +317,7 @@ private final class SwitchOptionCell: UITableViewCell {
         toggle.snp.makeConstraints {
             $0.trailing.equalToSuperview().inset(16)
             $0.centerY.equalToSuperview()
-            $0.top.bottom.equalToSuperview().inset(10)
+            $0.top.bottom.equalToSuperview().inset(14)
         }
         toggle.addTarget(self, action: #selector(toggled), for: .valueChanged)
     }
@@ -308,12 +360,12 @@ private final class SegmentedOptionCell: UITableViewCell {
         contentView.addSubview(segmented)
         nameLabel.snp.makeConstraints {
             $0.leading.trailing.equalToSuperview().inset(16)
-            $0.top.equalToSuperview().inset(10)
+            $0.top.equalToSuperview().inset(14)
         }
         segmented.snp.makeConstraints {
             $0.leading.trailing.equalToSuperview().inset(16)
-            $0.top.equalTo(nameLabel.snp.bottom).offset(6)
-            $0.bottom.equalToSuperview().inset(10)
+            $0.top.equalTo(nameLabel.snp.bottom).offset(8)
+            $0.bottom.equalToSuperview().inset(14)
         }
         segmented.addTarget(self, action: #selector(segmentChanged), for: .valueChanged)
     }
