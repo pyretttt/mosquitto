@@ -31,6 +31,7 @@ private typealias Item = IdentifiableValue<UUID, OptionModel>
 @MainActor
 final class OptionsViewController: UIViewController {
 
+    private let onDismiss: @Sendable @MainActor () -> Void
     private var items: [Item] {
         didSet {
             itemsMap = Dictionary(uniqueKeysWithValues: items.map { ($0.left, $0.right) })
@@ -62,7 +63,11 @@ final class OptionsViewController: UIViewController {
         return value.cell(in: tableView, at: indexPath)
     }
 
-    init(options: [OptionModel]) {
+    init(
+        options: [OptionModel],
+        onDismiss: @escaping @Sendable @MainActor () -> Void
+    ) {
+        self.onDismiss = onDismiss
         self.items = options.map { makeIdentifiable(value: $0) }
         self.itemsMap = Dictionary(uniqueKeysWithValues: items.map { ($0.left, $0.right) })
         super.init(nibName: nil, bundle: nil)
@@ -95,14 +100,14 @@ final class OptionsViewController: UIViewController {
 
     @objc
     private func closeTapped() {
-        dismiss(animated: true)
+        dismiss(animated: true, completion: onDismiss)
     }
 }
 
 // MARK: - Cell Provider
 
+@MainActor
 extension OptionModel {
-    @MainActor
     fileprivate func cell(in tableView: UITableView, at indexPath: IndexPath) -> UITableViewCell {
         switch self {
         case .int(let name, let ptr):
@@ -188,12 +193,12 @@ private final class TextFieldOptionCell: UITableViewCell {
     fileprivate var onChange: @MainActor @Sendable (String) -> Void = { _ in }
 
     private var nameLabel = modify(UILabel()) {
-        $0.font = .systemFont(ofSize: 13, weight: .medium)
+        $0.font = .systemFont(ofSize: 15, weight: .medium)
         $0.textColor = .secondaryLabel
     }
     private var textField = modify(UITextField()) {
         $0.borderStyle = .roundedRect
-        $0.font = .systemFont(ofSize: 15)
+        $0.font = .systemFont(ofSize: 14)
         $0.clearButtonMode = .whileEditing
     }
 
@@ -207,10 +212,10 @@ private final class TextFieldOptionCell: UITableViewCell {
             $0.top.equalToSuperview().inset(10)
         }
         textField.snp.makeConstraints {
-            $0.leading.trailing.equalToSuperview().inset(16)
+            $0.leading.trailing.equalToSuperview().inset(24)
             $0.top.equalTo(nameLabel.snp.bottom).offset(4)
             $0.bottom.equalToSuperview().inset(10)
-            $0.height.equalTo(36)
+            $0.height.equalTo(44)
         }
         textField.addTarget(self, action: #selector(textChanged), for: .editingChanged)
     }
@@ -232,7 +237,7 @@ private final class TextFieldOptionCell: UITableViewCell {
 
     @objc private func textChanged() {
         let text = textField.text ?? ""
-        Task { onChange(text) }
+        onChange(text)
     }
 }
 
@@ -280,7 +285,7 @@ private final class SwitchOptionCell: UITableViewCell {
 
     @objc private func toggled() {
         let value = toggle.isOn
-        Task { onChange(value) }
+        onChange(value)
     }
 }
 
@@ -332,6 +337,6 @@ private final class SegmentedOptionCell: UITableViewCell {
     @objc 
     private func segmentChanged() {
         let idx = segmented.selectedSegmentIndex
-        Task { onChange(idx) }
+        onChange(idx)
     }
 }

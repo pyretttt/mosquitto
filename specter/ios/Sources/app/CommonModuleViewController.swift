@@ -38,7 +38,10 @@ final class CommonModuleViewController: PassThroughViewController {
                     }
                 },
                 onOptions: {
-                    weakSelf?.presentOptionsPanel()
+                    Task {
+                        await cameraModule.inputActions.pauseStream().value
+                        weakSelf?.presentOptionsPanel()
+                    }
                 }
             )
         )) {
@@ -71,18 +74,26 @@ final class CommonModuleViewController: PassThroughViewController {
         view.backgroundColor = .clear
         setupUI()
     }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        let _ = cameraModule.inputActions.resumeStream()
+    }
 }
 
 // MARK: - Bars
 
 private extension CommonModuleViewController {
     private func presentOptionsPanel() {
-        Task {
-            await cameraModule.inputActions.pauseStream().value
-            let optionsVC = OptionsViewController(options: optionsProvider())
-            optionsVC.modalPresentationStyle = .fullScreen
-            present(optionsVC, animated: true)
+        let optionsVC = modify(OptionsViewController(
+            options: optionsProvider(),
+            onDismiss: { [cameraModule] in
+                let _ = cameraModule.inputActions.resumeStream()
+            }
+        )) {
+            $0.modalPresentationStyle = .overFullScreen
         }
+        present(optionsVC, animated: true)
     }
 
     private func setupUI() {

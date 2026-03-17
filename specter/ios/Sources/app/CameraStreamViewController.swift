@@ -84,8 +84,10 @@ final class CameraStreamViewController: UIViewController, Sendable {
                 )
             },
             pauseStream: { [weak self, captureSession] in
-                self?.cameraState.send(.frozen)
-                return captureSession.stopRunningDetached()
+                return Task {
+                    await captureSession.stopRunningDetached().value
+                    self?.cameraState.send(.frozen)
+                }
             },
             resumeStream: { [weak self, captureSession] in
                 return Task {
@@ -140,20 +142,6 @@ final class CameraStreamViewController: UIViewController, Sendable {
         previewLayer.frame = view.bounds
         frozenImageView.frame = view.bounds
     }
-
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        Task {
-            await captureSession.startIfNeeded()?.value
-            cameraState.send(.streaming(State.Streaming()))
-        }
-    }
-
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        captureSession.stopRunningDetached()
-        cameraState.send(.frozen)
-    }
 }
 
 private extension CameraStreamViewController {
@@ -177,7 +165,7 @@ private extension CameraStreamViewController {
 extension AVCaptureSession {
     @discardableResult
     fileprivate func stopRunningDetached() -> Task<Void, Never> {
-        Task.detached {
+        Task.detached(priority: .userInitiated) {
             self.stopRunning()
         }
     }
@@ -248,7 +236,6 @@ extension AVCaptureSession {
         }
 
         commitConfiguration()
-        startIfNeeded()
     }
 }
 

@@ -34,7 +34,7 @@ extension ImageProcessingGraph {
                     outputActions: CameraStreamViewController.OutputActions(
                         didReceiveNewBuffer: { _ in },
                         didTakeAShot: { buffer in
-                            Task.detached { [weak self] in
+                            Task.detached(priority: .userInitiated) { [weak self] in
                                 guard let self, let camera = await self.camera else { assertionFailure(); return }
                                 let tool = tools[self.selectedTool]
                                 let output = tool.process.callAsFunction(cv.SingleFrameInput(buffer))
