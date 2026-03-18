@@ -13,7 +13,7 @@ import SnapKit
 @MainActor
 final class CommonModuleViewController: PassThroughViewController {
     
-    struct ContextActions: OptionSet, Sendable {
+    struct ContextActions: OptionSet, Hashable, Sendable {
         var rawValue: Int
         
         init(rawValue: Int) {
@@ -24,7 +24,7 @@ final class CommonModuleViewController: PassThroughViewController {
         static let saveToGallery = Self(rawValue: 1 << 1)
     }
     
-    enum BottomBarControls: Sendable {
+    enum BottomBarControls: Hashable, Sendable {
         case contextMenu(ContextActions)
         case gallery
         case frontBackCameraSwitch
@@ -51,15 +51,15 @@ final class CommonModuleViewController: PassThroughViewController {
     private var bottomBarHost: UIHostingController<CommonBottomBar>
 
     private let cameraModule: CameraStreamViewController
-    private let optionsProvider: @MainActor @Sendable () -> [OptionModel]
+    private let config: Config
 
     init(
         cameraModule: CameraStreamViewController,
-        optionsProvider: @escaping @MainActor @Sendable () -> [OptionModel]
+        config: Config
     ) {
         weak var weakSelf: CommonModuleViewController?
         self.cameraModule = cameraModule
-        self.optionsProvider = optionsProvider
+        self.config = config
         topBarHost = modify(UIHostingController(
             rootView: TopBarView(
                 onClose: { [cameraModule] in
@@ -83,10 +83,20 @@ final class CommonModuleViewController: PassThroughViewController {
         }
         bottomBarHost = modify(UIHostingController(
             rootView: CommonBottomBar(
+                controls: config.bottomBarControls,
                 onShutter: {
                     weakSelf?.cameraModule.inputActions.didTapShutter(.photoTouchUpInside)
                 },
                 onOpenGallery: {
+                    // TODO
+                },
+                onContextAction: { _ in
+                    // TODO
+                },
+                onSwitchCamera: { _ in
+                    // TODO
+                },
+                onStack: {
                     // TODO
                 }
             )
@@ -120,7 +130,7 @@ final class CommonModuleViewController: PassThroughViewController {
 private extension CommonModuleViewController {
     private func presentOptionsPanel() {
         let optionsVC = modify(OptionsViewController(
-            options: optionsProvider(),
+            options: config.options,
             onDismiss: { [cameraModule] in
                 let _ = cameraModule.inputActions.resumeStream()
             }
@@ -185,48 +195,126 @@ private struct TopBarView: View {
     }
 }
 
-/// Transparent bottom bar with shutter centered and gallery button alongside.
 private struct CommonBottomBar: View {
+    var controls: [CommonModuleViewController.BottomBarControls]
     var onShutter: () -> Void
     var onOpenGallery: () -> Void
+    var onContextAction: (CommonModuleViewController.ContextActions) -> Void
+    var onSwitchCamera: (Bool) -> Void
+    var onStack: () -> Void
+
+    @State private var isFrontCamera = false
+
+    private var sorted: [CommonModuleViewController.BottomBarControls] {
+        controls.sorted { $0.order < $1.order }
+    }
 
     var body: some View {
-        HStack {
-            Button(action: onOpenGallery) {
-                Image(systemName: "photo.on.rectangle")
-                    .font(.system(size: 20, weight: .medium))
-                    .padding(12)
+        let left = sorted.filter { $0.order < 0 }
+        let center = sorted.first { $0.order == 0 }
+        let right = sorted.filter { $0.order > 0 }
+
+        ZStack {
+            if let center { controlView(center) }
+            HStack {
+                controlGroup(left)
+                Spacer()
+                controlGroup(right)
             }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            Button(action: onShutter) {
-                ZStack {
-                    Circle()
-                        .stroke(Color.white.opacity(0.8), lineWidth: 3)
-                        .frame(width: 64, height: 64)
-                    Circle()
-                        .fill(Color.white.opacity(0.9))
-                        .frame(width: 50, height: 50)
-                }
-            }
-            .buttonStyle(.plain)
-
-            Spacer()
-
-            // Spacer to keep shutter centered even with two buttons; could host future actions.
-            Color.clear
-                .frame(width: 44, height: 44)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .background(Color.clear)
     }
+
+    private func controlGroup(
+        _ items: [CommonModuleViewController.BottomBarControls]
+    ) -> some View {
+        HStack(spacing: 8) {
+            ForEach(items, id: \.self, content: controlView)
+        }
+    }
+
+    @ViewBuilder
+    private func controlView(
+        _ control: CommonModuleViewController.BottomBarControls
+    ) -> some View {
+        switch control {
+        case .contextMenu(let actions):
+            contextMenuButton(actions: actions)
+        case .gallery:
+            iconButton("photo.on.rectangle", action: onOpenGallery)
+        case .frontBackCameraSwitch:
+            Button {
+                isFrontCamera.toggle()
+                onSwitchCamera(isFrontCamera)
+            } label: {
+                Image(systemName: "arrow.triangle.2.circlepath.camera")
+                    .font(.system(size: bottomBarButtonSize, weight: .medium))
+                    .foregroundStyle(isFrontCamera ? Color.yellow : .white)
+                    .padding(12)
+            }
+            .buttonStyle(.plain)
+        case .stack:
+            iconButton("square.stack.3d.up", action: onStack)
+        case .shutter:
+            shutterButton
+        }
+    }
+
+    private func contextMenuButton(
+        actions: CommonModuleViewController.ContextActions
+    ) -> some View {
+        Menu {
+            ForEach(actions.individualActions, id: \.rawValue) { action in
+                Button(action: { onContextAction(action) }) {
+                    Label(action.name, systemImage: action.icon)
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.system(size: bottomBarButtonSize, weight: .medium))
+                .foregroundStyle(.white)
+                .padding(12)
+        }
+    }
+
+    private func iconButton(
+        _ systemName: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: bottomBarButtonSize, weight: .medium))
+                .foregroundStyle(.white)
+                .padding(12)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var shutterButton: some View {
+        Button(action: onShutter) {
+            ZStack {
+                Circle()
+                    .stroke(Color.white.opacity(0.8), lineWidth: 3)
+                    .frame(width: 64, height: 64)
+                Circle()
+                    .fill(Color.white.opacity(0.9))
+                    .frame(width: 50, height: 50)
+            }
+        }
+        .buttonStyle(.plain)
+    }
 }
 
 extension CommonModuleViewController.ContextActions {
+    fileprivate static let allKnown: [Self] = [.copyToBuffer, .saveToGallery]
+
+    fileprivate var individualActions: [Self] {
+        Self.allKnown.filter { contains($0) }
+    }
+
     fileprivate var name: String {
         switch self {
         case .copyToBuffer: "Copy to buffer"
@@ -234,4 +322,14 @@ extension CommonModuleViewController.ContextActions {
         default: fatalError()
         }
     }
+
+    fileprivate var icon: String {
+        switch self {
+        case .copyToBuffer: "doc.on.clipboard"
+        case .saveToGallery: "square.and.arrow.down"
+        default: fatalError()
+        }
+    }
 }
+
+private let bottomBarButtonSize: CGFloat = 24

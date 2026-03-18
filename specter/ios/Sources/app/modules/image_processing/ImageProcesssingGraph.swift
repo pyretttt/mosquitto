@@ -78,9 +78,16 @@ func makeModuleScreen(tool: cv.SingleFrameIpTool) -> UIViewController {
     return modify(
         CommonModuleViewController(
             cameraModule: cameraVC,
-            optionsProvider: {
-                buildOptionModels(from: tool.options)
-            }
+            config: CommonModuleViewController.Config(
+                options: buildOptionModels(from: tool.options),
+                bottomBarControls: [
+                    .contextMenu([.copyToBuffer, .saveToGallery]),
+                    .frontBackCameraSwitch,
+                    .shutter,
+                    .stack,
+                    .gallery,
+                ]
+            )
         )
     ) {
         $0.modalPresentationStyle = .overFullScreen
