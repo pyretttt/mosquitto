@@ -12,6 +12,38 @@ import SnapKit
 
 @MainActor
 final class CommonModuleViewController: PassThroughViewController {
+    
+    struct ContextActions: OptionSet, Sendable {
+        var rawValue: Int
+        
+        init(rawValue: Int) {
+            self.rawValue = rawValue
+        }
+        
+        static let copyToBuffer = Self(rawValue: 1)
+        static let saveToGallery = Self(rawValue: 1 << 1)
+    }
+    
+    enum BottomBarControls: Sendable {
+        case contextMenu(ContextActions)
+        case gallery
+        case frontBackCameraSwitch
+        case stack
+        
+        var order: Int {
+            switch self {
+            case .contextMenu: 0
+            case .gallery: 3
+            case .frontBackCameraSwitch: 2
+            case .stack: 1
+            }
+        }
+    }
+    
+    struct Config: Sendable {
+        var options: [OptionModel]
+        var bottomBarControls: [BottomBarControls]
+    }
 
     private var topBarHost: UIHostingController<TopBarView>
     private var bottomBarHost: UIHostingController<CommonBottomBar>
@@ -121,7 +153,6 @@ private extension CommonModuleViewController {
 
 // MARK: - SwiftUI components
 
-/// Transparent top bar with a single close button on the leading edge.
 private struct TopBarView: View {
     var onClose: () -> Void
     var onOptions: () -> Void
@@ -190,5 +221,15 @@ private struct CommonBottomBar: View {
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
         .background(Color.clear)
+    }
+}
+
+extension CommonModuleViewController.ContextActions {
+    fileprivate var name: String {
+        switch self {
+        case .copyToBuffer: "Copy to buffer"
+        case .saveToGallery: "Save to gallery"
+        default: fatalError()
+        }
     }
 }

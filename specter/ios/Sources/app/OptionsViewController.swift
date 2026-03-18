@@ -13,7 +13,7 @@ import CxxStdlib
 
 // MARK: - Model
 
-enum OptionModel {
+enum OptionModel: @unchecked Sendable {
     case int(name: String, ptr: cv.IntOptionPtr)
     case float(name: String, ptr: cv.FloatOptionPtr)
     case bool(name: String, ptr: cv.BoolOptionPtr)
