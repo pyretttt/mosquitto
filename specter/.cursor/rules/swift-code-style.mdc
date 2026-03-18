@@ -1,6 +1,7 @@
 ---
 globs: "ios/**/*.swift"
 alwaysApply: false
+description: "This rule provides standards for swift code"
 ---
 
 # Code Rules
@@ -76,3 +77,5 @@ struct A {
 11. Mark closures as `@MainActor` when possible.
 
 12. Do not use `let` unless property is private, prefer to make it `var`.
+
+13. Method belongs to some type if and only if it uses any of its methods or properties. Otherwise you must define it as file level or global function.

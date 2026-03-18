@@ -336,8 +336,7 @@ private final class SwitchOptionCell: UITableViewCell {
     }
 
     @objc private func toggled() {
-        let value = toggle.isOn
-        onChange(value)
+        onChange(toggle.isOn)
     }
 }
 
@@ -388,7 +387,6 @@ private final class SegmentedOptionCell: UITableViewCell {
 
     @objc 
     private func segmentChanged() {
-        let idx = segmented.selectedSegmentIndex
-        onChange(idx)
+        onChange(segmented.selectedSegmentIndex)
     }
 }
