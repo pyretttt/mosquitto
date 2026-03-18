@@ -29,13 +29,15 @@ final class CommonModuleViewController: PassThroughViewController {
         case gallery
         case frontBackCameraSwitch
         case stack
+        case shutter
         
         var order: Int {
             switch self {
-            case .contextMenu: 0
-            case .gallery: 3
-            case .frontBackCameraSwitch: 2
+            case .contextMenu: -2
+            case .gallery: 2
+            case .frontBackCameraSwitch: -1
             case .stack: 1
+            case .shutter: 0
             }
         }
     }
