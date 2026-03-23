@@ -41,6 +41,10 @@ final class CommonModuleViewController: PassThroughViewController {
             }
         }
     }
+
+    struct InputActions: Sendable {
+        var galleryPhotoSelected: @Sendable @MainActor () -> Void
+    }
     
     struct Config: Sendable {
         var options: [OptionModel]
@@ -52,10 +56,12 @@ final class CommonModuleViewController: PassThroughViewController {
 
     private let cameraModule: CameraStreamViewController
     private let config: Config
+    private let inputActions: InputActions
 
     init(
         cameraModule: CameraStreamViewController,
-        config: Config
+        config: Config,
+        inputActions: InputActions
     ) {
         weak var weakSelf: CommonModuleViewController?
         self.cameraModule = cameraModule
@@ -103,7 +109,7 @@ final class CommonModuleViewController: PassThroughViewController {
         )) {
             $0.view.backgroundColor = .clear
         }
-
+        self.inputActions = inputActions
         super.init(nibName: nil, bundle: nil)
         weakSelf = self
     }
@@ -214,13 +220,12 @@ private struct CommonBottomBar: View {
         let center = sorted.first { $0.order == 0 }
         let right = sorted.filter { $0.order > 0 }
 
-        ZStack {
+        HStack {
+            controlGroup(left)
+            Spacer()
             if let center { controlView(center) }
-            HStack {
-                controlGroup(left)
-                Spacer()
-                controlGroup(right)
-            }
+            Spacer()
+            controlGroup(right)
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 8)

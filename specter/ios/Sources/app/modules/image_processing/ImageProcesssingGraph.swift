@@ -87,6 +87,11 @@ func makeModuleScreen(tool: cv.SingleFrameIpTool) -> UIViewController {
                     .stack,
                     .gallery,
                 ]
+            ),
+            inputActions: CommonModuleViewController.InputActions(
+                galleryPhotoSelected: {
+                    // TODO
+                }
             )
         )
     ) {
