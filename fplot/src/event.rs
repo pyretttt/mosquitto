@@ -4,9 +4,6 @@ use futures::{FutureExt, StreamExt};
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-/// The frequency at which tick events are emitted.
-const TICK_FPS: f64 = 30.0;
-
 /// Representation of all possible events.
 #[derive(Clone, Debug)]
 pub enum Event {
@@ -100,7 +97,7 @@ impl EventTask {
     ///
     /// This function emits tick events at a fixed rate and polls for crossterm events in between.
     async fn run(self) -> color_eyre::Result<()> {
-        let tick_rate = Duration::from_secs_f64(1.0 / TICK_FPS);
+        let tick_rate = Duration::from_secs_f64(1.0 / crate::app::SETTINGS.tick_refresh_rate);
         let mut reader = crossterm::event::EventStream::new();
         let mut tick = tokio::time::interval(tick_rate);
         loop {

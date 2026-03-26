@@ -2,6 +2,37 @@ use crate::event::{AppEvent, Event, EventHandler};
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::DefaultTerminal;
 
+
+pub struct Settings {
+    pub price_refresh_interval_seconds: u32,
+    pub tick_refresh_rate: f64,
+}
+
+pub static SETTINGS: Settings = Settings {
+    price_refresh_interval_seconds: 10,
+    tick_refresh_rate: 30.0,
+};
+
+struct Env {
+    data_store: crate::data_store::DataStore,
+}
+
+impl Env {
+    pub fn new(
+        data_store: crate::data_store::DataStore,
+    ) -> Self {
+        Self {
+            data_store: data_store,
+        }
+    }
+}
+
+static ENV: std::sync::LazyLock<Env> = std::sync::LazyLock::new(|| Env::new(
+    crate::data_store::DataStore::new(
+        reqwest::Client::new()
+    )
+));
+
 /// Application.
 #[derive(Debug)]
 pub struct App {
@@ -11,6 +42,8 @@ pub struct App {
     pub counter: u8,
     /// Event handler.
     pub events: EventHandler,
+    /// Counter
+    pub tick: u32,
 }
 
 impl Default for App {
@@ -19,6 +52,7 @@ impl Default for App {
             running: true,
             counter: 0,
             events: EventHandler::new(),
+            tick: 0
         }
     }
 }
@@ -75,7 +109,22 @@ impl App {
     ///
     /// The tick event is where you can update the state of your application with any logic that
     /// needs to be updated at a fixed frame rate. E.g. polling a server, updating an animation.
-    pub fn tick(&self) {}
+    pub fn tick(&mut self) {
+        self.tick = self.tick.wrapping_add(1);
+
+        let tick_seconds = self.tick / SETTINGS.tick_refresh_rate as u32;
+        if tick_seconds % SETTINGS.price_refresh_interval_seconds == 0 {
+            tokio::spawn(async {
+                let prices = ENV.data_store.get_prices().await;
+                match prices {
+                    Ok(prices) => {
+                    }
+                    Err(e) => {
+                    }
+                }
+            });
+        }
+    }
 
     /// Set running to false to quit the application.
     pub fn quit(&mut self) {
