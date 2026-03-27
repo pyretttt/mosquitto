@@ -3,6 +3,7 @@ use crossterm::event::Event as CrosstermEvent;
 use futures::{FutureExt, StreamExt};
 use std::time::Duration;
 use tokio::sync::mpsc;
+use crate::data;
 
 /// Representation of all possible events.
 #[derive(Clone, Debug)]
@@ -34,15 +35,24 @@ pub enum AppEvent {
     Decrement,
     /// Quit the application.
     Quit,
+    /// Price events.
+    Price(PriceEvent),
+}
+
+#[derive(Clone, Debug)]
+pub enum PriceEvent {
+    PriceLoading,
+    PricesLoaded(Vec<data::crypto_market::SymbolPrice>),
+    PriceLoadFailed,
 }
 
 /// Terminal event handler.
 #[derive(Debug)]
 pub struct EventHandler {
     /// Event sender channel.
-    sender: mpsc::UnboundedSender<Event>,
+    pub sender: mpsc::UnboundedSender<Event>,
     /// Event receiver channel.
-    receiver: mpsc::UnboundedReceiver<Event>,
+    pub receiver: mpsc::UnboundedReceiver<Event>,
 }
 
 impl EventHandler {
