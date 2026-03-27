@@ -10,8 +10,8 @@ const TICK_REFRESH_RATE: f64 = 30.0;
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
-    let terminal = ratatui::init();
-    let env = app::Env::new(
+    let mut terminal = ratatui::init();
+    let mut env = app::Env::new(
         data::DataStore::new(reqwest::Client::new()),
         event::EventHandler::new(TICK_REFRESH_RATE),
         app::Settings {
@@ -20,7 +20,7 @@ async fn main() -> color_eyre::Result<()> {
         },
     );
     let mut app_state = app::AppState::default();
-    app::run(&mut app_state, &env, terminal).await?;
+    app::run(&mut app_state, &mut env, &mut terminal).await?;
     ratatui::restore();
 
     color_eyre::Result::Ok(())

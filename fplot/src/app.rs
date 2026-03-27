@@ -1,7 +1,7 @@
-use crate::event::{AppEvent, Event, EventHandler};
-use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
-use ratatui::DefaultTerminal;
 use crate::data;
+use crate::event::{AppEvent, Event, EventHandler};
+use crossterm::event::{KeyCode, KeyModifiers};
+use ratatui::DefaultTerminal;
 
 pub struct Settings {
     pub price_refresh_interval_seconds: u32,
@@ -19,13 +19,11 @@ impl Env {
         data_store: data::DataStore,
         events: EventHandler,
         settings: Settings,
-        terminal: DefaultTerminal
     ) -> Self {
         Self {
-            data_store: data_store,
-            events: events,
-            settings: settings,
-            terminal: terminal,
+            data_store,
+            events,
+            settings,
         }
     }
 }
@@ -46,7 +44,7 @@ pub struct AppState {
 pub fn app_reducer<'a>(
     state: &'a mut AppState,
     action: &'a Event,
-    env: &'a Env
+    env: &'a mut Env,
 ) -> &'a mut AppState {
     match action {
         Event::Tick => {
@@ -73,7 +71,7 @@ pub fn app_reducer<'a>(
             
         },
         Event::App(app_event) => {
-            state = app_logic_reducer(state, app_event, env);
+            app_logic_reducer(state, app_event, env);
         },
     }
 
@@ -113,11 +111,15 @@ impl Default for AppState {
     }
 }
 
-pub async fn run(app_state:& mut AppState, env: &mut Env, terminal:& mut DefaultTerminal) -> color_eyre::Result<()> {
+pub async fn run(
+    app_state: &mut AppState,
+    env: &mut Env,
+    terminal: &mut DefaultTerminal,
+) -> color_eyre::Result<()> {
     while app_state.running {
         terminal.draw(|frame| frame.render_widget(app_state as &AppState, frame.area()))?;
         let event = env.events.next().await?;
-        app_state = app_reducer(&mut app_state, &event, env);
+        app_reducer(app_state, &event, env);
     }
     Ok(())
 }
