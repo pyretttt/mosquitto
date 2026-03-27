@@ -12,7 +12,6 @@ pub struct Env {
     pub data_store: data::DataStore,
     pub events: EventHandler,
     pub settings: Settings,
-    pub terminal: DefaultTerminal,
 }
 
 impl Env {
@@ -84,7 +83,7 @@ pub fn app_reducer<'a>(
 pub fn app_logic_reducer<'a>(
     state: &'a mut AppState, 
     action: &'a AppEvent, 
-    _env: &'a Env
+    _env: &'a mut Env
 ) -> &'a mut AppState {
     match action {
         AppEvent::Increment => {
@@ -114,9 +113,9 @@ impl Default for AppState {
     }
 }
 
-pub async fn run(app_state:& mut AppState, env: &Env) -> color_eyre::Result<()> {
+pub async fn run(app_state:& mut AppState, env: &mut Env, terminal:& mut DefaultTerminal) -> color_eyre::Result<()> {
     while app_state.running {
-        env.terminal.draw(|frame| frame.render_widget(app_state as &AppState, frame.area()))?;
+        terminal.draw(|frame| frame.render_widget(app_state as &AppState, frame.area()))?;
         let event = env.events.next().await?;
         app_state = app_reducer(&mut app_state, &event, env);
     }

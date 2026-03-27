@@ -18,10 +18,9 @@ async fn main() -> color_eyre::Result<()> {
             price_refresh_interval_seconds: 10,
             tick_refresh_rate: TICK_REFRESH_RATE,
         },
-        terminal,
     );
     let mut app_state = app::AppState::default();
-    app::run(&mut app_state, &env).await?;
+    app::run(&mut app_state, &env, terminal).await?;
     ratatui::restore();
 
     color_eyre::Result::Ok(())
