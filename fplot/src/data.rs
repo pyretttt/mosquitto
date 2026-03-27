@@ -1,20 +1,8 @@
 use reqwest::Client;
-use std::collections::HashMap;
 
 pub struct DataStore {
     client: Client,
 }
-
-pub mod crypto_market {
-    #[derive(serde::Deserialize)]
-    #[derive(Debug)]
-    pub struct SymbolPrice {
-        #[serde(rename = "symbol")]
-        pub name: String,
-        pub price: f64,
-    }
-}
-
 
 impl DataStore {
     pub fn new(client: Client) -> Self {
@@ -31,5 +19,28 @@ impl DataStore {
             .await?;
 
         Ok(prices)
+    }
+}
+
+pub mod crypto_market {
+    #[derive(serde::Deserialize)]
+    #[derive(Debug)]
+    pub struct SymbolPrice {
+        #[serde(rename = "symbol")]
+        pub name: String,
+        pub price: f64,
+    }
+
+    #[derive(Debug)]
+    pub enum PricesState {
+        Initial,
+        Loading,
+        Loaded(Vec<SymbolPrice>),
+    }
+
+    #[derive(Debug)]
+    pub struct PricesFeatureState {
+        pub prices: PricesState,
+        pub last_update_tick_sec: u32,
     }
 }
