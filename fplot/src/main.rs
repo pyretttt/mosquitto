@@ -14,7 +14,7 @@ async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
     let mut terminal = ratatui::init();
     let mut env = app::Env::new(
-        Arc::new(data::DataStore::new(reqwest::Client::new())),
+        Arc::new(data::Store::new(reqwest::Client::new())),
         event::EventHandler::new(TICK_REFRESH_RATE),
         app::Settings {
             price_refresh_interval_seconds: 10,

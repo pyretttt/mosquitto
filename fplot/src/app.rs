@@ -12,7 +12,7 @@ pub struct Settings {
 }
 
 pub struct Env {
-    pub data_store: Arc<data::DataStore>,
+    pub data_store: Arc<data::Store>,
     pub events: EventHandler,
     pub settings: Settings,
 }
@@ -21,11 +21,18 @@ impl Env {
     pub fn event_sender(&self) -> mpsc::UnboundedSender<Event> {
         self.events.sender.clone()
     }
+
+    pub fn get_send_event<'b>(&'b self) -> impl Fn(Event) -> () {
+        let event_sender = self.event_sender().clone();
+        move |event: Event| {
+            let _ = event_sender.send(event);
+        }
+    }
 }
 
 impl Env {
     pub fn new(
-        data_store: Arc<data::DataStore>,
+        data_store: Arc<data::Store>,
         events: EventHandler,
         settings: Settings,
     ) -> Self {
@@ -47,12 +54,12 @@ pub struct AppState {
     /// Counter
     pub tick: u32,
     /// Prices feature state.
-    pub prices_feature: data::crypto_market::PricesFeatureState,
+    pub prices_feature: data::crypto::PricesFeatureState,
 }
 
 pub fn app_reducer<'a>(
     state: &'a mut AppState,
-    action: &'a Event,
+    action: &'a mut Event,
     env: &'a mut Env,
 ) -> &'a mut AppState {
     match action {
@@ -94,15 +101,15 @@ pub fn tick_reducer<'a>(
 
     let tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
     if tick_sec % env.settings.price_refresh_interval_seconds == 0 {
-        state.prices_feature.prices = data::crypto_market::PricesState::Loading;
+        state.prices_feature.prices = data::crypto::PricesState::Loading;
         let data_store = Arc::clone(&env.data_store);
-        let event_sender = env.event_sender();
+        let send = env.get_send_event();
         tokio::spawn(async move {
-            event_sender.send(Event::App(PriceEvent::PriceLoading));
-            let prices = data_store.get_prices().await;
-            match prices {
-                Ok(prices) => event_sender.send(Event::App(PriceEvent::PricesLoaded(prices))),
-                Err(error) => event_sender.send(Event::App(PriceEvent::PriceLoadFailed)),
+            send(make_price_event(PriceEvent::PriceLoading));
+            let result = data_store.get_prices().await;
+            match result {
+                Ok(prices) => send(make_price_event(PriceEvent::PricesLoaded(prices))),
+                Err(_error) => send(make_price_event(PriceEvent::PriceLoadFailed)),
             }
         });
     }
@@ -110,8 +117,8 @@ pub fn tick_reducer<'a>(
 }
 
 pub fn app_logic_reducer<'a>(
-    state: &'a mut AppState, 
-    action: &'a AppEvent, 
+    state: &'a mut AppState,
+    action: &'a mut AppEvent,
     _env: &'a mut Env
 ) -> &'a mut AppState {
     match action {
@@ -126,17 +133,17 @@ pub fn app_logic_reducer<'a>(
         },
         AppEvent::Price(PriceEvent::PriceLoading) => {
             match state.prices_feature.prices {
-                data::crypto_market::PricesState::Loading => {
-                    state.prices_feature.prices = data::crypto_market::PricesState::Loading;
+                data::crypto::PricesState::Loading => {
+                    state.prices_feature.prices = data::crypto::PricesState::Loading;
                 }
                 _ => {}
             }
         },
         AppEvent::Price(PriceEvent::PricesLoaded(prices)) => {
-            state.prices_feature.prices = data::crypto_market::PricesState::Loaded(prices);
+            state.prices_feature.prices = data::crypto::PricesState::Loaded(std::mem::take(prices));
         },
         AppEvent::Price(PriceEvent::PriceLoadFailed) => {
-            state.prices_feature.prices = data::crypto_market::PricesState::PriceLoadFailed;
+            state.prices_feature.prices = data::crypto::PricesState::PriceLoadFailed;
         }
     }
     state
@@ -148,8 +155,8 @@ impl Default for AppState {
             running: true,
             counter: 0,
             tick: 0,
-            prices_feature: data::crypto_market::PricesFeatureState {
-                prices: data::crypto_market::PricesState::Initial,
+            prices_feature: data::crypto::PricesFeatureState {
+                prices: data::crypto::PricesState::Initial,
                 last_update_tick_sec: 0,
             },
         }
@@ -163,8 +170,13 @@ pub async fn run(
 ) -> color_eyre::Result<()> {
     while app_state.running {
         terminal.draw(|frame| frame.render_widget(app_state as &AppState, frame.area()))?;
-        let event = env.events.next().await?;
-        app_reducer(app_state, &event, env);
+        let mut event = env.events.next().await?;
+        app_reducer(app_state, &mut event, env);
     }
     Ok(())
+}
+
+
+fn make_price_event(event: PriceEvent) -> Event {
+    Event::App(AppEvent::Price(event))
 }

@@ -42,7 +42,7 @@ pub enum AppEvent {
 #[derive(Clone, Debug)]
 pub enum PriceEvent {
     PriceLoading,
-    PricesLoaded(Vec<data::crypto_market::SymbolPrice>),
+    PricesLoaded(Vec<data::crypto::SymbolPrice>),
     PriceLoadFailed,
 }
 
