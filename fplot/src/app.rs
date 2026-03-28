@@ -22,7 +22,7 @@ impl Env {
         self.events.sender.clone()
     }
 
-    pub fn get_send_event<'b>(&'b self) -> impl Fn(Event) -> () {
+    pub fn get_send_event(&self) -> impl Fn(Event) -> () + use<> {
         let event_sender = self.event_sender().clone();
         move |event: Event| {
             let _ = event_sender.send(event);
@@ -49,8 +49,6 @@ impl Env {
 pub struct AppState {
     /// Is the application running?
     pub running: bool,
-    /// Counter.
-    pub counter: u8,
     /// Counter
     pub tick: u32,
     /// Prices feature state.
@@ -122,12 +120,6 @@ pub fn app_logic_reducer<'a>(
     _env: &'a mut Env
 ) -> &'a mut AppState {
     match action {
-        AppEvent::Increment => {
-            state.counter = state.counter.wrapping_add(1);
-        },
-        AppEvent::Decrement => {
-            state.counter = state.counter.wrapping_sub(1);
-        },
         AppEvent::Quit => {
             state.running = false;
         },
