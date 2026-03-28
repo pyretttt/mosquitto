@@ -5,6 +5,7 @@ use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::DefaultTerminal;
 use std::sync::Arc;
 use tokio::sync::mpsc;
+use std::ops::Not;
 
 
 pub struct Settings {
@@ -100,7 +101,7 @@ pub fn tick_reducer<'a>(
 
     let tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
     if tick_sec % env.settings.price_refresh_interval_seconds == 0 {
-        state.prices_feature.prices = data::crypto::PricesState::Loading;
+        state.prices_feature.loading = data::crypto::PricesLoadingState::Loading;
         let data_store = Arc::clone(&env.data_store);
         let send = env.get_send_event();
         tokio::spawn(async move {
@@ -125,31 +126,31 @@ pub fn app_logic_reducer<'a>(
             state.running = false;
         },
         AppEvent::UpKeyTapped => {
-            if let data::crypto::PricesState::Loaded(_) = state.prices_feature.prices
+            if state.prices_feature.prices.is_empty().not()
                 && state.prices_feature.selected_index > 0 {
                 state.prices_feature.selected_index -= 1;
             }
         },
         AppEvent::DownKeyTapped => {
-            if let data::crypto::PricesState::Loaded(ref prices) = state.prices_feature.prices
-                && state.prices_feature.selected_index + 1 < prices.len() {
+            if state.prices_feature.prices.is_empty().not()
+                && state.prices_feature.selected_index + 1 < state.prices_feature.prices.len() {
                 state.prices_feature.selected_index += 1;
             }
         },
         AppEvent::Price(PriceEvent::PriceLoading) => {
-            match state.prices_feature.prices {
-                data::crypto::PricesState::Loading => {
-                    state.prices_feature.prices = data::crypto::PricesState::Loading;
+            match state.prices_feature.loading {
+                data::crypto::PricesLoadingState::Idle | data::crypto::PricesLoadingState::PriceLoadFailed => {
+                    state.prices_feature.loading = data::crypto::PricesLoadingState::Loading;
                 }
-                _ => {}
+                _ => panic!("Started loading while already loading"),
             }
         },
         AppEvent::Price(PriceEvent::PricesLoaded(prices)) => {
             state.prices_feature.last_update_tick_sec = state.tick;
-            state.prices_feature.prices = data::crypto::PricesState::Loaded(std::mem::take(prices));
+            state.prices_feature.prices = std::mem::take(prices);
         },
         AppEvent::Price(PriceEvent::PriceLoadFailed) => {
-            state.prices_feature.prices = data::crypto::PricesState::PriceLoadFailed;
+            state.prices_feature.loading = data::crypto::PricesLoadingState::PriceLoadFailed;
         }
     }
     state
@@ -161,7 +162,8 @@ impl Default for AppState {
             running: true,
             tick: 0,
             prices_feature: data::crypto::PricesFeatureState {
-                prices: data::crypto::PricesState::Initial,
+                loading: data::crypto::PricesLoadingState::Idle,
+                prices: vec![],
                 last_update_tick_sec: 0,
                 selected_index: 0,
             },

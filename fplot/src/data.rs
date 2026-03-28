@@ -1,4 +1,6 @@
 use reqwest::Client;
+use serde_aux::field_attributes::deserialize_number_from_string;
+
 
 pub struct Store {
     client: Client,
@@ -28,20 +30,21 @@ pub mod crypto {
     pub struct SymbolPrice {
         #[serde(rename = "symbol")]
         pub name: String,
+        #[serde(deserialize_with = "deserialize_number_from_string")]
         pub price: f64,
     }
 
     #[derive(Debug, Clone)]
-    pub enum PricesState {
-        Initial,
+    pub enum PricesLoadingState {
         Loading,
-        Loaded(Vec<SymbolPrice>),
         PriceLoadFailed,
+        Idle,
     }
 
     #[derive(Debug, Clone)]
     pub struct PricesFeatureState {
-        pub prices: PricesState,
+        pub loading: PricesLoadingState,
+        pub prices: Vec<SymbolPrice>,
         pub last_update_tick_sec: u32,
         pub selected_index: usize,
     }
