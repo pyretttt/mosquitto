@@ -1,7 +1,4 @@
 use reqwest::Client;
-use serde_aux::field_attributes::deserialize_number_from_string;
-
-
 pub struct Store {
     client: Client,
 }
@@ -30,7 +27,7 @@ pub mod crypto {
     pub struct SymbolPrice {
         #[serde(rename = "symbol")]
         pub name: String,
-        #[serde(deserialize_with = "deserialize_number_from_string")]
+        #[serde(deserialize_with = "serde_aux::field_attributes::deserialize_number_from_string")]
         pub price: f64,
     }
 

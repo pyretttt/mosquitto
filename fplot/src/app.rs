@@ -100,18 +100,22 @@ pub fn tick_reducer<'a>(
     state.tick = state.tick.wrapping_add(1);
 
     let tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
-    if tick_sec % env.settings.price_refresh_interval_seconds == 0 {
-        state.prices_feature.loading = data::crypto::PricesLoadingState::Loading;
-        let data_store = Arc::clone(&env.data_store);
-        let send = env.get_send_event();
-        tokio::spawn(async move {
-            send(make_price_event(PriceEvent::PriceLoading));
-            let result = data_store.get_prices().await;
-            match result {
-                Ok(prices) => send(make_price_event(PriceEvent::PricesLoaded(prices))),
-                Err(_error) => send(make_price_event(PriceEvent::PriceLoadFailed)),
+    match state.prices_feature.loading {
+        data::crypto::PricesLoadingState::Idle | data::crypto::PricesLoadingState::PriceLoadFailed => {
+            if tick_sec % env.settings.price_refresh_interval_seconds == 0 {
+                let data_store = Arc::clone(&env.data_store);
+                let send = env.get_send_event();
+                tokio::spawn(async move {
+                    send(make_price_event(PriceEvent::PriceLoading));
+                    let result = data_store.get_prices().await;
+                    match result {
+                        Ok(prices) => send(make_price_event(PriceEvent::PricesLoaded(prices))),
+                        Err(_error) => send(make_price_event(PriceEvent::PriceLoadFailed)),
+                    }
+                });
             }
-        });
+        }
+        data::crypto::PricesLoadingState::Loading => (),
     }
     state
 }
