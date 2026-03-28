@@ -12,11 +12,11 @@ use crate::data;
 pub fn draw(frame: &mut Frame, state: &mut AppState) {
     let [status_area, table_area] = Layout::vertical([
         Constraint::Length(1),
-        Constraint::Min(0),
+        Constraint::Fill(1),
     ]).areas(frame.area());
 
     frame.render_widget(
-        status_bar(&state.prices_feature),
+        status_bar(state),
         status_area,
     );
     draw_prices_table(
@@ -27,8 +27,13 @@ pub fn draw(frame: &mut Frame, state: &mut AppState) {
     );
 }
 
-fn status_bar(feature: &data::crypto::PricesFeatureState) -> Paragraph<'_> {
-    match &feature.loading {
+fn status_bar(state: &mut AppState) -> Paragraph<'_> {
+    let last_update_sec_passed: u32 = state.tick_sec - state.prices_feature.last_update_tick_sec;
+    let last_update_span = Span::styled(
+        format!("Last update {last_update_sec_passed} seconds ago"),
+        Style::default().fg(Color::DarkGray),
+    );
+    match &state.prices_feature.loading {
         data::crypto::PricesLoadingState::Loading => Paragraph::new(Line::from(vec![
             Span::styled(" ⟳ ", Style::default().fg(Color::Cyan)),
             Span::styled(
@@ -44,13 +49,15 @@ fn status_bar(feature: &data::crypto::PricesFeatureState) -> Paragraph<'_> {
                     .fg(Color::Red)
                     .add_modifier(Modifier::BOLD),
             ),
+            last_update_span
         ])),
         data::crypto::PricesLoadingState::Idle => Paragraph::new(Line::from(vec![
             Span::styled(" ✓ ", Style::default().fg(Color::Green)),
             Span::styled(
-                format!("{} symbols loaded", feature.prices.len()),
+                format!("{} symbols loaded", state.prices_feature.prices.len()),
                 Style::default().fg(Color::DarkGray),
             ),
+            last_update_span
         ])),
     }
 }
@@ -94,7 +101,7 @@ fn draw_prices_table(
                 .title_alignment(Alignment::Center)
                 .title_bottom(Line::from(status).centered()),
         )
-        .highlight_style(
+        .row_highlight_style(
             Style::default()
                 .bg(Color::DarkGray)
                 .fg(Color::White)

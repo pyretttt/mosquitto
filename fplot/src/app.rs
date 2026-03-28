@@ -53,6 +53,8 @@ pub struct AppState {
     pub running: bool,
     /// Counter
     pub tick: u32,
+    /// Tick seconds.
+    pub tick_sec: u32,
     /// Prices feature state.
     pub prices_feature: data::crypto::PricesFeatureState,
 }
@@ -98,11 +100,11 @@ pub fn tick_reducer<'a>(
     env: &'a mut Env,
 ) -> &'a mut AppState {
     state.tick = state.tick.wrapping_add(1);
+    state.tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
 
-    let tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
     match state.prices_feature.loading {
         data::crypto::PricesLoadingState::Idle | data::crypto::PricesLoadingState::PriceLoadFailed => {
-            if tick_sec % env.settings.price_refresh_interval_seconds == 0 {
+            if state.tick_sec % env.settings.price_refresh_interval_seconds == 0 {
                 let data_store = Arc::clone(&env.data_store);
                 let send = env.get_send_event();
                 tokio::spawn(async move {
@@ -123,7 +125,7 @@ pub fn tick_reducer<'a>(
 pub fn app_logic_reducer<'a>(
     state: &'a mut AppState,
     action: &'a mut AppEvent,
-    _env: &'a mut Env
+    env: &'a mut Env
 ) -> &'a mut AppState {
     match action {
         AppEvent::Quit => {
@@ -150,7 +152,8 @@ pub fn app_logic_reducer<'a>(
             }
         },
         AppEvent::Price(PriceEvent::PricesLoaded(prices)) => {
-            state.prices_feature.last_update_tick_sec = state.tick;
+            state.prices_feature.last_update_tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
+            state.prices_feature.loading = data::crypto::PricesLoadingState::Idle;
             state.prices_feature.prices = std::mem::take(prices);
         },
         AppEvent::Price(PriceEvent::PriceLoadFailed) => {
@@ -165,6 +168,7 @@ impl Default for AppState {
         Self {
             running: true,
             tick: 0,
+            tick_sec: 0,
             prices_feature: data::crypto::PricesFeatureState {
                 loading: data::crypto::PricesLoadingState::Idle,
                 prices: vec![],
