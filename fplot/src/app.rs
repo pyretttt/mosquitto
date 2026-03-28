@@ -1,5 +1,6 @@
 use crate::data;
 use crate::event::{AppEvent, Event, EventHandler, PriceEvent};
+use crate::ui;
 use crossterm::event::{KeyCode, KeyModifiers};
 use ratatui::DefaultTerminal;
 use std::sync::Arc;
@@ -73,8 +74,8 @@ pub fn app_reducer<'a>(
                     KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                         env.events.send(AppEvent::Quit)
                     }
-                    KeyCode::Right => env.events.send(AppEvent::Increment),
-                    KeyCode::Left => env.events.send(AppEvent::Decrement),
+                    KeyCode::Up => env.events.send(AppEvent::UpKeyTapped),
+                    KeyCode::Down => env.events.send(AppEvent::DownKeyTapped),
                     // Other handlers you could add here.
                     _ => {}
                 }
@@ -123,6 +124,18 @@ pub fn app_logic_reducer<'a>(
         AppEvent::Quit => {
             state.running = false;
         },
+        AppEvent::UpKeyTapped => {
+            if let data::crypto::PricesState::Loaded(_) = state.prices_feature.prices
+                && state.prices_feature.selected_index > 0 {
+                state.prices_feature.selected_index -= 1;
+            }
+        },
+        AppEvent::DownKeyTapped => {
+            if let data::crypto::PricesState::Loaded(ref prices) = state.prices_feature.prices
+                && state.prices_feature.selected_index + 1 < prices.len() {
+                state.prices_feature.selected_index += 1;
+            }
+        },
         AppEvent::Price(PriceEvent::PriceLoading) => {
             match state.prices_feature.prices {
                 data::crypto::PricesState::Loading => {
@@ -150,6 +163,7 @@ impl Default for AppState {
             prices_feature: data::crypto::PricesFeatureState {
                 prices: data::crypto::PricesState::Initial,
                 last_update_tick_sec: 0,
+                selected_index: 0,
             },
         }
     }
@@ -161,7 +175,7 @@ pub async fn run(
     terminal: &mut DefaultTerminal,
 ) -> color_eyre::Result<()> {
     while app_state.running {
-        terminal.draw(|frame| frame.render_widget(app_state as &AppState, frame.area()))?;
+        terminal.draw(|frame| ui::draw(frame, app_state))?;
         let mut event = env.events.next().await?;
         app_reducer(app_state, &mut event, env);
     }

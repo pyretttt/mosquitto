@@ -1,5 +1,4 @@
 use reqwest::Client;
-use serde;
 
 pub struct Store {
     client: Client,
@@ -44,5 +43,6 @@ pub mod crypto {
     pub struct PricesFeatureState {
         pub prices: PricesState,
         pub last_update_tick_sec: u32,
+        pub selected_index: usize,
     }
 }

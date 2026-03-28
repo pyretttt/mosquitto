@@ -31,6 +31,8 @@ pub enum Event {
 pub enum AppEvent {
     /// Quit the application.
     Quit,
+    UpKeyTapped,
+    DownKeyTapped,
     /// Price events.
     Price(PriceEvent),
 }
