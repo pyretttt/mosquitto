@@ -5,6 +5,7 @@ use ratatui::{
     widgets::{Block, BorderType, Paragraph, Widget},
 };
 
+use crate::data;
 use crate::app::AppState;
 
 impl Widget for &AppState {
@@ -15,25 +16,19 @@ impl Widget for &AppState {
     // - https://docs.rs/ratatui/latest/ratatui/widgets/index.html
     // - https://github.com/ratatui/ratatui/tree/master/examples
     fn render(self, area: Rect, buf: &mut Buffer) {
-        let block = Block::bordered()
-            .title("fplot")
-            .title_alignment(Alignment::Center)
-            .border_type(BorderType::Rounded);
-
-        let text = format!(
-            "This is a tui template.\n\
-                Press `Esc`, `Ctrl-C` or `q` to stop running.\n\
-                Press left and right to increment and decrement the counter respectively.\n\
-                Counter: {}",
-            self.counter
-        );
-
-        let paragraph = Paragraph::new(text)
-            .block(block)
-            .fg(Color::Cyan)
-            .bg(Color::Black)
-            .centered();
-
-        paragraph.render(area, buf);
+        match self.prices_feature.prices {
+            data::crypto::PricesState::Loading | data::crypto::PricesState::Initial => {
+                let text = "Loading...";
+                let paragraph = Paragraph::new(text)
+                    .block(block)
+                    .fg(Color::Cyan)
+                    .bg(Color::Black)
+                    .centered();
+                    }
+            data::crypto::PricesState::Loaded(
+                symbol_prices
+            ) => todo!(),
+            data::crypto::PricesState::PriceLoadFailed => todo!(),
+        }
     }
 }

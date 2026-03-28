@@ -132,6 +132,7 @@ pub fn app_logic_reducer<'a>(
             }
         },
         AppEvent::Price(PriceEvent::PricesLoaded(prices)) => {
+            state.prices_feature.last_update_tick_sec = state.tick;
             state.prices_feature.prices = data::crypto::PricesState::Loaded(std::mem::take(prices));
         },
         AppEvent::Price(PriceEvent::PriceLoadFailed) => {
@@ -145,7 +146,6 @@ impl Default for AppState {
     fn default() -> Self {
         Self {
             running: true,
-            counter: 0,
             tick: 0,
             prices_feature: data::crypto::PricesFeatureState {
                 prices: data::crypto::PricesState::Initial,
