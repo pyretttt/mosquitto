@@ -1,3 +1,7 @@
 [tools]
 cargo = "latest"
 rust = "latest"
+
+[tasks.build]
+description = "Build with cargo"
+run = "CARGO_TARGET_DIR=build cargo build"
