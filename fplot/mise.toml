@@ -4,4 +4,8 @@ rust = "latest"
 
 [tasks.build]
 description = "Build with cargo"
-run = "CARGO_TARGET_DIR=build cargo build"
+run = "cargo build"
+
+[tasks.launch]
+description = "Launches build artifact"
+run = "build/debug/fplot"
