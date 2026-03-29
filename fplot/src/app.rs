@@ -100,11 +100,16 @@ pub fn tick_reducer<'a>(
     env: &'a mut Env,
 ) -> &'a mut AppState {
     state.tick = state.tick.wrapping_add(1);
+    let old_tick_sec: u32 = state.tick_sec;
     state.tick_sec = state.tick / env.settings.tick_refresh_rate as u32;
 
+    let has_ticked_this_sec = old_tick_sec == state.tick_sec;
+    let is_time_to_refresh_prices = if state.tick_sec == 0 { true } else {
+        has_ticked_this_sec.not()
+            && state.tick_sec % env.settings.price_refresh_interval_seconds == 0
+    };
     match state.prices_feature.loading {
-        data::crypto::PricesLoadingState::Idle | data::crypto::PricesLoadingState::PriceLoadFailed => {
-            if state.tick_sec % env.settings.price_refresh_interval_seconds == 0 {
+        data::crypto::PricesLoadingState::Idle | data::crypto::PricesLoadingState::PriceLoadFailed if is_time_to_refresh_prices => {
                 let data_store = Arc::clone(&env.data_store);
                 let send = env.get_send_event();
                 tokio::spawn(async move {
@@ -115,9 +120,9 @@ pub fn tick_reducer<'a>(
                         Err(_error) => send(make_price_event(PriceEvent::PriceLoadFailed)),
                     }
                 });
-            }
         }
         data::crypto::PricesLoadingState::Loading => (),
+        _ => (),
     }
     state
 }
