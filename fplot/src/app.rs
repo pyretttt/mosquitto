@@ -57,6 +57,8 @@ pub struct AppState {
     pub tick_sec: u32,
     /// Prices feature state.
     pub prices_feature: data::crypto::PricesFeatureState,
+    /// Symbol price change.
+    pub current_symbol_price_change: Option<data::crypto::PriceChange>,
 }
 
 pub fn app_reducer<'a>(
@@ -180,6 +182,7 @@ impl Default for AppState {
                 last_update_tick_sec: 0,
                 selected_index: 0,
             },
+            current_symbol_price_change: None,
         }
     }
 }
