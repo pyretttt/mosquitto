@@ -197,7 +197,6 @@ pub async fn run(
     Ok(())
 }
 
-
 fn make_price_event(event: PriceEvent) -> Event {
     Event::App(AppEvent::Price(event))
 }
