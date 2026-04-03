@@ -26,6 +26,11 @@ crate.spec(
     package = "uniffi",
     version = "0.28.0",
     default_features = False,
+    features = ["cli"],
+)
+crate.annotation(
+    crate = "uniffi_testing",
+    rustc_env = {"CARGO": "cargo"},
 )
 crate.from_specs(
     supported_platform_triples = [

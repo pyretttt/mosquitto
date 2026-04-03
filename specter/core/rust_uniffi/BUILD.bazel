@@ -1,6 +1,7 @@
-load("@rules_rust//rust:defs.bzl", "rust_static_library")
+load("@rules_rust//rust:defs.bzl", "rust_binary", "rust_shared_library", "rust_static_library")
 load("@rules_swift//swift:swift.bzl", "swift_interop_hint", "swift_library")
 
+# Static library linked into the final iOS app.
 rust_static_library(
     name = "core_rust_uniffi",
     srcs = ["src/lib.rs"],
@@ -11,12 +12,69 @@ rust_static_library(
     visibility = ["//visibility:public"],
 )
 
-# Exposes the UniFFI-generated C header as a Swift-importable module.
-# The generated Swift code imports this as `uniffi_helloFFI`.
+# Shared library built for the host – uniffi-bindgen reads its metadata section.
+rust_shared_library(
+    name = "core_rust_uniffi_cdylib",
+    srcs = ["src/lib.rs"],
+    compile_data = ["Cargo.toml"],
+    edition = "2021",
+    crate_name = "uniffi_hello",
+    deps = ["@crates//:uniffi"],
+)
+
+# uniffi-bindgen binary (host tool).
+rust_binary(
+    name = "uniffi_bindgen_bin",
+    srcs = ["uniffi-bindgen.rs"],
+    compile_data = ["Cargo.toml"],
+    edition = "2021",
+    deps = ["@crates//:uniffi"],
+)
+
+# ---------------------------------------------------------------------------
+# Code generation: run uniffi-bindgen against the cdylib to produce Swift
+# sources, a C header, and a Clang module map.
+#
+# A fake cargo script intercepts the `cargo metadata` call that
+# uniffi-bindgen makes internally, so the genrule stays hermetic (no real
+# cargo binary or network access required in the sandbox).
+# ---------------------------------------------------------------------------
+genrule(
+    name = "uniffi_hello_generated",
+    srcs = [
+        "Cargo.toml",
+        "fake_cargo.sh",
+    ],
+    outs = [
+        "uniffi_hello.swift",
+        "uniffi_helloFFI.h",
+        "uniffi_helloFFI.modulemap",
+    ],
+    tools = [
+        ":uniffi_bindgen_bin",
+        ":core_rust_uniffi_cdylib",
+    ],
+    cmd = """
+        set -e
+        CARGO_WRAPPER=$$(mktemp)
+        cp $(location fake_cargo.sh) "$$CARGO_WRAPPER"
+        chmod +x "$$CARGO_WRAPPER"
+        export CARGO="$$CARGO_WRAPPER"
+        export FAKE_CARGO_MANIFEST_PATH="$$PWD/$(location Cargo.toml)"
+        export FAKE_CARGO_CRATE_NAME="uniffi_hello"
+        $(location :uniffi_bindgen_bin) generate \
+            --library $(location :core_rust_uniffi_cdylib) \
+            --language swift \
+            --out-dir $(RULEDIR)
+        rm -f "$$CARGO_WRAPPER"
+    """,
+)
+
+# Exposes the generated C header as a Swift-importable module.
 cc_library(
     name = "uniffi_hello_ffi",
-    hdrs = ["generated/uniffi_helloFFI.h"],
-    includes = ["generated"],
+    hdrs = ["uniffi_helloFFI.h"],
+    includes = ["."],
     deps = [":core_rust_uniffi"],
     aspect_hints = [":uniffi_ffi_interop"],
     visibility = ["//visibility:public"],
@@ -27,11 +85,11 @@ swift_interop_hint(
     module_name = "uniffi_helloFFI",
 )
 
-# Compiles the UniFFI-generated Swift wrapper.
-# Consumers import this as `import uniffi_hello`.
+# Compiles the generated Swift wrapper.
+# Consumers: `import uniffi_hello`
 swift_library(
     name = "uniffi_hello_swift",
-    srcs = ["generated/uniffi_hello.swift"],
+    srcs = ["uniffi_hello.swift"],
     deps = [":uniffi_hello_ffi"],
     module_name = "uniffi_hello",
     visibility = ["//visibility:public"],
