@@ -1,4 +1,5 @@
 load("@rules_rust//rust:defs.bzl", "rust_static_library")
+load("@rules_swift//swift:swift.bzl", "swift_interop_hint", "swift_library")
 
 rust_static_library(
     name = "core_rust_uniffi",
@@ -7,5 +8,31 @@ rust_static_library(
     edition = "2021",
     crate_name = "uniffi_hello",
     deps = ["@crates//:uniffi"],
+    visibility = ["//visibility:public"],
+)
+
+# Exposes the UniFFI-generated C header as a Swift-importable module.
+# The generated Swift code imports this as `uniffi_helloFFI`.
+cc_library(
+    name = "uniffi_hello_ffi",
+    hdrs = ["generated/uniffi_helloFFI.h"],
+    includes = ["generated"],
+    deps = [":core_rust_uniffi"],
+    aspect_hints = [":uniffi_ffi_interop"],
+    visibility = ["//visibility:public"],
+)
+
+swift_interop_hint(
+    name = "uniffi_ffi_interop",
+    module_name = "uniffi_helloFFI",
+)
+
+# Compiles the UniFFI-generated Swift wrapper.
+# Consumers import this as `import uniffi_hello`.
+swift_library(
+    name = "uniffi_hello_swift",
+    srcs = ["generated/uniffi_hello.swift"],
+    deps = [":uniffi_hello_ffi"],
+    module_name = "uniffi_hello",
     visibility = ["//visibility:public"],
 )

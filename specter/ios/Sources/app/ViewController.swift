@@ -2,12 +2,16 @@ import UIKit
 import SwiftUI
 import SnapKit
 import ios_Base
+import uniffi_hello
 
 class ViewController: UIViewController {
     
     let moduleService: ModuleService
     
     override init(nibName nibNameOrNil: String?, bundle nibBundleOrNil: Bundle?) {
+        print(helloUniffi())    // "Hello from UniFFI Rust!"
+        print(addNumbers(a: 3, b: 4)) // 7
+
         weak var weakSelf: ViewController?
         self.moduleService = ModuleService() { moduleDesc in
             guard let moduleAPI = allModules.first(where: { $0.description == moduleDesc }) else {

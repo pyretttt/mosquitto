@@ -22,6 +22,7 @@ swift_library(
         ":Base",
         "//core/cpp:core_cpp",
         "//core/bridge:rust_ffi",
+        "//core/rust_uniffi:uniffi_hello_swift",
     ],
     copts=["-cxx-interoperability-mode=default"]
 )
