@@ -49,6 +49,7 @@ final class CameraStreamViewController: UIViewController, Sendable {
         var resumeStream: @Sendable @MainActor () -> Task<Void, Never>
         var setBufferContent: @Sendable @MainActor (CVImageBuffer) -> Void
         var resetBufferContent: @Sendable @MainActor () -> Void
+        var galleryPhotoSelected: @Sendable @MainActor (CVImageBuffer) -> Void
     }
 
     struct OutputActions: Sendable {
@@ -95,14 +96,18 @@ final class CameraStreamViewController: UIViewController, Sendable {
                     self?.cameraState.send(.streaming(.empty))
                 }
             },
-            setBufferContent: { [weak self, captureSession] imageBuffer in
-                captureSession.stopRunningDetached()
-                self?.cameraState.send(.frozen)
+            setBufferContent: { [weak self, cameraState] imageBuffer in
+                assert(cameraState.value == .frozen)
                 guard let uiImage = imageBuffer.ciImage?.cgImage?.uiImage else { return }
                 self?.toggleFrozenContent(visible: true, image: uiImage)
             },
             resetBufferContent: { [weak self] in
                 self?.toggleFrozenContent(visible: false, image: nil)
+            },
+            galleryPhotoSelected: { [cameraState] buffer in
+                assert(cameraState.value == .frozen)
+                guard let uiImage = buffer.ciImage?.cgImage?.uiImage else { return }
+                self?.toggleFrozenContent(visible: true, image: uiImage)
             }
         )
     }

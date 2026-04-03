@@ -7,6 +7,7 @@
 
 import UIKit
 import SwiftUI
+import PhotosUI
 import ios_Base
 import SnapKit
 
@@ -43,12 +44,13 @@ final class CommonModuleViewController: PassThroughViewController {
     }
 
     struct InputActions: Sendable {
-        var galleryPhotoSelected: @Sendable @MainActor () -> Void
+        var galleryPhotoSelected: @Sendable @MainActor (CVPixelBuffer) -> Void
     }
     
     struct Config: Sendable {
         var options: [OptionModel]
         var bottomBarControls: [BottomBarControls]
+        var galleryPhotosLimit: Int = 1
     }
 
     private var topBarHost: UIHostingController<TopBarView>
@@ -94,7 +96,7 @@ final class CommonModuleViewController: PassThroughViewController {
                     weakSelf?.cameraModule.inputActions.didTapShutter(.photoTouchUpInside)
                 },
                 onOpenGallery: {
-                    // TODO
+                    weakSelf?.openGallery()
                 },
                 onContextAction: { _ in
                     // TODO
@@ -133,7 +135,23 @@ final class CommonModuleViewController: PassThroughViewController {
 
 // MARK: - Bars
 
+@MainActor
 private extension CommonModuleViewController {
+    func openGallery() {
+        Task {
+            await cameraModule.inputActions.pauseStream().value
+            let picker = modify(PHPickerViewController(
+                configuration: modify(PHPickerConfiguration()) {
+                    $0.selectionLimit = config.galleryPhotosLimit
+                    $0.filter = .images
+                }
+            )) {
+                $0.delegate = self
+            }
+            present(picker, animated: true)
+        }
+    }
+
     private func presentOptionsPanel() {
         let optionsVC = modify(OptionsViewController(
             options: config.options,
@@ -165,6 +183,33 @@ private extension CommonModuleViewController {
         bottomBarHost.view.snp.makeConstraints {
             $0.bottom.leading.trailing.equalToSuperview()
             $0.height.equalTo(80)
+        }
+    }
+}
+
+// MARK: - PHPickerViewControllerDelegate
+
+extension CommonModuleViewController: PHPickerViewControllerDelegate {
+    nonisolated func picker(
+        _ picker: PHPickerViewController,
+        didFinishPicking results: [PHPickerResult]
+    ) {
+        Task { @MainActor in
+            picker.dismiss(animated: true)
+            let _ = cameraModule.inputActions.resumeStream()
+            
+            guard let itemProvider = results.first?.itemProvider else { return }
+            
+            itemProvider.loadObject(ofClass: UIImage.self) { [cameraModule] object, _ in
+                guard let image = object as? UIImage,
+                      let buffer = image.cvPixelBuffer else {
+                    return
+                }
+                Task { @MainActor in
+                    let _ = await cameraModule.inputActions.pauseStream().value
+                    cameraModule.inputActions.galleryPhotoSelected(buffer)
+                }
+            }
         }
     }
 }

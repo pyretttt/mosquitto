@@ -62,13 +62,10 @@ func makeModuleScreen(tool: cv.SingleFrameIpTool) -> UIViewController {
             didReceiveNewBuffer: { _ in },
             didTakeAShot: { buffer in
                 guard let camera else { assertionFailure(); return }
-                Task.detached(priority: .userInitiated) {
-                    let output = tool
-                        .process
-                        .callAsFunction(cv.SingleFrameInput(buffer))
-                    await camera.inputActions
-                        .setBufferContent(output.imageBuffer.retain().takeRetainedValue())
-                }
+                camera.inputActions
+                    .setBufferContent(
+                        await Task.runToolDetached(tool: tool).value.imageBuffer.retain().takeRetainedValue()
+                    )
             }
         )
     )) {
@@ -89,8 +86,12 @@ func makeModuleScreen(tool: cv.SingleFrameIpTool) -> UIViewController {
                 ]
             ),
             inputActions: CommonModuleViewController.InputActions(
-                galleryPhotoSelected: {
-                    // TODO
+                galleryPhotoSelected: { buffer in
+                    guard let camera else { assertionFailure(); return }
+                    camera.inputActions
+                        .setBufferContent(
+                            await Task.runToolDetached(tool: tool).value.imageBuffer.retain().takeRetainedValue()
+                        )
                 }
             )
         )
@@ -125,6 +126,16 @@ func buildOptionModels(
             OptionModel.multiFloat(name: name, ptr: cv.asMultiFloat($0))
         @unknown default:
             fatalError()
+        }
+    }
+}
+
+extension Task<Void, Never> {
+    fileprivate func runToolDetached(tool: cv.SingleFrameIpTool) -> Task<cv.SingleFrameInput, Never> {
+        Task.detached(priority: .userInitiated) {
+            return tool
+                .process
+                .callAsFunction(cv.SingleFrameInput(buffer))
         }
     }
 }
