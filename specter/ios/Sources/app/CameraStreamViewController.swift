@@ -107,7 +107,7 @@ final class CameraStreamViewController: UIViewController, Sendable {
             galleryPhotoSelected: { [cameraState] buffer in
                 assert(cameraState.value == .frozen)
                 guard let uiImage = buffer.ciImage?.cgImage?.uiImage else { return }
-                self?.toggleFrozenContent(visible: true, image: uiImage)
+//                self?.toggleFrozenContent(visible: true, image: uiImage)
             }
         )
     }

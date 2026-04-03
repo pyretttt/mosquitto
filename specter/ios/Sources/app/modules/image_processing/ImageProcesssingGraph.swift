@@ -62,10 +62,11 @@ func makeModuleScreen(tool: cv.SingleFrameIpTool) -> UIViewController {
             didReceiveNewBuffer: { _ in },
             didTakeAShot: { buffer in
                 guard let camera else { assertionFailure(); return }
-                camera.inputActions
-                    .setBufferContent(
-                        await Task.runToolDetached(tool: tool).value.imageBuffer.retain().takeRetainedValue()
-                    )
+//                camera.inputActions
+//                    .setBufferContent(
+//                        await Task<cv.SingleFrameInput, Never>.runToolDetached(tool: tool, buffer: buffer)
+//                            .value.imageBuffer.retain().takeRetainedValue()
+//                    )
             }
         )
     )) {
@@ -88,10 +89,11 @@ func makeModuleScreen(tool: cv.SingleFrameIpTool) -> UIViewController {
             inputActions: CommonModuleViewController.InputActions(
                 galleryPhotoSelected: { buffer in
                     guard let camera else { assertionFailure(); return }
-                    camera.inputActions
-                        .setBufferContent(
-                            await Task.runToolDetached(tool: tool).value.imageBuffer.retain().takeRetainedValue()
-                        )
+//                    camera.inputActions
+//                        .setBufferContent(
+//                            await Task<cv.SingleFrameInput, Never>.runToolDetached(tool: tool, buffer: buffer)
+//                                .value.imageBuffer.retain().takeRetainedValue()
+//                        )
                 }
             )
         )
@@ -130,12 +132,13 @@ func buildOptionModels(
     }
 }
 
-extension Task<Void, Never> {
-    fileprivate func runToolDetached(tool: cv.SingleFrameIpTool) -> Task<cv.SingleFrameInput, Never> {
+extension Task<cv.SingleFrameInput, Never> {
+    fileprivate static func runToolDetached(tool: cv.SingleFrameIpTool, buffer: CVImageBuffer) -> Task<cv.SingleFrameInput, Never> {
         Task.detached(priority: .userInitiated) {
-            return tool
+            let output = tool
                 .process
                 .callAsFunction(cv.SingleFrameInput(buffer))
+            return output
         }
     }
 }
