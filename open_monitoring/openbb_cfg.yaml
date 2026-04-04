@@ -1,0 +1,9 @@
+monitors:
+  - name: "AAPL price alert"
+    pull:
+      method: equity.price.quote
+      params: { symbol: AAPL }
+    condition: "data.last_price < 150 || data.change_percent > 5.0"
+    notify:
+      telegram:
+        template: "AAPL alert: price=${data.last_price}"

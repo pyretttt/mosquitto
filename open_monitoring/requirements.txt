@@ -1,2 +1,4 @@
 openbb
 python-telegram-bot>=21,<22
+cel-python
+pydantic
