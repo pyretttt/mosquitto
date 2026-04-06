@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from condition import Condition
+from src.condition import Condition
 
 
 class DataController[Ctx, Data, Config](ABC):

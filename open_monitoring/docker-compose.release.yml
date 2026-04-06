@@ -1,0 +1,8 @@
+# Release: image contains code and cfg; no bind mounts.
+# Usage: docker compose -f docker-compose.release.yml up --build -d
+services:
+  open_monitoring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped

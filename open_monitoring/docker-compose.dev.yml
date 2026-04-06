@@ -1,0 +1,24 @@
+# Development: bind-mount source and config; restart process on *.py changes under src/.
+# --no-restart-on-command-exit: only restart on file events, not when the app exits (avoids a tight loop for short-lived runs).
+# Usage: docker compose -f docker-compose.dev.yml up --build
+services:
+  open_monitoring:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        REQUIREMENTS_FILE: requirements-dev.txt
+    volumes:
+      - ./src:/app/src
+      - ./cfg.yaml:/app/cfg.yaml:ro
+    command:
+      - .venv/bin/watchmedo
+      - auto-restart
+      - --directory=src
+      - "--pattern=*.py"
+      - --recursive
+      - --no-restart-on-command-exit
+      - --
+      - .venv/bin/python
+      - -m
+      - src.app

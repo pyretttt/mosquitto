@@ -1,8 +1,8 @@
 import openbb
 from pydantic import BaseModel
 
-from monitor import Monitor
-from aggregator import DataController
+from src.monitor import Monitor
+from src.data_controller import DataController
 
 
 class OpenBBConfig(BaseModel):
