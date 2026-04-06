@@ -1,6 +1,6 @@
 # OpenBB Telegram cron worker.
 # Required env: BOT_TOKEN, CHAT_ID, PERIOD_SEC
-FROM python:3.13-slim-buster
+FROM python:3.13-slim
 
 # This flag is important to output python logs correctly in docker!
 # This flag is important to output python logs correctly in docker!
@@ -12,9 +12,10 @@ ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 ARG REQUIREMENTS_FILE=requirements.txt
-COPY ${REQUIREMENTS_FILE} ./requirements.txt
+COPY requirements.txt requirements.txt
+COPY requirements-dev.txt requirements-dev.txt
 
-RUN python install -rrequirements.txt
+RUN python -m pip install -r ${REQUIREMENTS_FILE}
 
 COPY ./src/ ./src/
 COPY cfg.yaml ./

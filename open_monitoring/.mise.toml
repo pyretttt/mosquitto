@@ -38,7 +38,7 @@ echo "Everything set up ✅"
 description = "Runs app in development environment"
 depends = ['verify_env']
 run = """
-docker compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.dev.yml up --build -d
 """
 
 
@@ -47,4 +47,14 @@ description = "Runs app in release environment"
 depends = ['verify_env']
 run = """
 docker compose -f docker-compose.release.yml up --build -d
+"""
+
+
+[tasks."stop"]
+description = "Stop docker compose run"
+usage = """
+    arg "<configuration>" help="Docker compose configuration" default="docker-compose.dev.yml"
+"""
+run = """
+docker compose -f {{ usage.configuration }} down
 """
