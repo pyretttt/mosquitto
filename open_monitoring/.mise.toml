@@ -1,0 +1,36 @@
+min_version = "2026.4.0"
+
+[settings]
+lockfile = true
+
+
+[tasks."prepare_env"]
+description = "Setups environemnt"
+run = """
+set -euo pipefail
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Installing docker"
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
+    echo "Docker installed 🫰"
+fi
+
+sudo groupadd -f docker
+sudo usermod -aG docker "$USER"
+newgrp docker
+"""
+
+
+[tasks."verify_env"]
+description = "Verify environemnt"
+run = """
+if ! command -v docker >/dev/null 2>&1; then
+    echo "Docker is not installed ❌"
+    exit 1
+fi
+
+echo "Everything set up ✅"
+"""
+
+
