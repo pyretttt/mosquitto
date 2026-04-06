@@ -34,19 +34,14 @@ echo "Everything set up ✅"
 """
 
 
-[tasks."run_dev"]
+[tasks."run"]
 description = "Runs app in development environment"
 depends = ['verify_env']
-run = """
-docker compose -f docker-compose.dev.yml up --build -d
+usage = """
+    arg "<configuration>" help="Docker compose configuration" default="docker-compose.dev.yml"
 """
-
-
-[tasks."run_release"]
-description = "Runs app in release environment"
-depends = ['verify_env']
 run = """
-docker compose -f docker-compose.release.yml up --build -d
+docker compose -f {{ usage.configuration }} up --build -d
 """
 
 
