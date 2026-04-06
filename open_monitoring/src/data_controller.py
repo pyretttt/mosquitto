@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from condition import Condition
 
 
-class Aggregator[Ctx, Data, Config](ABC):
+class DataController[Ctx, Data, Config](ABC):
     @abstractmethod
     def pull(self, ctx: Ctx) -> Data:
         pass

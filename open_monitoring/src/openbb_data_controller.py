@@ -2,7 +2,7 @@ import openbb
 from pydantic import BaseModel
 
 from monitor import Monitor
-from aggregator import Aggregator
+from aggregator import DataController
 
 
 class OpenBBConfig(BaseModel):
@@ -22,7 +22,7 @@ class OpenBBData:
     pass
 
 
-class OpenBBAggregator(Aggregator[OpenBBContext, OpenBBData, OpenBBConfig]):
+class OpenBBDataController(DataController[OpenBBContext, OpenBBData, OpenBBConfig]):
     def __init__(self):
         self.client = openbb.Client()
 
