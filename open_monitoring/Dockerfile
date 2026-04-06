@@ -14,9 +14,7 @@ WORKDIR /app
 ARG REQUIREMENTS_FILE=requirements.txt
 COPY ${REQUIREMENTS_FILE} ./requirements.txt
 
-RUN python -m venv .venv \
-    && .venv/bin/pip install --no-cache-dir --upgrade pip \
-    && .venv/bin/pip install --no-cache-dir -r requirements.txt
+RUN python install -rrequirements.txt
 
 COPY ./src/ ./src/
 COPY cfg.yaml ./
@@ -25,4 +23,4 @@ ENV BOT_TOKEN="" \
     CHAT_ID=""
 
 
-CMD [".venv/bin/python", "-m", "src.app"]
+CMD ["python", "-m", "src.app"]

@@ -15,13 +15,13 @@ services:
       - ./src:/app/src
       - ./cfg.yaml:/app/cfg.yaml:ro
     command:
-      - .venv/bin/watchmedo
+      - watchmedo
       - auto-restart
       - --directory=src
       - "--pattern=*.py"
       - --recursive
       - --no-restart-on-command-exit
       - --
-      - .venv/bin/python
+      - python
       - -m
       - src.app
