@@ -21,4 +21,8 @@ RUN python -m venv .venv \
 COPY ./src/ ./src/
 COPY cfg.yaml ./
 
+ENV BOT_TOKEN="" \
+    CHAT_ID=""
+
+
 CMD [".venv/bin/python", "-m", "src.app"]

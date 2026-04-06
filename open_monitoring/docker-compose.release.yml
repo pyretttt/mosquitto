@@ -5,4 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      CHAT_ID: ${CHAT_ID}
     restart: unless-stopped
