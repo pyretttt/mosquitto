@@ -4,11 +4,10 @@ from dataclasses import dataclass
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
 
 from openbb import obb, OBBject
 import asyncio
-from asyncio import AbstractEventLoop, get_running_loop
+from asyncio import get_running_loop
 from pydantic import BaseModel
 
 from src.utils import resolve_method, resolve_attr
@@ -66,7 +65,7 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
         openbb_data = OpenBBData(openbb_data=dict[str, OBBject]())
         items_to_pull = {
             id: monitor for id, monitor in ctx.monitors.items()
-            if self.timeouts_until.get(id, 0) > time.time()
+            if self.timeouts_until.get(id, 0) <= time.time()
         }
         loop = get_running_loop()
         tasks = [
@@ -113,12 +112,12 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
             if not condition.triggered:
                 continue
             monitor = ctx.monitors[id]
-            data = data.openbb_data[id]
-            self.timeouts_until[id] = time.time() + monitor.notify.telegram.min_interval_sec
-            alert_message = monitor.notify.telegram.template.format_map(
-                **resolve_attr(
-                    root=data.to_dict(),
-                    dotted_path=monitor.notify.telegram.data_key,
+            item_data = data.openbb_data[id]
+            self.timeouts_until[id] = time.time() + monitor.notify.min_interval_sec
+            alert_message = monitor.notify.template.format_map(
+                resolve_attr(
+                    root=item_data.to_dict(),
+                    dotted_path=monitor.notify.data_key,
                     allowed_roots=ALLOWED_DATA_ROOTS
                 )
             )

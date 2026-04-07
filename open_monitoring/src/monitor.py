@@ -9,14 +9,11 @@ class Pull(BaseModel):
     root: str
 
 
-class TelegramNotify(BaseModel):
+class Notify(BaseModel):
     data_key: str
     template: str
     min_interval_sec: int
-
-
-class Notify(BaseModel):
-    telegram: TelegramNotify
+    sinks: list[str]
 
 
 class Condition(BaseModel):
@@ -44,11 +41,10 @@ class Monitoring(BaseModel):
             "expression": "results.last_price < 150 || results.change_percent > 5.0",
         },
         "notify": {
-            "telegram": {
-                "data_key": "results",
-                "min_interval_sec": 60,
-                "template": "AAPL alert: price=${price}"
-            }
+            "min_interval_sec": 60,
+            "data_key": "results",
+            "template": "AAPL alert: price=${price}",
+            "sinks" : ["telegram"]
         }
     }
     """
