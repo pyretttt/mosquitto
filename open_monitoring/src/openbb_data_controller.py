@@ -3,6 +3,7 @@ from __future__ import annotations
 import functools
 import logging
 import re
+import time
 
 from openbb import obb, OBBject
 from pydantic import BaseModel
@@ -64,6 +65,11 @@ def run_monitoring(monitor: Monitoring) -> tuple[ConditionEvaluationResult, str 
 
 
 class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
+
+    def __init__(self):
+        self.timeouts_until = dict[str, float]()
+
+
     def pull(self, monitor: Monitoring) -> dict:
         return pull_data(monitor.pull)
 
@@ -75,13 +81,14 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
 
 
     def pull(self, ctx: OpenBBContext) -> OpenBBData:
-        try:
-            for monitor in ctx.monitors:
-                try:
+        for monitor in ctx.monitors:
+            if self.timeouts.get(monitor.id, 0) > time.time():
+                continue
+            try:
                 return self.pull(monitor)
-        except Exception as e:
-            log.error(f"Error pulling data: {e}")
-            return None
+            except Exception as e:
+                log.error(f"Error pulling data: {e}")
+                return None
 
 
     def find_conditions(self, data: OpenBBData, ctx: OpenBBContext) -> list[ConditionEvaluationResult]:
