@@ -4,7 +4,7 @@ from src.condition import ConditionEvaluationResult
 
 class DataController[Ctx, Data](ABC):
     @abstractmethod
-    def pull(self, ctx: Ctx) -> Data:
+    async def pull(self, ctx: Ctx) -> Data:
         pass
 
 
@@ -18,7 +18,7 @@ class DataController[Ctx, Data](ABC):
         pass
 
 
-    def pull_and_notify(self, ctx: Ctx) -> bool:
-        data = self.pull(ctx)
+    async def pull_and_notify(self, ctx: Ctx) -> bool:
+        data = await self.pull(ctx)
         conditions = self.evaluate_conditions(data, ctx)
         return self.notify(ctx=ctx, conditions=conditions)

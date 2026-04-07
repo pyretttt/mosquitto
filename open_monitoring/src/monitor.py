@@ -1,4 +1,6 @@
-from pydantic import BaseModel
+import uuid
+
+from pydantic import BaseModel, Field
 
 
 class Pull(BaseModel):
@@ -21,6 +23,7 @@ class Monitoring(BaseModel):
     Declarative monitor: pull data → evaluate CEL condition → notify.
     Should be represented as:
     {
+        "id": "id",
         "name": "APPL stocks",
         "pull": {
             "root": "obb",
@@ -39,7 +42,7 @@ class Monitoring(BaseModel):
         }
     }
     """
-    id: str
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     name: str
     pull: Pull
     condition: str

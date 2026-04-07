@@ -32,7 +32,7 @@ async def tick(monitors: list[Monitoring]) -> None:
     for mon in monitors:
         try:
             data_controller = root_to_controller[mon.pull.root]
-            eval_result, message = data_controller.run(mon)
+            eval_result, message = data_controller.pull_and_notify
             if eval_result.triggered:
                 log.info("[%s] TRIGGERED — %s", mon.name, message)
                 # TODO: send via telegram bot

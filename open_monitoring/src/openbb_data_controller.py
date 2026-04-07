@@ -3,8 +3,11 @@ from __future__ import annotations
 import logging
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor
+
 
 from openbb import obb, OBBject
+from asyncio import AbstractEventLoop, get_running_loop
 from pydantic import BaseModel
 
 from src.utils import resolve_method
@@ -18,6 +21,8 @@ ALLOWED_ROOTS: frozenset[str] = frozenset[str]({
     "commodity", "crypto", "currency", "derivatives", "economy",
     "equity", "etf", "fixedincome", "index", "news", "regulators",
 })
+THREAD_POOL_SIZE = 4
+THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
 
 
 class OpenBBContext(BaseModel):
@@ -60,16 +65,22 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
     def __init__(self):
         self.timeouts_until = dict[str, float]()
 
-    def format_message(self, monitor: Monitoring, data: dict) -> str:
-        return format_template(monitor.notify.telegram.template, data)
 
-    def pull(self, ctx: OpenBBContext) -> OpenBBData:
+    @property
+    def runloop(self) -> AbstractEventLoop:
+        return get_running_loop()
+
+
+    async def pull(self, ctx: OpenBBContext) -> OpenBBData:
         openbb_data = OpenBBData(openbb_data=dict[str, OBBject]())
-        for id, monitor in ctx.monitors.items():
-            if self.timeouts_until.get(id, 0) > time.time():
-                continue
+
+        items_to_pull = {
+            id: monitor for id, monitor in ctx.monitors.items()
+            if self.timeouts_until.get(id, 0) > time.time()
+        }
+        for id, monitor in items_to_pull.items():
             try:
-                data = pull_data(monitor.pull)
+                data = await self.runloop.run_in_executor(THREAD_POOL_EXEC, pull_data, monitor.pull)
                 openbb_data.openbb_data[id] = data
 
             except Exception as e:
