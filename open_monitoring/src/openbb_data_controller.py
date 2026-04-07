@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import functools
 import logging
 import re
 import time
@@ -23,7 +22,7 @@ ALLOWED_ROOTS: frozenset[str] = frozenset[str]({
 
 class OpenBBContext(BaseModel):
     """Context of openbb data controller."""
-    monitors: list[Monitoring]
+    monitors: dict[str, Monitoring]
     timestamp: float
     dry_run: bool
 
@@ -56,44 +55,52 @@ def format_template(template: str, data: dict) -> str:
     return re.sub(r"\$\{([^}]+)\}", _resolve, template)
 
 
-def run_monitoring(monitor: Monitoring) -> tuple[ConditionEvaluationResult, str | None]:
-    """Pull → evaluate → format.  Returns (condition_result, formatted_message | None)."""
-    data = pull_data(monitor.pull)
-    result = evaluate_condition(data, monitor.condition)
-    message = format_template(monitor.notify.telegram.template, data) if result.triggered else None
-    return result, message
-
-
 class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
 
     def __init__(self):
         self.timeouts_until = dict[str, float]()
 
-
-    def pull(self, monitor: Monitoring) -> dict:
-        return pull_data(monitor.pull)
-
     def format_message(self, monitor: Monitoring, data: dict) -> str:
         return format_template(monitor.notify.telegram.template, data)
 
-    def evaluate(self, data: dict, expression: str) -> ConditionEvaluationResult:
-        return evaluate_condition(data, expression)
-
-
     def pull(self, ctx: OpenBBContext) -> OpenBBData:
-        for monitor in ctx.monitors:
-            if self.timeouts.get(monitor.id, 0) > time.time():
+        openbb_data = OpenBBData(openbb_data=dict[str, OBBject]())
+        for id, monitor in ctx.monitors.items():
+            if self.timeouts_until.get(id, 0) > time.time():
                 continue
             try:
-                return self.pull(monitor)
+                data = pull_data(monitor.pull)
+                openbb_data.openbb_data[id] = data
+
             except Exception as e:
                 log.error(f"Error pulling data: {e}")
-                return None
+
+        return openbb_data
 
 
-    def find_conditions(self, data: OpenBBData, ctx: OpenBBContext) -> list[ConditionEvaluationResult]:
-        pass
+    def evaluate_conditions(self, data: OpenBBData, ctx: OpenBBContext) -> dict[str, ConditionEvaluationResult]:
+        conditions = dict[str, ConditionEvaluationResult]()
+        for id, data in data.openbb_data.items():
+            try:
+                conditions[id] = evaluate_condition(data=data, expression=ctx.monitors[id].condition)
+            except Exception as e:
+                log.error(f"Error evaluating condition: {e}")
+
+        return conditions
 
 
-    def notify(self, ctx: OpenBBContext, conditions: list[ConditionEvaluationResult]) -> bool:
-        pass
+    def notify(
+        self,
+        data: OpenBBData,
+        ctx: OpenBBContext,
+        conditions: dict[str, ConditionEvaluationResult]
+    ) -> bool:
+        for id, condition in conditions.items():
+            if not condition.triggered:
+                continue
+            monitor = ctx.monitors[id]
+            data = data.openbb_data[id]
+            self.timeouts_until[id] = time.time() + monitor.notify.telegram.min_interval_sec
+            monitor.notify.telegram.template.format_map(
+                **data["results"]
+            )

@@ -1,16 +1,15 @@
-from uuid import uuid4
-from dataclasses import dataclass, Field
-
 from pydantic import BaseModel
 
 
 class Pull(BaseModel):
     method: str
     params: dict
+    root: str
 
 
 class TelegramNotify(BaseModel):
     template: str
+    min_interval_sec: int
 
 
 class Notify(BaseModel):
@@ -24,7 +23,7 @@ class Monitoring(BaseModel):
     {
         "name": "APPL stocks",
         "pull": {
-            "lib": "obb",
+            "root": "obb",
             "method": "equity.price.quote",
             "params": {
                 "provider": "yfinance",
@@ -34,12 +33,13 @@ class Monitoring(BaseModel):
         "condition": "data.last_price < 150 || data.change_percent > 5.0",
         "notify": {
             "telegram": {
+                "min_interval_sec": 60,
                 "template": "AAPL alert: price=${price}"
             }
         }
     }
     """
-    id: str = Field[str](default_factory=lambda: str(uuid4()))
+    id: str
     name: str
     pull: Pull
     condition: str

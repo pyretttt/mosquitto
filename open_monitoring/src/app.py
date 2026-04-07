@@ -25,14 +25,14 @@ def load_monitors(path: str = "openbb_cfg.yaml") -> list[Monitoring]:
 
 
 async def tick(monitors: list[Monitoring]) -> None:
-    libs = {
+    root_to_controller = {
         "obb": OpenBBDataController(),
     }
 
     for mon in monitors:
         try:
-            data_controller = libs[mon.pull.lib]
-            eval_result, message = data_controller.run_monitoring(mon)
+            data_controller = root_to_controller[mon.pull.root]
+            eval_result, message = data_controller.run(mon)
             if eval_result.triggered:
                 log.info("[%s] TRIGGERED — %s", mon.name, message)
                 # TODO: send via telegram bot

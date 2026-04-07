@@ -23,8 +23,8 @@ def evaluate_condition(data: dict, expression: str) -> ConditionEvaluationResult
     prog = env.program(ast)
     activation = {"data": celpy.json_to_cel(data)}
     result = prog.evaluate(activation)
-    
+
     return ConditionEvaluationResult(
-        triggered=bool(result), 
+        triggered=bool(result),
         expression=expression
     )
