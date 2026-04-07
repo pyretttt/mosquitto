@@ -10,12 +10,18 @@ class Pull(BaseModel):
 
 
 class TelegramNotify(BaseModel):
+    data_key: str
     template: str
     min_interval_sec: int
 
 
 class Notify(BaseModel):
     telegram: TelegramNotify
+
+
+class Condition(BaseModel):
+    data_key: str
+    expression: str
 
 
 class Monitoring(BaseModel):
@@ -26,16 +32,20 @@ class Monitoring(BaseModel):
         "id": "id",
         "name": "APPL stocks",
         "pull": {
-            "root": "obb",
+            "root": "obb_api",
             "method": "equity.price.quote",
             "params": {
                 "provider": "yfinance",
                 "symbol": "AAPL"
             }
         },
-        "condition": "data.last_price < 150 || data.change_percent > 5.0",
+        "condition": {
+            "data_key": "results",
+            "expression": "results.last_price < 150 || results.change_percent > 5.0",
+        },
         "notify": {
             "telegram": {
+                "data_key": "results",
                 "min_interval_sec": 60,
                 "template": "AAPL alert: price=${price}"
             }
@@ -45,5 +55,5 @@ class Monitoring(BaseModel):
     id: str = Field(default_factory=lambda: uuid.uuid4().hex)
     name: str
     pull: Pull
-    condition: str
+    condition: Condition
     notify: Notify
