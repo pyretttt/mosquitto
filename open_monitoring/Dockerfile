@@ -21,7 +21,8 @@ COPY ./src/ ./src/
 COPY cfg.yaml ./
 
 ENV BOT_TOKEN="" \
-    CHAT_ID=""
+    CHAT_ID="" \
+    DRY_RUN=false
 
 
 CMD ["python", "-m", "src.app"]

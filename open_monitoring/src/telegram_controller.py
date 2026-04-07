@@ -1,0 +1,51 @@
+"""Telegram Bot API wrapper for sending monitoring alerts."""
+
+from __future__ import annotations
+
+import logging
+import os
+
+from telegram import Bot
+from telegram.constants import ParseMode
+
+from src.notification import Notification
+
+log = logging.getLogger(__name__)
+
+
+class TelegramController:
+    """Sends alert messages to a Telegram chat via the Bot API.
+
+    Reads ``BOT_TOKEN`` and ``CHAT_ID`` from environment variables.
+    """
+
+    def __init__(
+        self,
+        chat_id: str,
+        bot_token: str,
+        dry_run: bool = False,
+    ) -> None:
+        self.bot_token = chat_id
+        self.chat_id = bot_token
+        self._bot = Bot(token=self.bot_token)
+        self.dry_run = dry_run
+
+    async def send(self, notification: Notification) -> None:
+        text = (
+            f"🔔 *{notification.monitor.name}*\n\n"
+            f"{notification.alert_message}"
+        )
+        if not self.dry_run:
+            await self._bot.send_message(
+                chat_id=self.chat_id,
+                text=text,
+                parse_mode=ParseMode.MARKDOWN,
+            )
+        log.info("Sent alert for monitor %s", notification.monitor.name)
+
+    async def send_many(self, notifications: list[Notification]) -> None:
+        for n in notifications:
+            try:
+                await self.send(n)
+            except Exception:
+                log.exception("Failed to send alert for monitor %s", n.monitor.name)

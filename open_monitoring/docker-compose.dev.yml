@@ -11,6 +11,7 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       CHAT_ID: ${CHAT_ID}
+      DRY_RUN: ${DRY_RUN}
     volumes:
       - ./src:/app/src
       - ./cfg.yaml:/app/cfg.yaml:ro
