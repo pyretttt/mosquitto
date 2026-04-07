@@ -27,9 +27,10 @@ class Monitoring(BaseModel):
     Should be represented as:
     {
         "id": "id",
+        "controller": "obb",
         "name": "APPL stocks",
         "pull": {
-            "root": "obb_api",
+            "root": "obb",
             "method": "equity.price.quote",
             "params": {
                 "provider": "yfinance",
@@ -49,6 +50,7 @@ class Monitoring(BaseModel):
     }
     """
     id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    controller: str
     name: str
     pull: Pull
     condition: Condition
