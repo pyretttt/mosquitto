@@ -5,7 +5,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 
-from openbb import obb, OBBject
+from openbb import obb
 import asyncio
 from asyncio import get_running_loop
 from pydantic import BaseModel
@@ -39,17 +39,17 @@ class OpenBBContext(BaseModel):
 
 class OpenBBData(BaseModel):
     """Data from openbb data controller."""
-    openbb_data: dict[str, OBBject]
+    openbb_data: dict[str, dict]
 
 
-def pull_data(monitor: Monitoring) -> tuple[Monitoring, OBBject | None]:
+def pull_data(monitor: Monitoring) -> tuple[Monitoring, dict | None]:
     """Call an OpenBB endpoint described by *pull* and return the first result as a dict."""
     try:
         fn = resolve_method(obb, monitor.pull.method, ALLOWED_METHOD_ROOTS)
         data = fn(**monitor.pull.params)
         if data is None:
             raise ValueError(f"No results from {monitor.pull.method}")
-        return monitor, data
+        return monitor, data.to_dict()
     except Exception as e:
         log.error(f"Error pulling data: {e}")
         return monitor, None
@@ -62,7 +62,7 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
 
 
     async def pull(self, ctx: OpenBBContext) -> OpenBBData:
-        openbb_data = OpenBBData(openbb_data=dict[str, OBBject]())
+        openbb_data = OpenBBData(openbb_data=dict[str, dict]())
         items_to_pull = {
             id: monitor for id, monitor in ctx.monitors.items()
             if self.timeouts_until.get(id, 0) <= time.time()
@@ -72,7 +72,7 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
             loop.run_in_executor(THREAD_POOL_EXEC, pull_data, monitor)
             for monitor in items_to_pull.values()
         ]
-        results: list[tuple[Monitoring, OBBject | None]] = await asyncio.gather(*tasks)
+        results: list[tuple[Monitoring, dict | None]] = await asyncio.gather(*tasks)
         for monitor, data in results:
             if data is None:
                 log.error(f"Error pulling data: {monitor}")

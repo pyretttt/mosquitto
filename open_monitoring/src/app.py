@@ -6,7 +6,7 @@ import asyncio
 import logging
 import os
 
-import yaml
+import json
 
 from src.data_controller import DataController
 from src.monitor import Monitoring
@@ -20,9 +20,9 @@ logging.basicConfig(
 log = logging.getLogger(__name__)
 
 
-def load_monitors(path: str = "openbb_cfg.yaml") -> list[Monitoring]:
+def load_monitors(path: str = "openbb_cfg.json") -> list[Monitoring]:
     with open(path) as f:
-        raw = yaml.safe_load(f)
+        raw = json.load(f)
     return [Monitoring(**m) for m in raw["monitors"]]
 
 

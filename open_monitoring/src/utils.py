@@ -1,12 +1,12 @@
 import functools
-from typing import Optional
+from typing import Optional, Callable
 
 class Safedict(dict):
 
     def __init__(
         self,
         data: Optional[dict] = None,
-        missing_key_formatter: Optional[callable[[str], str]] = None
+        missing_key_formatter: Optional[Callable[[str], str]] = None
     ):
         super().__init__(data or {})
         self.missing_key_formatter = missing_key_formatter or (lambda key: "{" + key + "}")

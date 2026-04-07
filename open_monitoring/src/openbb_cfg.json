@@ -1,0 +1,25 @@
+{
+  "monitors": [
+    {
+      "controller": "obb",
+      "name": "APPL stocks",
+      "pull": {
+          "root": "obb",
+          "method": "equity.price.quote",
+          "params": {
+              "symbol": "AAPL"
+          }
+      },
+      "condition": {
+          "data_key": "results",
+          "expression": "results.last_price < 500 || results.change_percent > 5.0",
+      },
+      "notify": {
+          "min_interval_sec": 3600,
+          "data_key": "results",
+          "template": "AAPL alert: price=${price}",
+          "sinks" : ["telegram"]
+      }
+    }
+  ]
+}
