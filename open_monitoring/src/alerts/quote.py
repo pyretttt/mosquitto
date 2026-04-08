@@ -4,9 +4,13 @@ from openbb import obb
 
 from src.alert import AlertConfig, AlertMessage
 from src.utils import Safedict
+from src.alert_registry import alert_register
 
 
+@alert_register()
 def quote(alert_config: AlertConfig) -> AlertMessage | None:
+    assert alert_config.fn == "quote"
+    
     out = obb.equity.price.quote(**alert_config.params).results[-1]
     if alert_config.expression.evaluate(out.model_dump()):
         payload = None

@@ -7,13 +7,18 @@ from dataclasses import dataclass
 import logging
 import os
 import time
-
+from concurrent.futures import ThreadPoolExecutor
 import json
+from collections.abc import Iterator
+from typing import Callable
 
-from src.data_controller import DataController
-from src.monitor import Monitoring
-from src.openbb_data_controller import OpenBBDataController, OpenBBContext
+from src.alert import AlertConfig
+from src.alert_registry import registry
 from src.telegram_controller import TelegramController
+
+THREAD_POOL_SIZE = 4
+THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
+
 
 logging.basicConfig(
     level=logging.INFO,
@@ -30,50 +35,55 @@ class AppConfig:
 app_config = AppConfig()
 
 
-def load_obb_monitors(path: str = "configs/openbb_cfg.json") -> dict[str, Monitoring]:
+def load_alert_configs(path: str = "configs/alerts.json") -> list[AlertConfig]:
     with open(path) as f:
         raw = json.load(f)
-    obb_monitors = [Monitoring(**m) for m in raw["monitors"]]
-    return {monitor.id: monitor for monitor in obb_monitors}
+    alerts = [AlertConfig(**m) for m in raw["alerts"]]
+    return alerts
 
 
-async def openbb_tick(
-    monitors: dict[str, Monitoring],
-    controller: OpenBBDataController,
+async def tick(
+    alerts: Iterator[tuple[AlertConfig, Callable | None]],
     telegram: TelegramController,
 ) -> None:
+    event_loop = asyncio.get_running_loop()
     try:
-        notifications = await controller.pull_and_get_notifications(
-            ctx=OpenBBContext(
-                monitors=monitors,
-                timestamp=time.time(),
-                dry_run=app_config.dry_run
+
+        futures = [
+            event_loop.run_in_executor(
+                THREAD_POOL_EXEC,
+                alert_fn,
+                alert_config
             )
-        )
-        if notifications:
-            log.info("Notifications to be sent: %d", len(notifications))
-            await telegram.send_many(notifications)
+            for alert_config, alert_fn in alerts
+        ]
+        alerts = await asyncio.gather(*futures)
+        alerts_to_send = [alert for alert in alerts if alert is not None]
+        if alerts_to_send:
+            log.info("Alerts to be sent: %d", len(alerts_to_send))
+            await telegram.send_many(alerts_to_send)
     except Exception as e:
         log.exception("Monitoring failed with error: %s", e)
 
 
 async def main_async(period_sec: int = 60) -> None:
-
-
-    print(app_config)
-    obb_monitors = load_obb_monitors()
     telegram = TelegramController(
         chat_id=app_config.chat_id,
         bot_token=app_config.bot_token,
         dry_run=app_config.dry_run == "true",
     )
-    log.info("Loaded %d monitor(s), polling every %ds", len(obb_monitors), period_sec)
 
-    controllers = {
-        "obb": OpenBBDataController(),
-    }
+    alert_configs = load_alert_configs()
+    alerts = [(alert_config, registry.get(alert_config.fn)) for alert_config in alert_configs]
+    for alert_config, alert_fn in alerts:
+        if alert_fn is None:
+            log.warning("Alert function not found for %s", alert_config.fn)
+            continue
+    alerts = [alert_config, alert_fn for alert_config, alert_fn in alerts if alert_fn is not None]
+
+    log.info("Loaded %d alerts, polling every %ds", len(alerts), period_sec)
     while True:
-        await openbb_tick(obb_monitors, controllers["obb"], telegram)
+        await tick(alerts, telegram)
         await asyncio.sleep(period_sec)
 
 

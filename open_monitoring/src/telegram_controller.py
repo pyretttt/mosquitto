@@ -8,7 +8,7 @@ import os
 from telegram import Bot
 from telegram.constants import ParseMode
 
-from src.notification import Notification
+from src.alert import AlertMessage
 
 log = logging.getLogger(__name__)
 
@@ -30,22 +30,18 @@ class TelegramController:
         self._bot = Bot(token=self.bot_token)
         self.dry_run = dry_run
 
-    async def send(self, notification: Notification) -> None:
-        text = (
-            f"🔔 *{notification.monitor.name}*\n\n"
-            f"{notification.alert_message}"
-        )
+    async def send(self, alert: AlertMessage) -> None:
         if not self.dry_run:
             await self._bot.send_message(
                 chat_id=self.chat_id,
-                text=text,
+                text=alert.format(),
                 parse_mode=ParseMode.MARKDOWN,
             )
-        log.info("Sent alert for monitor %s", notification.monitor.name)
+        log.info("Sent alert %s", alert.name)
 
-    async def send_many(self, notifications: list[Notification]) -> None:
-        for n in notifications:
+    async def send_many(self, alerts: list[AlertMessage]) -> None:
+        for alert in alerts:
             try:
-                await self.send(n)
+                await self.send(alert)
             except Exception:
-                log.exception("Failed to send alert for monitor %s", n.monitor.name)
+                log.exception("Failed to send alert %s", alert.name)
