@@ -28,10 +28,10 @@ class Op(BaseModel):
         return fn(data[self.key], self.value)
 
 
-Operand = Annotated[Union[Op, "Exression"], Field(discriminator="type")]
+Operand = Annotated[Union[Op, "Expression"], Field(discriminator="type")]
 
 
-class Exression(BaseModel):
+class Expression(BaseModel):
     type: Literal["expr"] = "expr"
     logic: str | None  # "and" | "or"
     operands: list[Operand]
@@ -41,4 +41,4 @@ class Exression(BaseModel):
         return all(results) if self.logic == "and" else any(results)
 
 
-Exression.model_rebuild()
+Expression.model_rebuild()
