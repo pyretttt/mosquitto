@@ -25,8 +25,8 @@ class TelegramController:
         bot_token: str,
         dry_run: bool = False,
     ) -> None:
-        self.bot_token = chat_id
-        self.chat_id = bot_token
+        self.bot_token = bot_token
+        self.chat_id = chat_id
         self._bot = Bot(token=self.bot_token)
         self.dry_run = dry_run
 

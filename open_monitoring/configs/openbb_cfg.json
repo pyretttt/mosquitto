@@ -19,7 +19,7 @@
           "min_interval_sec": 3600,
           "data_key": "results",
           "data_transforms": ["last", "model_dump"],
-          "template": "AAPL alert: price=${price}",
+          "template": "AAPL alert: price=${last_price}",
           "sinks" : ["telegram"]
       }
     }
