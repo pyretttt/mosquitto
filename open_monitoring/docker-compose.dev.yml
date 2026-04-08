@@ -14,7 +14,6 @@ services:
       DRY_RUN: ${DRY_RUN}
     volumes:
       - ./src:/app/src
-      - ./cfg.yaml:/app/cfg.yaml:ro
     command:
       - watchmedo
       - auto-restart

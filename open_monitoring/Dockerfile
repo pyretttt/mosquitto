@@ -17,7 +17,9 @@ COPY requirements-dev.txt requirements-dev.txt
 
 RUN python -m pip install -r ${REQUIREMENTS_FILE}
 
+COPY ./configs/ ./configs/
 COPY ./src/ ./src/
+
 
 ENV BOT_TOKEN="" \
     CHAT_ID="" \

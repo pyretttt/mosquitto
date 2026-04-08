@@ -15,6 +15,7 @@ from src.condition import ConditionEvaluationResult, evaluate_json_condition
 from src.monitor import Monitoring
 from src.data_controller import DataController
 from src.notification import Notification
+from src.utils import Safedict
 
 log = logging.getLogger(__name__)
 
@@ -49,10 +50,25 @@ def pull_data(monitor: Monitoring) -> tuple[Monitoring, dict | None]:
         data = fn(**monitor.pull.params)
         if data is None:
             raise ValueError(f"No results from {monitor.pull.method}")
-        return monitor, data.to_dict()
-    except Exception as e:
-        log.error(f"Error pulling data: {e}")
+        return monitor, data
+    except Exception:
+        log.exception(f"Error pulling data")
         return monitor, None
+
+
+def transform_data(data: object, transforms: list[str]):
+    current_data = data
+    for transform in transforms:
+        match transform:
+            case "to_dict":
+                current_data = current_data.to_dict()
+            case "last":
+                current_data = current_data[-1]
+            case "model_dump":
+                current_data = current_data.model_dump()
+            case _:
+                raise ValueError(f"Unsupported data type: {type}")
+    return current_data
 
 
 class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
@@ -86,17 +102,18 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
         eval_conditions = dict[str, ConditionEvaluationResult]()
         for id, data in data.openbb_data.items():
             try:
+                condition = ctx.monitors[id].condition
                 evaluation_data = resolve_attr(
-                    root=data.to_dict(),
-                    dotted_path=ctx.monitors[id].condition.data_key,
+                    root=data,
+                    dotted_path=condition.data_key,
                     allowed_roots=ALLOWED_DATA_ROOTS
                 )
                 eval_conditions[id] = evaluate_json_condition(
-                    data=evaluation_data,
-                    expression=ctx.monitors[id].condition.expression
+                    labeled_data=(condition.data_key, transform_data(data=evaluation_data, transforms=condition.data_transforms)),
+                    expression=condition.expression
                 )
             except Exception as e:
-                log.error(f"Error evaluating condition: {e}")
+                log.exception("Error evaluating condition")
 
         return eval_conditions
 
@@ -112,14 +129,17 @@ class OpenBBDataController(DataController[OpenBBContext, OpenBBData]):
             if not condition.triggered:
                 continue
             monitor = ctx.monitors[id]
-            item_data = data.openbb_data[id]
+            print(data.openbb_data[id])
+            item_data = resolve_attr(
+                root=data.openbb_data[id],
+                dotted_path=monitor.notify.data_key,
+                allowed_roots=ALLOWED_DATA_ROOTS
+            )
+            item_data = transform_data(data=item_data, transforms=monitor.notify.data_transforms)
             self.timeouts_until[id] = time.time() + monitor.notify.min_interval_sec
+
             alert_message = monitor.notify.template.format_map(
-                resolve_attr(
-                    root=item_data.to_dict(),
-                    dotted_path=monitor.notify.data_key,
-                    allowed_roots=ALLOWED_DATA_ROOTS
-                )
+                Safedict(item_data)
             )
             notifications.append(Notification(monitor=monitor, alert_message=alert_message))
             log.info(f"Alert: {alert_message}")

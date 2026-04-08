@@ -38,15 +38,11 @@ echo "Everything set up ✅"
 description = "Runs app in development environment"
 depends = ['verify_env']
 usage = """
-    arg "<configuration>" help="Docker compose configuration" default="docker-compose.dev.yml"
-    flag "-d --detach" help="Run containers in detached mode (docker compose up -d)" default=#false negate="--no-detach"
+    flag "--config <config>" help="Docker compose configuration" default="docker-compose.dev.yml"
+    arg "[extra]" var=#true help="Extra args for docker compose up"
 """
 run = """
-{% if usage.detach %}
-docker compose -f {{ usage.configuration }} up --build -d
-{% else %}
-docker compose -f {{ usage.configuration }} up --build
-{% endif %}
+docker compose -f {{ usage.config }} up {{ usage.extra | join(sep=" ") }}
 """
 
 
