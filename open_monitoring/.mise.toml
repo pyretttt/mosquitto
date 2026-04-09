@@ -54,3 +54,8 @@ usage = """
 run = """
 docker compose -f {{ usage.configuration }} down
 """
+
+
+[tasks."test"]
+description = "Run tests"
+run = "python -m pytest tests/"

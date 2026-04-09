@@ -5,6 +5,9 @@ from typing import Annotated, Literal, Union
 
 from pydantic import BaseModel, Field
 
+PRECEDENCE = {"or": 1, "and": 2}
+SYMBOLS = {"and": " && ", "or": " || "}
+
 OPS = {
     "<":  operator.lt,
     "<=": operator.le,
@@ -45,7 +48,14 @@ class Expression(BaseModel):
 
 
     def format(self) -> str:
-        return self.logic.join(op.format() for op in self.operands)
+        sep = SYMBOLS[self.logic]
+        parts = []
+        for op in self.operands:
+            s = op.format()
+            if isinstance(op, Expression) and PRECEDENCE[op.logic] < PRECEDENCE[self.logic]:
+                s = f"({s})"
+            parts.append(s)
+        return sep.join(parts)
 
 
 Expression.model_rebuild()
