@@ -11,7 +11,7 @@ import json
 from collections.abc import Iterator
 from typing import Callable
 
-from src.api import ApiInput
+from src.alert import AlertInput
 from src.alert_registry import alert_register, registry
 from src.telegram_controller import TelegramController
 import src.apis
@@ -35,15 +35,15 @@ class AppConfig:
 app_config = AppConfig()
 
 
-def load_alert_configs(path: str = "configs/alerts.json") -> list[ApiInput]:
+def load_alert_configs(path: str = "configs/alerts.json") -> list[AlertInput]:
     with open(path) as f:
         raw = json.load(f)
-    alerts = [ApiInput(**m) for m in raw["alerts"]]
+    alerts = [AlertInput(**m) for m in raw["alerts"]]
     return alerts
 
 
 async def tick(
-    alerts: Iterator[tuple[ApiInput, Callable | None]],
+    alerts: Iterator[tuple[AlertInput, Callable | None]],
     telegram: TelegramController,
 ) -> None:
     event_loop = asyncio.get_running_loop()

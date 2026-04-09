@@ -8,7 +8,7 @@ import os
 from telegram import Bot
 from telegram.constants import ParseMode
 
-from src.api import AlertMessage
+from src.alert import AlertMessage
 
 log = logging.getLogger(__name__)
 

@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from src.expression import Expression
 
 
-class ApiInput(BaseModel):
+class AlertInput(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     fn: str
     name: str
@@ -36,5 +36,5 @@ class AlertMessage(BaseModel):
         )
 
 
-class ApiOutput(BaseModel):
+class AlertOutput(BaseModel):
     alert_message: AlertMessage | None = None
