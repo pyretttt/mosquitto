@@ -6,6 +6,7 @@ from src.api import ApiInput, ApiOutput
 from src.alert_registry import alert_register
 from src.apis.obb_common import output_for_last_result
 
+
 @alert_register()
 def quote(input: ApiInput) -> ApiOutput:
     assert input.fn == quote.__name__

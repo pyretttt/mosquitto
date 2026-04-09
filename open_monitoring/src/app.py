@@ -48,7 +48,6 @@ async def tick(
 ) -> None:
     event_loop = asyncio.get_running_loop()
     try:
-
         futures = [
             event_loop.run_in_executor(
                 THREAD_POOL_EXEC,
