@@ -17,9 +17,17 @@ class AlertConfig(BaseModel):
 
 class AlertMessage(BaseModel):
     name: str
+    expression: Expression | None = None
     payload: str
 
     # TODO: add time
 
     def format(self) -> str:
-        return f"🔔 *{self.name}*" + "\n\n" + self.payload
+        expression = ("`" + self.expression.format() + "`") if self.expression else ""
+        expression_with_new_line = expression + "\n\n" if expression else ""
+        return (
+            f"🔔 *{self.name}*"
+            + "\n\n"
+            + expression_with_new_line
+            + self.payload
+        )

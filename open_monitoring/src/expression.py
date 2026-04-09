@@ -27,6 +27,9 @@ class Op(BaseModel):
             raise ValueError(f"Unknown operator: {self.op!r}")
         return fn(data[self.key], self.value)
 
+    def format(self) -> str:
+        return f"{self.key} {self.op} {self.value}"
+
 
 Operand = Annotated[Union[Op, "Expression"], Field(discriminator="type")]
 
@@ -39,6 +42,10 @@ class Expression(BaseModel):
     def evaluate(self, data: dict) -> bool:
         results = (op.evaluate(data) for op in self.operands)
         return all(results) if self.logic == "and" else any(results)
+
+
+    def format(self) -> str:
+        return self.logic.join(op.format() for op in self.operands)
 
 
 Expression.model_rebuild()

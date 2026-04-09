@@ -5,6 +5,7 @@ from openbb import obb
 from src.alert import AlertConfig, AlertMessage
 from src.utils import Safedict
 from src.alert_registry import alert_register
+from src.openbb_utils import as_markdown_table
 
 
 @alert_register()
@@ -18,9 +19,10 @@ def quote(alert_config: AlertConfig) -> AlertMessage | None:
         if (custom_template := alert_config.custom_template):
             payload = custom_template.format_map(Safedict(last_result.model_dump()))
         else:
-            payload = out.to_df().T.to_string(header=False)
+            payload = as_markdown_table(out)
         return AlertMessage(
             name=alert_config.name,
-            payload=payload
+            expression=alert_config.expression,
+            payload=payload,
         )
     return None

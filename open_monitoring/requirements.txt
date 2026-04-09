@@ -3,3 +3,5 @@ python-telegram-bot>=21,<22
 cel-python
 pydantic
 PyYAML>=6,<7
+pandas
+tabulate
