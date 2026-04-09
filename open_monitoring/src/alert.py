@@ -1,3 +1,5 @@
+from textwrap import dedent
+
 from pydantic import BaseModel, Field
 
 from src.expression import Expression
@@ -20,7 +22,4 @@ class AlertMessage(BaseModel):
     # TODO: add time
 
     def format(self) -> str:
-        return f"""
-        🔔 *{self.name}*\n\n
-        {self.payload}
-        """
+        return f"🔔 *{self.name}*" + "\n\n" + self.payload

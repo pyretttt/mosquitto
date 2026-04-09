@@ -29,7 +29,7 @@ registry = _Registry()
 def alert_register(prefix: str | None = None, separator: str = "."):
     """Decorator that registers the wrapped function as ``prefix + fn.__name__`` in the global registry."""
     def decorator(fn: Callable) -> Callable:
-        prefix = prefix + separator if prefix else ""
-        registry.register(prefix + fn.__name__, fn)
+        full_prefix = prefix + separator if prefix else ""
+        registry.register(full_prefix + fn.__name__, fn)
         return fn
     return decorator

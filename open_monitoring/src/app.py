@@ -6,15 +6,15 @@ import asyncio
 from dataclasses import dataclass
 import logging
 import os
-import time
 from concurrent.futures import ThreadPoolExecutor
 import json
 from collections.abc import Iterator
 from typing import Callable
 
 from src.alert import AlertConfig
-from src.alert_registry import registry
+from src.alert_registry import alert_register, registry
 from src.telegram_controller import TelegramController
+import src.alerts
 
 THREAD_POOL_SIZE = 4
 THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
@@ -79,7 +79,7 @@ async def main_async(period_sec: int = 60) -> None:
         if alert_fn is None:
             log.warning("Alert function not found for %s", alert_config.fn)
             continue
-    alerts = [alert_config, alert_fn for alert_config, alert_fn in alerts if alert_fn is not None]
+    alerts = [(alert_config, alert_fn) for alert_config, alert_fn in alerts if alert_fn is not None]
 
     log.info("Loaded %d alerts, polling every %ds", len(alerts), period_sec)
     while True:
