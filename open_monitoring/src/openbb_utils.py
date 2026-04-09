@@ -5,7 +5,7 @@ def as_markdown_table(oboject) -> str:
         "```\n"
         + oboject.to_df().T
             .rename_axis("Field")
-            .rename(index={"": "Field"} ,columns={0: "Value"})
+            .rename(columns={0: "Value"})
             .to_markdown()
         + "\n```"
     )
