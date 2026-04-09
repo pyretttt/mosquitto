@@ -12,6 +12,7 @@ services:
       BOT_TOKEN: ${BOT_TOKEN}
       CHAT_ID: ${CHAT_ID}
       DRY_RUN: ${DRY_RUN}
+      RUNLOOP_INTERVAL_SEC: ${RUNLOOP_INTERVAL_SEC}
     volumes:
       - ./src:/app/src
     command:

@@ -8,4 +8,5 @@ services:
     environment:
       BOT_TOKEN: ${BOT_TOKEN}
       CHAT_ID: ${CHAT_ID}
+      RUNLOOP_INTERVAL_SEC: ${RUNLOOP_INTERVAL_SEC}
     restart: unless-stopped

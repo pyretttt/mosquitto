@@ -34,14 +34,15 @@ class AppConfig:
     chat_id: str = os.environ["CHAT_ID"]
     bot_token: str = os.environ["BOT_TOKEN"]
     dry_run: bool = os.environ["DRY_RUN"] == "true"
+    runloop_interval_sec: int = int(os.environ.get("RUNLOOP_INTERVAL_SEC", "60"))
 
 
 app_config = AppConfig()
 data_controller = PersistentDataController.with_sqlite(db_path="runtime/alerts.db", table_name="alerts")
 
 
-def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json") -> list[AlertInput]:
-    db_alerts =data_controller.get_alerts()
+async def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json") -> list[AlertInput]:
+    db_alerts = await data_controller.get_alerts()
     if db_alerts:
         return db_alerts
 
@@ -49,6 +50,15 @@ def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json")
         raw = json.load(f)
     alerts = [AlertInput(**m) for m in raw["alerts"]]
     return alerts
+
+
+async def match_alerts(alert_configs: list[AlertInput]) -> list[tuple[AlertInput, Callable | None]]:
+    alerts = [(alert_config, registry.get(alert_config.fn)) for alert_config in alert_configs]
+    for alert_config, alert_fn in alerts:
+        if alert_fn is None:
+            log.warning("Alert function not found for %s", alert_config.fn)
+            continue
+    return [(alert_config, alert_fn) for alert_config, alert_fn in alerts if alert_fn is not None]
 
 
 async def tick(
@@ -74,25 +84,19 @@ async def tick(
         log.exception("Monitoring failed with error: %s", e)
 
 
-async def main_async(period_sec: int = 60) -> None:
+async def main_async() -> None:
     telegram = TelegramController(
         chat_id=app_config.chat_id,
         bot_token=app_config.bot_token,
-        dry_run=app_config.dry_run == "true",
+        dry_run=app_config.dry_run,
     )
 
-    alert_configs = load_alert_configs()
-    alerts = [(alert_config, registry.get(alert_config.fn)) for alert_config in alert_configs]
-    for alert_config, alert_fn in alerts:
-        if alert_fn is None:
-            log.warning("Alert function not found for %s", alert_config.fn)
-            continue
-    alerts = [(alert_config, alert_fn) for alert_config, alert_fn in alerts if alert_fn is not None]
+    log.info("Run loop polling every %ds", app_config.runloop_interval_sec)
 
-    log.info("Loaded %d alerts, polling every %ds", len(alerts), period_sec)
     while True:
+        alerts = match_alerts(await load_alert_configs())
         await tick(alerts, telegram)
-        await asyncio.sleep(period_sec)
+        await asyncio.sleep(app_config.runloop_interval_sec)
 
 
 if __name__ == "__main__":
