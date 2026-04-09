@@ -12,9 +12,11 @@ from collections.abc import Iterator
 from typing import Callable
 
 from src.alert import AlertInput
-from src.alert_registry import alert_register, registry
+from src.alert_registry import registry
 from src.telegram_controller import TelegramController
+from src.persistent_data_controller import PersistentDataController
 import src.apis
+
 
 THREAD_POOL_SIZE = 4
 THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
@@ -26,17 +28,24 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
+
 @dataclass
 class AppConfig:
     chat_id: str = os.environ["CHAT_ID"]
     bot_token: str = os.environ["BOT_TOKEN"]
     dry_run: bool = os.environ["DRY_RUN"] == "true"
 
+
 app_config = AppConfig()
+data_controller = PersistentDataController.with_sqlite("runtime/alerts.db")
 
 
-def load_alert_configs(path: str = "configs/alerts.json") -> list[AlertInput]:
-    with open(path) as f:
+def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json") -> list[AlertInput]:
+    db_alerts =data_controller.get_alerts()
+    if db_alerts:
+        return db_alerts
+
+    with open(default_alerts_path) as f:
         raw = json.load(f)
     alerts = [AlertInput(**m) for m in raw["alerts"]]
     return alerts

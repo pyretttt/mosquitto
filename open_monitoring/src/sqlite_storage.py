@@ -8,6 +8,7 @@ class SQLiteStorage(Storage):
     def __init__(self, db_path: str = "alerts.db") -> None:
         self._db_path = db_path
 
+
     async def init(self) -> None:
         async with aiosqlite.connect(self._db_path) as db:
             await db.execute("""
@@ -18,6 +19,7 @@ class SQLiteStorage(Storage):
             """)
             await db.commit()
 
+
     async def add(self, item: AlertInput) -> None:
         async with aiosqlite.connect(self._db_path) as db:
             await db.execute(
@@ -26,11 +28,13 @@ class SQLiteStorage(Storage):
             )
             await db.commit()
 
+
     async def get_all(self) -> list[AlertInput]:
         async with aiosqlite.connect(self._db_path) as db:
             async with db.execute("SELECT data FROM api_inputs") as cursor:
                 rows = await cursor.fetchall()
         return [AlertInput.model_validate_json(row[0]) for row in rows]
+
 
     async def remove(self, alert_id: str) -> bool:
         async with aiosqlite.connect(self._db_path) as db:
@@ -39,6 +43,7 @@ class SQLiteStorage(Storage):
             )
             await db.commit()
             return cursor.rowcount > 0
+
 
     async def get(self, alert_id: str) -> AlertInput | None:
         async with aiosqlite.connect(self._db_path) as db:
