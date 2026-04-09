@@ -11,10 +11,10 @@ import json
 from collections.abc import Iterator
 from typing import Callable
 
-from src.alert import AlertConfig
+from src.api import ApiInput
 from src.alert_registry import alert_register, registry
 from src.telegram_controller import TelegramController
-import src.alerts
+import src.apis
 
 THREAD_POOL_SIZE = 4
 THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
@@ -35,15 +35,15 @@ class AppConfig:
 app_config = AppConfig()
 
 
-def load_alert_configs(path: str = "configs/alerts.json") -> list[AlertConfig]:
+def load_alert_configs(path: str = "configs/alerts.json") -> list[ApiInput]:
     with open(path) as f:
         raw = json.load(f)
-    alerts = [AlertConfig(**m) for m in raw["alerts"]]
+    alerts = [ApiInput(**m) for m in raw["alerts"]]
     return alerts
 
 
 async def tick(
-    alerts: Iterator[tuple[AlertConfig, Callable | None]],
+    alerts: Iterator[tuple[ApiInput, Callable | None]],
     telegram: TelegramController,
 ) -> None:
     event_loop = asyncio.get_running_loop()
@@ -57,8 +57,8 @@ async def tick(
             )
             for alert_config, alert_fn in alerts
         ]
-        alerts = await asyncio.gather(*futures)
-        alerts_to_send = [alert for alert in alerts if alert is not None]
+        outputs = await asyncio.gather(*futures)
+        alerts_to_send = [output.alert_message for output in outputs if output.alert_message is not None]
         if alerts_to_send:
             log.info("Alerts to be sent: %d", len(alerts_to_send))
             await telegram.send_many(alerts_to_send)

@@ -5,11 +5,11 @@ from pydantic import BaseModel, Field
 from src.expression import Expression
 
 
-class AlertConfig(BaseModel):
+class ApiInput(BaseModel):
     fn: str
     name: str
     params: dict
-    expression: Expression
+    expression: Expression | None = None
     custom_template: str | None = None
     throttle_sec: int = 3600
     sinks: list[str] = Field(default_factory=lambda: ["telegram"])
@@ -32,3 +32,7 @@ class AlertMessage(BaseModel):
             + self.payload
             + meta_with_prefix_new_line
         )
+
+
+class ApiOutput(BaseModel):
+    alert_message: AlertMessage | None = None
