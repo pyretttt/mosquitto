@@ -37,7 +37,7 @@ class AppConfig:
 
 
 app_config = AppConfig()
-data_controller = PersistentDataController.with_sqlite("runtime/alerts.db")
+data_controller = PersistentDataController.with_sqlite(db_path="runtime/alerts.db", table_name="alerts")
 
 
 def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json") -> list[AlertInput]:

@@ -1,8 +1,18 @@
 from openbb import OBBject
 
 from src.alert import AlertInput, AlertOutput, AlertMessage
-from src.openbb_utils import as_markdown_table
 from src.utils import Safedict
+
+
+def as_markdown_table(obboject: OBBject) -> str:
+    return (
+        "```\n"
+        + obboject.to_df().T
+            .rename_axis("Field")
+            .rename(columns={0: "Value"})
+            .to_markdown()
+        + "\n```"
+    )
 
 
 def output_for_last_result(
