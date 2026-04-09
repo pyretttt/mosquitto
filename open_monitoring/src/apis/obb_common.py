@@ -1,4 +1,4 @@
-from openbb import OBBject
+from openbb_core.app.model.obbject import OBBject
 
 from src.alert import AlertInput, AlertOutput, AlertMessage
 from src.utils import Safedict

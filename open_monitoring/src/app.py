@@ -10,6 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from collections.abc import Iterator
 from typing import Callable
+import time
 
 from src.alert import AlertInput
 from src.alert_registry import registry
@@ -93,10 +94,13 @@ async def main_async() -> None:
 
     log.info("Run loop polling every %ds", app_config.runloop_interval_sec)
 
-    while True:
-        alerts = match_alerts(await load_alert_configs())
-        await tick(alerts, telegram)
-        await asyncio.sleep(app_config.runloop_interval_sec)
+    async def pull() -> None:
+        while True:
+            alerts = await match_alerts(await load_alert_configs())
+            await tick(alerts, telegram)
+            await asyncio.sleep(app_config.runloop_interval_sec)
+
+    await telegram.run(pull)
 
 
 if __name__ == "__main__":

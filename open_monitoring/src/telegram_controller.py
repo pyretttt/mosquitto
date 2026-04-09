@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import asyncio
+from collections.abc import Callable, Coroutine
 import logging
-import os
+import time
+from typing import Any
 
-from telegram import Bot
 from telegram.constants import ParseMode
+from telegram.ext import Application
 
 from src.alert import AlertMessage
 
@@ -14,10 +17,7 @@ log = logging.getLogger(__name__)
 
 
 class TelegramController:
-    """Sends alert messages to a Telegram chat via the Bot API.
-
-    Reads ``BOT_TOKEN`` and ``CHAT_ID`` from environment variables.
-    """
+    """Sends alert messages and handles bot commands via the Bot API."""
 
     def __init__(
         self,
@@ -27,17 +27,19 @@ class TelegramController:
     ) -> None:
         self.bot_token = bot_token
         self.chat_id = chat_id
-        self._bot = Bot(token=self.bot_token)
         self.dry_run = dry_run
+        self._application = Application.builder().token(bot_token).build()
+
 
     async def send(self, alert: AlertMessage) -> None:
         if not self.dry_run:
-            await self._bot.send_message(
+            await self._application.bot.send_message(
                 chat_id=self.chat_id,
                 text=alert.format(),
                 parse_mode=ParseMode.MARKDOWN,
             )
         log.info("Sent alert %s", alert.name)
+
 
     async def send_many(self, alerts: list[AlertMessage]) -> None:
         for alert in alerts:
@@ -45,3 +47,17 @@ class TelegramController:
                 await self.send(alert)
             except Exception:
                 log.exception("Failed to send alert %s", alert.name)
+
+
+    async def run(
+        self,
+        pull_fn: Callable[[], Coroutine[Any, Any, None]],
+    ) -> None:
+        """Run the bot and call monitor_fn at most once per interval_sec."""
+        async with self._application:
+            await self._application.start()
+            await self._application.updater.start_polling()
+
+            await pull_fn()
+            await self._application.updater.stop()
+            await self._application.stop()
