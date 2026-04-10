@@ -15,6 +15,7 @@ services:
       RUNLOOP_INTERVAL_SEC: ${RUNLOOP_INTERVAL_SEC:-60}
     volumes:
       - ./src:/app/src
+      - ./runtime:/runtime
     command:
       - watchmedo
       - auto-restart

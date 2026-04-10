@@ -39,7 +39,7 @@ class AppConfig:
 
 
 app_config = AppConfig()
-data_controller = PersistentDataController.with_sqlite(db_path="runtime/alerts.db", table_name="alerts")
+data_controller = PersistentDataController.with_sqlite(db_path="/runtime/alerts.db", table_name="alerts")
 
 
 async def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json") -> list[AlertInput]:
@@ -86,6 +86,7 @@ async def tick(
 
 
 async def main_async() -> None:
+    await data_controller.init()
     telegram = TelegramController(
         chat_id=app_config.chat_id,
         bot_token=app_config.bot_token,
