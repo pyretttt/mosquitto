@@ -12,7 +12,7 @@ from telegram import Update
 
 from src.alert import AlertMessage
 from src.persistent_data_controller import PersistentDataController
-from src.alert_registry import AlertRegistry
+from src.alert_registry import Registry
 
 
 class Deps:
@@ -27,10 +27,10 @@ class Commands:
     @staticmethod
     async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
-        await update.message.reply_text("Sending logs...")
+        await update.message.reply_text("Preparing logs...")
         await context.bot.send_document(
             chat_id=update.message.chat_id,
-            document=open('/runtime/logs', 'r')
+            document=open('/runtime/log', 'r')
         )
 
 
@@ -39,12 +39,11 @@ class TelegramController:
 
     def __init__(
         self,
-        alert_registry: AlertRegistry,
+        alert_registry: Registry,
         persistent_data_controller: PersistentDataController,
         chat_id: str,
         bot_token: str,
         dry_run: bool = False,
-
     ) -> None:
         self.alert_registry = alert_registry
         self.persistent_data_controller = persistent_data_controller
@@ -52,7 +51,7 @@ class TelegramController:
         self.chat_id = chat_id
         self.dry_run = dry_run
         self.application = Application.builder().token(bot_token).build()
-        chat_filter = filters.Chat(chat_id=[chat_id])
+        chat_filter = filters.Chat(chat_id=[int(chat_id)])
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
 
         self.application.bot_data[Deps.alert_registry] = alert_registry

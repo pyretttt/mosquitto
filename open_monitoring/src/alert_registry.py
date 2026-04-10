@@ -1,10 +1,10 @@
 from typing import Callable
 
-class _Registry:
-    _instance: "_Registry | None" = None
+class Registry:
+    _instance: "Registry | None" = None
     _map: dict[str, Callable]
 
-    def __new__(cls) -> "_Registry":
+    def __new__(cls) -> "Registry":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._instance._map = {}
@@ -23,7 +23,7 @@ class _Registry:
         return key in self._map
 
 
-registry = _Registry()
+registry = Registry()
 
 
 def alert_register(prefix: str | None = None, separator: str = "."):
