@@ -7,7 +7,7 @@ import logging
 from typing import Any
 
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram.ext import Application, CommandHandler, ContextTypes, filters
 from telegram import Update
 
 from src.alert import AlertMessage
@@ -26,8 +26,12 @@ log = logging.getLogger(__name__)
 class Commands:
     @staticmethod
     async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Sends explanation on how to use the bot."""
-        await update.message.reply_text("Test")
+        """Sends logs file."""
+        await update.message.reply_text("Sending logs...")
+        await context.bot.send_document(
+            chat_id=update.message.chat_id,
+            document=open('/runtime/logs', 'r')
+        )
 
 
 class TelegramController:
@@ -48,7 +52,8 @@ class TelegramController:
         self.chat_id = chat_id
         self.dry_run = dry_run
         self.application = Application.builder().token(bot_token).build()
-        self.application.add_handler(CommandHandler("logs", Commands.logs))
+        chat_filter = filters.Chat(chat_id=[chat_id])
+        self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
