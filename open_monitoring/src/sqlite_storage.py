@@ -78,3 +78,17 @@ class SQLiteStorage(Storage):
                 src.close()
                 dst.close()
         return await asyncio.to_thread(do_backup)
+
+    async def restore(self, src_path: str) -> bool:
+        def do_restore() -> bool:
+            src = sqlite3.connect(src_path)
+            dst = sqlite3.connect(self._db_path)
+            try:
+                src.backup(dst)
+                return True
+            except Exception:
+                return False
+            finally:
+                src.close()
+                dst.close()
+        return await asyncio.to_thread(do_restore)

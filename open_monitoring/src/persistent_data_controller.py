@@ -35,3 +35,6 @@ class PersistentDataController:
 
     async def backup(self, dest_path: str) -> bool:
         return await self._storage.backup(dest_path)
+
+    async def restore(self, src_path: str) -> bool:
+        return await self._storage.restore(src_path)

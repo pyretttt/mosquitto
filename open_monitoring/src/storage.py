@@ -21,3 +21,6 @@ class Storage(ABC):
 
     @abstractmethod
     async def backup(self, dest_path: str) -> bool: ...
+
+    @abstractmethod
+    async def restore(self, src_path: str) -> bool: ...

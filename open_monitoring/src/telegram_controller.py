@@ -9,7 +9,7 @@ import tempfile
 from typing import List
 
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes, filters
+from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram import Update
 from pydantic import RootModel
 
@@ -56,6 +56,27 @@ class Commands:
             document=open(app_config.log_file_path, "r")
         )
 
+
+    @staticmethod
+    async def set_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Sends logs file."""
+        document = update.message.document
+        if document is None:
+            await update.message.reply_text("Please send a SQLite database file as a document.")
+            return
+
+        await update.message.reply_text("Restoring database...")
+        persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+        with tempfile.NamedTemporaryFile(delete=True, suffix=".db") as tmp:
+            tg_file = await context.bot.get_file(document.file_id)
+            await tg_file.download_to_drive(tmp.name)
+            is_success = await persistent_data_controller.restore(tmp.name)
+            if is_success:
+                await update.message.reply_text("Database restored successfully.")
+            else:
+                await update.message.reply_text("Failed to restore database.")
+
+
     @staticmethod
     async def dump_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
@@ -93,6 +114,10 @@ class TelegramController:
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
         self.application.add_handler(CommandHandler("alerts", Commands.show_alerts, filters=chat_filter))
+        self.application.add_handler(MessageHandler(
+            chat_filter & filters.Document.ALL & filters.Caption(["/set_db"]),
+            Commands.set_db,
+        ))
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
