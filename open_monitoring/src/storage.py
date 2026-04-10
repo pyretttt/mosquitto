@@ -18,3 +18,6 @@ class Storage(ABC):
 
     @abstractmethod
     async def get(self, alert_id: str) -> AlertInput | None: ...
+
+    @abstractmethod
+    async def backup(self, dest_path: str) -> bool: ...

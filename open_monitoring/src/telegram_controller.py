@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Callable, Coroutine
 import logging
 from typing import Any
+import tempfile
 
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes, filters
@@ -13,6 +14,7 @@ from telegram import Update
 from src.alert import AlertMessage
 from src.persistent_data_controller import PersistentDataController
 from src.alert_registry import Registry
+from src.app_config import app_config
 
 
 class Deps:
@@ -30,8 +32,23 @@ class Commands:
         await update.message.reply_text("Preparing logs...")
         await context.bot.send_document(
             chat_id=update.message.chat_id,
-            document=open('/runtime/log', 'r')
+            document=open(app_config.log_file_path, "r")
         )
+
+
+    async def dump_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Sends logs file."""
+        await update.message.reply_text("Preparing database file...")
+        persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+        with tempfile.NamedTemporaryFile(delete=True) as tmp:
+            is_success = await persistent_data_controller.backup(tmp.name)
+            if is_success:
+                await context.bot.send_document(
+                    chat_id=update.message.chat_id,
+                    document=open(tmp.name, "rb")
+                )
+            else:
+                await update.message.reply_text("Failed to send database file.")
 
 
 class TelegramController:
@@ -53,6 +70,7 @@ class TelegramController:
         self.application = Application.builder().token(bot_token).build()
         chat_filter = filters.Chat(chat_id=[int(chat_id)])
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
+        self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller

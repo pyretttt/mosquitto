@@ -1,3 +1,6 @@
+import asyncio
+import sqlite3
+
 import aiosqlite
 
 from src.alert import AlertInput
@@ -59,3 +62,19 @@ class SQLiteStorage(Storage):
         if row is None:
             return None
         return AlertInput.model_validate_json(row[0])
+
+
+    async def backup(self, dest_path: str) -> bool:
+        def do_backup() -> None:
+            src = sqlite3.connect(self._db_path)
+            dst = sqlite3.connect(dest_path)
+            try:
+                # TODO: Add logging
+                src.backup(dst)
+                return True
+            except Exception:
+                return False
+            finally:
+                src.close()
+                dst.close()
+        return await asyncio.to_thread(do_backup)

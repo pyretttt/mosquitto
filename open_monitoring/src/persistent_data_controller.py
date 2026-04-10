@@ -31,3 +31,7 @@ class PersistentDataController:
 
     async def get_alert(self, alert_id: str) -> AlertInput | None:
         return await self._storage.get(alert_id)
+
+
+    async def backup(self, dest_path: str) -> bool:
+        return await self._storage.backup(dest_path)

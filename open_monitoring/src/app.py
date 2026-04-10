@@ -16,6 +16,7 @@ from src.alert import AlertInput
 from src.alert_registry import registry
 from src.telegram_controller import TelegramController
 from src.persistent_data_controller import PersistentDataController
+from src.app_config import app_config
 import src.apis
 
 
@@ -24,34 +25,25 @@ THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)
 
 
 _LOG_FORMAT = "%(asctime)s %(levelname)s %(name)s %(message)s"
-_LOG_MAX_BYTES = int(os.environ.get("LOG_MAX_BYTES", str(10 * 1024 * 1024)))  # default 10 MB
 
 logging.basicConfig(
     level=logging.INFO,
     format=_LOG_FORMAT,
 )
 _file_handler = logging.handlers.RotatingFileHandler(
-    "/runtime/log",
-    maxBytes=_LOG_MAX_BYTES,
+    app_config.log_file_path,
+    maxBytes=app_config.log_file_max_bytes,
     backupCount=0,
     encoding="utf-8",
 )
 _file_handler.setFormatter(logging.Formatter(_LOG_FORMAT))
-logging.getLogger().addHandler(_file_handler)
+logging.getLogger("src").addHandler(_file_handler)
+logging.getLogger("__main__").addHandler(_file_handler)
 
 log = logging.getLogger(__name__)
 
 
-@dataclass
-class AppConfig:
-    chat_id: str = os.environ["CHAT_ID"]
-    bot_token: str = os.environ["BOT_TOKEN"]
-    dry_run: bool = os.environ["DRY_RUN"] == "true"
-    runloop_interval_sec: int = int(os.environ.get("RUNLOOP_INTERVAL_SEC", "60"))
-
-
-app_config = AppConfig()
-data_controller = PersistentDataController.with_sqlite(db_path="/runtime/alerts.db", table_name="alerts")
+data_controller = PersistentDataController.with_sqlite(db_path=app_config.db_file_path, table_name="alerts")
 telegram = TelegramController(
     alert_registry=registry,
     persistent_data_controller=data_controller,
@@ -61,7 +53,7 @@ telegram = TelegramController(
 )
 
 
-async def load_alert_configs(default_alerts_path: str = "configs/default_alerts.json") -> list[AlertInput]:
+async def load_alert_configs(default_alerts_path: str = app_config.default_alerts_path) -> list[AlertInput]:
     db_alerts = await data_controller.get_alerts()
     if db_alerts:
         return db_alerts
