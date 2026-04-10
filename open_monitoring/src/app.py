@@ -11,6 +11,7 @@ import json
 from collections.abc import Iterator
 from typing import Callable
 import time
+import threading
 
 from src.alert import AlertInput
 from src.alert_registry import registry
@@ -88,6 +89,8 @@ async def tick(
 async def main_async() -> None:
     await data_controller.init()
     telegram = TelegramController(
+        alert_registry=registry,
+        persistent_data_controller=data_controller,
         chat_id=app_config.chat_id,
         bot_token=app_config.bot_token,
         dry_run=app_config.dry_run,
