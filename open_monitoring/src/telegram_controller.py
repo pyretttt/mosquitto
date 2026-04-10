@@ -23,8 +23,6 @@ class Deps:
 log = logging.getLogger(__name__)
 
 
-
-
 class Commands:
     @staticmethod
     async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
