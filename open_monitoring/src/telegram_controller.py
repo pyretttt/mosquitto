@@ -92,6 +92,40 @@ class Commands:
             else:
                 await update.message.reply_text("Failed to send database file.")
 
+    @staticmethod
+    async def remove_alert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Removes an alert."""
+        try:
+            alert_id = update.message.text.split(" ")[1]
+            persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+            is_success = await persistent_data_controller.remove_alert(alert_id)
+            if is_success:
+                await update.message.reply_text("Alert removed successfully.")
+            else:
+                await update.message.reply_text("Failed to remove alert.")
+        except Exception:
+            await update.message.reply_text("Failed to remove alert.")
+
+    @staticmethod
+    async def alert_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Sends alert description."""
+        try:
+            alert_id = update.message.text.split(" ")[1]
+            persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+            alert = await persistent_data_controller.get_alert(alert_id)
+            if (a := alert):
+                text = "```\n" + a.model_dump_json(indent=2) + "\n```"
+                await update.message.reply_text(text)
+            else:
+                await update.message.reply_text("Alert with this ID not found. 🆘")
+        except Exception:
+            await update.message.reply_text("Failed to find alert. Maybe wrong ID? 🆘")
+
+
+    @staticmethod
+    async def add_alert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Adds an alert."""
+        
 
 class TelegramController:
     """Sends alert messages and handles bot commands via the Bot API."""
@@ -117,6 +151,14 @@ class TelegramController:
         self.application.add_handler(MessageHandler(
             chat_filter & filters.Document.ALL & filters.Caption(["/set_db"]),
             Commands.set_db,
+        ))
+        self.application.add_handler(MessageHandler(
+            chat_filter & filters.Text(strings=["/remove_alert"]),
+            Commands.remove_alert,
+        ))
+        self.application.add_handler(MessageHandler(
+            chat_filter & filters.Text(strings=["/show_alert_desc"]),
+            Commands.remove_alert,
         ))
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
