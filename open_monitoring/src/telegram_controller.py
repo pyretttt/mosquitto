@@ -6,10 +6,12 @@ from collections.abc import Callable, Coroutine
 import logging
 from typing import Any
 import tempfile
+from typing import List
 
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes, filters
 from telegram import Update
+from pydantic import RootModel
 
 from src.alert import AlertMessage
 from src.persistent_data_controller import PersistentDataController
@@ -27,6 +29,25 @@ log = logging.getLogger(__name__)
 
 class Commands:
     @staticmethod
+    async def show_alerts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Sends start message."""
+        await update.message.reply_text("Preparing alerts list...")
+        persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+        all_alerts =await persistent_data_controller.get_alerts()
+        class AlertList(RootModel):
+            root: List[AlertMessage]
+        alert_list = AlertList(root=all_alerts)
+        with tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=True) as tmp:
+            print("alert_list.model_dump_json(indent=2): ", alert_list.model_dump_json(indent=2))
+            tmp.write(alert_list.model_dump_json(indent=2).encode("utf-8"))
+            tmp.flush()
+            await context.bot.send_document(
+                chat_id=update.message.chat_id,
+                document=open(tmp.name, "r", encoding="utf-8")
+            )
+
+
+    @staticmethod
     async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
         await update.message.reply_text("Preparing logs...")
@@ -35,7 +56,7 @@ class Commands:
             document=open(app_config.log_file_path, "r")
         )
 
-
+    @staticmethod
     async def dump_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
         await update.message.reply_text("Preparing database file...")
@@ -71,6 +92,7 @@ class TelegramController:
         chat_filter = filters.Chat(chat_id=[int(chat_id)])
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
+        self.application.add_handler(CommandHandler("alerts", Commands.show_alerts, filters=chat_filter))
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
