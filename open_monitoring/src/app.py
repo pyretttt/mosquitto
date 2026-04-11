@@ -15,8 +15,7 @@ from src.alert_registry import registry
 from src.telegram_controller import TelegramController
 from src.persistent_data_controller import PersistentDataController
 from src.app_config import app_config
-import src.apis
-
+from src.alerts import *
 
 THREAD_POOL_SIZE = 4
 THREAD_POOL_EXEC = ThreadPoolExecutor(max_workers=THREAD_POOL_SIZE)

@@ -25,7 +25,7 @@ def output_for_last_result(
         return AlertOutput(alert_message=None)
 
     payload = None
-    if (custom_template := input.custom_template):
+    if custom_template := input.custom_template:
         payload = custom_template.format_map(Safedict(last_result.model_dump()))
     else:
         payload = as_markdown_table(out)
