@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
+import asyncio
+import json
 import logging
 import re
 from typing import Any
 import tempfile
 from typing import List
-import asyncio
+from pathlib import Path
 
+from telegram import constants
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
-from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
-from telegram import Update
+from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 from pydantic import RootModel
 
-from src.alert import AlertInput, AlertMessage, AlertOutput
+from src.alert import AlertButton, AlertInput, AlertMessage, AlertOutput
 from src.persistent_data_controller import PersistentDataController
 from src.alert_registry import Registry
 from src.app_config import app_config
@@ -27,6 +30,22 @@ class Deps:
 
 
 log = logging.getLogger(__name__)
+
+
+def inline_keyboard_from_buttons(buttons: list[AlertButton]) -> InlineKeyboardMarkup | None:
+    """Build an inline keyboard from alert buttons; skips entries that exceed Telegram size limits."""
+    rows: list[list[InlineKeyboardButton]] = []
+    for b in buttons:
+        payload = json.dumps({"fn": b.fn, "params": b.params}, separators=(",", ":"))
+        if len(payload.encode("utf-8")) > constants.InlineKeyboardButtonLimit.MAX_CALLBACK_DATA:
+            log.exception(
+                "Skipping button %r: callback_data exceeds %d bytes",
+                b.name,
+                constants.InlineKeyboardButtonLimit.MAX_CALLBACK_DATA,
+            )
+            continue
+        rows.append([InlineKeyboardButton(b.name, callback_data=payload)])
+    return InlineKeyboardMarkup(rows) if rows else None
 
 
 class Commands:
@@ -176,6 +195,7 @@ class TelegramController:
         self.dry_run = dry_run
         self.application = Application.builder().token(bot_token).build()
         chat_filter = filters.Chat(chat_id=[int(chat_id)])
+        self.chat_filter = chat_filter
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
         self.application.add_handler(CommandHandler("alerts", Commands.show_alerts, filters=chat_filter))
@@ -209,21 +229,71 @@ class TelegramController:
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
 
+        self.application.add_handler(CallbackQueryHandler(self.chart_callback))
+
+    async def chart_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        query = update.callback_query
+        if query is None or query.message is None or query.data is None:
+            return
+        await query.answer()
+        if not self.chat_filter.filter(update.message):
+            return
+
+        try:
+            data = json.loads(query.data)
+            fn_name = data["fn"]
+            params = data["params"]
+        except (json.JSONDecodeError, KeyError, TypeError):
+            log.exception("Invalid chart callback payload: ", query.data)
+            return
+
+        alert_registry: Registry = context.bot_data[Deps.alert_registry]
+        chart_fn = alert_registry.get_chart_fn(fn_name)
+        if chart_fn is None:
+            await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=f"Unknown chart function: {fn_name}",
+            )
+            return
+        button = AlertButton(name="", fn=fn_name, params=params)
+        try:
+            chart = await asyncio.get_running_loop().run_in_executor(None, chart_fn, button)
+        except Exception:
+            log.exception("Chart function %s failed", fn_name)
+            await context.bot.send_message(
+                chat_id=query.message.chat_id,
+                text=f"Failed to generate chart for {fn_name}.",
+            )
+            return
+
+        media_path = Path(chart.media_path)
+        with open(media_path, "rb") as photo:
+            await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo)
+            media_path.unlink(missing_ok=True)
+
+
     async def send(self, alert: AlertOutput) -> None:
+        if alert.alert_message is None:
+            return
+        markup = inline_keyboard_from_buttons(alert.buttons)
         if not self.dry_run:
             await self.application.bot.send_message(
                 chat_id=self.chat_id,
                 text=alert.alert_message.format(),
                 parse_mode=ParseMode.MARKDOWN,
+                reply_markup=markup,
             )
-        log.info("Sent alert %s", alert.name)
+        log.info("Sent alert %s", alert.alert_message.name)
 
     async def send_many(self, alerts: list[AlertOutput]) -> None:
         for alert in alerts:
             try:
                 await self.send(alert)
             except Exception:
-                log.exception("Failed to send alert %s", alert.name)
+                log.exception(
+                    "Failed to send alert %s",
+                    alert.alert_message.name if alert.alert_message else "?"
+                )
 
     async def run(
         self,

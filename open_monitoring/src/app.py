@@ -85,7 +85,7 @@ async def tick(
             for alert_config, alert_fn in alerts
         ]
         outputs = await asyncio.gather(*futures)
-        alerts_to_send = [output.alert_message for output in outputs if output.alert_message is not None]
+        alerts_to_send = [output for output in outputs if output.alert_message is not None]
         if alerts_to_send:
             log.info("Alerts to be sent: %d", len(alerts_to_send))
             await telegram.send_many(alerts_to_send)

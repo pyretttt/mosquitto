@@ -4,3 +4,4 @@ python-telegram-bot>=21,<22
 pydantic
 pandas
 tabulate
+matplotlib
