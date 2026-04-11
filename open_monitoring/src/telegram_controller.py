@@ -236,8 +236,7 @@ class TelegramController:
         if query is None or query.message is None or query.data is None:
             return
         await query.answer()
-        if not self.chat_filter.filter(update.message):
-            return
+        # TODO: Maybe add filter for chat_id later.
 
         try:
             data = json.loads(query.data)
