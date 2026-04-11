@@ -15,7 +15,7 @@ from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandl
 from telegram import Update
 from pydantic import RootModel
 
-from src.alert import AlertInput, AlertMessage
+from src.alert import AlertInput, AlertMessage, AlertOutput
 from src.persistent_data_controller import PersistentDataController
 from src.alert_registry import Registry
 from src.app_config import app_config
@@ -209,16 +209,16 @@ class TelegramController:
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
 
-    async def send(self, alert: AlertMessage) -> None:
+    async def send(self, alert: AlertOutput) -> None:
         if not self.dry_run:
             await self.application.bot.send_message(
                 chat_id=self.chat_id,
-                text=alert.format(),
+                text=alert.alert_message.format(),
                 parse_mode=ParseMode.MARKDOWN,
             )
         log.info("Sent alert %s", alert.name)
 
-    async def send_many(self, alerts: list[AlertMessage]) -> None:
+    async def send_many(self, alerts: list[AlertOutput]) -> None:
         for alert in alerts:
             try:
                 await self.send(alert)
