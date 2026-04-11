@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
 import asyncio
-import json
 import logging
 import re
 from typing import Any
@@ -12,7 +11,6 @@ import tempfile
 from typing import List
 from pathlib import Path
 
-from telegram import constants
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.constants import ParseMode
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
@@ -32,19 +30,19 @@ class Deps:
 log = logging.getLogger(__name__)
 
 
-def inline_keyboard_from_buttons(buttons: list[AlertButton]) -> InlineKeyboardMarkup | None:
-    """Build an inline keyboard from alert buttons; skips entries that exceed Telegram size limits."""
+async def inline_keyboard_from_buttons(
+    buttons: list[AlertButton],
+    persistent_data_controller: PersistentDataController,
+) -> InlineKeyboardMarkup | None:
+    """Build an inline keyboard; callback_data is a short token mapped in SQLite."""
     rows: list[list[InlineKeyboardButton]] = []
     for b in buttons:
-        payload = json.dumps({"fn": b.fn, "params": b.params}, separators=(",", ":"))
-        if len(payload.encode("utf-8")) > constants.InlineKeyboardButtonLimit.MAX_CALLBACK_DATA:
-            log.exception(
-                "Skipping button %r: callback_data exceeds %d bytes",
-                b.name,
-                constants.InlineKeyboardButtonLimit.MAX_CALLBACK_DATA,
-            )
+        try:
+            token = await persistent_data_controller.register_alert_button(b)
+        except Exception:
+            log.exception("Skipping button %r: failed to register callback payload", b.name)
             continue
-        rows.append([InlineKeyboardButton(b.name, callback_data=payload)])
+        rows.append([InlineKeyboardButton(b.name, callback_data=token)])
     return InlineKeyboardMarkup(rows) if rows else None
 
 
@@ -238,37 +236,34 @@ class TelegramController:
         await query.answer()
         # TODO: Maybe add filter for chat_id later.
 
-        try:
-            data = json.loads(query.data)
-            fn_name = data["fn"]
-            params = data["params"]
-        except (json.JSONDecodeError, KeyError, TypeError):
-            log.exception("Invalid chart callback payload: ", query.data)
+        persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
+        alert_button = await persistent_data_controller.get_alert_button(query.data)
+        if alert_button is None:
+            log.exception("Invalid chart callback payload: %s", query.data)
             return
 
         alert_registry: Registry = context.bot_data[Deps.alert_registry]
-        chart_fn = alert_registry.get_chart_fn(fn_name)
+        chart_fn = alert_registry.get_chart_fn(alert_button.fn)
         if chart_fn is None:
             await context.bot.send_message(
                 chat_id=query.message.chat_id,
-                text=f"Unknown chart function: {fn_name}",
+                text=f"Unknown chart function: {alert_button.fn}",
             )
             return
-        button = AlertButton(name="", fn=fn_name, params=params)
 
         media_path = None
         try:
-            chart = await asyncio.get_running_loop().run_in_executor(None, chart_fn, button)
+            chart = await asyncio.get_running_loop().run_in_executor(None, chart_fn, alert_button)
             media_path = Path(chart.media_path)
             with open(media_path, "rb") as photo:
                 await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo)
                 media_path.unlink(missing_ok=True)
 
         except Exception:
-            log.exception("Chart function %s failed", fn_name)
+            log.exception("Chart function %s failed", alert_button.fn)
             await context.bot.send_message(
                 chat_id=query.message.chat_id,
-                text=f"Failed to generate chart for {fn_name}.",
+                text=f"Failed to generate chart for {alert_button.fn}.",
             )
             return
         finally:
@@ -278,7 +273,7 @@ class TelegramController:
     async def send(self, alert: AlertOutput) -> None:
         if alert.alert_message is None:
             return
-        markup = inline_keyboard_from_buttons(alert.buttons)
+        markup = await inline_keyboard_from_buttons(alert.buttons, self.persistent_data_controller)
         if not self.dry_run:
             await self.application.bot.send_message(
                 chat_id=self.chat_id,
