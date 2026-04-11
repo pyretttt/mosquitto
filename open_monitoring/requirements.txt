@@ -1,4 +1,5 @@
 openbb
+yfinance
 aiosqlite
 python-telegram-bot>=21,<22
 pydantic

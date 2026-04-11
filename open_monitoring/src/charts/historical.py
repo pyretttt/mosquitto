@@ -2,7 +2,7 @@ from __future__ import annotations
 import tempfile
 
 import matplotlib.pyplot as plt
-from openbb import obb
+import yfinance as yf
 
 from src.alert import AlertButton, AlertChart
 from src.alert_registry import chart_register
@@ -14,13 +14,20 @@ def equity_price_historical(input: AlertButton) -> AlertChart:
     Charts the historical price of a stock.
     """
     assert input.fn == equity_price_historical.__name__
-    out = obb.equity.price.historical(**input.params)
-    df = out.to_df()
+    assert "symbol" in input.params
+
+    df = yf.Ticker(input.params["symbol"]).history(
+        start=input.params.get("start_date"),
+        end=input.params.get("end_date"),
+        interval=input.params.get("interval", "5m"),
+        prepost=input.params.get("extended_hours", False),
+        auto_adjust=True,
+    )
 
     symbol_name = input.params.get("symbol")
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(df.index, df["close"])
-    ax.set_ylabel(f"{symbol_name} price" if symbol_name is not None else "Price")
+    ax.plot(df.index, df["Close"])
+    ax.set_ylabel(f"{input.params['symbol']} price")
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
     with tempfile.NamedTemporaryFile(mode="wb", delete=False, suffix=".png") as tmp:
