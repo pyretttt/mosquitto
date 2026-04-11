@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
 import logging
 import logging.handlers
-import os
 from concurrent.futures import ThreadPoolExecutor
 import json
 from collections.abc import Iterator

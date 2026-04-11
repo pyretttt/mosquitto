@@ -50,6 +50,18 @@ class Commands:
             )
 
     @staticmethod
+    async def functionality(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Lists all registered alert functions with their descriptions."""
+        alert_registry: Registry = context.bot_data[Deps.alert_registry]
+        lines: list[str] = []
+        for name, fn in alert_registry.map.items():
+            escaped_name = name.replace("_", "\\_")
+            doc = (fn.__doc__ or "No description").strip().replace("_", "\\_")
+            lines.append(f"*{escaped_name}*\n{doc}")
+        text = "\n\n".join(lines) if lines else "No functions registered."
+        await update.message.reply_text(text, parse_mode=ParseMode.MARKDOWN)
+
+    @staticmethod
     async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
         await update.message.reply_text("Preparing logs...")
@@ -167,6 +179,8 @@ class TelegramController:
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
         self.application.add_handler(CommandHandler("alerts", Commands.show_alerts, filters=chat_filter))
+        self.application.add_handler(CommandHandler("functionality", Commands.functionality, filters=chat_filter))
+
         self.application.add_handler(
             MessageHandler(
                 chat_filter & filters.Document.ALL & filters.Caption(["/set_db"]),
