@@ -256,8 +256,15 @@ class TelegramController:
             )
             return
         button = AlertButton(name="", fn=fn_name, params=params)
+
+        media_path = None
         try:
             chart = await asyncio.get_running_loop().run_in_executor(None, chart_fn, button)
+            media_path = Path(chart.media_path)
+            with open(media_path, "rb") as photo:
+                await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo)
+                media_path.unlink(missing_ok=True)
+
         except Exception:
             log.exception("Chart function %s failed", fn_name)
             await context.bot.send_message(
@@ -265,12 +272,9 @@ class TelegramController:
                 text=f"Failed to generate chart for {fn_name}.",
             )
             return
-
-        media_path = Path(chart.media_path)
-        with open(media_path, "rb") as photo:
-            await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo)
-            media_path.unlink(missing_ok=True)
-
+        finally:
+            if media_path is not None:
+                media_path.unlink(missing_ok=True)
 
     async def send(self, alert: AlertOutput) -> None:
         if alert.alert_message is None:
@@ -290,10 +294,7 @@ class TelegramController:
             try:
                 await self.send(alert)
             except Exception:
-                log.exception(
-                    "Failed to send alert %s",
-                    alert.alert_message.name if alert.alert_message else "?"
-                )
+                log.exception("Failed to send alert %s", alert.alert_message.name if alert.alert_message else "?")
 
     async def run(
         self,
