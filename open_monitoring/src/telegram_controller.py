@@ -4,16 +4,18 @@ from __future__ import annotations
 
 from collections.abc import Callable, Coroutine
 import logging
+import re
 from typing import Any
 import tempfile
 from typing import List
+import asyncio
 
 from telegram.constants import ParseMode
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
 from telegram import Update
 from pydantic import RootModel
 
-from src.alert import AlertMessage
+from src.alert import AlertInput, AlertMessage
 from src.persistent_data_controller import PersistentDataController
 from src.alert_registry import Registry
 from src.app_config import app_config
@@ -32,30 +34,26 @@ class Commands:
     async def show_alerts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends start message."""
         await update.message.reply_text("Preparing alerts list...")
-        persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
-        all_alerts =await persistent_data_controller.get_alerts()
+        persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
+        all_alerts = await persistent_data_controller.get_alerts()
+
         class AlertList(RootModel):
             root: List[AlertMessage]
+
         alert_list = AlertList(root=all_alerts)
         with tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=True) as tmp:
             print("alert_list.model_dump_json(indent=2): ", alert_list.model_dump_json(indent=2))
             tmp.write(alert_list.model_dump_json(indent=2).encode("utf-8"))
             tmp.flush()
             await context.bot.send_document(
-                chat_id=update.message.chat_id,
-                document=open(tmp.name, "r", encoding="utf-8")
+                chat_id=update.message.chat_id, document=open(tmp.name, "r", encoding="utf-8")
             )
-
 
     @staticmethod
     async def logs(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
         await update.message.reply_text("Preparing logs...")
-        await context.bot.send_document(
-            chat_id=update.message.chat_id,
-            document=open(app_config.log_file_path, "r")
-        )
-
+        await context.bot.send_document(chat_id=update.message.chat_id, document=open(app_config.log_file_path, "r"))
 
     @staticmethod
     async def set_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -66,7 +64,7 @@ class Commands:
             return
 
         await update.message.reply_text("Restoring database...")
-        persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+        persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
         with tempfile.NamedTemporaryFile(delete=True, suffix=".db") as tmp:
             tg_file = await context.bot.get_file(document.file_id)
             await tg_file.download_to_drive(tmp.name)
@@ -76,19 +74,15 @@ class Commands:
             else:
                 await update.message.reply_text("Failed to restore database.")
 
-
     @staticmethod
     async def dump_db(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends logs file."""
         await update.message.reply_text("Preparing database file...")
-        persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+        persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
         with tempfile.NamedTemporaryFile(delete=True) as tmp:
             is_success = await persistent_data_controller.backup(tmp.name)
             if is_success:
-                await context.bot.send_document(
-                    chat_id=update.message.chat_id,
-                    document=open(tmp.name, "rb")
-                )
+                await context.bot.send_document(chat_id=update.message.chat_id, document=open(tmp.name, "rb"))
             else:
                 await update.message.reply_text("Failed to send database file.")
 
@@ -97,7 +91,7 @@ class Commands:
         """Removes an alert."""
         try:
             alert_id = update.message.text.split(" ")[1]
-            persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+            persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
             is_success = await persistent_data_controller.remove_alert(alert_id)
             if is_success:
                 await update.message.reply_text("Alert removed successfully.")
@@ -111,9 +105,9 @@ class Commands:
         """Sends alert description."""
         try:
             alert_id = update.message.text.split(" ")[1]
-            persistent_data_controller = context.bot_data[Deps.persistent_data_controller]
+            persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
             alert = await persistent_data_controller.get_alert(alert_id)
-            if (a := alert):
+            if a := alert:
                 text = "```\n" + a.model_dump_json(indent=2) + "\n```"
                 await update.message.reply_text(text)
             else:
@@ -121,11 +115,36 @@ class Commands:
         except Exception:
             await update.message.reply_text("Failed to find alert. Maybe wrong ID? 🆘")
 
-
     @staticmethod
     async def add_alert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-        """Adds an alert."""
-        
+        """Adds an alert from a JSON code block in the message."""
+        try:
+            text = update.message.text or ""
+            match = re.search(r"```(?:\w*\n)?(.*?)```", text, re.DOTALL)
+            if not match:
+                await update.message.reply_text("Please include a JSON code block with alert definition.")
+                return
+
+            raw_json = match.group(1).strip()
+            alert_input = AlertInput.model_validate_json(raw_json)
+
+            alert_registry: Registry = context.bot_data[Deps.alert_registry]
+            if alert_input.fn not in alert_registry:
+                await update.message.reply_text(f"Alert function '{alert_input.fn}' is not registered.")
+                return
+
+            try:
+                await asyncio.run_in_executor(None, alert_registry[alert_input.fn], **alert_input.params)
+            except Exception:
+                await update.message.reply_text("Failed to execute alert function. Check your JSON format. 🆘")
+                return
+
+            persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
+            await persistent_data_controller.add_alert(alert_input)
+            await update.message.reply_text(f"Alert '{alert_input.name}' added successfully. 🆘")
+        except Exception:
+            await update.message.reply_text("Failed to add alert. Check your JSON format. 🆘")
+
 
 class TelegramController:
     """Sends alert messages and handles bot commands via the Bot API."""
@@ -148,22 +167,33 @@ class TelegramController:
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
         self.application.add_handler(CommandHandler("alerts", Commands.show_alerts, filters=chat_filter))
-        self.application.add_handler(MessageHandler(
-            chat_filter & filters.Document.ALL & filters.Caption(["/set_db"]),
-            Commands.set_db,
-        ))
-        self.application.add_handler(MessageHandler(
-            chat_filter & filters.Text(strings=["/remove_alert"]),
-            Commands.remove_alert,
-        ))
-        self.application.add_handler(MessageHandler(
-            chat_filter & filters.Text(strings=["/show_alert_desc"]),
-            Commands.remove_alert,
-        ))
+        self.application.add_handler(
+            MessageHandler(
+                chat_filter & filters.Document.ALL & filters.Caption(["/set_db"]),
+                Commands.set_db,
+            )
+        )
+        self.application.add_handler(
+            MessageHandler(
+                chat_filter & filters.Text(strings=["/remove_alert"]),
+                Commands.remove_alert,
+            )
+        )
+        self.application.add_handler(
+            MessageHandler(
+                chat_filter & filters.Text(strings=["/show_alert_desc"]),
+                Commands.remove_alert,
+            )
+        )
+        self.application.add_handler(
+            MessageHandler(
+                chat_filter & filters.Text(strings=["/new_alert"]),
+                Commands.add_alert,
+            )
+        )
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
-
 
     async def send(self, alert: AlertMessage) -> None:
         if not self.dry_run:
@@ -173,7 +203,6 @@ class TelegramController:
                 parse_mode=ParseMode.MARKDOWN,
             )
         log.info("Sent alert %s", alert.name)
-
 
     async def send_many(self, alerts: list[AlertMessage]) -> None:
         for alert in alerts:
