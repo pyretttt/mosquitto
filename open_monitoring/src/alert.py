@@ -16,6 +16,12 @@ class AlertInput(BaseModel):
     sinks: list[str] = Field(default_factory=lambda: ["telegram"])
 
 
+class AlertButton(BaseModel):
+    name: str
+    fn: str
+    params: dict = Field(default_factory=dict)
+
+
 class AlertMessage(BaseModel):
     name: str
     expression: Expression | None = None
@@ -37,3 +43,4 @@ class AlertMessage(BaseModel):
 
 class AlertOutput(BaseModel):
     alert_message: AlertMessage | None = None
+    buttons: list[AlertButton] = Field(default_factory=list)

@@ -54,7 +54,7 @@ class Commands:
         """Lists all registered alert functions with their descriptions."""
         alert_registry: Registry = context.bot_data[Deps.alert_registry]
         lines: list[str] = []
-        for name, fn in alert_registry.map.items():
+        for name, fn in alert_registry.alert_map.items():
             escaped_name = name.replace("_", "\\_")
             doc = (fn.__doc__ or "No description").strip().replace("_", "\\_")
             lines.append(f"*{escaped_name}*\n{doc}")
@@ -141,12 +141,12 @@ class Commands:
             alert_input = AlertInput.model_validate_json(raw_json)
 
             alert_registry: Registry = context.bot_data[Deps.alert_registry]
-            if alert_input.fn not in alert_registry:
+            if alert_input.fn not in alert_registry.alert_map:
                 await update.message.reply_text(f"Alert function '{alert_input.fn}' is not registered.")
                 return
 
             try:
-                await asyncio.run_in_executor(None, alert_registry[alert_input.fn], **alert_input.params)
+                await asyncio.run_in_executor(None, alert_registry.get_alert_fn(alert_input.fn), **alert_input.params)
             except Exception:
                 await update.message.reply_text("Failed to execute alert function. Check your JSON format. 🆘")
                 return

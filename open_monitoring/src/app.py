@@ -63,7 +63,7 @@ async def load_alert_configs(default_alerts_path: str = app_config.default_alert
 
 
 async def match_alerts(alert_configs: list[AlertInput]) -> list[tuple[AlertInput, Callable | None]]:
-    alerts = [(alert_config, registry.get(alert_config.fn)) for alert_config in alert_configs]
+    alerts = [(alert_config, registry.get_alert_fn(alert_config.fn)) for alert_config in alert_configs]
     for alert_config, alert_fn in alerts:
         if alert_fn is None:
             log.warning("Alert function not found for %s", alert_config.fn)
