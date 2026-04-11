@@ -40,7 +40,12 @@ logging.getLogger("__main__").addHandler(_file_handler)
 log = logging.getLogger(__name__)
 
 
-data_controller = PersistentDataController.with_sqlite(db_path=app_config.db_file_path, table_name="alerts")
+data_controller = PersistentDataController.with_sqlite(
+    alerts_db_path=app_config.alerts_db_file_path,
+    alert_buttons_db_path=app_config.alert_buttons_file_path,
+    alerts_table_name="alerts",
+    alert_button_table_name="alert_buttons",
+)
 telegram = TelegramController(
     alert_registry=registry,
     persistent_data_controller=data_controller,
