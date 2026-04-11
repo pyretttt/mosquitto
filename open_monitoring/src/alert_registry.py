@@ -28,7 +28,18 @@ def alert_register(prefix: str | None = None, separator: str = "."):
 
     def decorator(fn: Callable) -> Callable:
         full_prefix = prefix + separator if prefix else ""
-        registry.alert_map[full_prefix + fn.__name__]
+        registry.alert_map[full_prefix + fn.__name__] = fn
+        return fn
+
+    return decorator
+
+
+def chart_register(prefix: str | None = None, separator: str = "."):
+    """Decorator that registers the wrapped function as ``prefix + fn.__name__`` in the global registry."""
+
+    def decorator(fn: Callable) -> Callable:
+        full_prefix = prefix + separator if prefix else ""
+        registry.chart_map[full_prefix + fn.__name__] = fn
         return fn
 
     return decorator

@@ -22,6 +22,10 @@ class AlertButton(BaseModel):
     params: dict = Field(default_factory=dict)
 
 
+class AlertChart(BaseModel):
+    media_path: str
+
+
 class AlertMessage(BaseModel):
     name: str
     expression: Expression | None = None
