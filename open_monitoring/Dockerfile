@@ -26,7 +26,8 @@ COPY ./src/ ./src/
 ENV BOT_TOKEN="" \
     CHAT_ID="" \
     DRY_RUN=false \
-    RUNLOOP_INTERVAL_SEC=60
+    RUNLOOP_INTERVAL_SEC=60 \
+    TIMEZONE="Europe/Moscow"
 
 
 CMD ["python", "-m", "src.app"]

@@ -39,7 +39,6 @@ logging.getLogger("__main__").addHandler(_file_handler)
 
 log = logging.getLogger(__name__)
 
-
 data_controller = PersistentDataController.with_sqlite(
     alerts_db_path=app_config.alerts_db_file_path,
     alert_buttons_db_path=app_config.alert_buttons_file_path,
