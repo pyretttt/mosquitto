@@ -48,7 +48,7 @@ async def inline_keyboard_from_buttons(
 
 class Commands:
     @staticmethod
-    async def show_alerts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def alerts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends start message."""
         await update.message.reply_text("Preparing alerts list...")
         persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
@@ -130,7 +130,7 @@ class Commands:
             await update.message.reply_text("Failed to remove alert.")
 
     @staticmethod
-    async def alert_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def show_alert_desc(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Sends alert description."""
         try:
             alert_id = update.message.text.split(" ")[1]
@@ -145,7 +145,7 @@ class Commands:
             await update.message.reply_text("Failed to find alert. Maybe wrong ID? 🆘")
 
     @staticmethod
-    async def add_alert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    async def new_alert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Adds an alert from a JSON code block in the message."""
         try:
             text = update.message.text or ""
@@ -174,6 +174,20 @@ class Commands:
         except Exception:
             await update.message.reply_text("Failed to add alert. Check your JSON format. 🆘")
 
+    @staticmethod
+    async def help(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Outputs helpful info
+        """
+        intro = "*Hello, this is financial alert monitoring bot. You can use following commands:*"
+        lines: list[str] = [intro]
+        for name, obj in Commands.__dict__.items():
+            if isinstance(obj, staticmethod):
+                fn = obj.__func__
+                doc = (fn.__doc__ or "").strip()
+                lines.append(f"`{name}` - {doc}")
+        await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
+
 
 class TelegramController:
     """Sends alert messages and handles bot commands via the Bot API."""
@@ -194,9 +208,10 @@ class TelegramController:
         self.application = Application.builder().token(bot_token).build()
         chat_filter = filters.Chat(chat_id=[int(chat_id)])
         self.chat_filter = chat_filter
+        self.application.add_handler(CommandHandler("help", Commands.help, filters=chat_filter))
         self.application.add_handler(CommandHandler("logs", Commands.logs, filters=chat_filter))
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
-        self.application.add_handler(CommandHandler("alerts", Commands.show_alerts, filters=chat_filter))
+        self.application.add_handler(CommandHandler("alerts", Commands.alerts, filters=chat_filter))
         self.application.add_handler(CommandHandler("functionality", Commands.functionality, filters=chat_filter))
 
         self.application.add_handler(
@@ -214,13 +229,13 @@ class TelegramController:
         self.application.add_handler(
             MessageHandler(
                 chat_filter & filters.Text(strings=["/show_alert_desc"]),
-                Commands.remove_alert,
+                Commands.show_alert_desc,
             )
         )
         self.application.add_handler(
             MessageHandler(
                 chat_filter & filters.Text(strings=["/new_alert"]),
-                Commands.add_alert,
+                Commands.new_alert,
             )
         )
 
