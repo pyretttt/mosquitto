@@ -1,4 +1,5 @@
 mod gltf_loader;
+mod app;
 
 pub use gltf_loader::{load_gltf_summary, parse_gltf_summary, GltfSummary};
 
