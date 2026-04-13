@@ -59,7 +59,7 @@ fn main() {
         Err(err) => {
             eprintln!("Failed to load GLTF from path: {err}");
             let path = env::current_dir();
-            println!("The current directory is {}", path.expect("Reason").display());
+            println!("The current directory is {}", path.expect("Failed to get current directory").display());
 
         },
     }

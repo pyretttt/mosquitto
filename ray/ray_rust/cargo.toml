@@ -1,0 +1,9 @@
+[package]
+name = "ray_rust"
+version = "0.1.0"
+edition = "2024"
+
+
+[dependencies]
+gltf = "1.4.1"
+winit = "0.30.12"
