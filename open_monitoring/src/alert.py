@@ -14,6 +14,12 @@ class AlertInput(BaseModel):
     custom_template: str | None = None
     throttle_sec: int = 3600
     sinks: list[str] = Field(default_factory=lambda: ["telegram"])
+    is_single_shot: bool = False
+
+
+class AlertInfo(BaseModel):
+    alert_input: AlertInput
+    last_trigger_timestamp_sec: int | None = None
 
 
 class AlertButton(BaseModel):
@@ -46,5 +52,6 @@ class AlertMessage(BaseModel):
 
 
 class AlertOutput(BaseModel):
+    alert_id: str
     alert_message: AlertMessage | None = None
     buttons: list[AlertButton] = Field(default_factory=list)

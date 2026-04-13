@@ -10,7 +10,7 @@ import json
 from collections.abc import Iterator
 from typing import Callable
 
-from src.alert import AlertInput
+from src.alert import AlertInfo, AlertInput
 from src.alert_registry import registry
 from src.telegram_controller import TelegramController
 from src.persistent_data_controller import PersistentDataController
@@ -54,28 +54,30 @@ telegram = TelegramController(
 )
 
 
-async def load_alert_configs(default_alerts_path: str = app_config.default_alerts_path) -> list[AlertInput]:
+async def load_alert_configs(default_alerts_path: str = app_config.default_alerts_path) -> list[AlertInfo]:
     db_alerts = await data_controller.get_alerts()
     if db_alerts:
         return db_alerts
 
     with open(default_alerts_path) as f:
         raw = json.load(f)
-    alerts = [AlertInput(**m) for m in raw["alerts"]]
-    return alerts
+    return [AlertInfo(alert_input=AlertInput(**m)) for m in raw["alerts"]]
 
 
-async def match_alerts(alert_configs: list[AlertInput]) -> list[tuple[AlertInput, Callable | None]]:
-    alerts = [(alert_config, registry.get_alert_fn(alert_config.fn)) for alert_config in alert_configs]
+async def match_alerts(alert_configs: list[AlertInfo]) -> list[tuple[AlertInfo, Callable | None]]:
+    alerts = [
+        (alert_config, registry.get_alert_fn(alert_config.alert_input.fn))
+        for alert_config in alert_configs
+    ]
     for alert_config, alert_fn in alerts:
         if alert_fn is None:
-            log.warning("Alert function not found for %s", alert_config.fn)
+            log.warning("Alert function not found for %s", alert_config.alert_input.fn)
             continue
     return [(alert_config, alert_fn) for alert_config, alert_fn in alerts if alert_fn is not None]
 
 
 async def tick(
-    alerts: Iterator[tuple[AlertInput, Callable | None]],
+    alerts: Iterator[tuple[AlertInfo, Callable | None]],
     telegram: TelegramController,
 ) -> None:
     event_loop = asyncio.get_running_loop()
@@ -84,7 +86,7 @@ async def tick(
             event_loop.run_in_executor(
                 THREAD_POOL_EXEC,
                 alert_fn,
-                alert_config
+                alert_config.alert_input,
             )
             for alert_config, alert_fn in alerts
         ]

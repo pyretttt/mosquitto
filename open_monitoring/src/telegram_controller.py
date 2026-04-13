@@ -16,7 +16,7 @@ from telegram.constants import ParseMode
 from telegram.ext import Application, CallbackQueryHandler, CommandHandler, ContextTypes, MessageHandler, filters
 from pydantic import RootModel
 
-from src.alert import AlertButton, AlertInput, AlertMessage, AlertOutput
+from src.alert import AlertButton, AlertInput, AlertMessage, AlertOutput, AlertInfo
 from src.persistent_data_controller import PersistentDataController
 from src.alert_registry import Registry
 from src.app_config import app_config
@@ -155,22 +155,22 @@ class Commands:
                 return
 
             raw_json = match.group(1).strip()
-            alert_input = AlertInput.model_validate_json(raw_json)
+            alert_info = AlertInfo(alert_input=AlertInput.model_validate_json(raw_json))
 
             alert_registry: Registry = context.bot_data[Deps.alert_registry]
-            if alert_input.fn not in alert_registry.alert_map:
-                await update.message.reply_text(f"Alert function '{alert_input.fn}' is not registered.")
+            if alert_info.alert_input.fn not in alert_registry.alert_map:
+                await update.message.reply_text(f"Alert function '{alert_info.alert_input.fn}' is not registered.")
                 return
 
             try:
-                await asyncio.run_in_executor(None, alert_registry.get_alert_fn(alert_input.fn), **alert_input.params)
+                await asyncio.run_in_executor(None, alert_registry.get_alert_fn(alert_info.alert_input.fn), **alert_info.alert_input.params)
             except Exception:
                 await update.message.reply_text("Failed to execute alert function. Check your JSON format. 🆘")
                 return
 
             persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
-            await persistent_data_controller.add_alert(alert_input)
-            await update.message.reply_text(f"Alert '{alert_input.name}' added successfully. 🆘")
+            await persistent_data_controller.add_alert(alert_info)
+            await update.message.reply_text(f"Alert '{alert_info.alert_input.name}' added successfully. 🆘")
         except Exception:
             await update.message.reply_text("Failed to add alert. Check your JSON format. 🆘")
 

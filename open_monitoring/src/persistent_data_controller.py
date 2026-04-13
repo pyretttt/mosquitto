@@ -1,4 +1,4 @@
-from src.alert import AlertButton, AlertInput
+from src.alert import AlertButton, AlertInfo
 from src.sqlite_storage import SQLiteStorage
 from src.storage import Storage
 
@@ -27,16 +27,16 @@ class PersistentDataController:
     async def init(self) -> None:
         await self._storage.init()
 
-    async def add_alert(self, item: AlertInput) -> None:
+    async def add_alert(self, item: AlertInfo) -> None:
         await self._storage.add(item)
 
-    async def get_alerts(self) -> list[AlertInput]:
+    async def get_alerts(self) -> list[AlertInfo]:
         return await self._storage.get_all()
 
     async def remove_alert(self, alert_id: str) -> bool:
         return await self._storage.remove(alert_id)
 
-    async def get_alert(self, alert_id: str) -> AlertInput | None:
+    async def get_alert(self, alert_id: str) -> AlertInfo | None:
         return await self._storage.get(alert_id)
 
     async def backup(self, dest_path: str) -> bool:

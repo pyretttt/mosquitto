@@ -28,7 +28,7 @@ def output_for_last_result(
     last_result = out.results[-1]
 
     if (expression := input.expression) and not expression.evaluate(last_result.model_dump()):
-        return AlertOutput(alert_message=None)
+        return AlertOutput(alert_id=input.id, alert_message=None)
 
     payload = None
     if custom_template := input.custom_template:
@@ -36,6 +36,7 @@ def output_for_last_result(
     else:
         payload = as_markdown_table(out)
     return AlertOutput(
+        alert_id=input.id,
         alert_message=AlertMessage(
             name=input.name,
             expression=input.expression,

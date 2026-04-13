@@ -5,7 +5,7 @@ import time
 
 import aiosqlite
 
-from src.alert import AlertButton, AlertInput
+from src.alert import AlertButton, AlertInfo
 from src.storage import Storage
 
 _ALERT_BUTTON_MAX_ROWS = 1000
@@ -47,19 +47,19 @@ class SQLiteStorage(Storage):
             )
             await db.commit()
 
-    async def add(self, item: AlertInput) -> None:
+    async def add(self, item: AlertInfo) -> None:
         async with aiosqlite.connect(self.alerts_db_path) as db:
             await db.execute(
                 f"INSERT OR REPLACE INTO {self.alerts_table_name} (id, data) VALUES (?, ?)",
-                (item.id, item.model_dump_json()),
+                (item.alert_input.id, item.model_dump_json()),
             )
             await db.commit()
 
-    async def get_all(self) -> list[AlertInput]:
+    async def get_all(self) -> list[AlertInfo]:
         async with aiosqlite.connect(self.alerts_db_path) as db:
             async with db.execute(f"SELECT data FROM {self.alerts_table_name}") as cursor:
                 rows = await cursor.fetchall()
-        return [AlertInput.model_validate_json(row[0]) for row in rows]
+        return [AlertInfo.model_validate_json(row[0]) for row in rows]
 
     async def remove(self, alert_id: str) -> bool:
         async with aiosqlite.connect(self.alerts_db_path) as db:
@@ -67,13 +67,13 @@ class SQLiteStorage(Storage):
             await db.commit()
             return cursor.rowcount > 0
 
-    async def get(self, alert_id: str) -> AlertInput | None:
+    async def get(self, alert_id: str) -> AlertInfo | None:
         async with aiosqlite.connect(self.alerts_db_path) as db:
             async with db.execute(f"SELECT data FROM {self.alerts_table_name} WHERE id = ?", (alert_id,)) as cursor:
                 row = await cursor.fetchone()
         if row is None:
             return None
-        return AlertInput.model_validate_json(row[0])
+        return AlertInfo.model_validate_json(row[0])
 
     async def backup(self, dest_path: str) -> bool:
         def do_backup() -> None:
