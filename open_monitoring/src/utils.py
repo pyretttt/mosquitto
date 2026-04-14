@@ -1,8 +1,13 @@
 import functools
 from typing import Optional, Callable
 
-class Safedict(dict):
 
+class Pair[L, R]:
+    left: L
+    right: R
+
+
+class Safedict(dict):
     def __init__(
         self,
         data: Optional[dict] = None,

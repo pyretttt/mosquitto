@@ -27,6 +27,17 @@ def output_for_last_result(
 ) -> AlertOutput:
     last_result = out.results[-1]
 
+    if input.expression is None:
+        return AlertOutput(
+            alert_id=input.id,
+            alert_message=AlertMessage(
+                name=input.name,
+                expression=None,
+                payload=payload,
+            ),
+            buttons=make_default_buttons(input) if buttons else [],
+        )
+
     if (expression := input.expression) and not expression.evaluate(last_result.model_dump()):
         return AlertOutput(alert_id=input.id, alert_message=None)
 
