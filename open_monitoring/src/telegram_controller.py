@@ -149,13 +149,13 @@ class Commands:
         """Adds an alert from a JSON code block in the message."""
         try:
             text = update.message.text or ""
-            match = re.search(r"```(?:\w*\n)?(.*?)```", text, re.DOTALL)
-            if not match:
+            entities = update.message.entities
+            entity = next(entity for entity in entities if entity.type == "pre")
+            if not entity:
                 await update.message.reply_text("Please include a JSON code block with alert definition.")
                 return
-
-            raw_json = match.group(1).strip()
-            alert_info = AlertInfo(alert_input=AlertInput.model_validate_json(raw_json))
+            code_block = text[entity.offset : entity.offset + entity.length]
+            alert_info = AlertInfo(alert_input=AlertInput.model_validate_json(code_block))
 
             alert_registry: Registry = context.bot_data[Deps.alert_registry]
             if alert_info.alert_input.fn not in alert_registry.alert_map:
@@ -163,7 +163,7 @@ class Commands:
                 return
 
             try:
-                await asyncio.run_in_executor(None, alert_registry.get_alert_fn(alert_info.alert_input.fn), **alert_info.alert_input.params)
+                await asyncio.run_in_executor(None, alert_registry.get_alert_fn(alert_info.alert_input.fn), alert_info.alert_input,)
             except Exception:
                 await update.message.reply_text("Failed to execute alert function. Check your JSON format. 🆘")
                 return
@@ -188,6 +188,30 @@ class Commands:
                 lines.append(f"`{name}` - {doc}")
         await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
 
+    @staticmethod
+    async def reset_timeouts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Resets the timeouts for an alert(s)."""
+        persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
+        try:
+            alert_id = None
+            if len(update.message.text.split(" ")) == 2:
+                alert_id = update.message.text.split(" ")[1]
+
+            alerts: List[AlertInfo] = (
+                [a] if (a := await persistent_data_controller.get_alert(alert_id)) else []
+                if alert_id
+                else await persistent_data_controller.get_alerts()
+            )
+            if not alerts:
+                await update.message.reply_text("Alert(s) not found. 🆘")
+                return
+
+            for alert in alerts:
+                alert.last_trigger_timestamp_sec = None
+            await persistent_data_controller.update_alerts(alerts)
+            await update.message.reply_text("Alert(s) timeouts reset successfully.")
+        except Exception:
+            await update.message.reply_text("Failed to reset alert timeouts.")
 
 class TelegramController:
     """Sends alert messages and handles bot commands via the Bot API."""
@@ -213,6 +237,14 @@ class TelegramController:
         self.application.add_handler(CommandHandler("dump_db", Commands.dump_db, filters=chat_filter))
         self.application.add_handler(CommandHandler("alerts", Commands.alerts, filters=chat_filter))
         self.application.add_handler(CommandHandler("functionality", Commands.functionality, filters=chat_filter))
+        self.application.add_handler(CommandHandler("reset_timeouts", Commands.reset_timeouts, filters=chat_filter))
+        self.application.add_handler(
+            CommandHandler(
+                "new_alert",
+                Commands.new_alert,
+                filters=chat_filter
+            ),
+        )
 
         self.application.add_handler(
             MessageHandler(
