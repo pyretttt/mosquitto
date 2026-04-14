@@ -24,3 +24,6 @@ class Storage(ABC):
 
     @abstractmethod
     async def restore(self, src_path: str) -> bool: ...
+
+    @abstractmethod
+    async def update_alerts(self, alerts: list[AlertInfo]) -> None: ...

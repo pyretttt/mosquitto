@@ -47,11 +47,23 @@ class SQLiteStorage(Storage):
             )
             await db.commit()
 
-    async def add(self, item: AlertInfo) -> None:
+    async def add(self, alert_info: AlertInfo) -> None:
+        alert_id = alert_info.alert_input.id
         async with aiosqlite.connect(self.alerts_db_path) as db:
             await db.execute(
                 f"INSERT OR REPLACE INTO {self.alerts_table_name} (id, data) VALUES (?, ?)",
-                (item.alert_input.id, item.model_dump_json()),
+                (alert_id, alert_info.model_dump_json()),
+            )
+            await db.commit()
+
+    async def update_alerts(self, alerts: list[AlertInfo]) -> None:
+        if not alerts:
+            return
+        rows = [(a.model_dump_json(), a.alert_input.id) for a in alerts]
+        async with aiosqlite.connect(self.alerts_db_path) as db:
+            await db.executemany(
+                f"UPDATE {self.alerts_table_name} SET data = ? WHERE id = ?",
+                rows,
             )
             await db.commit()
 

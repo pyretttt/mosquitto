@@ -50,3 +50,6 @@ class PersistentDataController:
 
     async def get_alert_button(self, token: str) -> AlertButton | None:
         return await self._storage.get_alert_button(token)
+
+    async def update_alerts(self, alerts: list[AlertInfo]) -> None:
+        return await self._storage.update_alerts(alerts)

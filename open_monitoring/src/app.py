@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from collections.abc import Iterator
 from typing import Callable
+from datetime import datetime
 
 from src.alert import AlertInfo, AlertInput
 from src.alert_registry import registry
@@ -76,11 +77,36 @@ async def match_alerts(alert_configs: list[AlertInfo]) -> list[tuple[AlertInfo, 
     return [(alert_config, alert_fn) for alert_config, alert_fn in alerts if alert_fn is not None]
 
 
+async def update_alert(alerts: list[AlertInfo], triggered_ids: list[str]) -> None:
+    trigger_timestamp_sec = int(datetime.now(app_config.zone_info).timestamp())
+    triggered_alerts = [alert for alert in alerts if alert.alert_input.id in triggered_ids]
+    alerts_to_update = []
+    for alert in triggered_alerts:
+        if alert.alert_input.is_single_shot:
+            await data_controller.remove_alert(alert.alert_input.id)
+            continue
+
+        alert.last_trigger_timestamp_sec = trigger_timestamp_sec
+        alerts_to_update.append(alert)
+
+    if alerts_to_update:
+        await data_controller.update_alerts(alerts_to_update)
+
+
 async def tick(
     alerts: Iterator[tuple[AlertInfo, Callable | None]],
     telegram: TelegramController,
 ) -> None:
     event_loop = asyncio.get_running_loop()
+
+    alerts_to_invoke = [
+        (alert_info, alert_fn)
+        for alert_info, alert_fn in alerts
+        if (
+            alert_info.last_trigger_timestamp_sec is None
+            or alert_info.last_trigger_timestamp_sec + alert_info.alert_input.throttle_sec >= int(datetime.now(app_config.zone_info).timestamp())
+        )
+    ]
     try:
         futures = [
             event_loop.run_in_executor(
@@ -88,13 +114,19 @@ async def tick(
                 alert_fn,
                 alert_config.alert_input,
             )
-            for alert_config, alert_fn in alerts
+            for alert_config, alert_fn in alerts_to_invoke
         ]
         outputs = await asyncio.gather(*futures)
         alerts_to_send = [output for output in outputs if output.alert_message is not None]
+
         if alerts_to_send:
             log.info("Alerts to be sent: %d", len(alerts_to_send))
             await telegram.send_many(alerts_to_send)
+            log.info("Updading alerts trigger throttles: %d", len(alerts_to_send))
+            await update_alert(
+                list[AlertInfo](map(lambda x: x[0], alerts_to_invoke)),
+                [output.alert_id for output in alerts_to_send],
+            )
     except Exception as e:
         log.exception("Monitoring failed with error: %s", e)
 
