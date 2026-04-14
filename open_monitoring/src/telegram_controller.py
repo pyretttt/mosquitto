@@ -52,10 +52,10 @@ class Commands:
         """Sends start message."""
         await update.message.reply_text("Preparing alerts list...")
         persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
-        all_alerts = await persistent_data_controller.get_alerts()
+        all_alerts: List[AlertInfo] = await persistent_data_controller.get_alerts()
 
         class AlertList(RootModel):
-            root: List[AlertMessage]
+            root: List[AlertInfo]
 
         alert_list = AlertList(root=all_alerts)
         with tempfile.NamedTemporaryFile(mode="wb", suffix=".json", delete=True) as tmp:
@@ -163,9 +163,13 @@ class Commands:
                 return
 
             try:
-                await asyncio.run_in_executor(None, alert_registry.get_alert_fn(alert_info.alert_input.fn), alert_info.alert_input,)
-            except Exception:
-                await update.message.reply_text("Failed to execute alert function. Check your JSON format. 🆘")
+                await asyncio.get_running_loop().run_in_executor(
+                    None,
+                    alert_registry.get_alert_fn(alert_info.alert_input.fn),
+                    alert_info.alert_input,
+                )
+            except Exception as e:
+                await update.message.reply_text(f"🆘 Failed to execute alert function. Check your JSON format. Error: {e}")
                 return
 
             persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
@@ -187,6 +191,25 @@ class Commands:
                 doc = (fn.__doc__ or "").strip()
                 lines.append(f"`{name}` - {doc}")
         await update.message.reply_text("\n".join(lines), parse_mode=ParseMode.MARKDOWN)
+
+
+    @staticmethod
+    async def trigger_alert(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """
+        Outputs helpful info
+        """
+        persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
+        try:
+            alert_id = None
+            if len(update.message.text.split(" ")) == 2:
+                alert_id = update.message.text.split(" ")[1]
+            else:
+                update.message.reply_text("Specify alert ID. 🆘")
+                return
+            # Finish trigger alert logic here.
+        except Exception:
+            await update.message.reply_text("Failed to reset alert timeouts.")
+
 
     @staticmethod
     async def reset_timeouts(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -241,6 +264,13 @@ class TelegramController:
         self.application.add_handler(
             CommandHandler(
                 "new_alert",
+                Commands.new_alert,
+                filters=chat_filter
+            ),
+        )
+        self.application.add_handler(
+            CommandHandler(
+                "trigger_alert",
                 Commands.new_alert,
                 filters=chat_filter
             ),
@@ -300,7 +330,7 @@ class TelegramController:
 
         media_path = None
         try:
-            chart = await asyncio.get_running_loop().run_in_executor(None, chart_fn, alert_button)
+            chart = await asyncio.get_running_loop().get_running_loop().run_in_executor(None, chart_fn, alert_button)
             media_path = Path(chart.media_path)
             with open(media_path, "rb") as photo:
                 await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo)
@@ -343,9 +373,15 @@ class TelegramController:
     ) -> None:
         """Run the bot and call monitor_fn at most once per interval_sec."""
         async with self.application:
-            await self.application.start()
-            await self.application.updater.start_polling()
+            while True:
+                try:
+                    await self.application.start()
+                    await self.application.updater.start_polling()
 
-            await pull_fn()
-            await self.application.updater.stop()
-            await self.application.stop()
+                    await pull_fn()
+                except Exception as e:
+                    log.exception("Error in run loop: %s", e)
+                    await asyncio.sleep(1)
+                finally:
+                    await self.application.updater.stop()
+                    await self.application.stop()
