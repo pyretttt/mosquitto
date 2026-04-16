@@ -1,7 +1,9 @@
 import functools
+from dataclasses import dataclass
 from typing import Optional, Callable
 
 
+@dataclass
 class Pair[L, R]:
     left: L
     right: R

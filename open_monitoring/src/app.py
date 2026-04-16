@@ -128,7 +128,7 @@ async def tick(
             log.info("Updading alerts trigger throttles for: %d alerts", len(alert_outputs))
             await update_alert(
                 list[AlertInfo](map(lambda x: x[0], alerts_to_invoke)),
-                triggered_ids=[output.alert_id for output in alert_outputs if outputs.right],
+                triggered_ids=[output.left.alert_id for output in alert_outputs if output.right],
             )
     except Exception as e:
         log.exception("Monitoring failed with error: %s", e)

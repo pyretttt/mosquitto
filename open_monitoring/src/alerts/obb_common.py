@@ -27,6 +27,12 @@ def output_for_last_result(
 ) -> AlertOutput:
     last_result = out.results[-1]
 
+    payload = None
+    if custom_template := input.custom_template:
+        payload = custom_template.format_map(Safedict(last_result.model_dump()))
+    else:
+        payload = as_markdown_table(out)
+
     if input.expression is None:
         return AlertOutput(
             alert_id=input.id,
@@ -41,11 +47,6 @@ def output_for_last_result(
     if (expression := input.expression) and not expression.evaluate(last_result.model_dump()):
         return AlertOutput(alert_id=input.id, alert_message=None)
 
-    payload = None
-    if custom_template := input.custom_template:
-        payload = custom_template.format_map(Safedict(last_result.model_dump()))
-    else:
-        payload = as_markdown_table(out)
     return AlertOutput(
         alert_id=input.id,
         alert_message=AlertMessage(

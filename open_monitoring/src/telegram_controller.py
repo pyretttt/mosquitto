@@ -221,8 +221,9 @@ class Commands:
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=markup,
             )
-        except Exception:
-            await update.message.reply_text("Failed to reset alert timeouts.")
+        except Exception as e:
+            await update.message.reply_text("Failed to trigger alert. 🆘")
+            log.exception("Failed to trigger alert: %s", repr(e))
 
 
     @staticmethod
@@ -283,7 +284,7 @@ class TelegramController:
         self.application.add_handler(
             CommandHandler(
                 "trigger_alert",
-                Commands.new_alert,
+                Commands.trigger_alert,
                 filters=chat_filter
             ),
         )
@@ -318,6 +319,7 @@ class TelegramController:
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
 
         self.application.add_handler(CallbackQueryHandler(self.chart_callback))
+
 
     def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         log.exception("Error in update: %s", repr(context.error))
