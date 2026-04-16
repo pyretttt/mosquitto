@@ -20,6 +20,7 @@ from src.alert import AlertButton, AlertInput, AlertMessage, AlertOutput, AlertI
 from src.persistent_data_controller import PersistentDataController
 from src.alert_registry import Registry
 from src.app_config import app_config
+from src.utils import Pair
 
 
 class Deps:
@@ -245,13 +246,11 @@ class TelegramController:
         persistent_data_controller: PersistentDataController,
         chat_id: str,
         bot_token: str,
-        dry_run: bool = False,
     ) -> None:
         self.alert_registry = alert_registry
         self.persistent_data_controller = persistent_data_controller
         self.bot_token = bot_token
         self.chat_id = chat_id
-        self.dry_run = dry_run
         self.application = Application.builder().token(bot_token).build()
         chat_filter = filters.Chat(chat_id=[int(chat_id)])
         self.chat_filter = chat_filter
@@ -347,25 +346,29 @@ class TelegramController:
             if media_path is not None:
                 media_path.unlink(missing_ok=True)
 
-    async def send(self, alert: AlertOutput) -> None:
+    async def send(self, alert: AlertOutput) -> Pair[AlertOutput, bool]:
         if alert.alert_message is None:
-            return
+            return Pair(left=alert, right=False)
+
         markup = await inline_keyboard_from_buttons(alert.buttons, self.persistent_data_controller)
-        if not self.dry_run:
+        try:
             await self.application.bot.send_message(
                 chat_id=self.chat_id,
                 text=alert.alert_message.format(),
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=markup,
             )
-        log.info("Sent alert %s", alert.alert_message.name)
+            log.info("Alert sent %s", alert.alert_message.name)
+            return Pair(left=alert, right=True)
+        except Exception:
+            log.exception("Failed to send alert %s", alert.alert_message.name if alert.alert_message else "?")
+            return Pair(left=alert, right=False)
 
-    async def send_many(self, alerts: list[AlertOutput]) -> None:
+    async def send_many(self, alerts: list[AlertOutput]) -> list[Pair[AlertOutput, bool]]:
+        output: list[Pair[AlertOutput, bool]] = []
         for alert in alerts:
-            try:
-                await self.send(alert)
-            except Exception:
-                log.exception("Failed to send alert %s", alert.alert_message.name if alert.alert_message else "?")
+            output.append(await self.send(alert))
+        return output
 
     async def run(
         self,

@@ -11,11 +11,12 @@ from collections.abc import Iterator
 from typing import Callable
 from datetime import datetime
 
-from src.alert import AlertInfo, AlertInput
+from src.alert import AlertInfo, AlertInput, AlertOutput
 from src.alert_registry import registry
 from src.telegram_controller import TelegramController
 from src.persistent_data_controller import PersistentDataController
 from src.app_config import app_config
+from src.utils import Pair
 from src.alerts import *
 
 THREAD_POOL_SIZE = 4
@@ -50,8 +51,7 @@ telegram = TelegramController(
     alert_registry=registry,
     persistent_data_controller=data_controller,
     chat_id=app_config.chat_id,
-    bot_token=app_config.bot_token,
-    dry_run=app_config.dry_run,
+    bot_token=app_config.bot_token
 )
 
 
@@ -121,11 +121,11 @@ async def tick(
 
         if alerts_to_send:
             log.info("Alerts to be sent: %d", len(alerts_to_send))
-            await telegram.send_many(alerts_to_send)
-            log.info("Updading alerts trigger throttles: %d", len(alerts_to_send))
+            alert_outputs: Pair[AlertOutput, bool] = await telegram.send_many(alerts_to_send)
+            log.info("Updading alerts trigger throttles for: %d alerts", len(alert_outputs))
             await update_alert(
                 list[AlertInfo](map(lambda x: x[0], alerts_to_invoke)),
-                [output.alert_id for output in alerts_to_send],
+                triggered_ids=[output.alert_id for output in alert_outputs if outputs.right],
             )
     except Exception as e:
         log.exception("Monitoring failed with error: %s", e)
