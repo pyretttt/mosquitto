@@ -104,7 +104,10 @@ async def tick(
         for alert_info, alert_fn in alerts
         if (
             alert_info.last_trigger_timestamp_sec is None
-            or (alert_info.last_trigger_timestamp_sec + alert_info.alert_input.throttle_sec) <= int(datetime.now(app_config.zone_info).timestamp())
+            or (
+                alert_info.last_trigger_timestamp_sec + alert_info.alert_input.throttle_sec)
+                <= int(datetime.now(app_config.zone_info).timestamp()
+            )
         )
     ]
     try:

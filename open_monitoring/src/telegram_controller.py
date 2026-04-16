@@ -200,6 +200,7 @@ class Commands:
         Outputs helpful info
         """
         persistent_data_controller: PersistentDataController = context.bot_data[Deps.persistent_data_controller]
+        alert_registry: PersistentDataController = context.bot_data[Deps.alert_registry]
         try:
             alert_id = None
             if len(update.message.text.split(" ")) == 2:
@@ -207,7 +208,19 @@ class Commands:
             else:
                 update.message.reply_text("Specify alert ID. 🆘")
                 return
-            # Finish trigger alert logic here.
+            alert: AlertInfo = await persistent_data_controller.get_alert(alert_id)
+            alert.alert_input.expression = None
+            alert_fn = alert_registry.get_alert_fn(alert.alert_input.fn)
+            alert_output: AlertOutput = await asyncio.get_running_loop().run_in_executor(None, alert_fn, alert.alert_input)
+            if alert_output.alert_message is not None:
+                log.info("Manual alert trigger failed: %s", alert_output.alert_message.name)
+            markup = await inline_keyboard_from_buttons(alert_output.buttons, persistent_data_controller)
+            await context.bot.send_message(
+                chat_id=update.message.chat_id,
+                text=alert_output.alert_message.format(),
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=markup,
+            )
         except Exception:
             await update.message.reply_text("Failed to reset alert timeouts.")
 
@@ -299,11 +312,16 @@ class TelegramController:
                 Commands.new_alert,
             )
         )
+        self.application.add_error_handler(self.error_handler)
 
         self.application.bot_data[Deps.alert_registry] = alert_registry
         self.application.bot_data[Deps.persistent_data_controller] = persistent_data_controller
 
         self.application.add_handler(CallbackQueryHandler(self.chart_callback))
+
+    def error_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+        log.exception("Error in update: %s", repr(context.error))
+
 
     async def chart_callback(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         query = update.callback_query
@@ -329,7 +347,7 @@ class TelegramController:
 
         media_path = None
         try:
-            chart = await asyncio.get_running_loop().get_running_loop().run_in_executor(None, chart_fn, alert_button)
+            chart = await asyncio.get_running_loop().run_in_executor(None, chart_fn, alert_button)
             media_path = Path(chart.media_path)
             with open(media_path, "rb") as photo:
                 await context.bot.send_photo(chat_id=query.message.chat_id, photo=photo)
