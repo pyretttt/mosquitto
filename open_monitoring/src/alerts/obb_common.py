@@ -25,11 +25,11 @@ def output_for_last_result(
     input: AlertInput,
     buttons: bool = True
 ) -> AlertOutput:
-    last_result = out.results[-1]
+    last_result = out.results[-1].model_dump()
 
     payload = None
     if custom_template := input.custom_template:
-        payload = custom_template.format_map(Safedict(last_result.model_dump()))
+        payload = custom_template.format_map(Safedict(last_result))
     else:
         payload = as_markdown_table(out)
 
@@ -44,7 +44,8 @@ def output_for_last_result(
             buttons=make_default_buttons(input) if buttons else [],
         )
 
-    if (expression := input.expression) and not expression.evaluate(last_result.model_dump()):
+    input.expression.data = last_result
+    if (expression := input.expression) and not expression.evaluate(last_result):
         return AlertOutput(alert_id=input.id, alert_message=None)
 
     return AlertOutput(

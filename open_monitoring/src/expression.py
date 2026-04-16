@@ -30,9 +30,13 @@ class Op(BaseModel):
             raise ValueError(f"Unknown operator: {self.op!r}")
         return fn(data[self.key], self.value)
 
-    def format(self) -> str:
-        return f"{self.key} {self.op} {self.value}"
-
+    def format(self, data: dict | None = None) -> str:
+        res = f"{self.key}"
+        actual_value = data.get(self.key) if data else None
+        if actual_value is not None:
+            res += f" {actual_value}"
+        res += f" {self.op} {self.value}"
+        return res
 
 Operand = Annotated[Union[Op, "Expression"], Field(discriminator="type")]
 
@@ -41,17 +45,18 @@ class Expression(BaseModel):
     type: Literal["expr"] = "expr"
     logic: str | None  # "and" | "or"
     operands: list[Operand]
+    data: dict | None = None
 
     def evaluate(self, data: dict) -> bool:
         results = (op.evaluate(data) for op in self.operands)
         return all(results) if self.logic == "and" else any(results)
 
 
-    def format(self) -> str:
+    def format(self, data: dict | None = None) -> str:
         sep = SYMBOLS[self.logic]
         parts = []
         for op in self.operands:
-            s = op.format()
+            s = op.format(data=data or self.data)
             if isinstance(op, Expression) and PRECEDENCE[op.logic] < PRECEDENCE[self.logic]:
                 s = f"({s})"
             parts.append(s)
