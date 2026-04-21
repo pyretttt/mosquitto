@@ -17,5 +17,6 @@ fn vs_main(
 
 @fragment
 fn fs_main(in: VertexOutput) -> @location(0) vec4<f32> {
-    return vec4<f32>(0.3, 0.2, 0.1, 1.0);
+    let color = in.vert_pos.xy * vec2<f32>(0.5) + vec2<f32>(0.5);
+    return vec4<f32>(color.x, color.y, 0.0, 1.0);
 }

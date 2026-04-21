@@ -2303,6 +2303,7 @@ name = "ray_rust"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bytemuck",
  "cgmath",
  "env_logger",
  "futures",

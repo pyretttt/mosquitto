@@ -7,6 +7,8 @@ use winit::{
     keyboard::{KeyCode, PhysicalKey},
     window::Window
 };
+use crate::vertex as vertex;
+use wgpu::util::DeviceExt;
 
 // This will store the state of our game
 pub struct State {
@@ -18,6 +20,7 @@ pub struct State {
     window: Arc<Window>,
     clear_color: wgpu::Color,
     render_pipeline: wgpu::RenderPipeline,
+    vertex_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -69,6 +72,12 @@ impl State {
             view_formats: vec![],
             desired_maximum_frame_latency: 2,
         };
+
+        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Vertex Buffer"),
+            contents: bytemuck::cast_slice(vertex::VERTICES),
+            usage: wgpu::BufferUsages::VERTEX,
+        });
 
         let shader = device.create_shader_module(wgpu::include_wgsl!("shader.wgsl"));
         let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -125,7 +134,8 @@ impl State {
             is_surface_configured: false,
             window,
             clear_color: wgpu::Color::BLACK,
-            render_pipeline
+            render_pipeline,
+            vertex_buffer,
         })
     }
 
