@@ -1,0 +1,26 @@
+# Runtime data / volumes (compose uses named volumes but keep belt-and-braces)
+gitlab/config/
+gitlab/logs/
+gitlab/data/
+gitlab-runner/config.toml
+mlflow/artifacts/
+mlflow/mlflow.db
+ml-app/mlruns/
+ml-app/data/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env
+.env
+.env.local
+
+# OS
+.DS_Store

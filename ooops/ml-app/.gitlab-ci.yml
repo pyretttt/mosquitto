@@ -1,0 +1,78 @@
+# CI for the ml-app. This file is intentionally 80% done — the last 20% is
+# yours to finish (see docs/LEARNING_PATH.md). Commit it to a GitLab project
+# whose repo root is ml-app/.
+#
+# Pipeline stages:
+#   lint  → ruff
+#   test  → pytest (model stubbed; no MLflow needed)
+#   train → spin up MLflow tracking server as a service, run src.train,
+#           publish run_id as a dotenv artifact.
+#   build → build the Docker image, push to GitLab Container Registry.
+
+stages:
+  - lint
+  - test
+  - train
+  - build
+
+# Shared defaults.
+default:
+  image: python:3.11-slim
+  before_script:
+    - python -V
+    - pip install --no-cache-dir -r requirements-dev.txt
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .cache/pip
+  tags:
+    - docker
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+lint:
+  stage: lint
+  script:
+    - ruff check src tests
+
+test:
+  stage: test
+  script:
+    - pytest -q
+
+train:
+  stage: train
+  # TODO(you): replace this with a proper MLflow service or point at the
+  # shared MLflow server via MLFLOW_TRACKING_URI (set in GitLab CI/CD Variables).
+  # For now we use a local file-store so the job is self-contained.
+  variables:
+    MLFLOW_TRACKING_URI: "file:./mlruns"
+    MLFLOW_EXPERIMENT_NAME: "iris-classifier-ci"
+  script:
+    - python -m src.train
+  artifacts:
+    paths:
+      - mlruns/
+    expire_in: 1 week
+
+# Build + push to GitLab Container Registry. Requires Docker-in-Docker.
+# TODO(you):
+#   1. Enable the Container Registry for your project in GitLab.
+#   2. Swap `docker login` for `CI_REGISTRY_USER`/`CI_REGISTRY_PASSWORD`
+#      (already exposed by GitLab; uncomment below).
+build:
+  stage: build
+  image: docker:27
+  services:
+    - docker:27-dind
+  variables:
+    DOCKER_TLS_CERTDIR: "/certs"
+    IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
+  before_script: []
+  script:
+    # - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker build -t "$IMAGE" .
+    # - docker push "$IMAGE"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

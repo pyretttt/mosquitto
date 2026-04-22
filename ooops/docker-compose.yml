@@ -1,0 +1,169 @@
+name: mlops
+
+# One network for everything. Service names resolve as DNS (e.g. http://mlflow:5000).
+networks:
+  mlops:
+    driver: bridge
+
+volumes:
+  gitlab-config:
+  gitlab-logs:
+  gitlab-data:
+  gitlab-runner-config:
+  mlflow-artifacts:
+  mlflow-db:
+  prometheus-data:
+  grafana-data:
+
+services:
+  # ---------------------------------------------------------------------------
+  # GitLab CE — source of truth for code + pipeline orchestrator.
+  # WARNING: needs ~4 GB RAM. First boot takes ~5 min. Start it on demand.
+  # ---------------------------------------------------------------------------
+  gitlab:
+    image: gitlab/gitlab-ce:17.5.2-ce.0
+    hostname: gitlab.local
+    restart: unless-stopped
+    environment:
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url '${GITLAB_EXTERNAL_URL:-http://localhost:8080}'
+        gitlab_rails['gitlab_shell_ssh_port'] = 2222
+        # Turn off things we don't need locally to save RAM.
+        prometheus_monitoring['enable'] = false
+        alertmanager['enable'] = false
+        grafana['enable'] = false
+        puma['worker_processes'] = 2
+    ports:
+      - "8080:80"
+      - "2222:22"
+    volumes:
+      - gitlab-config:/etc/gitlab
+      - gitlab-logs:/var/log/gitlab
+      - gitlab-data:/var/opt/gitlab
+    shm_size: 256m
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # GitLab Runner — executes CI jobs. Registered manually (see scripts/register-runner.sh).
+  # Docker-in-Docker via the host daemon (simple, not prod-safe).
+  # ---------------------------------------------------------------------------
+  gitlab-runner:
+    image: gitlab/gitlab-runner:v17.5.2
+    restart: unless-stopped
+    depends_on: [gitlab]
+    volumes:
+      - gitlab-runner-config:/etc/gitlab-runner
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # MLflow tracking server. SQLite backend + local artifact store served through
+  # the server (--serve-artifacts), so ml-app never needs direct FS access.
+  # ---------------------------------------------------------------------------
+  mlflow:
+    build:
+      context: ./mlflow
+    restart: unless-stopped
+    ports:
+      - "5001:5000"
+    volumes:
+      - mlflow-db:/mlflow/db
+      - mlflow-artifacts:/mlflow/artifacts
+    command: >
+      mlflow server
+      --host 0.0.0.0
+      --port 5000
+      --backend-store-uri sqlite:////mlflow/db/mlflow.db
+      --artifacts-destination /mlflow/artifacts
+      --serve-artifacts
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # ML app — FastAPI inference service. Trains on startup if no model is
+  # registered yet, then serves /predict. Exposes /metrics for Prometheus.
+  # ---------------------------------------------------------------------------
+  ml-app:
+    build:
+      context: ./ml-app
+    restart: unless-stopped
+    depends_on: [mlflow]
+    ports:
+      - "8000:8000"
+    environment:
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-iris-classifier}
+      ML_MODEL_NAME: ${ML_MODEL_NAME:-iris-classifier}
+      ML_MODEL_STAGE: ${ML_MODEL_STAGE:-None}
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # Prometheus — scrapes ml-app, node-exporter, cAdvisor.
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # Grafana — dashboards. Provisioned with Prometheus datasource + starter dash.
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.2.2
+    restart: unless-stopped
+    depends_on: [prometheus]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # node-exporter — host-level metrics (CPU/mem/disk/net).
+  # On macOS these reflect the Linux VM that runs Docker, not your Mac proper.
+  # ---------------------------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    restart: unless-stopped
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+    volumes:
+      - /:/host:ro,rslave
+    networks: [mlops]
+
+  # ---------------------------------------------------------------------------
+  # cAdvisor — per-container CPU/mem/network/fs.
+  # ---------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    restart: unless-stopped
+    ports:
+      - "8081:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks: [mlops]

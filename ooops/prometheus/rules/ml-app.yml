@@ -1,0 +1,26 @@
+# Example alert rules. Just one rule here — the rest is for you to write.
+# See: https://prometheus.io/docs/practices/alerting/
+groups:
+  - name: ml-app
+    interval: 30s
+    rules:
+      - alert: MlAppDown
+        # `up` is 1 when the scrape succeeded, 0 when it failed.
+        expr: up{job="ml-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "ml-app is down"
+          description: "Prometheus has failed to scrape ml-app for more than 1 minute."
+
+# TODO(you): add these.
+#   - HighLatencyP95:
+#       p95(http_request_duration_seconds) > 0.5 for 5m
+#       hint: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
+#   - HighErrorRate:
+#       ratio of 5xx over total > 5% for 5m
+#       hint: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+#   - NoTrafficForModel:
+#       rate(ml_predictions_total[10m]) == 0 for 15m
+#       (warning, not critical — could just be quiet traffic)

@@ -1,0 +1,97 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "ml-app up",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "targets": [
+        { "expr": "up{job=\"ml-app\"}", "legendFormat": "up", "refId": "A" }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "DOWN", "color": "red" } } },
+            { "type": "value", "options": { "1": { "text": "UP", "color": "green" } } }
+          ]
+        }
+      },
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Request rate (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 6, "y": 0 },
+      "id": 2,
+      "targets": [
+        {
+          "expr": "sum by (handler, status) (rate(http_requests_total{job=\"ml-app\"}[1m]))",
+          "legendFormat": "{{handler}} {{status}}",
+          "refId": "A"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Latency p50 / p95 / p99 (s)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "id": 3,
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.50, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ml-app\"}[5m])))",
+          "legendFormat": "p50",
+          "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ml-app\"}[5m])))",
+          "legendFormat": "p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le) (rate(http_request_duration_seconds_bucket{job=\"ml-app\"}[5m])))",
+          "legendFormat": "p99",
+          "refId": "C"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    },
+    {
+      "type": "timeseries",
+      "title": "Predictions by class (req/s)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "id": 4,
+      "targets": [
+        {
+          "expr": "sum by (predicted_class) (rate(ml_predictions_total[1m]))",
+          "legendFormat": "class {{predicted_class}}",
+          "refId": "A"
+        }
+      ],
+      "datasource": { "type": "prometheus", "uid": "prometheus" }
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["ml-ops", "starter"],
+  "templating": { "list": [] },
+  "time": { "from": "now-30m", "to": "now" },
+  "timepicker": {},
+  "timezone": "",
+  "title": "ML API — starter",
+  "uid": "ml-api-starter",
+  "version": 1,
+  "weekStart": ""
+}
