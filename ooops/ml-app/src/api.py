@@ -18,8 +18,11 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, JSONResponse
 from pydantic import BaseModel, Field
+from prometheus_client import Counter
+from prometheus_fastapi_instrumentator import Instrumentator
+
 
 from .model import model
 
@@ -39,10 +42,13 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="ml-app", version="0.1.0", lifespan=lifespan)
 
-# TODO(you): wire Prometheus metrics here. The library is already in
-# requirements.txt — `prometheus-fastapi-instrumentator`. Two lines of code.
-# Then add at least one custom metric (Counter or Histogram) for something
-# domain-specific, e.g. predictions per class.
+Instrumentator().instrument(app).expose(app, endpoint="metrics")
+
+COUNTER = Counter(
+    "ml_predictions_total",
+    "Total predictions served, labelled by predicted class.",
+    ["predicted_class"],
+)
 
 
 class PredictRequest(BaseModel):
@@ -64,12 +70,17 @@ def predict(req: PredictRequest) -> PredictResponse:
     if not model.loaded:
         raise HTTPException(status_code=503, detail="model not loaded")
     (pred,) = model.predict([req.features])
-    # TODO(you): increment your custom prediction counter here.
+    COUNTER.labels(predicted_class=str(pred)).inc()
     return PredictResponse(predicted_class=pred, model_source=model.source_uri)
 
 
-# TODO(you): add the GET /health route. It should return:
-#   - 200 with {"status": "ok", "model_loaded": True, ...}  when ready
-#   - 503 with {"status": "degraded", ...}                  when not
-# Compose's `depends_on` does not check this; once you add it, also add a
-# proper healthcheck to the ml-app service in docker-compose.yml.
+@app.get("/health")
+def health() -> JSONResponse:
+    return JSONResponse(
+        status_code=200 if model.loaded else 503,
+        content=dict(
+            status="ok" if model.loaded else "degraded",
+            model_loaded=model.loaded,
+            model_source=model.source_uri,
+        ),
+    )
