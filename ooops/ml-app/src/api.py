@@ -18,7 +18,9 @@ from __future__ import annotations
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException, JSONResponse
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+
 from pydantic import BaseModel, Field
 from prometheus_client import Counter
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -42,7 +44,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(title="ml-app", version="0.1.0", lifespan=lifespan)
 
-Instrumentator().instrument(app).expose(app, endpoint="metrics")
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 COUNTER = Counter(
     "ml_predictions_total",
