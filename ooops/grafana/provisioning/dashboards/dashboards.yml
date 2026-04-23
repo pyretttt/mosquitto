@@ -1,5 +1,19 @@
 apiVersion: 1
 
+# Tells Grafana to scan /var/lib/grafana/dashboards on disk and import any
+# dashboard JSON it finds into the "ML Ops" folder. Read:
+# https://grafana.com/docs/grafana/latest/administration/provisioning/#dashboards
+#
+# TODO(you):
+#   1. Create a second provider for a "Platform" folder (cAdvisor, node-exporter,
+#      runtime stuff) and keep it separate from "ML Ops". Multi-tenant teams
+#      use one provider per team.
+#   2. Set `allowUiUpdates: false` once your dashboards live in git — UI edits
+#      get silently overwritten on the next reload, which surprises people.
+#   3. Switch from file provisioning to the "sidecar" pattern (a separate pod
+#      watches a ConfigMap and writes JSONs to disk) when you move to k8s.
+#      It's the standard pattern with kube-prometheus-stack.
+
 providers:
   - name: ml-ops
     orgId: 1

@@ -11,57 +11,77 @@ Docker Desktop → Settings → Resources and give Docker at least **6 GB RAM** 
 
 ---
 
-## 1. Bring up the observability + ML stack
+## 1. Bring up the stack and confirm the failure modes
 
 ```bash
 cp .env.example .env
 docker compose up -d mlflow ml-app prometheus grafana cadvisor node-exporter
-docker compose logs -f ml-app     # watch it train + start
+docker compose logs -f ml-app     # watch it (probably) fail to reach mlflow
 ```
 
+**Expected outcome — read carefully, this is by design:**
+
+- `/predict` *might* work, depending on whether MLflow came up before training ran.
+  If training failed on cold start, `docker compose restart ml-app` until it succeeds.
+- `curl localhost:8000/health` → 404 (you haven't built it).
+- `curl localhost:8000/metrics` → 404 (you haven't built it).
+- <http://localhost:9090/targets> shows `ml-app` target **DOWN** (no `/metrics`).
+- Grafana starter dashboard's only panel reads **DOWN**.
+
+That's your starting point. The next steps fix it.
+
+## 2. Fix the MLflow start-up race
+
+Open `ml-app/entrypoint.sh`. Read the PROBLEM block at the top, then implement
+one of the three options listed there. Verify by:
+
+```bash
+docker compose down ml-app mlflow
+docker compose up -d mlflow ml-app
+docker compose logs ml-app | grep -i train
+```
+
+**Outcome:** training succeeds on a cold start, every time.
+
+## 3. Wire /health and /metrics in ml-app
+
+Open `ml-app/TODO.md`. Do the first three items in the "API surface" section:
+
+- `GET /health`
+- `Instrumentator()...expose(app)` to mount `/metrics`
+- a `Counter` for predictions per class
+
 **Outcome:**
 
-- `curl http://localhost:8000/health` → `{"status":"ok","model_loaded":true,...}`
-- `curl -X POST http://localhost:8000/predict -H 'Content-Type: application/json' -d '{"features":[5.1,3.5,1.4,0.2]}'` → `{"predicted_class":0,...}`
-- <http://localhost:5001> shows one run under experiment `iris-classifier`.
-- <http://localhost:9090/targets> shows 4 targets UP.
-- <http://localhost:3000> → *ML Ops* folder → *ML API — starter* dashboard has live data.
+- `curl localhost:8000/health` → 200 with model status.
+- `curl localhost:8000/metrics` → Prometheus exposition format.
+- <http://localhost:9090/targets> shows `ml-app` **UP**.
+- The starter dashboard's `ml-app up` panel turns green.
 
-## 2. Generate traffic and watch the dashboard
+## 4. Generate traffic and build out the API dashboard
 
-Write a tiny load generator — either a shell loop or a Python script — that
-hits `/predict` with varied inputs a few times a second for a minute.
+Write a tiny load generator — shell loop or Python — that hits `/predict` with
+varied inputs a few times a second for a minute.
 
-**Outcome:**
+Then open `grafana/TODO.md` and add the panels listed under "ML API dashboard":
+request rate, p50/p95/p99 latency, error rate, predictions by class.
 
-- The Grafana dashboard shows non-zero request rate and p95 latency.
-- The *Predictions by class* panel shows multiple classes (iris has 3).
+**Outcome:** the starter dashboard goes from one panel to five, all live.
 
-## 3. Add a custom metric
+## 5. Write a real alert rule
 
-Edit `ml-app/src/api.py`:
-
-1. Add a `Histogram` for prediction latency *only* (i.e. the model call itself,
-   not the HTTP overhead). Name it `ml_predict_duration_seconds`.
-2. Wrap `model.predict(...)` with `.time()`.
-3. Add a panel in Grafana using
-   `histogram_quantile(0.95, sum by (le) (rate(ml_predict_duration_seconds_bucket[5m])))`.
-
-**Outcome:** new panel in the dashboard showing model-only latency.
-
-## 4. Write a real alert rule
-
-Edit `prometheus/rules/ml-app.yml`. Pick one of the `TODO(you)` alerts and
-implement it. Reload Prometheus without restarting:
+Open `prometheus/TODO.md`. Implement at least one alert from the "Alert rules"
+section. Reload Prometheus without restarting:
 
 ```bash
 curl -X POST http://localhost:9090/-/reload
 ```
 
 **Outcome:** <http://localhost:9090/alerts> shows your rule. Induce the
-condition (e.g. slow path by `time.sleep`) and watch it fire.
+condition (e.g. slow path with `time.sleep`) and watch it transition
+`inactive` → `pending` → `firing`.
 
-## 5. Bring up GitLab and register the runner
+## 6. Bring up GitLab and register the runner
 
 ```bash
 docker compose up -d gitlab
@@ -76,12 +96,15 @@ docker compose exec gitlab grep 'Password:' /etc/gitlab/initial_root_password
 # Login as root at http://localhost:8080 with that password.
 # Admin Area -> CI/CD -> Runners -> New instance runner -> copy the token.
 docker compose up -d gitlab-runner
+# Read scripts/register-runner.sh end-to-end first — it has 4 known issues
+# marked TODO(you). Fix at least #1 (token-on-argv) and #3 (idempotency)
+# before running it.
 ./scripts/register-runner.sh <REGISTRATION_TOKEN>
 ```
 
 **Outcome:** Admin Area → Runners shows one active runner tagged `docker,local`.
 
-## 6. Push the ml-app to GitLab and run the pipeline
+## 7. Push the ml-app to GitLab and run the pipeline
 
 1. Create a new project in GitLab (root user is fine).
 2. Set it up as a remote:
@@ -98,7 +121,7 @@ docker compose up -d gitlab-runner
 **Outcome:** `lint`, `test`, `train` all green on the first push. `build` will
 need the Container Registry enabled — that's the next step.
 
-## 7. Wire the `build` stage to the GitLab Container Registry
+## 8. Wire the `build` stage to the GitLab Container Registry
 
 1. In the project: Settings → General → Visibility → enable *Container Registry*.
 2. Uncomment the `docker login` + `docker push` lines in `.gitlab-ci.yml`.
@@ -107,7 +130,7 @@ need the Container Registry enabled — that's the next step.
 **Outcome:** Packages & Registries → Container Registry shows your image
 tagged with the commit SHA.
 
-## 8. Use the Model Registry properly
+## 9. Use the Model Registry properly
 
 Right now the API always loads `models:/iris-classifier/None` (= latest
 version). Learn the registry workflow:
@@ -121,7 +144,7 @@ version). Learn the registry workflow:
 **Outcome:** you can flip which model version serves traffic *without*
 changing code — only the registry.
 
-## 9. Move training out of the API container
+## 10. Move training out of the API container
 
 Right now `entrypoint.sh` trains on startup — convenient for demos, bad in
 practice (your inference container shouldn't know how to train).
@@ -136,21 +159,20 @@ practice (your inference container shouldn't know how to train).
 
 **Outcome:** pushing to GitLab trains a new model and the API hot-reloads it.
 
-## 10. Harden it a bit
+## 11. Harden it a bit
 
-Pick at least two:
+Now that the loop is closed, work through whichever per-area `TODO.md` files
+interest you most:
 
-- Swap MLflow's SQLite for Postgres; swap the artifact FS for MinIO.
-- Add Alertmanager to compose; route alerts to Slack or a webhook.
-- Build a *Container health* Grafana dashboard using cAdvisor metrics
-  (`container_cpu_usage_seconds_total`, `container_memory_usage_bytes`, …).
-  Hint: Grafana's dashboard ID 14282 is a solid cAdvisor starter.
-- Add input validation (`pydantic` constraints) and a `422`-focused test.
-- Add `ruff format` as a CI check; add `mypy` if you're feeling brave.
+- `docker-compose.yml` inline TODOs — resource limits, healthchecks, secrets, network split.
+- `prometheus/TODO.md` — Alertmanager, recording rules, blackbox exporter.
+- `grafana/TODO.md` — container-health dashboard (cAdvisor), SLO dashboard, alerting.
+- `ml-app/TODO.md` — input validation, structured logging, OpenTelemetry tracing.
+- `mlflow/README.md` TODOs — Postgres backend, MinIO artifact store.
 
 ---
 
-When you've done 1–9 you've covered: CI/CD for ML, experiment tracking, model
-registry, service monitoring, alerting, and container health. That's the core
-of MLOps. The rest — feature stores, data versioning, batch scoring, shadow
-deploys — builds on this base.
+When you've done 1–10 you've covered: CI/CD for ML, experiment tracking,
+model registry, service monitoring, alerting, and container health — the
+core of MLOps. The rest (feature stores, data versioning, batch scoring,
+shadow deploys) builds on this base. Then move to `docs/K8S_MIGRATION.md`.

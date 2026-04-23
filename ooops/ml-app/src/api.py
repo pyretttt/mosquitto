@@ -1,13 +1,16 @@
 """FastAPI inference service.
 
-Endpoints:
-  GET  /health     — liveness/readiness, reports model status.
-  POST /predict    — classify one sample.
-  GET  /metrics    — Prometheus scrape target (auto-added by the instrumentator).
+What's wired here:
+  POST /predict  — classify one sample, returns the predicted class.
 
-The Prometheus instrumentator gives you http_request_duration_seconds histograms
-and request counters out of the box. We also register a tiny custom counter to
-show you *how* to add domain-specific metrics.
+What's NOT wired (your job — see ml-app/TODO.md):
+  GET  /health   — liveness/readiness, must report whether the model is loaded.
+  GET  /metrics  — Prometheus scrape target. Without this, the prometheus
+                   scrape job for ml-app will go DOWN, the alert rule
+                   `MlAppDown` will fire, and the Grafana dashboard will be
+                   empty. That's the feedback loop you're learning to close.
+  Custom metrics — e.g. a Counter for predictions-by-class, a Histogram for
+                   model-only latency.
 """
 
 from __future__ import annotations
@@ -16,8 +19,6 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
-from prometheus_client import Counter
-from prometheus_fastapi_instrumentator import Instrumentator
 from pydantic import BaseModel, Field
 
 from .model import model
@@ -26,29 +27,22 @@ log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
 
-PREDICTIONS = Counter(
-    "ml_predictions_total",
-    "Total predictions served, labelled by predicted class.",
-    ["predicted_class"],
-)
-
-
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     try:
         model.load()
     except Exception as e:
-        # Don't crash the API; /health will show "model not loaded" so you can
-        # debug in the browser. TODO(you): add readiness gate so k8s doesn't
-        # send traffic until the model is loaded.
+        # Don't crash the API. Once /health exists, it will report degraded.
         log.warning("model load failed at startup: %s", e)
     yield
 
 
 app = FastAPI(title="ml-app", version="0.1.0", lifespan=lifespan)
 
-# Mounts /metrics and wires http_* metrics automatically.
-Instrumentator().instrument(app).expose(app, endpoint="/metrics")
+# TODO(you): wire Prometheus metrics here. The library is already in
+# requirements.txt — `prometheus-fastapi-instrumentator`. Two lines of code.
+# Then add at least one custom metric (Counter or Histogram) for something
+# domain-specific, e.g. predictions per class.
 
 
 class PredictRequest(BaseModel):
@@ -65,19 +59,17 @@ class PredictResponse(BaseModel):
     model_source: str | None
 
 
-@app.get("/health")
-def health() -> dict:
-    return {
-        "status": "ok" if model.loaded else "degraded",
-        "model_loaded": model.loaded,
-        "model_source": model.source_uri,
-    }
-
-
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest) -> PredictResponse:
     if not model.loaded:
         raise HTTPException(status_code=503, detail="model not loaded")
     (pred,) = model.predict([req.features])
-    PREDICTIONS.labels(predicted_class=str(pred)).inc()
+    # TODO(you): increment your custom prediction counter here.
     return PredictResponse(predicted_class=pred, model_source=model.source_uri)
+
+
+# TODO(you): add the GET /health route. It should return:
+#   - 200 with {"status": "ok", "model_loaded": True, ...}  when ready
+#   - 503 with {"status": "degraded", ...}                  when not
+# Compose's `depends_on` does not check this; once you add it, also add a
+# proper healthcheck to the ml-app service in docker-compose.yml.

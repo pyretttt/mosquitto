@@ -34,20 +34,26 @@ dashboards.
 
 ## What's here vs. what you'll build
 
-This repo is intentionally a **scaffold**. Enough works end-to-end that you can
-run `docker compose up`, hit the API, and see metrics in Grafana. Everything
-marked `TODO(you)` in the code or in `docs/LEARNING_PATH.md` is a deliberate
-learning exercise.
+This repo is intentionally a **thin scaffold**. The container plumbing works,
+the ML model trains and serves predictions, but most of the *interesting*
+parts are deliberately missing. You'll find them as `TODO(you)` comments
+inline and as per-area `TODO.md` files:
 
-| Area | Scaffolded | Your job |
+- `ml-app/TODO.md`
+- `grafana/TODO.md`
+- `prometheus/TODO.md`
+- inline `TODO(you)` in `docker-compose.yml`, `ml-app/entrypoint.sh`, `scripts/register-runner.sh`
+- ordered learning sequence in `docs/LEARNING_PATH.md`
+
+| Area | Scaffolded | Your job (highlights) |
 | --- | --- | --- |
-| Docker Compose | all 8 services wired, volumes, network | tune memory limits |
-| `ml-app` | FastAPI `/predict` + `/health` + `/metrics`, sklearn trainer, MLflow logging | add more features, more tests, model versioning logic |
-| MLflow | tracking server w/ SQLite + artifact serving | register model in Model Registry, promote to `Production` stage |
-| Prometheus | scrape config + 1 example alert rule | write more alerts, add Alertmanager |
-| Grafana | Prometheus datasource, 1 starter API dashboard | build a container-health dashboard (cAdvisor), SLO dashboard |
-| GitLab | compose service + runner registration script | register the runner, create project, push code |
-| CI pipeline | `.gitlab-ci.yml` with 4 stages (lint/test/train/build) | wire each stage; handle registry auth |
+| Docker Compose | services wired, volumes, network | resource limits, healthchecks, secrets, network split, log rotation |
+| `ml-app` | `/predict`, sklearn trainer, MLflow logging, model registry plumbing | wire `/health`, wire `/metrics`, add custom counters & histograms, fix the MLflow start-up race |
+| MLflow | tracking server w/ SQLite + artifact serving | swap to Postgres + MinIO, model registry promotion workflow |
+| Prometheus | 4 scrape jobs + 1 example alert | write real alerts, add recording rules, add Alertmanager + blackbox exporter |
+| Grafana | datasource provisioning + 1-panel starter dashboard | build the API dashboard, build a cAdvisor dashboard, set up alerting |
+| GitLab + Runner | compose services + a rough registration script | fix 4 issues in the script, register, push code, wire the pipeline |
+| CI pipeline | `.gitlab-ci.yml` skeleton with 4 stages | actually wire each stage, container registry auth, deploy stage |
 | K8s migration | notes in `docs/K8S_MIGRATION.md` | do the migration |
 
 ## Quick start
@@ -55,15 +61,26 @@ learning exercise.
 ```bash
 cp .env.example .env
 docker compose up -d mlflow ml-app prometheus grafana cadvisor node-exporter
-# Wait ~20s for ml-app to train + boot.
-curl http://localhost:8000/health
+# ml-app may fail to train on first try — that's the MLflow start-up race
+# documented in ml-app/entrypoint.sh and is your first exercise to fix.
+# Workaround until you fix it: `docker compose restart ml-app`.
 curl -X POST http://localhost:8000/predict \
      -H 'Content-Type: application/json' \
      -d '{"features": [5.1, 3.5, 1.4, 0.2]}'
 open http://localhost:3000       # Grafana  (admin / admin — change on first login)
-open http://localhost:9090       # Prometheus
+open http://localhost:9090       # Prometheus  (ml-app target will be DOWN until you wire /metrics)
 open http://localhost:5001       # MLflow
 ```
+
+Expected initial state:
+
+- `/predict` works → proves the model trained, was registered in MLflow, and loaded into the API.
+- `/health` returns **404** → you haven't built it yet (`ml-app/TODO.md`).
+- `/metrics` returns **404** → you haven't wired the instrumentator yet.
+- Prometheus shows `ml-app` target as **DOWN** → consequence of the above.
+- Grafana starter dashboard shows `ml-app up` as **DOWN** → same root cause.
+
+Fixing that chain is the first real exercise. See `docs/LEARNING_PATH.md`.
 
 Start GitLab separately (it's heavy — see `docs/LEARNING_PATH.md` step 5):
 

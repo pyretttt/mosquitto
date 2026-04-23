@@ -1,6 +1,24 @@
 name: mlops
 
+# =============================================================================
+# This compose file is intentionally a starting point. The TODO(you) comments
+# below mark deliberate gaps for you to fix. None of them break the basic
+# `up`, but together they're the difference between "it runs on my laptop"
+# and "it survives a reboot, an OOM, and a hostile dependency".
+#
+# Open issues you'll find inline:
+#   * No resource limits on any service. One pip install will OOM your laptop.
+#   * No healthchecks anywhere. `depends_on` is a lie without them.
+#   * Secrets passed as plain env vars (Grafana admin password, etc.).
+#   * Single bridge network — no isolation between data plane and control plane.
+#   * GitLab Runner has the host docker socket — the classic foot-gun.
+#   * No log rotation; container logs grow until the disk dies.
+# =============================================================================
+
 # One network for everything. Service names resolve as DNS (e.g. http://mlflow:5000).
+# TODO(you): split into two networks — `data` (mlflow, ml-app, prometheus,
+# grafana, exporters) and `ci` (gitlab, gitlab-runner). Then attach ml-app to
+# both so CI can reach it for smoke tests, but GitLab can't see Prometheus.
 networks:
   mlops:
     driver: bridge
@@ -20,6 +38,14 @@ services:
   # GitLab CE — source of truth for code + pipeline orchestrator.
   # WARNING: needs ~4 GB RAM. First boot takes ~5 min. Start it on demand.
   # ---------------------------------------------------------------------------
+  # TODO(you): pin a resource ceiling. GitLab will eat all your RAM otherwise.
+  # Add:
+  #   deploy:
+  #     resources:
+  #       limits: { cpus: "2", memory: "4G" }
+  # (Compose v2 honours `deploy.resources.limits` even outside Swarm.)
+  # TODO(you): add a healthcheck so we know when GitLab is *actually* ready,
+  # not just when the container started. Hint: HTTP GET /-/readiness on :80.
   gitlab:
     image: gitlab/gitlab-ce:17.5.2-ce.0
     hostname: gitlab.local
@@ -47,6 +73,16 @@ services:
   # GitLab Runner — executes CI jobs. Registered manually (see scripts/register-runner.sh).
   # Docker-in-Docker via the host daemon (simple, not prod-safe).
   # ---------------------------------------------------------------------------
+  # TODO(you): the docker.sock mount means any pipeline job can root the host.
+  # Acceptable for local-only learning; never for shared infra. When you move
+  # to k8s, switch the executor from `docker` to `kubernetes` (each job gets
+  # its own pod) and delete this volume.
+  # TODO(you): `depends_on: [gitlab]` only waits for the *container* to start,
+  # not for GitLab's HTTP API. Once you add the healthcheck on `gitlab`, change
+  # this to:
+  #   depends_on:
+  #     gitlab:
+  #       condition: service_healthy
   gitlab-runner:
     image: gitlab/gitlab-runner:v17.5.2
     restart: unless-stopped
@@ -60,6 +96,13 @@ services:
   # MLflow tracking server. SQLite backend + local artifact store served through
   # the server (--serve-artifacts), so ml-app never needs direct FS access.
   # ---------------------------------------------------------------------------
+  # TODO(you): SQLite is single-writer. The moment you have parallel CI jobs
+  # logging runs, you'll see "database is locked". Add a `mlflow-db` Postgres
+  # service and switch `--backend-store-uri` to `postgresql://...`.
+  # TODO(you): no healthcheck. Add one (HTTP GET /health on :5000) so ml-app
+  # can declare a meaningful `depends_on: { condition: service_healthy }`.
+  # The base image (`python:3.11-slim`) has no curl/wget — use a python
+  # one-liner in the healthcheck command.
   mlflow:
     build:
       context: ./mlflow
@@ -82,6 +125,16 @@ services:
   # ML app — FastAPI inference service. Trains on startup if no model is
   # registered yet, then serves /predict. Exposes /metrics for Prometheus.
   # ---------------------------------------------------------------------------
+  # TODO(you): once you add /health to the API (see ml-app/TODO.md), wire it
+  # in here so unhealthy containers get restarted automatically:
+  #   healthcheck:
+  #     test: ["CMD", "python", "-c", "import urllib.request,sys;sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health',timeout=2).status==200 else 1)"]
+  #     interval: 10s
+  #     timeout: 3s
+  #     retries: 5
+  #     start_period: 30s
+  # TODO(you): set sane resource limits. Without them, a runaway training run
+  # in this container can starve Prometheus + Grafana of CPU.
   ml-app:
     build:
       context: ./ml-app
@@ -99,6 +152,11 @@ services:
   # ---------------------------------------------------------------------------
   # Prometheus — scrapes ml-app, node-exporter, cAdvisor.
   # ---------------------------------------------------------------------------
+  # TODO(you): add Alertmanager as a sibling service and uncomment the
+  # `alerting:` block in prometheus/prometheus.yml. See prometheus/TODO.md.
+  # TODO(you): mount `prometheus-data` is fine but you have no log rotation
+  # and no `--storage.tsdb.retention.size` cap. Set both before you walk away
+  # from this running for a week.
   prometheus:
     image: prom/prometheus:v2.54.1
     restart: unless-stopped
@@ -118,6 +176,13 @@ services:
   # ---------------------------------------------------------------------------
   # Grafana — dashboards. Provisioned with Prometheus datasource + starter dash.
   # ---------------------------------------------------------------------------
+  # TODO(you): the admin password is in plain env vars (and worse, defaulted
+  # to "admin"). Move it to a docker secret:
+  #   secrets:
+  #     grafana_admin_password:
+  #       file: ./secrets/grafana_admin_password
+  # then reference via GF_SECURITY_ADMIN_PASSWORD__FILE. Same pattern works
+  # for Postgres credentials when you add Postgres for MLflow.
   grafana:
     image: grafana/grafana:11.2.2
     restart: unless-stopped
@@ -152,6 +217,11 @@ services:
   # ---------------------------------------------------------------------------
   # cAdvisor — per-container CPU/mem/network/fs.
   # ---------------------------------------------------------------------------
+  # TODO(you): cAdvisor exposes a *lot* of metrics by default. Once you've
+  # built your container-health dashboard, add `--disable_metrics=...` flags
+  # to drop everything you don't render. Cardinality matters even locally.
+  # TODO(you): `privileged: true` is heavy. Document why it's needed, or
+  # tighten down to specific capabilities (CAP_SYS_ADMIN, etc.).
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
     restart: unless-stopped

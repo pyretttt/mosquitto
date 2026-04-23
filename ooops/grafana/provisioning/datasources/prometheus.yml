@@ -1,7 +1,21 @@
 apiVersion: 1
 
+# Minimal datasource provisioning. Read:
+# https://grafana.com/docs/grafana/latest/administration/provisioning/#data-sources
+#
+# TODO(you):
+#   1. Add a second datasource for Loki when you ship logs (LEARNING_PATH stretch).
+#   2. Set `editable: false` once you're confident in the config — provisioned
+#      datasources should not drift from the file (a common prod foot-gun).
+#   3. Add `jsonData.timeInterval` matching Prometheus's scrape_interval so
+#      `$__rate_interval` resolves correctly in dashboards.
+#   4. The `uid` below is what every dashboard panel references. Don't change
+#      it without also updating each dashboard JSON (or use grafana CLI to
+#      bulk-rewrite). Drift here = dashboards silently show "No data".
+
 datasources:
   - name: Prometheus
+    uid: prometheus
     type: prometheus
     access: proxy
     url: http://prometheus:9090
