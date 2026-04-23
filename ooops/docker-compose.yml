@@ -208,10 +208,10 @@ services:
     restart: unless-stopped
     pid: host
     command:
-      - --path.rootfs=/host
-      - --collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)
+      - '--path.rootfs=/host'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
     volumes:
-      - /:/host:ro,rslave
+      - '/:/host:ro'
     networks: [mlops]
 
   # ---------------------------------------------------------------------------
