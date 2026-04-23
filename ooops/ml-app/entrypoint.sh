@@ -46,7 +46,20 @@ set -e
 # Hint: MLflow exposes GET /health → 200 OK once it's ready.
 # =============================================================================
 
-# TODO(you): replace this comment with your wait logic.
+python - <<'PY'
+import os, time, urllib.request, urllib.error
+uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+for i in range(10):
+    try:
+        urllib.request.urlopen(f"{uri}/health", timeout=1)
+        print(f"mlflow reachable at {uri}")
+        break
+    except Exception as e:
+        print(f"waiting for mlflow ({i}): {e}")
+        time.sleep(1)
+else:
+    raise SystemExit("mlflow did not come up in time")
+PY
 
 # Train on first boot so /predict works out of the box. Once you move
 # training into CI (LEARNING_PATH step 9), delete the line below.

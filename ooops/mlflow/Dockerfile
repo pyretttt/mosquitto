@@ -6,6 +6,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
 
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+
 # sqlalchemy is needed for --backend-store-uri sqlite:///...
 RUN pip install --no-cache-dir \
       "mlflow>=2.10,<3.0" \

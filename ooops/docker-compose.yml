@@ -120,6 +120,11 @@ services:
       --artifacts-destination /mlflow/artifacts
       --serve-artifacts
     networks: [mlops]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
 
   # ---------------------------------------------------------------------------
   # ML app — FastAPI inference service. Trains on startup if no model is
@@ -139,7 +144,9 @@ services:
     build:
       context: ./ml-app
     restart: unless-stopped
-    depends_on: [mlflow]
+    depends_on:
+      mlflow:
+        condition: service_healthy
     ports:
       - "8000:8000"
     environment:
