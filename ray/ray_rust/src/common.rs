@@ -280,6 +280,13 @@ impl State {
         self.clear_color.r = x / self.config.width as f64;
         self.clear_color.g = y / self.config.height as f64;
     }
+
+    fn handle_key(&self, event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
+        match (code, is_pressed) {
+            (KeyCode::Escape, true) => event_loop.exit(),
+            _ => {}
+        }
+    }
 }
 
 pub struct App {
@@ -290,13 +297,6 @@ impl App {
     pub fn new() -> Self {
         Self {
             state: None,
-        }
-    }
-
-    fn handle_key(&self, event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
-        match (code, is_pressed) {
-            (KeyCode::Escape, true) => event_loop.exit(),
-            _ => {}
         }
     }
 
@@ -353,7 +353,7 @@ impl ApplicationHandler<State> for App {
                         ..
                     },
                 ..
-            } => self.handle_key(event_loop, code, key_state.is_pressed()),
+            } => state.handle_key(event_loop, code, key_state.is_pressed()),
             WindowEvent::CursorMoved { position, .. } => {
                 state.handle_mouse_moved(position.x, position.y);
             },
