@@ -7,7 +7,7 @@ apiVersion: 1
 # TODO(you):
 #   1. Create a second provider for a "Platform" folder (cAdvisor, node-exporter,
 #      runtime stuff) and keep it separate from "ML Ops". Multi-tenant teams
-#      use one provider per team.
+#      use one provider per team. ✅
 #   2. Set `allowUiUpdates: false` once your dashboards live in git — UI edits
 #      get silently overwritten on the next reload, which surprises people.
 #   3. Switch from file provisioning to the "sidecar" pattern (a separate pod
@@ -23,4 +23,13 @@ providers:
     updateIntervalSeconds: 30
     allowUiUpdates: true
     options:
-      path: /var/lib/grafana/dashboards
+      path: /var/lib/grafana/dashboards/ml_ops
+  - name: platform
+    orgId: 1
+    folder: Platform
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards/platform
