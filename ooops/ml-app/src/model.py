@@ -9,10 +9,20 @@ from typing import Any
 
 import mlflow
 import mlflow.pyfunc
+import pandas as pd
 
 from .config import settings
 
 log = logging.getLogger(__name__)
+
+# Must match sklearn `load_iris(..., as_frame=True).data.columns` — MLflow
+# records this schema when the model is logged with that input_example.
+IRIS_FEATURE_COLUMNS: tuple[str, ...] = (
+    "sepal length (cm)",
+    "sepal width (cm)",
+    "petal length (cm)",
+    "petal width (cm)",
+)
 
 
 class Model:
@@ -52,7 +62,8 @@ class Model:
     def predict(self, rows: list[list[float]]) -> list[int]:
         if self._model is None:
             raise RuntimeError("model not loaded")
-        preds = self._model.predict(rows)
+        frame = pd.DataFrame(rows, columns=list(IRIS_FEATURE_COLUMNS))
+        preds = self._model.predict(frame)
         return [int(p) for p in preds]
 
 
