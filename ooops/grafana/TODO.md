@@ -25,22 +25,22 @@ Add these panels to `dashboards/ml-api.json`. You'll first need to wire `/metric
 
 Create `dashboards/containers.json`. Driven by cAdvisor, scraped on port 8080 inside the network.
 
-- [ ] **CPU per container** — `sum by (name) (rate(container_cpu_usage_seconds_total{name=~".+"}[1m]))`
-- [ ] **Memory per container** — `container_memory_usage_bytes{name=~".+"}`
-- [ ] **Network RX/TX per container** — `rate(container_network_receive_bytes_total{name=~".+"}[1m])`
-- [ ] **Restart count** — `changes(container_start_time_seconds{name=~".+"}[1h])`
+- [x] **CPU per container** — `sum by (name) (rate(container_cpu_usage_seconds_total{name=~".+"}[1m]))`
+- [x] **Memory per container** — `container_memory_usage_bytes{name=~".+"}`
+- [x] **Network RX/TX per container** — `rate(container_network_receive_bytes_total{name=~".+"}[1m])`
+- [x] **Restart count** — `changes(container_start_time_seconds{name=~".+"}[1h])`
 - [ ] Add a **template variable** `$container` (Query: `label_values(container_memory_usage_bytes, name)`) so panels are filterable.
-- [ ] (Shortcut) Import community dashboard ID **14282** from grafana.com, then strip it down to what you actually use. Reading someone else's dashboard JSON is a learning exercise in itself.
+- [x] (Shortcut) Import community dashboard ID **14282** from grafana.com, then strip it down to what you actually use. Reading someone else's dashboard JSON is a learning exercise in itself.
 
 ## Host dashboard
 
-- [ ] Build a small node-exporter dashboard (CPU, mem, disk, FS usage). Or import dashboard ID **1860** and trim. Note: on macOS the metrics describe the Linux VM Docker runs in, not your Mac.
+- [x] Build a small node-exporter dashboard (CPU, mem, disk, FS usage). Or import dashboard ID **1860** and trim. Note: on macOS the metrics describe the Linux VM Docker runs in, not your Mac.
 
 ## Alerting (Grafana-native, separate from Prometheus rules)
 
-- [ ] Create a contact point (start with a webhook to `https://webhook.site/...` or your own Slack).
-- [ ] Create one alert rule that mirrors the Prometheus `MlAppDown` rule, but using Grafana's alerting UI. Compare the two — when would you use one vs the other?
-- [ ] Add a notification policy that routes `severity=critical` to your contact point.
+- [x] Create a contact point (start with a webhook to `https://webhook.site/...` or your own Slack).
+- [x] Create one alert rule that mirrors the Prometheus `MlAppDown` rule, but using Grafana's alerting UI. Compare the two — when would you use one vs the other?
+- [x] Add a notification policy that routes `severity=critical` to your contact point.
 
 ## SLO dashboard (stretch)
 
