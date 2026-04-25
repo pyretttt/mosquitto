@@ -7,18 +7,18 @@ it's reproducible in git.
 
 ## Provisioning
 
-- [ ] Re-read `provisioning/datasources/prometheus.yml` and the comments at the top — there are 4 things to do there.
-- [ ] Re-read `provisioning/dashboards/dashboards.yml` — 3 more things there.
-- [ ] Add an `alerting/` provisioning folder for unified alerting (rules, contact points, notification policies).
+- [x] Re-read `provisioning/datasources/prometheus.yml` and the comments at the top — there are 4 things to do there.
+- [x] Re-read `provisioning/dashboards/dashboards.yml` — 3 more things there.
+- [x] Add an `alerting/` provisioning folder for unified alerting (rules, contact points, notification policies).
 
 ## ML API dashboard (extend the starter)
 
 Add these panels to `dashboards/ml-api.json`. You'll first need to wire `/metrics` in `ml-app` (see `ml-app/TODO.md`). Useful queries:
 
-- [ ] **Request rate by handler + status** — `sum by (handler, status) (rate(http_requests_total{job="ml-app"}[1m]))`
-- [ ] **p50 / p95 / p99 HTTP latency** — `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="ml-app"}[5m])))`
-- [ ] **Error rate (4xx, 5xx)** — `sum(rate(http_requests_total{job="ml-app",status=~"5.."}[5m])) / sum(rate(http_requests_total{job="ml-app"}[5m]))`
-- [ ] **Predictions per second by class** — `sum by (predicted_class) (rate(ml_predictions_total[1m]))` (requires the custom counter from `ml-app/TODO.md`)
+- [x] **Request rate by handler + status** — `sum by (handler, status) (rate(http_requests_total{job="ml-app"}[1m]))`
+- [x] **p50 / p95 / p99 HTTP latency** — `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="ml-app"}[5m])))`
+- [x] **Error rate (4xx, 5xx)** — `sum(rate(http_requests_total{job="ml-app",status=~"5.."}[5m])) / sum(rate(http_requests_total{job="ml-app"}[5m]))`
+- [x] **Predictions per second by class** — `sum by (predicted_class) (rate(ml_predictions_total[1m]))` (requires the custom counter from `ml-app/TODO.md`)
 - [ ] **Model-only latency p95** — `histogram_quantile(0.95, sum by (le) (rate(ml_predict_duration_seconds_bucket[5m])))`
 
 ## Container health dashboard (new file)
