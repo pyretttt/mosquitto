@@ -18,14 +18,14 @@ pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::from_co
     cgmath::Vector4::new(0.0, 0.0, 0.5, 1.0),
 );
 
-struct Camera {
-    eye: cgmath::Point3<f32>,
-    target: cgmath::Point3<f32>,
-    up: cgmath::Vector3<f32>,
-    aspect: f32,
-    fovy: f32,
-    znear: f32,
-    zfar: f32,
+pub struct Camera {
+    pub eye: cgmath::Point3<f32>,
+    pub target: cgmath::Point3<f32>,
+    pub up: cgmath::Vector3<f32>,
+    pub aspect: f32,
+    pub fovy: f32,
+    pub znear: f32,
+    pub zfar: f32,
 }
 
 impl Camera {
@@ -71,6 +71,9 @@ pub struct State {
     diffuse_texture: crate::texture::Texture,
     camera: Camera,
     camera_bind_group: wgpu::BindGroup,
+    camera_controller: crate::camera_controller::CameraController,
+    camera_uniform: CameraUniform,
+    camera_buffer: wgpu::Buffer,
 }
 
 impl State {
@@ -272,6 +275,7 @@ impl State {
             multiview_mask: None,
             cache: None,
         });
+        let camera_controller = crate::camera_controller::CameraController::new(0.2);
 
         Ok(Self {
             surface,
@@ -288,6 +292,9 @@ impl State {
             diffuse_texture,
             camera,
             camera_bind_group,
+            camera_controller,
+            camera_buffer,
+            camera_uniform,
         })
     }
 
@@ -300,8 +307,11 @@ impl State {
         }
     }
 
-    #[allow(unused)]
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        self.camera_controller.update_camera(&mut self.camera);
+        self.camera_uniform.update_view_proj(&self.camera);
+        self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
+    }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
         self.window.request_redraw();
@@ -377,10 +387,10 @@ impl State {
         self.clear_color.g = y / self.config.height as f64;
     }
 
-    fn handle_key(&self, event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
+    fn handle_key(&mut self, event_loop: &ActiveEventLoop, code: KeyCode, is_pressed: bool) {
         match (code, is_pressed) {
             (KeyCode::Escape, true) => event_loop.exit(),
-            _ => {}
+            _ => { self.camera_controller.handle_key(code, is_pressed); }
         }
     }
 }
