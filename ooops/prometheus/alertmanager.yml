@@ -1,0 +1,20 @@
+# The root route with all parameters, which are inherited by the child
+# routes if they are not overwritten.
+route:
+  receiver: 'webhook-receiver'
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  group_by: [alertname, service]
+
+  routes:
+    - matchers:
+      - severity="critical"
+      receiver: 'webhook-receiver'
+      continue: false
+
+receivers:
+  - name: 'webhook-receiver'
+    webhook_configs:
+      - send_resolved: true
+        url: https://webhook.site/8e9ca95c-e4e1-4385-a4bd-e941fe3bb72c

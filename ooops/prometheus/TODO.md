@@ -27,11 +27,11 @@ Recording rules pre-compute expensive queries so dashboards stay fast. Build:
 
 ## Alertmanager
 
-- [ ] Add `alertmanager` (image `prom/alertmanager:v0.27`) to `docker-compose.yml` with a config file at `prometheus/alertmanager.yml`.
-- [ ] Uncomment the `alerting:` block in `prometheus.yml` and point at it.
-- [ ] Configure one receiver (webhook is easiest — `https://webhook.site` for testing). Then a Slack/email receiver if you have one.
-- [ ] Write a routing tree: `severity=critical` → page, `severity=warning` → ticket. Use `group_by` to bundle related alerts.
-- [ ] Test silences: silence an alert via the Alertmanager UI, confirm it stops firing.
+- [x] Add `alertmanager` (image `prom/alertmanager:v0.27`) to `docker-compose.yml` with a config file at `prometheus/alertmanager.yml`.
+- [x] Uncomment the `alerting:` block in `prometheus.yml` and point at it.
+- [x] Configure one receiver (webhook is easiest — `https://webhook.site` for testing). Then a Slack/email receiver if you have one.
+- [x] Write a routing tree: `severity=critical` → page, `severity=warning` → ticket. Use `group_by` to bundle related alerts.
+- [x] Test silences: silence an alert via the Alertmanager UI, confirm it stops firing.
 
 ## Scrape config
 

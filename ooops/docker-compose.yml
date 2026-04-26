@@ -258,3 +258,12 @@ services:
     volumes:
       - ./blackbox_exporter/config.yml:/etc/blackbox_exporter/config.yml:ro
     networks: [mlops]
+
+  alertmanager:
+    image: quay.io/prometheus/alertmanager:v0.32.0
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks: [mlops]

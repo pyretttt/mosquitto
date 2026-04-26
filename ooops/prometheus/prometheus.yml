@@ -9,10 +9,10 @@ rule_files:
 
 # Alertmanager is intentionally not wired in. TODO(you): add an alertmanager
 # service to docker-compose.yml and point to it here.
-# alerting:
-#   alertmanagers:
-#     - static_configs:
-#         - targets: ['alertmanager:9093']
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']
 
 scrape_configs:
   - job_name: prometheus

@@ -1,5 +1,5 @@
 [tasks.compose]
 description = "launch docker compose"
 run = """
-docker compose up -d mlflow ml-app prometheus grafana cadvisor node-exporter blackbox-exporter
+docker compose up -d mlflow ml-app prometheus grafana cadvisor node-exporter blackbox-exporter alertmanager
 """
