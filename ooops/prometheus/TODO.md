@@ -23,7 +23,7 @@ Recording rules pre-compute expensive queries so dashboards stay fast. Build:
 
 ## Service health
 
-- [ ] Add the [blackbox exporter](https://github.com/prometheus/blackbox_exporter) as a new service in `docker-compose.yml`. Probe `http://ml-app:8000/health` every 30s. Alert if `probe_success == 0` for 2m. This catches issues a self-scrape can't (e.g. ml-app's `/metrics` works but `/predict` is broken).
+- [x] Add the [blackbox exporter](https://github.com/prometheus/blackbox_exporter) as a new service in `docker-compose.yml`. Probe `http://ml-app:8000/health` every 30s. Alert if `probe_success == 0` for 2m. This catches issues a self-scrape can't (e.g. ml-app's `/metrics` works but `/predict` is broken).
 
 ## Alertmanager
 

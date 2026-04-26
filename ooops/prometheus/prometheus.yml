@@ -31,4 +31,12 @@ scrape_configs:
   - job_name: cadvisor
     static_configs:
       - targets: ['cadvisor:8080']
-  
+
+  - job_name: 'blackbox-http'
+    metrics_path: /probe
+    params:
+      module: [health_2xx_check]
+      target: [http://ml-app:8000/health]
+    static_configs:
+      - targets:
+          - blackbox-exporter:9115

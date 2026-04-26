@@ -45,3 +45,11 @@ groups:
         annotations:
           summary: "No traffic for model"
           description: "The model has not received any traffic for 15 minutes."
+      - alert: ProbeFailed
+        expr: rate(probe_success{job="blackbox-http"}[2m]) == 1
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "Probe failed"
+          description: "The probe to the ml-app health endpoint has failed for 1 minute."

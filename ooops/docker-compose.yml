@@ -249,3 +249,12 @@ services:
     devices:
       - /dev/kmsg
     networks: [mlops]
+
+  blackbox-exporter:
+    image: quay.io/prometheus/blackbox-exporter:latest
+    restart: unless-stopped
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./blackbox_exporter/config.yml:/etc/blackbox_exporter/config.yml:ro
+    networks: [mlops]
