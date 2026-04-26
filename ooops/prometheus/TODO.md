@@ -42,8 +42,8 @@ Recording rules pre-compute expensive queries so dashboards stay fast. Build:
 
 ## Storage / retention
 
-- [ ] Bump `--storage.tsdb.retention.time` from `7d` to `30d` (it's set in `docker-compose.yml`, not here). Watch the `prometheus_tsdb_*` metrics on Prometheus's own scrape — note disk growth.
-- [ ] Add `--storage.tsdb.retention.size=10GB` as a safety cap.
+- [x] Bump `--storage.tsdb.retention.time` from `7d` to `30d` (it's set in `docker-compose.yml`, not here). Watch the `prometheus_tsdb_*` metrics on Prometheus's own scrape — note disk growth.
+- [x] Add `--storage.tsdb.retention.size=10GB` as a safety cap.
 
 ## Hardening (when you're ready)
 

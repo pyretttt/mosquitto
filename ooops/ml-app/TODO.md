@@ -4,9 +4,9 @@ Roughly ordered easiest → hardest. Tick them off as you go.
 
 ## API surface
 
-- [ ] `GET /health` route in `src/api.py`. Returns 200 + JSON `{status, model_loaded, model_source}` when ready, 503 when the model failed to load.
-- [ ] Wire `prometheus-fastapi-instrumentator` so `/metrics` is exposed. (Already in `requirements.txt`.) Verify with `curl localhost:8000/metrics` after `docker compose up`.
-- [ ] Add a custom `Counter` for predictions, labelled by `predicted_class`. Increment it inside `/predict`. Verify it shows up in `/metrics`.
+- [x] `GET /health` route in `src/api.py`. Returns 200 + JSON `{status, model_loaded, model_source}` when ready, 503 when the model failed to load.
+- [x] Wire `prometheus-fastapi-instrumentator` so `/metrics` is exposed. (Already in `requirements.txt`.) Verify with `curl localhost:8000/metrics` after `docker compose up`.
+- [x] Add a custom `Counter` for predictions, labelled by `predicted_class`. Increment it inside `/predict`. Verify it shows up in `/metrics`.
 - [ ] Add a custom `Histogram` (`ml_predict_duration_seconds`) timing only the `model.predict(...)` call (not HTTP overhead). Use `.time()` as a context manager.
 - [ ] Add an authenticated `POST /admin/reload` route that calls `model.load()` so the API can pick up new model versions without restarting.
 
