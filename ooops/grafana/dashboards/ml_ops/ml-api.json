@@ -108,7 +108,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum by (handler, status) (rate(http_requests_total{job=\"ml-app\"}[1m]))",
+          "expr": "job:http_request_rate:5m",
           "instant": false,
           "legendFormat": "__auto",
           "range": true,
@@ -510,6 +510,6 @@
   "timezone": "",
   "title": "ML API — starter (build me out)",
   "uid": "ml-api-starter",
-  "version": 4,
+  "version": 6,
   "weekStart": ""
 }

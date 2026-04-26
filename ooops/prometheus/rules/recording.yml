@@ -1,0 +1,11 @@
+groups:
+  - name: ml-app
+    rules:
+      - record: job:http_request_rate:5m
+        expr: sum by (handler, status) (rate(http_requests_total{job="ml-app"}[5m]))
+      - record: job:http_error_rate_5xx:5m
+        expr: ((sum by (job) (rate(http_requests_total{status="5xx"}[5m])) / sum by (job) (rate(http_requests_total[5m]))) or vector(0))
+      - record: job:http_error_rate_4xx:5m
+        expr: ((sum by (job) (rate(http_requests_total{status="4xx"}[5m])) / sum by (job) (rate(http_requests_total[5m]))) or vector(0))
+      - record: instance:node_cpu_util:5m
+        expr: 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))

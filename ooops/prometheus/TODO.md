@@ -6,20 +6,20 @@ The starter config has 4 scrape jobs and 1 example alert. Everything below is yo
 
 The file already lists hints in `TODO(you)` comments. Implement at least:
 
-- [ ] **HighLatencyP95** — `ml-app` p95 latency > 0.5s for 5m. Hint: `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="ml-app"}[5m])))`
-- [ ] **HighErrorRate** — 5xx ratio > 5% for 5m.
-- [ ] **NoTrafficForModel** — `rate(ml_predictions_total[10m]) == 0` for 15m. (Severity `warning`, not critical.)
-- [ ] Reload Prometheus without restart: `curl -X POST http://localhost:9090/-/reload`. Verify rules at <http://localhost:9090/rules>.
-- [ ] Induce each alert (slow handler, fake 500, no traffic) and watch them go from `inactive` → `pending` → `firing` at <http://localhost:9090/alerts>.
+- [x] **HighLatencyP95** — `ml-app` p95 latency > 0.5s for 5m. Hint: `histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="ml-app"}[5m])))`
+- [x] **HighErrorRate** — 5xx ratio > 5% for 5m.
+- [x] **NoTrafficForModel** — `rate(ml_predictions_total[10m]) == 0` for 15m. (Severity `warning`, not critical.)
+- [x] Reload Prometheus without restart: `curl -X POST http://localhost:9090/-/reload`. Verify rules at <http://localhost:9090/rules>.
+- [x] Induce each alert (slow handler, fake 500, no traffic) and watch them go from `inactive` → `pending` → `firing` at <http://localhost:9090/alerts>.
 
 ## Recording rules (new file `rules/recording.yml`)
 
 Recording rules pre-compute expensive queries so dashboards stay fast. Build:
 
-- [ ] `job:http_request_rate:5m` = `sum by (job) (rate(http_requests_total[5m]))`
-- [ ] `job:http_error_rate:5m` = ratio of 5xx over total per job.
-- [ ] `instance:node_cpu_util:5m` = 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))
-- [ ] Update one Grafana panel to use the recording rule and confirm the render is faster.
+- [x] `job:http_request_rate:5m` = `sum by (job) (rate(http_requests_total[5m]))`
+- [x] `job:http_error_rate:5m` = ratio of 5xx over total per job.
+- [x] `instance:node_cpu_util:5m` = 1 - avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m]))
+- [x] Update one Grafana panel to use the recording rule and confirm the render is faster.
 
 ## Service health
 

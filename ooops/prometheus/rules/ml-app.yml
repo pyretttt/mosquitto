@@ -13,14 +13,35 @@ groups:
         annotations:
           summary: "ml-app is down"
           description: "Prometheus has failed to scrape ml-app for more than 1 minute."
-
-# TODO(you): add these.
-#   - HighLatencyP95:
-#       p95(http_request_duration_seconds) > 0.5 for 5m
-#       hint: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket[5m])))
-#   - HighErrorRate:
-#       ratio of 5xx over total > 5% for 5m
-#       hint: sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
-#   - NoTrafficForModel:
-#       rate(ml_predictions_total[10m]) == 0 for 15m
-#       (warning, not critical — could just be quiet traffic)
+      - alert: HighLatencyP95
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{job="ml-app"}[5m]))) > 0.5
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High latency p95"
+          description: "The p95 latency of the ml-app is greater than 0.5 seconds for 1 minute."
+      - alert: HighErrorRate 5xx
+        expr: ((sum by (job) (rate(http_requests_total{status="5xx"}[5m])) / sum by (job) (rate(http_requests_total[5m]))) or vector(0)) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate 5xx"
+          description: "The error rate of the ml-app is greater than 5% for 1 minute."
+      - alert: HighErrorRate 4xx
+        expr: ((sum by (job) (rate(http_requests_total{status="4xx"}[5m])) / sum by (job) (rate(http_requests_total[5m]))) or vector(0)) > 0.05
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate 4xx"
+          description: "The error rate of the ml-app is greater than 5% for 1 minute."
+      - alert: NoTrafficForModel
+        expr: rate(ml_predictions_total{job="ml-app"}[10m]) == 0
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No traffic for model"
+          description: "The model has not received any traffic for 15 minutes."
