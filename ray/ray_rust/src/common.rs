@@ -315,7 +315,7 @@ impl State {
             &wgpu::util::BufferInitDescriptor {
                 label: Some("Instance Buffer"),
                 contents: bytemuck::cast_slice(&instance_data[..]),
-                usage: wgpu::BufferUsages::VERTEX,
+                usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             }
         );
 
@@ -407,6 +407,12 @@ impl State {
         self.camera_controller.update_camera(&mut self.camera);
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(&self.camera_buffer, 0, bytemuck::cast_slice(&[self.camera_uniform]));
+
+        self.instances.iter_mut().for_each(|instance| {
+            instance.rotation = cgmath::Quaternion::from_axis_angle(cgmath::Vector3::unit_z(), cgmath::Deg(0.1)) * instance.rotation;
+        });
+        let instance_data = self.instances.iter().map(Into::<InstanceRaw>::into).collect::<Vec<_>>();
+        self.queue.write_buffer(&self.instance_buffer, 0, bytemuck::cast_slice(&instance_data[..]));
     }
 
     pub fn render(&mut self) -> anyhow::Result<()> {
