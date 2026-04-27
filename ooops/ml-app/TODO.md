@@ -29,7 +29,7 @@ Roughly ordered easiest → hardest. Tick them off as you go.
 
 ## Model lifecycle
 
-- [ ] Use the MLflow Model Registry properly: promote a version to `Staging` in the UI, set `ML_MODEL_STAGE=Staging`, restart the API, confirm `model_source` reflects the new URI.
+- [x] Use the MLflow Model Registry properly: promote a version to `Staging` in the UI, set `ML_MODEL_STAGE=Staging`, restart the API, confirm `model_source` reflects the new URI.
 - [ ] Move `python -m src.train` out of `entrypoint.sh` and into the GitLab CI `train` stage (LEARNING_PATH step 9). The inference container should not know how to train.
 
 ## Stretch

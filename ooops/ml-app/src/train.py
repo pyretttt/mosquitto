@@ -19,6 +19,7 @@ import logging
 
 import mlflow
 import mlflow.sklearn
+from mlflow.tracking import MlflowClient
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import accuracy_score, f1_score
@@ -60,6 +61,13 @@ def train() -> str:
             artifact_path="model",
             registered_model_name=settings.model_name,
             input_example=X_train.head(1),
+        )
+        client = MlflowClient()
+        versions = client.search_model_versions(f"name='{settings.model_name}'")
+
+        latest = max(versions, key=lambda v: int(v.version))
+        client.transition_model_version_stage(
+            name=settings.model_name, version=latest.version, stage=settings.model_stage
         )
         return run.info.run_id
 
