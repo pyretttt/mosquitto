@@ -22,7 +22,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import JSONResponse
 
 from pydantic import BaseModel, Field
-from prometheus_client import Counter
+from prometheus_client import Counter, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 
 
@@ -51,6 +51,10 @@ COUNTER = Counter(
     "Total predictions served, labelled by predicted class.",
     ["predicted_class"],
 )
+ML_PREDICT_DURATION_SECONDS = Histogram(
+    "ml_predict_duration_seconds_hist",
+    "Duration of model predictions.",
+)
 
 
 class PredictRequest(BaseModel):
@@ -71,7 +75,8 @@ class PredictResponse(BaseModel):
 def predict(req: PredictRequest) -> PredictResponse:
     if not model.loaded:
         raise HTTPException(status_code=503, detail="model not loaded")
-    (pred,) = model.predict([req.features])
+    with ML_PREDICT_DURATION_SECONDS.time():
+        (pred,) = model.predict([req.features])
     COUNTER.labels(predicted_class=str(pred)).inc()
     return PredictResponse(predicted_class=pred, model_source=model.source_uri)
 
