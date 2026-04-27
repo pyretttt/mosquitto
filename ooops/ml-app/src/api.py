@@ -15,13 +15,17 @@ What's NOT wired (your job — see ml-app/TODO.md):
 
 from __future__ import annotations
 
+import os
 import logging
+import secrets
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.exceptions import RequestValidationError
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from prometheus_client import Counter, Histogram
 from prometheus_fastapi_instrumentator import Instrumentator
 
@@ -30,6 +34,16 @@ from .model import model
 
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+
+ADMIN_TOKEN = os.environ.get("ADMIN_TOKEN")
+bearer = HTTPBearer(auto_error=True)
+
+
+def require_admin(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
+    if not ADMIN_TOKEN:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Admin token not configured")
+    if not secrets.compare_digest(credentials.credentials, ADMIN_TOKEN):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 
 @asynccontextmanager
@@ -65,10 +79,26 @@ class PredictRequest(BaseModel):
         max_length=4,
     )
 
+    @field_validator("features", mode="after")
+    @classmethod
+    def ensure_list(cls, values: list[float]) -> list[float]:
+        if all((val < 10.0 and val > 0.0 for val in values)):
+            return values
+        else:
+            raise ValueError(f"{values} contains element gt 10 or lt 0")
+
 
 class PredictResponse(BaseModel):
     predicted_class: int
     model_source: str | None
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    message = "Validation errors:"
+    for error in exc.errors():
+        message += f"\nField: {error['loc']}, Error: {error['msg']}"
+    return PlainTextResponse(message, status_code=400)
 
 
 @app.post("/predict", response_model=PredictResponse)
@@ -91,3 +121,9 @@ def health() -> JSONResponse:
             model_source=model.source_uri,
         ),
     )
+
+
+@app.get("/admin/reload_model")
+def reload_model(_: None = Depends(require_admin)):
+    model.load()
+    return JSONResponse(status_code=200, content={"status": "ok", "model_source": model.source_uri})

@@ -154,6 +154,7 @@ services:
       MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-iris-classifier}
       ML_MODEL_NAME: ${ML_MODEL_NAME:-iris-classifier}
       ML_MODEL_STAGE: ${ML_MODEL_STAGE:-None}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-admin}
     networks: [mlops]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

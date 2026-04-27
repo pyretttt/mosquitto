@@ -4,6 +4,7 @@ from urllib import request
 from urllib.request import urlopen
 
 INPUTS = [
+    {"features": [10.1, 3.5, 1.4, 0.2]},
     {"features": [5.1, 3.5, 1.4, 0.2]},
     {"features": [3.1, 1.5, 2.4, 0.05]},
     {"features": [1.1, 1.2, 1.0, 0.02]},

@@ -7,13 +7,13 @@ Roughly ordered easiest → hardest. Tick them off as you go.
 - [x] `GET /health` route in `src/api.py`. Returns 200 + JSON `{status, model_loaded, model_source}` when ready, 503 when the model failed to load.
 - [x] Wire `prometheus-fastapi-instrumentator` so `/metrics` is exposed. (Already in `requirements.txt`.) Verify with `curl localhost:8000/metrics` after `docker compose up`.
 - [x] Add a custom `Counter` for predictions, labelled by `predicted_class`. Increment it inside `/predict`. Verify it shows up in `/metrics`.
-- [ ] Add a custom `Histogram` (`ml_predict_duration_seconds`) timing only the `model.predict(...)` call (not HTTP overhead). Use `.time()` as a context manager.
-- [ ] Add an authenticated `POST /admin/reload` route that calls `model.load()` so the API can pick up new model versions without restarting.
+- [x] Add a custom `Histogram` (`ml_predict_duration_seconds`) timing only the `model.predict(...)` call (not HTTP overhead). Use `.time()` as a context manager.
+- [x] Add an authenticated `POST /admin/reload_model` route that calls `model.load()` so the API can pick up new model versions without restarting.
 
 ## Validation & errors
 
-- [ ] Add input range validation in `PredictRequest` (Iris features are all positive, < 10). Return 422 on bad input.
-- [ ] Add a `RequestValidationError` exception handler that emits a structured log line.
+- [x] Add input range validation in `PredictRequest` (Iris features are all positive, < 10). Return 422 on bad input.
+- [x] Add a `RequestValidationError` exception handler that emits a structured log line.
 
 ## Tests
 
@@ -24,7 +24,7 @@ Roughly ordered easiest → hardest. Tick them off as you go.
 
 ## Boot/runtime
 
-- [ ] Fix the MLflow start-up race in `entrypoint.sh` (see the comment block in that file).
+- [x] Fix the MLflow start-up race in `entrypoint.sh` (see the comment block in that file).
 - [ ] Add a Docker `HEALTHCHECK` to the `ml-app` service in `docker-compose.yml` that calls your new `/health`. Then change `depends_on` on consumers (e.g. CI smoke tests) to `condition: service_healthy`.
 
 ## Model lifecycle
