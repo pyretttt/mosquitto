@@ -32,11 +32,35 @@ def test_predict_returns_class(monkeypatch):
     assert r.json()["predicted_class"] == 0
 
 
-# TODO(you): uncomment + finish once you've added /health.
-# def test_health_reports_model_status(monkeypatch):
-#     monkeypatch.setattr(api_module, "model", _StubModel())
-#     with TestClient(api_module.app) as client:
-#         r = client.get("/health")
-#     assert r.status_code == 200
-#     body = r.json()
-#     assert body["model_loaded"] is True
+def test_health_reports_model_status(monkeypatch):
+    monkeypatch.setattr(api_module, "model", _StubModel())
+    with TestClient(api_module.app) as client:
+        r = client.get("/health")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["model_loaded"] is True
+
+
+def test_custom_metrics(monkeypatch):
+    monkeypatch.setattr(api_module, "model", _StubModel())
+    with TestClient(api_module.app) as client:
+        _ = client.post("/predict", json={"features": [5.1, 3.5, 1.4, 0.2]})
+        r = client.get("/metrics")
+    assert r.status_code == 200
+
+    assert "# TYPE ml_predict_duration_seconds_hist histogram" in r.text
+    assert "# TYPE ml_predictions_total counter" in r.text
+
+
+def test_predict_wrong_feature_count(monkeypatch):
+    monkeypatch.setattr(api_module, "model", _StubModel())
+    with TestClient(api_module.app) as client:
+        r = client.post("/predict", json={"features": [5.1, 3.5, 1.4, 0.2, 1.3]})
+    assert r.status_code == 400
+
+
+def test_predict_wrong_feature_type(monkeypatch):
+    monkeypatch.setattr(api_module, "model", _StubModel())
+    with TestClient(api_module.app) as client:
+        r = client.post("/predict", json={"features": ["five", "three", "zero", "six"]})
+    assert r.status_code == 400

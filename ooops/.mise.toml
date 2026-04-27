@@ -1,3 +1,6 @@
+[tools]
+python = "3.13"
+
 [tasks.compose]
 description = "launch docker compose"
 run = """

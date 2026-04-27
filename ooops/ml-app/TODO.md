@@ -17,15 +17,15 @@ Roughly ordered easiest → hardest. Tick them off as you go.
 
 ## Tests
 
-- [ ] Test `/health` (200 ready, 503 not ready).
-- [ ] Test `/metrics` returns Prometheus exposition format and contains your custom counter name *after* a `/predict` call.
-- [ ] Test `/predict` rejects wrong feature count → 422, non-numeric → 422.
+- [x] Test `/health` (200 ready, 503 not ready).
+- [x] Test `/metrics` returns Prometheus exposition format and contains your custom counter name *after* a `/predict` call.
+- [x] Test `/predict` rejects wrong feature count → 422, non-numeric → 422.
 - [ ] Add a real training test: spin up MLflow with `MLFLOW_TRACKING_URI=file:./mlruns`, run `train()`, assert a model version was registered.
 
 ## Boot/runtime
 
 - [x] Fix the MLflow start-up race in `entrypoint.sh` (see the comment block in that file).
-- [ ] Add a Docker `HEALTHCHECK` to the `ml-app` service in `docker-compose.yml` that calls your new `/health`. Then change `depends_on` on consumers (e.g. CI smoke tests) to `condition: service_healthy`.
+- [x] Add a Docker `HEALTHCHECK` to the `ml-app` service in `docker-compose.yml` that calls your new `/health`. Then change `depends_on` on consumers (e.g. CI smoke tests) to `condition: service_healthy`.
 
 ## Model lifecycle
 
