@@ -52,7 +52,7 @@ class Model:
         # "models:/<name>/<stage-or-version>" — stage "None" means "latest
         # registered version regardless of stage", which is what we want on
         # first boot. Promote to Staging/Production in the UI as an exercise.
-        uri = f"models:/{settings.model_name}/{settings.model_stage}"
+        uri = f"models:/{settings.model_name}/latest"
         with self._lock:
             log.info("loading model from %s", uri)
             self._model = mlflow.pyfunc.load_model(uri)

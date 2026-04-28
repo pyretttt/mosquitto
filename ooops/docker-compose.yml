@@ -32,6 +32,7 @@ volumes:
   mlflow-db:
   prometheus-data:
   grafana-data:
+  rustfs-logs:
 
 services:
   # ---------------------------------------------------------------------------
@@ -92,9 +93,74 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks: [mlops]
 
+
+  mlflow-db:
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - mlflow-db:/var/lib/postgresql/data
+    networks: [mlops]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mlflow}
+      POSTGRES_DB: ${POSTGRES_DB:-mlflow}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mlflow} -d ${POSTGRES_DB:-mlflow}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  mlflow-artifacts-init:
+    image: alpine:3.20
+    command: ["sh", "-c", "chown -R 1000:1000 /data /logs"]
+    volumes:
+      - mlflow-artifacts:/data
+      - rustfs-logs:/logs
+    restart: "no"
+
+
+  mlflow-artifacts:
+    image: rustfs/rustfs:latest
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - mlflow-artifacts:/data
+      - rustfs-logs:/logs
+    user: "1000:1000"
+    depends_on:
+      mlflow-artifacts-init:
+        condition: service_completed_successfully
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-mlflowadmin}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-mlflowsecret}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/health || exit 1"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    networks: [mlops]
+
+
+  createbuckets:
+    image: quay.io/minio/mc:latest
+    depends_on:
+      mlflow-artifacts:
+        condition: service_healthy
+    restart: on-failure
+    entrypoint: >
+      /bin/sh -c "
+      set -e;
+      /usr/bin/mc alias set rustfs http://mlflow-artifacts:9000 ${RUSTFS_ACCESS_KEY:-mlflowadmin} ${RUSTFS_SECRET_KEY:-mlflowsecret};
+      /usr/bin/mc mb --ignore-existing rustfs/mlflow;
+      "
+    networks: [mlops]
+
   # ---------------------------------------------------------------------------
   # MLflow tracking server. SQLite backend + local artifact store served through
-  # the server (--serve-artifacts), so ml-app never needs direct FS access.
+  # the server (--serve-artifacts), so ml-app never needs direvct FS access.
   # ---------------------------------------------------------------------------
   # TODO(you): SQLite is single-writer. The moment you have parallel CI jobs
   # logging runs, you'll see "database is locked". Add a `mlflow-db` Postgres
@@ -109,15 +175,23 @@ services:
     restart: unless-stopped
     ports:
       - "5001:5000"
-    volumes:
-      - mlflow-db:/mlflow/db
-      - mlflow-artifacts:/mlflow/artifacts
+    depends_on:
+      mlflow-db:
+        condition: service_healthy
+      mlflow-artifacts:
+        condition: service_healthy
+      createbuckets:
+        condition: service_completed_successfully
+    environment:
+      MLFLOW_S3_ENDPOINT_URL: http://mlflow-artifacts:9000
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-mlflowadmin}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-mlflowsecret}
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
-      --backend-store-uri sqlite:////mlflow/db/mlflow.db
-      --artifacts-destination /mlflow/artifacts
+      --backend-store-uri postgresql://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@mlflow-db:5432/${POSTGRES_DB:-mlflow}
+      --artifacts-destination s3://mlflow
       --serve-artifacts
     networks: [mlops]
     healthcheck:

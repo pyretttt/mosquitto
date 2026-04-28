@@ -62,13 +62,7 @@ def train() -> str:
             registered_model_name=settings.model_name,
             input_example=X_train.head(1),
         )
-        client = MlflowClient()
-        versions = client.search_model_versions(f"name='{settings.model_name}'")
 
-        latest = max(versions, key=lambda v: int(v.version))
-        client.transition_model_version_stage(
-            name=settings.model_name, version=latest.version, stage=settings.model_stage
-        )
         return run.info.run_id
 
 
