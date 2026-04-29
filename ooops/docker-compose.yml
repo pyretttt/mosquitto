@@ -32,7 +32,6 @@ volumes:
   mlflow-db:
   prometheus-data:
   grafana-data:
-  rustfs-logs:
 
 services:
   # ---------------------------------------------------------------------------
@@ -110,33 +109,20 @@ services:
       timeout: 3s
       retries: 20
 
-  mlflow-artifacts-init:
-    image: alpine:3.20
-    command: ["sh", "-c", "chown -R 1000:1000 /data /logs"]
-    volumes:
-      - mlflow-artifacts:/data
-      - rustfs-logs:/logs
-    restart: "no"
-
-
   mlflow-artifacts:
-    image: rustfs/rustfs:latest
+    image: minio/minio:latest
     restart: unless-stopped
+    command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
       - "9001:9001"
     volumes:
       - mlflow-artifacts:/data
-      - rustfs-logs:/logs
-    user: "1000:1000"
-    depends_on:
-      mlflow-artifacts-init:
-        condition: service_completed_successfully
     environment:
-      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:-mlflowadmin}
-      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:-mlflowsecret}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-mlflowadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-mlflowsecret}
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9000/health || exit 1"]
+      test: ["CMD", "mc", "ready", "local"]
       interval: 5s
       timeout: 3s
       retries: 20
@@ -153,8 +139,8 @@ services:
     entrypoint: >
       /bin/sh -c "
       set -e;
-      /usr/bin/mc alias set rustfs http://mlflow-artifacts:9000 ${RUSTFS_ACCESS_KEY:-mlflowadmin} ${RUSTFS_SECRET_KEY:-mlflowsecret};
-      /usr/bin/mc mb --ignore-existing rustfs/mlflow;
+      /usr/bin/mc alias set minio http://mlflow-artifacts:9000 ${MINIO_ROOT_USER:-mlflowadmin} ${MINIO_ROOT_PASSWORD:-mlflowsecret};
+      /usr/bin/mc mb --ignore-existing minio/mlflow;
       "
     networks: [mlops]
 
@@ -184,14 +170,16 @@ services:
         condition: service_completed_successfully
     environment:
       MLFLOW_S3_ENDPOINT_URL: http://mlflow-artifacts:9000
-      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY:-mlflowadmin}
-      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY:-mlflowsecret}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlflowadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlflowsecret}
+      MLFLOW_SERVER_ALLOWED_HOSTS: localhost,localhost:5001,127.0.0.1,mlflow,mlflow:5000,host.docker.internal
     command: >
       mlflow server
       --host 0.0.0.0
       --port 5000
       --backend-store-uri postgresql://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@mlflow-db:5432/${POSTGRES_DB:-mlflow}
       --artifacts-destination s3://mlflow
+      --default-artifact-root s3://mlflow
       --serve-artifacts
     networks: [mlops]
     healthcheck:
@@ -225,6 +213,9 @@ services:
       - "8000:8000"
     environment:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL:-http://mlflow-artifacts:9000}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlflowadmin}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlflowsecret}
       MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-iris-classifier}
       ML_MODEL_NAME: ${ML_MODEL_NAME:-iris-classifier}
       ML_MODEL_STAGE: ${ML_MODEL_STAGE:-None}
