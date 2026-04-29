@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
 # sqlalchemy is needed for --backend-store-uri sqlite:///...
 RUN pip install --no-cache-dir \
-      "mlflow>=3.11.1,<4.0" \
+      "mlflow[auth]>=3.11.1,<4.0" \
       "sqlalchemy>=2.0,<3.0" \
       "psycopg2-binary>=2.9,<3.0" \
       "boto3>=1.34,<2.0"

@@ -11,4 +11,4 @@ Open the MinIO console: <http://localhost:9001>
 ## TODO(you)
 
 1. Turn on basic auth (`MLFLOW_AUTH_CONFIG_PATH`) — even on localhost it's
-   worth the 5 minutes to learn how.
+   worth the 5 minutes to learn how ✅

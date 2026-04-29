@@ -161,6 +161,8 @@ services:
     restart: unless-stopped
     ports:
       - "5001:5000"
+    volumes:
+      - ./mlflow/auth_config.ini:/mlflow/auth_config.ini:ro
     depends_on:
       mlflow-db:
         condition: service_healthy
@@ -169,6 +171,8 @@ services:
       createbuckets:
         condition: service_completed_successfully
     environment:
+      MLFLOW_AUTH_CONFIG_PATH: /mlflow/auth_config.ini
+      MLFLOW_FLASK_SERVER_SECRET_KEY: ${MLFLOW_FLASK_SERVER_SECRET_KEY:-1x2x3x4x5x6x7x8x9x0}
       MLFLOW_S3_ENDPOINT_URL: http://mlflow-artifacts:9000
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlflowadmin}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlflowsecret}
@@ -179,8 +183,8 @@ services:
       --port 5000
       --backend-store-uri postgresql://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@mlflow-db:5432/${POSTGRES_DB:-mlflow}
       --artifacts-destination s3://mlflow
-      --default-artifact-root s3://mlflow
       --serve-artifacts
+      --app-name basic-auth
     networks: [mlops]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
@@ -213,13 +217,12 @@ services:
       - "8000:8000"
     environment:
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI:-http://mlflow:5000}
-      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL:-http://mlflow-artifacts:9000}
-      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER:-mlflowadmin}
-      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD:-mlflowsecret}
       MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-iris-classifier}
       ML_MODEL_NAME: ${ML_MODEL_NAME:-iris-classifier}
       ML_MODEL_STAGE: ${ML_MODEL_STAGE:-None}
       ADMIN_TOKEN: ${ADMIN_TOKEN:-admin}
+      MLFLOW_TRACKING_USERNAME: ${MLFLOW_TRACKING_USERNAME:-admin}
+      MLFLOW_TRACKING_PASSWORD: ${MLFLOW_TRACKING_PASSWORD:-adminpassword}
     networks: [mlops]
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
