@@ -10,6 +10,7 @@ use winit::{
 use crate::vertex as vertex;
 use wgpu::util::DeviceExt;
 use cgmath::prelude::*;
+use crate::model::Vertex;
 
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
@@ -337,7 +338,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[vertex::Vertex::desc(), InstanceRaw::desc()],
+                buffers: &[model::ModelVertex::desc(), InstanceRaw::desc()],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.
