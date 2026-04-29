@@ -33,6 +33,14 @@ volumes:
   prometheus-data:
   grafana-data:
 
+x-service-defaults: &service-defaults
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+
 services:
   # ---------------------------------------------------------------------------
   # GitLab CE — source of truth for code + pipeline orchestrator.
@@ -47,9 +55,9 @@ services:
   # TODO(you): add a healthcheck so we know when GitLab is *actually* ready,
   # not just when the container started. Hint: HTTP GET /-/readiness on :80.
   gitlab:
+    <<: *service-defaults
     image: gitlab/gitlab-ce:17.5.2-ce.0
     hostname: gitlab.local
-    restart: unless-stopped
     environment:
       GITLAB_OMNIBUS_CONFIG: |
         external_url '${GITLAB_EXTERNAL_URL:-http://localhost:8080}'
@@ -68,6 +76,18 @@ services:
       - gitlab-data:/var/opt/gitlab
     shm_size: 256m
     networks: [mlops]
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "4G"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "${GITLAB_EXTERNAL_URL:-http://localhost:8080}/health-check"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
+
 
   # ---------------------------------------------------------------------------
   # GitLab Runner — executes CI jobs. Registered manually (see scripts/register-runner.sh).
@@ -84,8 +104,8 @@ services:
   #     gitlab:
   #       condition: service_healthy
   gitlab-runner:
+    <<: *service-defaults
     image: gitlab/gitlab-runner:v17.5.2
-    restart: unless-stopped
     depends_on: [gitlab]
     volumes:
       - gitlab-runner-config:/etc/gitlab-runner
@@ -94,8 +114,8 @@ services:
 
 
   mlflow-db:
+    <<: *service-defaults
     image: postgres:16
-    restart: unless-stopped
     volumes:
       - mlflow-db:/var/lib/postgresql/data
     networks: [mlops]
@@ -110,8 +130,8 @@ services:
       retries: 20
 
   mlflow-artifacts:
+    <<: *service-defaults
     image: minio/minio:latest
-    restart: unless-stopped
     command: server /data --console-address ":9001"
     ports:
       - "9000:9000"
@@ -150,15 +170,15 @@ services:
   # ---------------------------------------------------------------------------
   # TODO(you): SQLite is single-writer. The moment you have parallel CI jobs
   # logging runs, you'll see "database is locked". Add a `mlflow-db` Postgres
-  # service and switch `--backend-store-uri` to `postgresql://...`.
+  # service and switch `--backend-store-uri` to `postgresql://...`. ✅
   # TODO(you): no healthcheck. Add one (HTTP GET /health on :5000) so ml-app
   # can declare a meaningful `depends_on: { condition: service_healthy }`.
   # The base image (`python:3.11-slim`) has no curl/wget — use a python
-  # one-liner in the healthcheck command.
+  # one-liner in the healthcheck command. ✅
   mlflow:
+    <<: *service-defaults
     build:
       context: ./mlflow
-    restart: unless-stopped
     ports:
       - "5001:5000"
     volumes:
@@ -203,13 +223,13 @@ services:
   #     interval: 10s
   #     timeout: 3s
   #     retries: 5
-  #     start_period: 30s
+  #     start_period: 30s ✅
   # TODO(you): set sane resource limits. Without them, a runaway training run
   # in this container can starve Prometheus + Grafana of CPU.
   ml-app:
+    <<: *service-defaults
     build:
       context: ./ml-app
-    restart: unless-stopped
     depends_on:
       mlflow:
         condition: service_healthy
@@ -229,18 +249,23 @@ services:
       interval: 10s
       timeout: 3s
       retries: 10
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: "512M"
 
   # ---------------------------------------------------------------------------
   # Prometheus — scrapes ml-app, node-exporter, cAdvisor.
   # ---------------------------------------------------------------------------
   # TODO(you): add Alertmanager as a sibling service and uncomment the
-  # `alerting:` block in prometheus/prometheus.yml. See prometheus/TODO.md.
+  # `alerting:` block in prometheus/prometheus.yml. See prometheus/TODO.md. ✅
   # TODO(you): mount `prometheus-data` is fine but you have no log rotation
   # and no `--storage.tsdb.retention.size` cap. Set both before you walk away
-  # from this running for a week.
+  # from this running for a week. ✅
   prometheus:
+    <<: *service-defaults
     image: prom/prometheus:v2.54.1
-    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -266,8 +291,8 @@ services:
   # then reference via GF_SECURITY_ADMIN_PASSWORD__FILE. Same pattern works
   # for Postgres credentials when you add Postgres for MLflow.
   grafana:
+    <<: *service-defaults
     image: grafana/grafana:11.2.2
-    restart: unless-stopped
     depends_on: [prometheus]
     ports:
       - "3000:3000"
@@ -286,8 +311,8 @@ services:
   # On macOS these reflect the Linux VM that runs Docker, not your Mac proper.
   # ---------------------------------------------------------------------------
   node-exporter:
+    <<: *service-defaults
     image: prom/node-exporter:v1.8.2
-    restart: unless-stopped
     pid: host
     command:
       - '--path.rootfs=/host'
@@ -299,14 +324,15 @@ services:
   # ---------------------------------------------------------------------------
   # cAdvisor — per-container CPU/mem/network/fs.
   # ---------------------------------------------------------------------------
-  # TODO(you): cAdvisor exposes a *lot* of metrics by default. Once you've
-  # built your container-health dashboard, add `--disable_metrics=...` flags
-  # to drop everything you don't render. Cardinality matters even locally.
+  # Keep CPU/memory/network/start-time metrics for the container dashboard and
+  # drop high-cardinality collectors we do not render.
   # TODO(you): `privileged: true` is heavy. Document why it's needed, or
   # tighten down to specific capabilities (CAP_SYS_ADMIN, etc.).
   cadvisor:
+    <<: *service-defaults
     image: gcr.io/cadvisor/cadvisor:v0.49.1
-    restart: unless-stopped
+    command:
+      - --disable_metrics=accelerator,advtcp,app,cpuLoad,cpu_topology,cpuset,disk,diskIO,hugetlb,memory_numa,oom_event,perf_event,process,referenced_memory,resctrl,sched,tcp,udp
     ports:
       - "8081:8080"
     volumes:
@@ -321,8 +347,8 @@ services:
     networks: [mlops]
 
   blackbox-exporter:
+    <<: *service-defaults
     image: quay.io/prometheus/blackbox-exporter:latest
-    restart: unless-stopped
     ports:
       - "9115:9115"
     volumes:
@@ -330,8 +356,8 @@ services:
     networks: [mlops]
 
   alertmanager:
+    <<: *service-defaults
     image: quay.io/prometheus/alertmanager:v0.32.0
-    restart: unless-stopped
     ports:
       - "9093:9093"
     volumes:
