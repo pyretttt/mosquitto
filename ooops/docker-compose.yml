@@ -54,39 +54,39 @@ services:
   # (Compose v2 honours `deploy.resources.limits` even outside Swarm.)
   # TODO(you): add a healthcheck so we know when GitLab is *actually* ready,
   # not just when the container started. Hint: HTTP GET /-/readiness on :80.
-  gitlab:
-    <<: *service-defaults
-    image: gitlab/gitlab-ce:17.5.2-ce.0
-    hostname: gitlab.local
-    environment:
-      GITLAB_OMNIBUS_CONFIG: |
-        external_url '${GITLAB_EXTERNAL_URL:-http://localhost:8080}'
-        gitlab_rails['gitlab_shell_ssh_port'] = 2222
-        # Turn off things we don't need locally to save RAM.
-        prometheus_monitoring['enable'] = false
-        alertmanager['enable'] = false
-        grafana['enable'] = false
-        puma['worker_processes'] = 2
-    ports:
-      - "8080:80"
-      - "2222:22"
-    volumes:
-      - gitlab-config:/etc/gitlab
-      - gitlab-logs:/var/log/gitlab
-      - gitlab-data:/var/opt/gitlab
-    shm_size: 256m
-    networks: [mlops]
-    deploy:
-      resources:
-        limits:
-          cpus: "2"
-          memory: "4G"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "${GITLAB_EXTERNAL_URL:-http://localhost:8080}/health-check"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
-      start_period: 5s
+  # gitlab:
+  #   <<: *service-defaults
+  #   image: gitlab/gitlab-ce:17.5.2-ce.0
+  #   hostname: gitlab.local
+  #   environment:
+  #     GITLAB_OMNIBUS_CONFIG: |
+  #       external_url '${GITLAB_EXTERNAL_URL:-http://localhost:8080}'
+  #       gitlab_rails['gitlab_shell_ssh_port'] = 2222
+  #       # Turn off things we don't need locally to save RAM.
+  #       prometheus_monitoring['enable'] = false
+  #       alertmanager['enable'] = false
+  #       grafana['enable'] = false
+  #       puma['worker_processes'] = 2
+  #   ports:
+  #     - "8080:80"
+  #     - "2222:22"
+  #   volumes:
+  #     - gitlab-config:/etc/gitlab
+  #     - gitlab-logs:/var/log/gitlab
+  #     - gitlab-data:/var/opt/gitlab
+  #   shm_size: 256m
+  #   networks: [mlops]
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         cpus: "2"
+  #         memory: "4G"
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "${GITLAB_EXTERNAL_URL:-http://localhost:8080}/health-check"]
+  #     interval: 10s
+  #     timeout: 10s
+  #     retries: 5
+  #     start_period: 5s
 
 
   # ---------------------------------------------------------------------------
@@ -97,16 +97,9 @@ services:
   # Acceptable for local-only learning; never for shared infra. When you move
   # to k8s, switch the executor from `docker` to `kubernetes` (each job gets
   # its own pod) and delete this volume.
-  # TODO(you): `depends_on: [gitlab]` only waits for the *container* to start,
-  # not for GitLab's HTTP API. Once you add the healthcheck on `gitlab`, change
-  # this to:
-  #   depends_on:
-  #     gitlab:
-  #       condition: service_healthy
   gitlab-runner:
     <<: *service-defaults
     image: gitlab/gitlab-runner:v17.5.2
-    depends_on: [gitlab]
     volumes:
       - gitlab-runner-config:/etc/gitlab-runner
       - /var/run/docker.sock:/var/run/docker.sock
@@ -225,7 +218,7 @@ services:
   #     retries: 5
   #     start_period: 30s ✅
   # TODO(you): set sane resource limits. Without them, a runaway training run
-  # in this container can starve Prometheus + Grafana of CPU.
+  # in this container can starve Prometheus + Grafana of CPU. ✅
   ml-app:
     <<: *service-defaults
     build:
