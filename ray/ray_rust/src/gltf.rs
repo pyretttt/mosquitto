@@ -46,7 +46,7 @@ pub struct Mesh {
 
 pub struct MeshPrimitive {
     pub attributes: HashMap<String, usize>,
-    pub indices: Option<Rc<>,
+    pub indices: Option<usize>,
     pub material: usize,
     pub mode: u32,
 }
@@ -81,20 +81,32 @@ pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
 }
 
 pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>, wgpu::Error> {
-    let mut buffers = Vec::<wgpu::Buffer>::new();
+    let mut buffers = Vec::<Rc<wgpu::Buffer>>::new();
     buffers.reserve(gltf.buffers.len());
 
-    let mut textures = Vec::<TextureInfo>::new();
-    textures.reserve(gltf.textures.len());
 
-    for mesh in gltf.document.meshes() {
-        mesh.primitives().map(|primitive| {
-            let mode = map_gltf_mesh_mode(&primitive.mode());
-            // let indices =
+    gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
+        mesh.primitives().for_each(|primitive| {
+            if let Some(indices) = primitive.indices()
+                    && let Some(buffer_view) = indices.view() {
+                let buffer_index = buffer_view.buffer().index();
 
-        }.collect::<Vec<_>>();
-    }
+                if buffers.get(buffer_index).is_some() {
+                     return;
+                }
+                let buffer_data = &gltf.buffers[buffer_index];
 
+                let wgpu_index_buffer = Rc::new(device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                    label: Some(&format!("IndexBuffer({})", buffer_index)),
+                    contents: buffer_data.0.as_slice(),
+                    usage: wgpu::BufferUsages::INDEX,
+                }));
+
+                buffers.insert(buffer_index, wgpu_index_buffer);
+            }
+        });
+
+    });
 
     Ok(vec![])
 }
