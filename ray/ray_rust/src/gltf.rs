@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::rc::Rc;
 use std::collections::HashMap;
+use wgpu::util::DeviceExt;
 
 #[derive(Debug)]
 pub struct GLTF {
@@ -45,13 +46,13 @@ pub struct Mesh {
 
 pub struct MeshPrimitive {
     pub attributes: HashMap<String, usize>,
-    pub indices: usize,
+    pub indices: Option<Rc<>,
     pub material: usize,
     pub mode: u32,
 }
 
 pub struct BufferView {
-    pub buffer: Rc<gltf::buffer::Data>,
+    pub buffer: Rc<wgpu::Buffer>,
     pub byte_offset: usize,
     pub byte_length: usize,
     pub byte_stride: usize,
@@ -68,8 +69,43 @@ pub struct Accessor {
     pub min: Option<Vec<f32>>,
 }
 
+pub struct TextureInfo {
+    pub texture: wgpu::Texture,
+    pub view: wgpu::TextureView,
+    pub sampler: wgpu::Sampler,
+}
+
 pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
     let (document, buffers, textures) = gltf::import(path)?;
-    document.meshes().map(|x| x.primitives().map(|x: gltf::Primitive<'_>| x.indices))
     Ok(GLTF { document, buffers, textures })
+}
+
+pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>, wgpu::Error> {
+    let mut buffers = Vec::<wgpu::Buffer>::new();
+    buffers.reserve(gltf.buffers.len());
+
+    let mut textures = Vec::<TextureInfo>::new();
+    textures.reserve(gltf.textures.len());
+
+    for mesh in gltf.document.meshes() {
+        mesh.primitives().map(|primitive| {
+            let mode = map_gltf_mesh_mode(&primitive.mode());
+            // let indices =
+
+        }.collect::<Vec<_>>();
+    }
+
+
+    Ok(vec![])
+}
+
+fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
+    match mode {
+        gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
+        gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
+        gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
+        gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
+        gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
+        _ => panic!("Unsupported primitive mode: {:?}", mode),
+    }
 }
