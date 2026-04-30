@@ -1,0 +1,40 @@
+# Generic "client + server + netshoot" lab.
+# Use as a default playground when a week doesn't bring its own stack.
+#
+#   docker compose up -d
+#   docker compose exec client curl -v http://server/
+#   docker compose exec debug tcpdump -ni eth0 -w /tmp/cap.pcap
+#
+# Server is plain nginx serving the default page. Replace with whatever you need.
+
+services:
+  server:
+    image: nginx:1.27-alpine
+    container_name: net-server
+    networks:
+      lab:
+        ipv4_address: 10.10.0.10
+
+  client:
+    image: nicolaka/netshoot
+    container_name: net-client
+    command: sleep infinity
+    networks:
+      lab:
+        ipv4_address: 10.10.0.20
+
+  debug:
+    image: nicolaka/netshoot
+    container_name: net-debug
+    network_mode: "service:server"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    command: sleep infinity
+
+networks:
+  lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.0.0/24

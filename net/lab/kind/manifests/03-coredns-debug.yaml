@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dns-debug
+  labels: { app: dns-debug }
+spec:
+  containers:
+    - name: net
+      image: nicolaka/netshoot
+      command: ["sleep", "infinity"]
+      securityContext:
+        capabilities:
+          add: [NET_ADMIN, NET_RAW]

@@ -1,0 +1,28 @@
+# Multi-node kind cluster with kindnet disabled so we can install Cilium.
+# 1 control plane + 2 workers gives us realistic cross-node pod-to-pod paths.
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: net-lab
+networking:
+  disableDefaultCNI: true
+  kubeProxyMode: "none"
+  podSubnet: "10.244.0.0/16"
+  serviceSubnet: "10.96.0.0/16"
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 8080
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 8443
+        protocol: TCP
+  - role: worker
+  - role: worker

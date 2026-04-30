@@ -1,0 +1,6 @@
+name             = "net-lab"
+region           = "eu-central-1"
+owner            = "your-name"
+vpc_cidr         = "10.50.0.0/16"
+enable_nat_gw    = true
+enable_flow_logs = true

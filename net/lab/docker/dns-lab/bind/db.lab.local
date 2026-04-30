@@ -1,0 +1,18 @@
+$TTL    60
+@       IN      SOA     ns1.lab.local. admin.lab.local. (
+                            2026043001  ; serial
+                            3600        ; refresh
+                            900         ; retry
+                            604800      ; expire
+                            60 )        ; minimum TTL
+@       IN      NS      ns1.lab.local.
+
+ns1     IN      A       10.20.0.10
+www     IN      A       10.20.0.100
+api     IN      A       10.20.0.101
+db      IN      A       10.20.0.102
+api6    IN      AAAA    fd00::1
+mail    IN      MX      10 mx1.lab.local.
+mx1     IN      A       10.20.0.103
+_spf    IN      TXT     "v=spf1 -all"
+short   IN      CNAME   www.lab.local.

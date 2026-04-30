@@ -1,0 +1,34 @@
+# ingress-nginx: install with helm before applying this Ingress.
+#
+#   helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+#   helm install ingress-nginx ingress-nginx/ingress-nginx \
+#     --namespace ingress-nginx --create-namespace \
+#     --set controller.hostNetwork=true \
+#     --set controller.kind=DaemonSet \
+#     --set controller.service.type=NodePort \
+#     --set controller.nodeSelector."ingress-ready"=true \
+#     --set controller.tolerations[0].key=node-role.kubernetes.io/control-plane \
+#     --set controller.tolerations[0].operator=Equal \
+#     --set controller.tolerations[0].effect=NoSchedule
+#
+# Then this Ingress will publish backend at http://localhost:8080/
+# (kind maps host 8080 -> control-plane container 80, ingress-nginx listens there).
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 80

@@ -1,0 +1,56 @@
+# DNS lab for W4.
+#
+# Topology:
+#   - bind9 authoritative for "lab.local"
+#   - resolver: unbound recursive resolver pointing at bind9 for lab.local
+#   - client: netshoot, ask the resolver
+#
+#   docker compose up -d
+#   docker compose exec client dig @10.20.0.20 www.lab.local
+#   docker compose exec client dig @10.20.0.20 +trace www.lab.local
+#   docker compose exec debug tcpdump -ni eth0 -w /tmp/dns.pcap port 53
+
+services:
+  authoritative:
+    image: ubuntu/bind9:latest
+    container_name: dns-auth
+    volumes:
+      - ./bind/named.conf:/etc/bind/named.conf:ro
+      - ./bind/db.lab.local:/etc/bind/db.lab.local:ro
+    networks:
+      dns-lab:
+        ipv4_address: 10.20.0.10
+
+  resolver:
+    image: mvance/unbound:latest
+    container_name: dns-resolver
+    volumes:
+      - ./unbound/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
+    networks:
+      dns-lab:
+        ipv4_address: 10.20.0.20
+    depends_on:
+      - authoritative
+
+  client:
+    image: nicolaka/netshoot
+    container_name: dns-client
+    command: sleep infinity
+    dns:
+      - 10.20.0.20
+    networks:
+      dns-lab:
+        ipv4_address: 10.20.0.30
+
+  debug:
+    image: nicolaka/netshoot
+    network_mode: "service:resolver"
+    cap_add: [NET_ADMIN, NET_RAW]
+    command: sleep infinity
+
+networks:
+  dns-lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.20.0.0/24

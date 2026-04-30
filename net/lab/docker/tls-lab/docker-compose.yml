@@ -1,0 +1,41 @@
+# TLS lab for W12.
+#
+#   ./gen-certs.sh
+#   docker compose up -d
+#   docker compose exec client openssl s_client -connect server.lab.local:443 -servername server.lab.local -showcerts
+#   docker compose exec client curl --cacert /certs/ca.crt --resolve server.lab.local:443:10.30.0.10 https://server.lab.local/
+#   docker compose exec debug tcpdump -ni eth0 -w /tmp/tls.pcap port 443
+
+services:
+  server:
+    image: nginx:1.27-alpine
+    container_name: tls-server
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    networks:
+      tls-lab:
+        ipv4_address: 10.30.0.10
+
+  client:
+    image: nicolaka/netshoot
+    container_name: tls-client
+    command: sleep infinity
+    volumes:
+      - ./certs:/certs:ro
+    networks:
+      tls-lab:
+        ipv4_address: 10.30.0.20
+
+  debug:
+    image: nicolaka/netshoot
+    network_mode: "service:server"
+    cap_add: [NET_ADMIN, NET_RAW]
+    command: sleep infinity
+
+networks:
+  tls-lab:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.30.0.0/24

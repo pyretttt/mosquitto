@@ -1,0 +1,51 @@
+# Per-week notes - uncomment if you want to commit them
+**/notes.md
+
+# pcap captures (often big, sometimes contain secrets)
+*.pcap
+*.pcapng
+**/captures/*
+
+# Terraform
+**/.terraform/
+**/.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Secrets / keys
+*.pem
+*.key
+*.crt
+!**/tls-lab/**/*.crt
+!**/tls-lab/**/*.key
+*.priv
+.env
+.env.*
+
+# Editor
+.DS_Store
+.idea/
+*.swp
+*.swo
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+
+# kind/k3d
+kubeconfig
+kubeconfig-*
+
+# Wireshark
+*.pcap.gz
+
+# Keep .gitkeep
+!.gitkeep
