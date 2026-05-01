@@ -28,6 +28,12 @@ volumes:
   gitlab-logs:
   gitlab-data:
   gitlab-runner-config:
+  # Sibling-dind state. The CA volume is informational; the client volume is
+  # the one the runner mounts read-only to talk to the sibling daemon.
+  gitlab-runner-dind-certs-ca:
+  gitlab-runner-dind-certs-client:
+  # Persisting /var/lib/docker on the sibling so image pulls survive restarts.
+  gitlab-runner-dind-storage:
   mlflow-artifacts:
   mlflow-db:
   prometheus-data:
@@ -90,19 +96,54 @@ services:
 
 
   # ---------------------------------------------------------------------------
-  # GitLab Runner — executes CI jobs. Registered manually (see scripts/register-runner.sh).
-  # Docker-in-Docker via the host daemon (simple, not prod-safe).
+  # Sibling Docker daemon for the GitLab Runner.
+  # Replaces the host /var/run/docker.sock mount: CI jobs are spawned inside
+  # THIS container's daemon, so a compromised job can no longer root your host.
+  # `privileged: true` is unavoidable for any nested dockerd, but the blast
+  # radius is now scoped to this single service (and its volumes).
+  # When you eventually move to k8s, delete this service entirely and switch
+  # the runner's executor to `kubernetes` (see docs/K8S_MIGRATION.md).
   # ---------------------------------------------------------------------------
-  # TODO(you): the docker.sock mount means any pipeline job can root the host.
-  # Acceptable for local-only learning; never for shared infra. When you move
-  # to k8s, switch the executor from `docker` to `kubernetes` (each job gets
-  # its own pod) and delete this volume.
+  gitlab-runner-dind:
+    <<: *service-defaults
+    image: docker:27-dind
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - gitlab-runner-dind-certs-ca:/certs/ca
+      - gitlab-runner-dind-certs-client:/certs/client
+      - gitlab-runner-dind-storage:/var/lib/docker
+    networks: [mlops]
+    healthcheck:
+      # `docker info` hits the sibling's local unix socket; if dockerd hasn't
+      # finished initialising, this fails until the TLS certs are written and
+      # the daemon is listening. Gives the runner a clean readiness signal.
+      test: ["CMD", "docker", "info"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # ---------------------------------------------------------------------------
+  # GitLab Runner — executes CI jobs. Registered manually (see scripts/register-runner.sh).
+  # Talks to gitlab-runner-dind over TCP+TLS instead of mounting the host socket.
+  # ---------------------------------------------------------------------------
   gitlab-runner:
     <<: *service-defaults
     image: gitlab/gitlab-runner:v17.5.2
+    depends_on:
+      gitlab-runner-dind:
+        condition: service_healthy
+    environment:
+      # The docker client library inside gitlab-runner picks these up
+      # automatically, so the executor connects to the sibling daemon.
+      DOCKER_HOST: tcp://gitlab-runner-dind:2376
+      DOCKER_TLS_VERIFY: "1"
+      DOCKER_CERT_PATH: /certs/client
     volumes:
       - gitlab-runner-config:/etc/gitlab-runner
-      - /var/run/docker.sock:/var/run/docker.sock
+      - gitlab-runner-dind-certs-client:/certs/client:ro
     networks: [mlops]
 
 

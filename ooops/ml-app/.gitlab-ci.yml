@@ -45,10 +45,13 @@ train:
   stage: train
   # TODO(you): replace this with a proper MLflow service or point at the
   # shared MLflow server via MLFLOW_TRACKING_URI (set in GitLab CI/CD Variables).
-  # For now we use a local file-store so the job is self-contained.
+  # For now we use a local file-store so the job is self-contained. ✅
+  # Added configured CI/CD variables. MLFlow is reached through `host.docker.internal`
   variables:
-    MLFLOW_TRACKING_URI: "file:./mlruns"
+    MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
     MLFLOW_EXPERIMENT_NAME: "iris-classifier-ci"
+    MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+    MLFLOW_TRACKING_PASSWORD: ${MLFLOW_TRACKING_PASSWORD}
   script:
     - python -m src.train
   artifacts:
@@ -56,23 +59,35 @@ train:
       - mlruns/
     expire_in: 1 week
 
-# Build + push to GitLab Container Registry. Requires Docker-in-Docker.
+# Build + push to GitLab Container Registry using Kaniko.
+# No Docker-in-Docker: Kaniko builds OCI images in userspace, no daemon, no
+# privileged caps, no socket mounts. The runner pulls this image and runs
+# /kaniko/executor as the job — a single container, no sidecar service.
+#
 # TODO(you):
 #   1. Enable the Container Registry for your project in GitLab.
-#   2. Swap `docker login` for `CI_REGISTRY_USER`/`CI_REGISTRY_PASSWORD`
-#      (already exposed by GitLab; uncomment below).
+#   2. Uncomment the `--destination` push line once the registry is set up;
+#      drop `--no-push` to actually publish.
 build:
   stage: build
-  image: docker:27
-  services:
-    - docker:27-dind
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
   variables:
-    DOCKER_TLS_CERTDIR: "/certs"
     IMAGE: "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA"
   before_script: []
   script:
-    # - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
-    - docker build -t "$IMAGE" .
-    # - docker push "$IMAGE"
+    - mkdir -p /kaniko/.docker
+    - |
+      printf '{"auths":{"%s":{"auth":"%s"}}}' \
+        "$CI_REGISTRY" \
+        "$(printf '%s:%s' "$CI_REGISTRY_USER" "$CI_REGISTRY_PASSWORD" | base64 | tr -d '\n')" \
+        > /kaniko/.docker/config.json
+    - /kaniko/executor
+        --context "$CI_PROJECT_DIR"
+        --dockerfile "$CI_PROJECT_DIR/Dockerfile"
+        --destination "$IMAGE"
+        --no-push
+    # Once the registry is enabled, drop --no-push above and Kaniko will publish.
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
