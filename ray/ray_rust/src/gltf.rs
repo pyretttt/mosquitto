@@ -12,10 +12,12 @@ pub struct GLTF {
     pub textures: Vec<gltf::image::Data>,
 }
 
+#[derive(Clone)]
 pub struct Scene {
     pub nodes: Vec<Rc<Node>>,
 }
 
+#[derive(Clone)]
 pub struct Node {
     pub children: Vec<Rc<Node>>,
     pub transform: cgmath::Matrix4<f32>,
@@ -23,11 +25,13 @@ pub struct Node {
     pub mesh: Option<Rc<Mesh>>,
 }
 
+#[derive(Clone)]
 pub enum Camera {
     Perspective(PerspectiveCamera),
     Orthographic(OrthographicCamera),
 }
 
+#[derive(Clone)]
 pub struct PerspectiveCamera {
     pub fovy: f32,
     pub aspect: f32,
@@ -35,6 +39,7 @@ pub struct PerspectiveCamera {
     pub zfar: f32,
 }
 
+#[derive(Clone)]
 pub struct OrthographicCamera {
     pub xmag: f32,
     pub ymag: f32,
@@ -42,23 +47,28 @@ pub struct OrthographicCamera {
     pub zfar: f32,
 }
 
+#[derive(Clone)]
 pub struct Mesh {
     pub primitives: Vec<MeshPrimitive>,
 }
 
+#[derive(Clone)]
 pub struct MeshPrimitive {
-    pub attributes: HashMap<String, usize>,
-    pub indices: Option<usize>,
-    pub material: usize,
-    pub mode: u32,
+    pub attributes: HashMap<gltf::Semantic, GpuAccessor>,
+    pub indices: Option<GpuAccessor>,
+    pub material: Option<usize>,
+    pub mode: gltf::mesh::Mode,
 }
 
+#[derive(Clone)]
 pub struct GpuBufferView {
     pub buf: wgpu::Buffer,            // dedup target; Arc-shared internally
     pub offset: wgpu::BufferAddress,  // view.offset() — within source blob
     pub length: wgpu::BufferAddress,  // view.length()
     pub byte_stride: Option<u32>,     // view.stride(); None = tightly packed
 }
+
+#[derive(Clone)]
 pub struct GpuAccessor {
     pub view: GpuBufferView,
     pub offset: wgpu::BufferAddress,  // accessor.offset() — RELATIVE to view start
@@ -67,6 +77,8 @@ pub struct GpuAccessor {
     pub dimensions: Dimensions,       // Scalar/Vec2/Vec3/Vec4/Mat*
 }
 
+
+#[derive(Clone)]
 pub struct TextureInfo {
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
@@ -138,7 +150,33 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
         };
         accessors.insert(accessor.index(), gpu_accessor);
     });
-    
+
+    let mut meshes: Vec<Mesh> = gltf.document.meshes().map(|mesh| {
+        let primitives = mesh.primitives().map(|primitive| {
+            MeshPrimitive {
+                attributes: primitive.attributes().map(|(semantic, attribute_accessor)| {
+                    (semantic, accessors.get(&attribute_accessor.index()).expect("Accessor not found").clone())
+                }).collect::<HashMap<_, _>>(),
+                indices: primitive.indices().map(|indices_accessor|
+                    accessors.get(&indices_accessor.index()).expect("Accessor not found").clone()
+                ),
+                material: primitive.material().index(),
+                mode: primitive.mode(),
+            }
+        }).collect::<Vec<_>>();
+        Mesh {
+            primitives: primitives,
+        }
+    }).collect::<Vec<_>>();
+
+    let nodes = gltf.document.nodes().map(|node| {
+        
+    });
+
+    let scene = Scene {
+
+    }
+
     Ok(vec![])
 }
 
