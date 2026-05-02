@@ -108,6 +108,9 @@ services:
     <<: *service-defaults
     image: docker:27-dind
     privileged: true
+    # DinD TLS certs are generated from $(hostname); match Compose DNS name gitlab-runner-dind.
+    # If TLS fails after changing this, delete volumes gitlab-runner-dind-certs-* once so certs regenerate.
+    hostname: gitlab-runner-dind
     environment:
       DOCKER_TLS_CERTDIR: /certs
     volumes:
@@ -127,7 +130,7 @@ services:
 
   # ---------------------------------------------------------------------------
   # GitLab Runner — executes CI jobs. Registered manually (see scripts/register-runner.sh).
-  # Talks to gitlab-runner-dind over TCP+TLS instead of mounting the host socket.
+  # Talks to gitlab-runner-dind over TCP+TLS (hostname on DinD matches this DNS name).
   # ---------------------------------------------------------------------------
   gitlab-runner:
     <<: *service-defaults
@@ -136,8 +139,6 @@ services:
       gitlab-runner-dind:
         condition: service_healthy
     environment:
-      # The docker client library inside gitlab-runner picks these up
-      # automatically, so the executor connects to the sibling daemon.
       DOCKER_HOST: tcp://gitlab-runner-dind:2376
       DOCKER_TLS_VERIFY: "1"
       DOCKER_CERT_PATH: /certs/client
