@@ -169,9 +169,25 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
         }
     }).collect::<Vec<_>>();
 
-    let nodes = gltf.document.nodes().map(|node| {
-        
-    });
+
+    let mut nodes = gltf.document.nodes().map(|node| {
+        Node {
+            children: vec![],
+            transform: match node.transform() {
+                gltf::scene::Transform::Matrix { matrix } => cgmath::Matrix4::from_cols(
+                    cgmath::Vector4::new(matrix[0], matrix[1], matrix[2], matrix[3]),
+                    cgmath::Vector4::new(matrix[4], matrix[5], matrix[6], matrix[7]),
+                    cgmath::Vector4::new(matrix[8], matrix[9], matrix[10], matrix[11]),
+                    cgmath::Vector4::new(matrix[12], matrix[13], matrix[14], matrix[15]),
+                ),
+                gltf::scene::Transform::Decomposed { translation, rotation, scale } => {
+                    cgmath::Matrix4::from_translation(translation)
+                        * cgmath::Matrix4::from(rotation)
+                        * cgmath::Matrix4::from_scale(scale)
+                },
+            },
+        }
+    }).collect::<Vec<_>>();
 
     let scene = Scene {
 
