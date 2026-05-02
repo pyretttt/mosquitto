@@ -33,7 +33,7 @@ fi
 # Either (a) detect existing registration and skip, or (b) `gitlab-runner unregister --all-runners` first.
 # Bonus: store the resulting runner token in a docker volume so re-registration after a wipe is trivial. ✅
 
-docker compose exec -T gitlab-runner gitlab-runner unregister --all-runners --no-interactive
+docker compose exec -T gitlab-runner gitlab-runner unregister --all-runners
 docker compose exec -T gitlab-runner \
   gitlab-runner register \
     --non-interactive \
@@ -42,16 +42,14 @@ docker compose exec -T gitlab-runner \
     --executor docker \
     --docker-image "gcr.io/kaniko-project/executor:debug" \
     --description "local-kaniko-runner" \
-    --tag-list "kaniko,local,docker" \
-    --run-untagged="true" \
-    --locked="false"
+
 
 # TODO(you) #3 — verification.
 # The command above can succeed even when the runner can't actually reach
 # GitLab (wrong URL, firewall, etc.). After registration, poll
 # `docker compose exec gitlab-runner gitlab-runner verify` and assert all
 # runners are alive. Fail the script if any are not. ✅
-docker compose exec -T gitlab-runner gitlab-runner verify --no-interactive
+docker compose exec -T gitlab-runner gitlab-runner verify
 
 
 echo "Runner registered. Verify in GitLab Admin Area -> Runners."
