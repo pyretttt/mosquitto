@@ -41,7 +41,8 @@ docker compose exec -T gitlab-runner \
     --token "$GITLAB_RUNNER_TOKEN" \
     --executor docker \
     --docker-image "gcr.io/kaniko-project/executor:debug" \
-    --description "local-kaniko-runner" \
+    --description "local-dind-runner" \
+    --docker-extra-hosts "host.docker.internal:host-gateway"
 
 
 # TODO(you) #3 — verification.

@@ -20,7 +20,7 @@ Roughly ordered easiest → hardest. Tick them off as you go.
 - [x] Test `/health` (200 ready, 503 not ready).
 - [x] Test `/metrics` returns Prometheus exposition format and contains your custom counter name *after* a `/predict` call.
 - [x] Test `/predict` rejects wrong feature count → 422, non-numeric → 422.
-- [ ] Add a real training test: spin up MLflow with `MLFLOW_TRACKING_URI=file:./mlruns`, run `train()`, assert a model version was registered.
+- [x] Add a real training test: spin up MLflow with `MLFLOW_TRACKING_URI=file:./mlruns`, run `train()`, assert a model version was registered.
 
 ## Boot/runtime
 

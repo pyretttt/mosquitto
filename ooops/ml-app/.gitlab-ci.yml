@@ -48,16 +48,10 @@ train:
   # For now we use a local file-store so the job is self-contained. ✅
   # Added configured CI/CD variables. MLFlow is reached through `host.docker.internal`
   variables:
-    MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
     MLFLOW_EXPERIMENT_NAME: "iris-classifier-ci"
-    MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
-    MLFLOW_TRACKING_PASSWORD: ${MLFLOW_TRACKING_PASSWORD}
   script:
+    - python -c "import os; print('MLFLOW_TRACKING_URI=', os.getenv('MLFLOW_TRACKING_URI'))"
     - python -m src.train
-  artifacts:
-    paths:
-      - mlruns/
-    expire_in: 1 week
 
 # Build + push to GitLab Container Registry using Kaniko.
 # No Docker-in-Docker: Kaniko builds OCI images in userspace, no daemon, no
