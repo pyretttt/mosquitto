@@ -1,8 +1,11 @@
 use std::path::Path;
 use std::rc::Rc;
+use std::rc::Weak;
+use std::cell::RefCell;
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 use gltf::accessor::{DataType, Dimensions};
+use cgmath::Matrix;
 
 
 #[derive(Debug)]
@@ -14,15 +17,16 @@ pub struct GLTF {
 
 #[derive(Clone)]
 pub struct Scene {
-    pub nodes: Vec<Rc<Node>>,
+    pub nodes: Vec<Rc<RefCell<Node>>>,
 }
 
 #[derive(Clone)]
 pub struct Node {
-    pub children: Vec<Rc<Node>>,
+    pub children: Vec<Rc<RefCell<Node>>>,
     pub transform: cgmath::Matrix4<f32>,
     pub camera: Option<Rc<Camera>>,
     pub mesh: Option<Rc<Mesh>>,
+    pub parent: Option<Weak<RefCell<Node>>>,
 }
 
 #[derive(Clone)]
@@ -34,7 +38,7 @@ pub enum Camera {
 #[derive(Clone)]
 pub struct PerspectiveCamera {
     pub fovy: f32,
-    pub aspect: f32,
+    pub aspect: Option<f32>,
     pub znear: f32,
     pub zfar: f32,
 }
@@ -151,7 +155,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
         accessors.insert(accessor.index(), gpu_accessor);
     });
 
-    let mut meshes: Vec<Mesh> = gltf.document.meshes().map(|mesh| {
+    let mut meshes: Vec<Rc<Mesh>> = gltf.document.meshes().map(|mesh| {
         let primitives = mesh.primitives().map(|primitive| {
             MeshPrimitive {
                 attributes: primitive.attributes().map(|(semantic, attribute_accessor)| {
@@ -164,36 +168,79 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
                 mode: primitive.mode(),
             }
         }).collect::<Vec<_>>();
-        Mesh {
+        Rc::new(Mesh {
             primitives: primitives,
-        }
+        })
     }).collect::<Vec<_>>();
 
 
-    let mut nodes = gltf.document.nodes().map(|node| {
-        Node {
+    let nodes = gltf.document.nodes().map(|node| {
+        Rc::new(RefCell::new(Node {
             children: vec![],
             transform: match node.transform() {
                 gltf::scene::Transform::Matrix { matrix } => cgmath::Matrix4::from_cols(
-                    cgmath::Vector4::new(matrix[0], matrix[1], matrix[2], matrix[3]),
-                    cgmath::Vector4::new(matrix[4], matrix[5], matrix[6], matrix[7]),
-                    cgmath::Vector4::new(matrix[8], matrix[9], matrix[10], matrix[11]),
-                    cgmath::Vector4::new(matrix[12], matrix[13], matrix[14], matrix[15]),
-                ),
+                    cgmath::Vector4::from(matrix[0]),
+                    cgmath::Vector4::from(matrix[1]),
+                    cgmath::Vector4::from(matrix[2]),
+                    cgmath::Vector4::from(matrix[3]),
+                ).transpose(),
                 gltf::scene::Transform::Decomposed { translation, rotation, scale } => {
-                    cgmath::Matrix4::from_translation(translation)
-                        * cgmath::Matrix4::from(rotation)
-                        * cgmath::Matrix4::from_scale(scale)
+                    let q = cgmath::Quaternion::new(rotation[3], rotation[0], rotation[1], rotation[2]);
+                    cgmath::Matrix4::from_translation(cgmath::Vector3::from(translation))
+                        * cgmath::Matrix4::from(q)
+                        * cgmath::Matrix4::from_nonuniform_scale(scale[0], scale[1], scale[2])
                 },
             },
+            camera: match node.camera() {
+                Some(camera) => {
+                    match camera.projection() {
+                        gltf::camera::Projection::Perspective(perspective) => {
+                            Some(Rc::new(Camera::Perspective(PerspectiveCamera {
+                                fovy: perspective.yfov(),
+                                aspect: perspective.aspect_ratio(),
+                                znear: perspective.znear(),
+                                zfar: perspective.zfar().unwrap_or(f32::INFINITY),
+                            })))
+                        }
+                        gltf::camera::Projection::Orthographic(orthographic) => {
+                            Some(Rc::new(Camera::Orthographic(OrthographicCamera {
+                                xmag: orthographic.xmag(),
+                                ymag: orthographic.ymag(),
+                                znear: orthographic.znear(),
+                                zfar: orthographic.zfar(),
+                            })))
+                        }
+                    }
+                },
+                None => None,
+            },
+            mesh: match node.mesh() {
+                Some(mesh) => Some(Rc::clone(meshes.get(mesh.index()).expect("Mesh not found"))),
+                None => None,
+            },
+            parent: None
+        }))
+    }).collect::<Vec<_>>();
+
+    gltf.document.nodes().enumerate().for_each(|(index, node)| {
+        let parent = nodes.get(index).expect("Node not found");
+
+        node.children().for_each(|child| {
+            let child_node = nodes.get(child.index()).expect("Node not found");
+            child_node.borrow_mut().parent = Some(Rc::downgrade(parent));
+            parent.borrow_mut().children.push(Rc::clone(child_node));
+        })
+    });
+
+    let scenes = gltf.document.scenes().map(|scene| {
+        Scene {
+            nodes: scene.nodes().map(|node| {
+                Rc::clone(nodes.get(node.index()).expect("Node not found"))
+            }).collect::<Vec<_>>()
         }
     }).collect::<Vec<_>>();
 
-    let scene = Scene {
-
-    }
-
-    Ok(vec![])
+    Ok(scenes)
 }
 
 fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
