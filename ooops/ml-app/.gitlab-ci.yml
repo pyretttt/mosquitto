@@ -14,6 +14,7 @@ stages:
   - test
   - train
   - build
+  - deploy
 
 # Shared defaults.
 default:
@@ -50,7 +51,6 @@ train:
   variables:
     MLFLOW_EXPERIMENT_NAME: "iris-classifier-ci"
   script:
-    - python -c "import os; print('MLFLOW_TRACKING_URI=', os.getenv('MLFLOW_TRACKING_URI'))"
     - python -m src.train
 
 # Build + push to GitLab Container Registry using Kaniko.
@@ -85,3 +85,9 @@ build:
     # Once the registry is enabled, drop --no-push above and Kaniko will publish.
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+
+deploy:
+  stage: deploy
+  script:
+    - "curl -X GET -H \"Authorization: Bearer ${ML_APP_ADMIN_TOKEN}\" ${ML_APP_HOST}/admin/reload_model"

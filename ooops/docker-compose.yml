@@ -275,7 +275,7 @@ services:
       MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-iris-classifier}
       ML_MODEL_NAME: ${ML_MODEL_NAME:-iris-classifier}
       ML_MODEL_STAGE: ${ML_MODEL_STAGE:-None}
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-admin}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-mlapp-admin}
       MLFLOW_TRACKING_USERNAME: ${MLFLOW_TRACKING_USERNAME:-admin}
       MLFLOW_TRACKING_PASSWORD: ${MLFLOW_TRACKING_PASSWORD:-adminpassword}
     networks: [mlops]

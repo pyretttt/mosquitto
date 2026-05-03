@@ -19,14 +19,14 @@ if [ -z "$GITLAB_RUNNER_TOKEN" ]; then
   exit 1
 fi
 
-# NOTE: no more --docker-network-mode.
-# Job containers are now spawned by the sibling `gitlab-runner-dind` daemon
-# (see docker-compose.yml), which has its own bridge network and cannot see
-# the host's `mlops_mlops`. Pinning a host-side network name here would just
-# fail at job-create time. Jobs reach gitlab.com via the sibling's default
-# bridge — that's all the current pipelines need. If a future job needs to
-# reach mlflow / ml-app directly, expose them on host ports and use
-# host.docker.internal, or move to the kubernetes executor (docs/K8S_MIGRATION.md).
+# Job containers are spawned by the sibling `gitlab-runner-dind` daemon (see
+# docker-compose.yml). In that nested daemon, `host-gateway` points at the
+# inner Docker bridge, not Docker Desktop's host gateway, so `host.docker.internal`
+# would resolve to a dead end from CI jobs.
+#
+# `--docker-network-mode host` makes job containers share the DinD container's
+# network namespace. That lets jobs resolve compose services like `mlflow:5000`
+# through the outer `mlops` network without mounting the host Docker socket.
 
 # TODO(you) #2 — not idempotent.
 # Re-running this command registers a *second* runner with the same name.
@@ -40,9 +40,9 @@ docker compose exec -T gitlab-runner \
     --url "$GITLAB_URL" \
     --token "$GITLAB_RUNNER_TOKEN" \
     --executor docker \
-    --docker-image "gcr.io/kaniko-project/executor:debug" \
+    --docker-image "gcr.io/kaniko-project/executor:debug" \ # default image
     --description "local-dind-runner" \
-    --docker-extra-hosts "host.docker.internal:host-gateway"
+    --docker-network-mode "host" # will run in network namespace of the dind container
 
 
 # TODO(you) #3 — verification.
