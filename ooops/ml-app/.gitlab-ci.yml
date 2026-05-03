@@ -88,6 +88,8 @@ build:
 
 
 deploy:
+  image: alpine:3.23.4
   stage: deploy
+  before_script: []
   script:
     - "curl -X GET -H \"Authorization: Bearer ${ML_APP_ADMIN_TOKEN}\" ${ML_APP_HOST}/admin/reload_model"

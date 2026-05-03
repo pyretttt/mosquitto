@@ -40,7 +40,7 @@ docker compose exec -T gitlab-runner \
     --url "$GITLAB_URL" \
     --token "$GITLAB_RUNNER_TOKEN" \
     --executor docker \
-    --docker-image "gcr.io/kaniko-project/executor:debug" \ # default image
+    --docker-image "gcr.io/kaniko-project/executor:debug" \
     --description "local-dind-runner" \
     --docker-network-mode "host" # will run in network namespace of the dind container
 
