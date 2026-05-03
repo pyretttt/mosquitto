@@ -99,15 +99,6 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
 
     gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
         mesh.primitives().for_each(|primitive| {
-            let Some(indices_accessor) = primitive.indices() else {
-                return;
-            };
-            let Some(index_buffer_view) = indices_accessor.view() else {
-                return;
-            };
-            *buffers_usages.entry(index_buffer_view.index())
-                .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::INDEX;
-
             primitive.attributes().for_each(|(_, attribute_accessor)| {
                 let Some(buffer_view) = attribute_accessor.view() else {
                     return;
@@ -115,6 +106,15 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
                 *buffers_usages.entry(buffer_view.buffer().index())
                     .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::VERTEX;
             });
+
+            let Some(indices_accessor) = primitive.indices() else {
+                return;
+            };
+            let Some(index_buffer_view) = indices_accessor.view() else {
+                return;
+            };
+            *buffers_usages.entry(index_buffer_view.buffer().index())
+                .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::INDEX;
         });
     });
 
@@ -123,15 +123,18 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
         let buffer_index = buffer.index();
         if buffers.get(&buffer_index).is_some() { return; };
 
-        let buffer_usages = buffers_usages.get(&buffer_index).unwrap();
-        let buffer_data = &gltf.buffers[buffer_index];
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some(&format!("Buffer({})", buffer_index)),
-            contents: buffer_data.0.as_slice(),
-            usage: *buffer_usages,
-        });
+        if let Some(buffer_usages) = buffers_usages.get(&buffer_index) {
+            let buffer_data = &gltf.buffers[buffer_index];
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: Some(&format!("Buffer({})", buffer_index)),
+                contents: buffer_data.0.as_slice(),
+                usage: *buffer_usages,
+            });
 
-        buffers.insert(buffer_index, buffer);
+            buffers.insert(buffer_index, buffer);
+        } else {
+            println!("Buffer({}) not used", buffer_index);
+        }
     });
 
     let mut accessors: HashMap<usize, GpuAccessor> = HashMap::new();
@@ -155,7 +158,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
         accessors.insert(accessor.index(), gpu_accessor);
     });
 
-    let mut meshes: Vec<Rc<Mesh>> = gltf.document.meshes().map(|mesh| {
+    let meshes: Vec<Rc<Mesh>> = gltf.document.meshes().map(|mesh| {
         let primitives = mesh.primitives().map(|primitive| {
             MeshPrimitive {
                 attributes: primitive.attributes().map(|(semantic, attribute_accessor)| {
@@ -183,7 +186,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>
                     cgmath::Vector4::from(matrix[1]),
                     cgmath::Vector4::from(matrix[2]),
                     cgmath::Vector4::from(matrix[3]),
-                ).transpose(),
+                ),
                 gltf::scene::Transform::Decomposed { translation, rotation, scale } => {
                     let q = cgmath::Quaternion::new(rotation[3], rotation[0], rotation[1], rotation[2]);
                     cgmath::Matrix4::from_translation(cgmath::Vector3::from(translation))
