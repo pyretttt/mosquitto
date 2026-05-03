@@ -91,5 +91,6 @@ deploy:
   image: alpine/curl:8.17.0
   stage: deploy
   before_script: []
+  allow_failure: true
   script:
-    - "curl -X GET -H \"Authorization: Bearer ${ML_APP_ADMIN_TOKEN}\" ${ML_APP_HOST}/admin/reload_model"
+    - "curl -f -X GET -H \"Authorization: Bearer ${ML_APP_ADMIN_TOKEN}\" ${ML_APP_HOST}/admin/reload_model"
