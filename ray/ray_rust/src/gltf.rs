@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use wgpu::util::DeviceExt;
 use gltf::accessor::{DataType, Dimensions};
 use cgmath::Matrix;
-
+use wgpu::util::DeviceExt;
 
 #[derive(Debug)]
 pub struct GLTF {
@@ -89,12 +89,90 @@ pub struct TextureInfo {
     pub sampler: wgpu::Sampler,
 }
 
+#[derive(Clone)]
+pub struct Material {
+    pub name: String,
+    pub pbr_metallic_roughness: Option<PbrMetallicRoughness>,
+    pub normal_texture: Option<NormalTexture>,
+    pub occlusion_texture: Option<OcclusionTexture>,
+    pub emissive_texture: Option<EmissiveTexture>,
+    pub emissive_factor: [f32; 3],
+}
+
+#[derive(Clone)]
+pub struct PbrMetallicRoughness {
+    pub base_color_texture: Option<Rc<TextureInfo>>,
+    pub base_color_factor: [f32; 4],
+    pub base_color_tex_coord: usize,
+    pub metallic_factor: f32,
+    pub roughness_factor: f32,
+}
+
+#[derive(Clone)]
+pub struct NormalTexture {
+    pub scale: f32,
+    pub normal_texture: Option<Rc<TextureInfo>>,
+    pub tex_coord: usize,
+}
+
+#[derive(Clone)]
+pub struct OcclusionTexture {
+    pub strength: f32,
+    pub occlusion_texture: Option<Rc<TextureInfo>>,
+    pub tex_coord: usize,
+}
+
+#[derive(Clone)]
+pub struct EmissiveTexture {
+    pub emissive_texture: Option<Rc<TextureInfo>>,
+    pub tex_coord: usize,
+}
+
+
 pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
     let (document, buffers, textures) = gltf::import(path)?;
     Ok(GLTF { document, buffers, textures })
 }
 
 pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device) -> Result<Vec<Scene>, wgpu::Error> {
+    let mut textures: HashMap<usize, TextureInfo> = HashMap::new();
+    gltf.textures.iter().enumerate().map(|(index, texture)| {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            label: Some(&format!("Texture({})", index)),
+            size: wgpu::Extent3d {
+                width: texture.width,
+                height: texture.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        TextureInfo {
+            texture: texture,
+            view: texture_view,
+            sampler: device.create_sampler(&wgpu::SamplerDescriptor {
+                address_mode_u: wgpu::AddressMode::ClampToEdge,
+                address_mode_v: wgpu::AddressMode::ClampToEdge,
+                address_mode_w: wgpu::AddressMode::ClampToEdge,
+                mag_filter: wgpu::FilterMode::Linear,
+                min_filter: wgpu::FilterMode::Nearest,
+                mipmap_filter: wgpu::MipmapFilterMode::Nearest,
+                ..Default::default()
+            }),
+        }
+    });
+
+    let mut materials: HashMap<usize, Material> = HashMap::new();
+    gltf.document.materials().map(|material| {
+
+    });
+
+
     let mut buffers_usages: HashMap<usize, wgpu::BufferUsages> = HashMap::new();
 
     gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
