@@ -2,6 +2,7 @@ brew "btop"
 brew "poetry"
 brew "sing-box"
 brew "tmux"
+brew "mole"
 
 
 cask "aerospace"
