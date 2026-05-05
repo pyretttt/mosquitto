@@ -91,7 +91,7 @@ pub struct TextureInfo {
 #[derive(Clone)]
 pub struct Material {
     pub name: String,
-    pub pbr_metallic_roughness: Option<PbrMetallicRoughness>,
+    pub pbr_metallic_roughness: PbrMetallicRoughness,
     pub normal_texture: Option<NormalTexture>,
     pub occlusion_texture: Option<OcclusionTexture>,
     pub emissive_texture: Option<EmissiveTexture>,
@@ -100,31 +100,31 @@ pub struct Material {
 
 #[derive(Clone)]
 pub struct PbrMetallicRoughness {
-    pub base_color_texture: Option<Rc<TextureInfo>>,
+    pub base_color_texture: Option<TextureInfo>,
     pub base_color_factor: [f32; 4],
-    pub base_color_tex_coord: usize,
+    pub base_color_tex_coord: Option<usize>,
     pub metallic_factor: f32,
     pub roughness_factor: f32,
-    pub metallic_roughness_texture: Option<Rc<TextureInfo>>,
+    pub metallic_roughness_texture: Option<TextureInfo>,
 }
 
 #[derive(Clone)]
 pub struct NormalTexture {
     pub scale: f32,
-    pub normal_texture: Option<Rc<TextureInfo>>,
+    pub normal_texture: TextureInfo,
     pub tex_coord: usize,
 }
 
 #[derive(Clone)]
 pub struct OcclusionTexture {
     pub strength: f32,
-    pub occlusion_texture: Option<Rc<TextureInfo>>,
+    pub occlusion_texture: TextureInfo,
     pub tex_coord: usize,
 }
 
 #[derive(Clone)]
 pub struct EmissiveTexture {
-    pub emissive_texture: Option<Rc<TextureInfo>>,
+    pub emissive_texture: TextureInfo,
     pub tex_coord: usize,
 }
 
@@ -135,6 +135,70 @@ pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
 
 pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<Vec<Scene>, wgpu::Error> {
     let textures = private::load_textures(gltf, device, queue);
+
+    let materials = gltf.document.materials().enumerate().map(|(index, material)| {
+        Material {
+            name: material.name().unwrap_or(format!("Material_{}", index).as_ref()).to_owned(),
+            pbr_metallic_roughness: PbrMetallicRoughness {
+                base_color_texture: material.pbr_metallic_roughness().base_color_texture().map(|base_color_texture| {
+                    textures.get(
+                        &private::TextureKey {
+                            index: base_color_texture.texture().index(),
+                            tex_type: private::PBR_BASE_COLOR_TEXTURE_KEY.to_owned()
+                        }
+                    ).expect("Failed to obtain texture").clone()
+                }),
+                base_color_factor: material.pbr_metallic_roughness().base_color_factor(),
+                base_color_tex_coord: material.pbr_metallic_roughness().base_color_texture().map(|tex_info| tex_info.tex_coord() as usize),
+                metallic_factor: material.pbr_metallic_roughness().metallic_factor(),
+                roughness_factor: material.pbr_metallic_roughness().roughness_factor(),
+                metallic_roughness_texture: material.pbr_metallic_roughness().metallic_roughness_texture().map(|metallic_roughness_texture| {
+                    textures.get(
+                        &private::TextureKey {
+                            index: metallic_roughness_texture.texture().index(),
+                            tex_type: private::METALLIC_ROUGHNESS_TEXTURE_KEY.to_owned()
+                        }
+                    ).expect("Failed to obtain texture").clone()
+                }),
+            },
+            normal_texture: material.normal_texture().map(|normal_texture| {
+                NormalTexture {
+                    scale: normal_texture.scale(),
+                    normal_texture: textures.get(
+                        &private::TextureKey {
+                            index: normal_texture.texture().index(),
+                            tex_type: private::NORMAL_TEXTURE_KEY.to_owned()
+                        }
+                    ).expect("Failed to obtain texture").clone(),
+                    tex_coord: normal_texture.tex_coord() as usize,
+                }
+            }),
+            occlusion_texture: material.occlusion_texture().map(|occlusion_texture| {
+                OcclusionTexture {
+                    strength: occlusion_texture.strength(),
+                    occlusion_texture: textures.get(
+                        &private::TextureKey {
+                            index: occlusion_texture.texture().index(),
+                            tex_type: private::OCCLUSION_TEXTURE_KEY.to_owned()
+                        }
+                    ).expect("Failed to obtain texture").clone(),
+                    tex_coord: occlusion_texture.tex_coord() as usize,
+                }
+            }),
+            emissive_texture: material.emissive_texture().map(|emissive_texture| {
+                EmissiveTexture {
+                    emissive_texture: textures.get(
+                        &private::TextureKey {
+                            index: emissive_texture.texture().index(),
+                            tex_type: private::EMISSIVE_TEXTURE_KEY.to_owned()
+                        }
+                    ).expect("Failed to obtain texture").clone(),
+                    tex_coord: emissive_texture.tex_coord() as usize,
+                }
+            }),
+            emissive_factor: material.emissive_factor(),
+        }
+    });
 
     let mut buffers_usages: HashMap<usize, wgpu::BufferUsages> = HashMap::new();
     gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
@@ -211,6 +275,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
                 mode: primitive.mode(),
             }
         }).collect::<Vec<_>>();
+
         Rc::new(Mesh {
             primitives: primitives,
         })
@@ -290,16 +355,16 @@ mod private {
     use super::HashMap;
     use super::DeviceExt;
 
-    const PBR_BASE_COLOR_TEXTURE_KEY: &str = "pbr_base_color";
-    const NORMAL_TEXTURE_KEY: &str = "normal";
-    const OCCLUSION_TEXTURE_KEY: &str = "occlusion";
-    const EMISSIVE_TEXTURE_KEY: &str = "emissive";
-    const METALLIC_ROUGHNESS_TEXTURE_KEY: &str = "metallic_roughness";
+    pub const PBR_BASE_COLOR_TEXTURE_KEY: &str = "pbr_base_color";
+    pub const NORMAL_TEXTURE_KEY: &str = "normal";
+    pub const OCCLUSION_TEXTURE_KEY: &str = "occlusion";
+    pub const EMISSIVE_TEXTURE_KEY: &str = "emissive";
+    pub const METALLIC_ROUGHNESS_TEXTURE_KEY: &str = "metallic_roughness";
 
     #[derive(Clone, Debug, Hash, PartialEq, Eq)]
-    struct TextureKey {
-        index: usize,
-        tex_type: String
+    pub struct TextureKey {
+        pub index: usize,
+        pub tex_type: String
     }
 
     struct SamplerWrapper<'a>(gltf::texture::Sampler<'a>);
