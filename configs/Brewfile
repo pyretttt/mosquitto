@@ -1,0 +1,16 @@
+brew "btop"
+brew "poetry"
+brew "sing-box"
+brew "tmux"
+
+
+cask "aerospace"
+cask "fork"
+cask "raycast"
+cask "spotify"
+cask "telegram"
+cask "visual-studio-code"
+cask "cursor"
+cask "obsidian"
+cask "mitm-proxy"
+cask "chatgpt"
