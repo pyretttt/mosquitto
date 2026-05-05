@@ -2,9 +2,10 @@ use std::path::Path;
 use std::rc::Rc;
 use std::rc::Weak;
 use std::cell::RefCell;
+use gltf::accessor::{DataType, Dimensions};
 use std::collections::HashMap;
 use wgpu::util::DeviceExt;
-use gltf::accessor::{DataType, Dimensions};
+
 
 #[derive(Debug)]
 pub struct GLTF {
@@ -104,6 +105,7 @@ pub struct PbrMetallicRoughness {
     pub base_color_tex_coord: usize,
     pub metallic_factor: f32,
     pub roughness_factor: f32,
+    pub metallic_roughness_texture: Option<Rc<TextureInfo>>,
 }
 
 #[derive(Clone)]
@@ -126,78 +128,13 @@ pub struct EmissiveTexture {
     pub tex_coord: usize,
 }
 
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-struct TextureKey {
-    index: usize,
-    tex_type: String
-}
-
-struct SamplerWrapper<'a>(gltf::texture::Sampler<'a>);
-
-impl<'a> SamplerWrapper<'a> {
-    fn make_desriptor(&self, label: &'static str) -> wgpu::SamplerDescriptor<'static> {
-        wgpu::SamplerDescriptor {
-            label: Some(label),
-            address_mode_u: map_address_mode(&self.0.wrap_s()),
-            address_mode_v: map_address_mode(&self.0.wrap_t()),
-            mag_filter: self.0.mag_filter().as_ref().map(map_mag_filter).unwrap_or(wgpu::SamplerDescriptor::default().mag_filter),
-            min_filter: self.0.min_filter().as_ref().map(map_min_filter).unwrap_or(wgpu::SamplerDescriptor::default().min_filter),
-            ..Default::default()
-        }
-    }
-}
-
 pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
     let (document, buffers, textures) = gltf::import(path)?;
     Ok(GLTF { document, buffers, textures })
 }
 
 pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<Vec<Scene>, wgpu::Error> {
-    let mut textures: HashMap<TextureKey, TextureInfo> = HashMap::new();
-    gltf.document.materials().for_each(|material| {
-        if let Some(base_color_texture) = material.pbr_metallic_roughness().base_color_texture() {
-            let key = TextureKey {
-                index: base_color_texture.texture().index(),
-                tex_type: "pbr_base_color".to_owned(),
-            };
-            let texture_data = gltf.textures.get(base_color_texture.texture().index()).expect("Failed to obtain texture");
-            let size = wgpu::Extent3d {
-                width: texture_data.width,
-                height: texture_data.height,
-                depth_or_array_layers: 1,
-            };
-            let texture = device.create_texture_with_data(
-                queue,
-                &wgpu::TextureDescriptor {
-                    label: Some(&format!("Texture({})", base_color_texture.texture().index())),
-                    size,
-                    mip_level_count: 1,
-                    sample_count: 1,
-                    dimension: wgpu::TextureDimension::D2,
-                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                    usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                    view_formats: &[],
-                },
-                Default::default(),
-                texture_data.pixels.as_slice(),
-            );
-            let texture_view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-            let sampler_wrapper = SamplerWrapper(base_color_texture.texture().sampler());
-            let texture_sampler = device.create_sampler(&sampler_wrapper.make_desriptor(
-                "base_color_texture_sampler"
-            ));
-
-            textures.insert(
-                key,
-                TextureInfo {
-                    texture: texture,
-                    view: texture_view,
-                    sampler: texture_sampler,
-                }
-            );
-        }
-    });
-
+    let textures = private::load_textures(gltf, device, queue);
 
     let mut buffers_usages: HashMap<usize, wgpu::BufferUsages> = HashMap::new();
     gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
@@ -349,39 +286,174 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
     Ok(scenes)
 }
 
-fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
-    match mode {
-        gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
-        gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
-        gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
-        gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
-        gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
-        _ => panic!("Unsupported primitive mode: {:?}", mode),
-    }
-}
+mod private {
+    use super::HashMap;
+    use super::DeviceExt;
 
-fn map_address_mode(mode: &gltf::texture::WrappingMode) -> wgpu::AddressMode {
-    match mode {
-        gltf::texture::WrappingMode::ClampToEdge => wgpu::AddressMode::ClampToEdge,
-        gltf::texture::WrappingMode::Repeat => wgpu::AddressMode::Repeat,
-        gltf::texture::WrappingMode::MirroredRepeat => wgpu::AddressMode::MirrorRepeat,
-    }
-}
+    const PBR_BASE_COLOR_TEXTURE_KEY: &str = "pbr_base_color";
+    const NORMAL_TEXTURE_KEY: &str = "normal";
+    const OCCLUSION_TEXTURE_KEY: &str = "occlusion";
+    const EMISSIVE_TEXTURE_KEY: &str = "emissive";
+    const METALLIC_ROUGHNESS_TEXTURE_KEY: &str = "metallic_roughness";
 
-fn map_mag_filter(mode: &gltf::texture::MagFilter) -> wgpu::FilterMode {
-    match mode {
-        gltf::texture::MagFilter::Nearest => wgpu::FilterMode::Nearest,
-        gltf::texture::MagFilter::Linear => wgpu::FilterMode::Linear,
+    #[derive(Clone, Debug, Hash, PartialEq, Eq)]
+    struct TextureKey {
+        index: usize,
+        tex_type: String
     }
-}
 
-fn map_min_filter(mode: &gltf::texture::MinFilter) -> wgpu::FilterMode {
-    match mode {
-        gltf::texture::MinFilter::Nearest => wgpu::FilterMode::Nearest,
-        gltf::texture::MinFilter::Linear => wgpu::FilterMode::Linear,
-        gltf::texture::MinFilter::NearestMipmapNearest => wgpu::FilterMode::Nearest,
-        gltf::texture::MinFilter::LinearMipmapNearest => wgpu::FilterMode::Linear,
-        gltf::texture::MinFilter::NearestMipmapLinear => wgpu::FilterMode::Nearest,
-        gltf::texture::MinFilter::LinearMipmapLinear => wgpu::FilterMode::Linear,
+    struct SamplerWrapper<'a>(gltf::texture::Sampler<'a>);
+
+    impl<'a> SamplerWrapper<'a> {
+        fn make_desriptor(&self, label: &'a str) -> wgpu::SamplerDescriptor<'a> {
+            wgpu::SamplerDescriptor {
+                label: Some(label),
+                address_mode_u: map_address_mode(&self.0.wrap_s()),
+                address_mode_v: map_address_mode(&self.0.wrap_t()),
+                mag_filter: self.0.mag_filter().as_ref().map(map_mag_filter).unwrap_or(wgpu::SamplerDescriptor::default().mag_filter),
+                min_filter: self.0.min_filter().as_ref().map(map_min_filter).unwrap_or(wgpu::SamplerDescriptor::default().min_filter),
+                ..Default::default()
+            }
+        }
+    }
+
+    pub fn load_textures(gltf: &super::GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> HashMap<TextureKey, super::TextureInfo> {
+        let mut textures: HashMap<TextureKey, super::TextureInfo> = HashMap::new();
+        gltf.document.materials().for_each(|material| {
+            if let Some(base_color_texture) = material.pbr_metallic_roughness().base_color_texture() {
+                let key = TextureKey {
+                    index: base_color_texture.texture().index(),
+                    tex_type: PBR_BASE_COLOR_TEXTURE_KEY.to_owned(),
+                };
+                if textures.get(&key).is_some() { return; }
+
+                let texture_info = load_texture_info(gltf, device, queue, &base_color_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb);
+                textures.insert(key, texture_info);
+            }
+
+            if let Some(normal_texture) = material.normal_texture() {
+                let key = TextureKey {
+                    index: normal_texture.texture().index(),
+                    tex_type: NORMAL_TEXTURE_KEY.to_owned(),
+                };
+                if textures.get(&key).is_some() { return; }
+
+                let texture_info = load_texture_info(gltf, device, queue, &normal_texture.texture(), wgpu::TextureFormat::Rgba8Unorm);
+                textures.insert(key, texture_info);
+            }
+
+            if let Some(occlusion_texture) = material.occlusion_texture() {
+                let key = TextureKey {
+                    index: occlusion_texture.texture().index(),
+                    tex_type: OCCLUSION_TEXTURE_KEY.to_owned(),
+                };
+                if textures.get(&key).is_some() { return; }
+
+                let texture_info = load_texture_info(gltf, device, queue, &occlusion_texture.texture(), wgpu::TextureFormat::Rgba8Unorm);
+                textures.insert(key, texture_info);
+            }
+
+            if let Some(emissive_texture) = material.emissive_texture() {
+                let key = TextureKey {
+                    index: emissive_texture.texture().index(),
+                    tex_type: EMISSIVE_TEXTURE_KEY.to_owned(),
+                };
+                if textures.get(&key).is_some() { return; }
+
+                let texture_info = load_texture_info(gltf, device, queue, &emissive_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb);
+                textures.insert(key, texture_info);
+            }
+
+            if let Some(metallic_roughness_texture) = material.pbr_metallic_roughness().metallic_roughness_texture() {
+                let key = TextureKey {
+                    index: metallic_roughness_texture.texture().index(),
+                    tex_type: METALLIC_ROUGHNESS_TEXTURE_KEY.to_owned(),
+                };
+                if textures.get(&key).is_some() { return; }
+
+                let texture_info = load_texture_info(gltf, device, queue, &metallic_roughness_texture.texture(), wgpu::TextureFormat::Rgba8Unorm);
+                textures.insert(key, texture_info);
+            }
+        });
+
+        textures
+    }
+
+    fn load_texture_info(
+        gltf: &super::GLTF,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+        texture: &gltf::texture::Texture<'_>,
+        format: wgpu::TextureFormat
+    ) -> super::TextureInfo {
+        let texture_data = gltf.textures.get(texture.index()).expect("Failed to obtain texture");
+        let size = wgpu::Extent3d {
+            width: texture_data.width,
+            height: texture_data.height,
+            depth_or_array_layers: 1,
+        };
+        let wgpu_texture = device.create_texture_with_data(
+            queue,
+            &wgpu::TextureDescriptor {
+                label: Some(&format!("Texture({})", texture.index())),
+                size,
+                mip_level_count: 1,
+                sample_count: 1,
+                dimension: wgpu::TextureDimension::D2,
+                format: format,
+                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+                view_formats: &[],
+            },
+            Default::default(),
+            texture_data.pixels.as_slice(),
+        );
+        let texture_view = wgpu_texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler_wrapper = SamplerWrapper(texture.sampler());
+        let texture_sampler = device.create_sampler(&sampler_wrapper.make_desriptor(
+            sampler_wrapper.0.name().unwrap_or("texture_sampler")
+        ));
+
+        super::TextureInfo {
+            texture: wgpu_texture,
+            view: texture_view,
+            sampler: texture_sampler,
+        }
+    }
+
+    fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
+        match mode {
+            gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
+            gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
+            gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
+            gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
+            gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
+            _ => panic!("Unsupported primitive mode: {:?}", mode),
+        }
+    }
+
+    fn map_address_mode(mode: &gltf::texture::WrappingMode) -> wgpu::AddressMode {
+        match mode {
+            gltf::texture::WrappingMode::ClampToEdge => wgpu::AddressMode::ClampToEdge,
+            gltf::texture::WrappingMode::Repeat => wgpu::AddressMode::Repeat,
+            gltf::texture::WrappingMode::MirroredRepeat => wgpu::AddressMode::MirrorRepeat,
+        }
+    }
+
+    fn map_mag_filter(mode: &gltf::texture::MagFilter) -> wgpu::FilterMode {
+        match mode {
+            gltf::texture::MagFilter::Nearest => wgpu::FilterMode::Nearest,
+            gltf::texture::MagFilter::Linear => wgpu::FilterMode::Linear,
+        }
+    }
+
+    fn map_min_filter(mode: &gltf::texture::MinFilter) -> wgpu::FilterMode {
+        match mode {
+            gltf::texture::MinFilter::Nearest => wgpu::FilterMode::Nearest,
+            gltf::texture::MinFilter::Linear => wgpu::FilterMode::Linear,
+            gltf::texture::MinFilter::NearestMipmapNearest => wgpu::FilterMode::Nearest,
+            gltf::texture::MinFilter::LinearMipmapNearest => wgpu::FilterMode::Linear,
+            gltf::texture::MinFilter::NearestMipmapLinear => wgpu::FilterMode::Nearest,
+            gltf::texture::MinFilter::LinearMipmapLinear => wgpu::FilterMode::Linear,
+        }
     }
 }
