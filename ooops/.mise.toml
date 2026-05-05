@@ -1,4 +1,5 @@
 [tools]
+gcloud = "latest"
 python = "3.13"
 
 [tasks.compose]
