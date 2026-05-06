@@ -59,8 +59,14 @@ pub struct Mesh {
 pub struct MeshPrimitive {
     pub attributes: HashMap<gltf::Semantic, GpuAccessor>,
     pub indices: Option<GpuAccessor>,
-    pub material: Option<usize>,
+    pub material: Option<Material>,
     pub mode: gltf::mesh::Mode,
+}
+
+impl MeshPrimitive {
+    pub fn primitive_topology(&self) -> wgpu::PrimitiveTopology {
+        private::map_gltf_mesh_mode(&self.mode)
+    }
 }
 
 #[derive(Clone)]
@@ -133,7 +139,7 @@ pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
     Ok(GLTF { document, buffers, textures })
 }
 
-pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Result<Vec<Scene>, wgpu::Error> {
+pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Vec<Scene> {
     let textures = private::load_textures(gltf, device, queue);
 
     let materials = gltf.document.materials().enumerate().map(|(index, material)| {
@@ -198,7 +204,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
             }),
             emissive_factor: material.emissive_factor(),
         }
-    });
+    }).collect::<Vec<_>>();
 
     let mut buffers_usages: HashMap<usize, wgpu::BufferUsages> = HashMap::new();
     gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
@@ -225,7 +231,6 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
     let mut buffers: HashMap<usize, wgpu::Buffer> = HashMap::new();
     gltf.document.buffers().for_each(|buffer| {
         let buffer_index = buffer.index();
-        if buffers.get(&buffer_index).is_some() { return; };
 
         if let Some(buffer_usages) = buffers_usages.get(&buffer_index) {
             let buffer_data = &gltf.buffers[buffer_index];
@@ -271,7 +276,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
                 indices: primitive.indices().map(|indices_accessor|
                     accessors.get(&indices_accessor.index()).expect("Accessor not found").clone()
                 ),
-                material: primitive.material().index(),
+                material: primitive.material().index().map(|index| materials.get(index)).flatten().cloned(),
                 mode: primitive.mode(),
             }
         }).collect::<Vec<_>>();
@@ -348,7 +353,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
         }
     }).collect::<Vec<_>>();
 
-    Ok(scenes)
+    scenes
 }
 
 mod private {
@@ -370,13 +375,13 @@ mod private {
     struct SamplerWrapper<'a>(gltf::texture::Sampler<'a>);
 
     impl<'a> SamplerWrapper<'a> {
-        fn make_desriptor(&self, label: &'a str) -> wgpu::SamplerDescriptor<'a> {
+        fn make_descriptor(&self, label: &'a str) -> wgpu::SamplerDescriptor<'a> {
             wgpu::SamplerDescriptor {
                 label: Some(label),
                 address_mode_u: map_address_mode(&self.0.wrap_s()),
                 address_mode_v: map_address_mode(&self.0.wrap_t()),
-                mag_filter: self.0.mag_filter().as_ref().map(map_mag_filter).unwrap_or(wgpu::SamplerDescriptor::default().mag_filter),
-                min_filter: self.0.min_filter().as_ref().map(map_min_filter).unwrap_or(wgpu::SamplerDescriptor::default().min_filter),
+                mag_filter: self.0.mag_filter().as_ref().map(map_mag_filter).unwrap_or_default(),
+                min_filter: self.0.min_filter().as_ref().map(map_min_filter).unwrap_or_default(),
                 ..Default::default()
             }
         }
@@ -390,10 +395,9 @@ mod private {
                     index: base_color_texture.texture().index(),
                     tex_type: PBR_BASE_COLOR_TEXTURE_KEY.to_owned(),
                 };
-                if textures.get(&key).is_some() { return; }
-
-                let texture_info = load_texture_info(gltf, device, queue, &base_color_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb);
-                textures.insert(key, texture_info);
+                textures.entry(key).or_insert(
+                    load_texture_info(gltf, device, queue, &base_color_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb)
+                );
             }
 
             if let Some(normal_texture) = material.normal_texture() {
@@ -401,10 +405,9 @@ mod private {
                     index: normal_texture.texture().index(),
                     tex_type: NORMAL_TEXTURE_KEY.to_owned(),
                 };
-                if textures.get(&key).is_some() { return; }
-
-                let texture_info = load_texture_info(gltf, device, queue, &normal_texture.texture(), wgpu::TextureFormat::Rgba8Unorm);
-                textures.insert(key, texture_info);
+                textures.entry(key).or_insert(
+                    load_texture_info(gltf, device, queue, &normal_texture.texture(), wgpu::TextureFormat::Rgba8Unorm)
+                );
             }
 
             if let Some(occlusion_texture) = material.occlusion_texture() {
@@ -412,10 +415,9 @@ mod private {
                     index: occlusion_texture.texture().index(),
                     tex_type: OCCLUSION_TEXTURE_KEY.to_owned(),
                 };
-                if textures.get(&key).is_some() { return; }
-
-                let texture_info = load_texture_info(gltf, device, queue, &occlusion_texture.texture(), wgpu::TextureFormat::Rgba8Unorm);
-                textures.insert(key, texture_info);
+                textures.entry(key).or_insert(
+                    load_texture_info(gltf, device, queue, &occlusion_texture.texture(), wgpu::TextureFormat::Rgba8Unorm)
+                );
             }
 
             if let Some(emissive_texture) = material.emissive_texture() {
@@ -423,10 +425,9 @@ mod private {
                     index: emissive_texture.texture().index(),
                     tex_type: EMISSIVE_TEXTURE_KEY.to_owned(),
                 };
-                if textures.get(&key).is_some() { return; }
-
-                let texture_info = load_texture_info(gltf, device, queue, &emissive_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb);
-                textures.insert(key, texture_info);
+                textures.entry(key).or_insert(
+                    load_texture_info(gltf, device, queue, &emissive_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb)
+                );
             }
 
             if let Some(metallic_roughness_texture) = material.pbr_metallic_roughness().metallic_roughness_texture() {
@@ -434,10 +435,9 @@ mod private {
                     index: metallic_roughness_texture.texture().index(),
                     tex_type: METALLIC_ROUGHNESS_TEXTURE_KEY.to_owned(),
                 };
-                if textures.get(&key).is_some() { return; }
-
-                let texture_info = load_texture_info(gltf, device, queue, &metallic_roughness_texture.texture(), wgpu::TextureFormat::Rgba8Unorm);
-                textures.insert(key, texture_info);
+                textures.entry(key).or_insert(
+                    load_texture_info(gltf, device, queue, &metallic_roughness_texture.texture(), wgpu::TextureFormat::Rgba8Unorm)
+                );
             }
         });
 
@@ -474,8 +474,8 @@ mod private {
         );
         let texture_view = wgpu_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler_wrapper = SamplerWrapper(texture.sampler());
-        let texture_sampler = device.create_sampler(&sampler_wrapper.make_desriptor(
-            sampler_wrapper.0.name().unwrap_or("texture_sampler")
+        let texture_sampler = device.create_sampler(&sampler_wrapper.make_descriptor(
+            sampler_wrapper.0.name().unwrap_or(&format!("Sampler({})", texture.index()))
         ));
 
         super::TextureInfo {
@@ -485,7 +485,7 @@ mod private {
         }
     }
 
-    fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
+    pub fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
         match mode {
             gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
             gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
