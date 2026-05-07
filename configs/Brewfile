@@ -3,7 +3,8 @@ brew "poetry"
 brew "sing-box"
 brew "tmux"
 brew "mole"
-
+brew "font-meslo-lg-nerd-font"
+brew "StanMarek/tap/ghost-complete"
 
 cask "aerospace"
 cask "fork"
@@ -13,5 +14,6 @@ cask "telegram"
 cask "visual-studio-code"
 cask "cursor"
 cask "obsidian"
-cask "mitm-proxy"
+cask "mitmproxy"
 cask "chatgpt"
+
