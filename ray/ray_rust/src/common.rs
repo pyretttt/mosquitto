@@ -11,6 +11,7 @@ use crate::vertex as vertex;
 use wgpu::util::DeviceExt;
 use cgmath::prelude::*;
 use crate::model::Vertex;
+use crate::gltf;
 
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
@@ -182,6 +183,11 @@ impl State {
             },
         ).await?;
 
+
+        let gltf = gltf::load_gltf(std::path::Path::new("/Users/bob/mosquitto/ray/ray_rust/resources/girl/scene.gltf"))
+            .expect("Failed to load GLTF");
+        let world = gltf::make_wgpu_scenes(&gltf, &device, &queue);
+
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()
             .find(|f| f.is_srgb())
@@ -342,7 +348,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[model::ModelVertex::desc(), InstanceRaw::desc()],
+                buffers: &[crate::model::ModelVertex::desc(), InstanceRaw::desc()],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.

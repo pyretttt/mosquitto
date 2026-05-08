@@ -366,6 +366,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
 }
 
 mod private {
+    use gltf::image::Format;
     use super::HashMap;
     use super::DeviceExt;
 
@@ -461,6 +462,7 @@ mod private {
         format: wgpu::TextureFormat
     ) -> super::TextureInfo {
         let texture_data = gltf.textures.get(texture.index()).expect("Failed to obtain texture");
+        let upload_pixels = convert_gltf_image_to_rgba8(texture_data);
         let size = wgpu::Extent3d {
             width: texture_data.width,
             height: texture_data.height,
@@ -479,7 +481,7 @@ mod private {
                 view_formats: &[],
             },
             Default::default(),
-            texture_data.pixels.as_slice(),
+            upload_pixels.as_slice(),
         );
         let texture_view = wgpu_texture.create_view(&wgpu::TextureViewDescriptor::default());
         let sampler_wrapper = SamplerWrapper(texture.sampler());
@@ -491,6 +493,25 @@ mod private {
             texture: wgpu_texture,
             view: texture_view,
             sampler: texture_sampler,
+        }
+    }
+
+    fn convert_gltf_image_to_rgba8(texture_data: &gltf::image::Data) -> Vec<u8> {
+        match texture_data.format {
+            Format::R8G8B8A8 => texture_data.pixels.clone(),
+            Format::R8G8B8 => texture_data.pixels
+                .chunks_exact(3)
+                .flat_map(|px| [px[0], px[1], px[2], 255])
+                .collect(),
+            Format::R8 => texture_data.pixels
+                .iter()
+                .flat_map(|v| [*v, *v, *v, 255])
+                .collect(),
+            Format::R8G8 => texture_data.pixels
+                .chunks_exact(2)
+                .flat_map(|px| [px[0], px[1], 0, 255])
+                .collect(),
+            _ => panic!("Unsupported glTF texture format: {:?}", texture_data.format),
         }
     }
 
