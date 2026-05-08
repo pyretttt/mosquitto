@@ -148,6 +148,7 @@ pub struct State {
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
     depth_texture: crate::texture::Texture,
+    world: gltf::World,
 }
 
 impl State {
@@ -411,6 +412,7 @@ impl State {
             instances,
             instance_buffer,
             depth_texture,
+            world,
         })
     }
 

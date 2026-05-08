@@ -66,13 +66,7 @@ pub struct MeshPrimitive {
     pub attributes: HashMap<gltf::Semantic, GpuAccessor>,
     pub indices: Option<GpuAccessor>,
     pub material: Option<Material>,
-    pub mode: gltf::mesh::Mode,
-}
-
-impl MeshPrimitive {
-    pub fn primitive_topology(&self) -> wgpu::PrimitiveTopology {
-        private::map_gltf_mesh_mode(&self.mode)
-    }
+    pub mode: wgpu::PrimitiveTopology,
 }
 
 #[derive(Clone)]
@@ -91,7 +85,6 @@ pub struct GpuAccessor {
     pub component_type: DataType,     // I8/U8/I16/U16/U32/F32
     pub dimensions: Dimensions,       // Scalar/Vec2/Vec3/Vec4/Mat*
 }
-
 
 #[derive(Clone)]
 pub struct TextureInfo {
@@ -283,7 +276,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
                     accessors.get(&indices_accessor.index()).expect("Accessor not found").clone()
                 ),
                 material: primitive.material().index().map(|index| materials.get(index)).flatten().cloned(),
-                mode: primitive.mode(),
+                mode: private::map_gltf_mesh_mode(&primitive.mode()),
             }
         }).collect::<Vec<_>>();
 
