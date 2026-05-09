@@ -15,7 +15,7 @@ pub struct GLTF {
 }
 
 #[derive(Clone)]
-pub struct World {
+pub struct Model {
     pub scenes: Vec<Scene>,
     pub default_scene: Option<usize>,
 }
@@ -138,7 +138,7 @@ pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
     Ok(GLTF { document, buffers, textures })
 }
 
-pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> World {
+pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Model {
     let textures = private::load_textures(gltf, device, queue);
 
     let materials = gltf.document.materials().enumerate().map(|(index, material)| {
@@ -352,7 +352,7 @@ pub fn make_wgpu_scenes(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue)
         }
     }).collect::<Vec<_>>();
 
-    World {
+    Model {
         scenes,
         default_scene: gltf.document.default_scene().map(|scene| { scene.index() }),
     }
