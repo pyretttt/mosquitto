@@ -2,6 +2,11 @@
 
 macOS doesn't have `ip netns`, real `iptables`/`nftables`, or proper `tc`. We need a Linux kernel.
 
+Option 0: docker
+```bash
+docker run -u 0 --privileged  --volume ./lab:/lab -it jonlabelle/network-tools sh
+```
+
 ## Option A: colima (recommended)
 
 ```bash
@@ -71,7 +76,8 @@ Network namespaces and netfilter rules require `CAP_NET_ADMIN`. We use `sudo`. I
 Capture inside the VM, copy the `.pcap` out, open it on the Mac:
 
 ```bash
-sudo tcpdump -i veth-h1 -w /tmp/cap.pcap
+# veth-h1 lives inside namespace h1 (see two-hosts.sh), not on the host netns
+sudo ip netns exec h1 tcpdump -i veth-h1 -w /tmp/cap.pcap
 
 multipass transfer netlab:/tmp/cap.pcap ./captures/cap.pcap
 ```

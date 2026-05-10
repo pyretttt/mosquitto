@@ -23,3 +23,5 @@ Technical reason is that it improves stability (ISP is no longer point of failur
 Economic reason is that providers are no longer required to pay ISP.
 
 - Did you actually `ping` between two namespaces? If not, do it before moving on
+
+Yes traced between two namespaces
