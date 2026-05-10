@@ -276,7 +276,7 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
                     accessors.get(&indices_accessor.index()).expect("Accessor not found").clone()
                 ),
                 material: primitive.material().index().map(|index| materials.get(index)).flatten().cloned(),
-                mode: private::map_gltf_mesh_mode(&primitive.mode()),
+                mode: private::map_gltf_mesh_mode(&primitive.mode())
             }
         }).collect::<Vec<_>>();
 

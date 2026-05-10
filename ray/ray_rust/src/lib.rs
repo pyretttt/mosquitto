@@ -5,6 +5,7 @@ pub mod vertex;
 pub mod texture;
 pub mod camera_controller;
 pub mod model;
+pub mod gtlf_wgpu;
 
 pub fn project_name() -> &'static str {
     "ray_rust"
