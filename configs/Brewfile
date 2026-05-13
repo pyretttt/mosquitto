@@ -5,6 +5,7 @@ brew "tmux"
 brew "mole"
 brew "font-meslo-lg-nerd-font"
 brew "StanMarek/tap/ghost-complete"
+brew "k9s"
 
 cask "aerospace"
 cask "fork"
