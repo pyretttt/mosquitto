@@ -10,8 +10,8 @@ use wgpu::util::DeviceExt;
 #[derive(Debug)]
 pub struct GLTF {
     pub document: gltf::Document,
-    pub buffers: Vec<gltf::buffer::Data>,
-    pub textures: Vec<gltf::image::Data>,
+    pub buffers: Vec<Rc<gltf::buffer::Data>>,
+    pub textures: Vec<Rc<gltf::image::Data>>,
 }
 
 #[derive(Clone)]
@@ -67,6 +67,8 @@ pub struct MeshPrimitive {
     pub indices: Option<GpuAccessor>,
     pub material: Option<Material>,
     pub mode: wgpu::PrimitiveTopology,
+
+    pub render_pipeline: Option<wgpu::RenderPipeline>,
 }
 
 #[derive(Clone)]
@@ -80,14 +82,15 @@ pub struct GpuBufferView {
 #[derive(Clone)]
 pub struct GpuAccessor {
     pub view: GpuBufferView,
-    pub offset: wgpu::BufferAddress,  // accessor.offset() — RELATIVE to view start
-    pub count: usize,                   // accessor.count() — element count, not bytes
-    pub component_type: DataType,     // I8/U8/I16/U16/U32/F32
-    pub dimensions: Dimensions,       // Scalar/Vec2/Vec3/Vec4/Mat*
+    pub offset: wgpu::BufferAddress,
+    pub count: usize,
+    pub component_type: DataType,
+    pub dimensions: Dimensions,
 }
 
 #[derive(Clone)]
 pub struct TextureInfo {
+    pub gltf_image: Rc<gltf::image::Data>,
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
@@ -135,7 +138,11 @@ pub struct EmissiveTexture {
 
 pub fn load_gltf(path: &Path) -> Result<GLTF, gltf::Error> {
     let (document, buffers, textures) = gltf::import(path)?;
-    Ok(GLTF { document, buffers, textures })
+    Ok(GLTF {
+        document,
+        buffers: buffers.iter().map(|buffer| Rc::new(buffer.clone())).collect(),
+        textures: textures.iter().map(|texture| Rc::new(texture.clone())).collect(),
+     })
 }
 
 pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Model {
@@ -276,7 +283,8 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
                     accessors.get(&indices_accessor.index()).expect("Accessor not found").clone()
                 ),
                 material: primitive.material().index().map(|index| materials.get(index)).flatten().cloned(),
-                mode: private::map_gltf_mesh_mode(&primitive.mode())
+                mode: private::map_gltf_mesh_mode(&primitive.mode()),
+                render_pipeline: None,
             }
         }).collect::<Vec<_>>();
 
@@ -483,6 +491,7 @@ mod private {
         ));
 
         super::TextureInfo {
+            gltf_image: texture_data.clone(),
             texture: wgpu_texture,
             view: texture_view,
             sampler: texture_sampler,
