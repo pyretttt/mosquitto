@@ -83,21 +83,60 @@ pub fn make_render_pipeline(
 ) -> wgpu::RenderPipeline {
     let vertex_layout = Vertex::desc();
     let render_pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
-        label: Some("GLTF Render Pipeline Layout"),
-        entries: &[
-            wgpu::PipelineLayoutDescriptorEntry::VertexBuffer(vertex_layout)
-        ],
+        label: Some("Render Pipeline Layout"),
+        bind_group_layouts: &[],
+        immediate_size: 0,
     });
 
     device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("Render Pipeline"),
-        layout: Some(&wgpu::PipelineLayoutDescriptor {
-            label: Some("Pipeline Layout"),
-            entries: &[wgpu::PipelineLayoutDescriptorEntry::VertexBuffer(vertex_layout)],
-        }),
+        layout: Some(&render_pipeline_layout),
         vertex: wgpu::VertexState {
-            module: shader,
-            entry_point: "main",
+            module: &shader,
+            entry_point: Some("vs_main"),
+            buffers: &[crate::model::ModelVertex::desc(), InstanceRaw::desc()],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
         },
-    })
+        fragment: Some(wgpu::FragmentState { // 3.
+            module: &shader,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState { // 4.
+                format: config.format,
+                blend: Some(wgpu::BlendState::REPLACE),
+                write_mask: wgpu::ColorWrites::ALL,
+            })],
+            compilation_options: wgpu::PipelineCompilationOptions::default(),
+        }),
+        primitive: wgpu::PrimitiveState {
+            topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+            strip_index_format: None,
+            front_face: wgpu::FrontFace::Ccw, // 2.
+            cull_mode: Some(wgpu::Face::Back),
+            // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
+            polygon_mode: wgpu::PolygonMode::Fill,
+            // Requires Features::DEPTH_CLIP_CONTROL
+            unclipped_depth: false,
+            // Requires Features::CONSERVATIVE_RASTERIZATION
+            conservative: false,
+        },
+        depth_stencil: Some(wgpu::DepthStencilState {
+            format: crate::texture::Texture::DEPTH_FORMAT,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less), // 1.
+            stencil: wgpu::StencilState::default(), // 2.
+            bias: wgpu::DepthBiasState::default(),
+        }),
+        multisample: wgpu::MultisampleState {
+            count: 1,
+            mask: !0,
+            alpha_to_coverage_enabled: false,
+        },
+        multiview_mask: None,
+        cache: None,
+    });
+}
+
+struct RenderObject {
+    pub node: Rc<gltf::Node>,
+    pub render_pipeline: wgpu::RenderPipeline,
 }

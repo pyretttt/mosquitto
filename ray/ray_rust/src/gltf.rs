@@ -275,6 +275,8 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
         accessors.insert(accessor.index(), gpu_accessor);
     });
 
+    let render_pipeline = gltf_wgpu::make_render_pipeline(device, &shader, &vertex_layout);
+
     let meshes: Vec<Rc<Mesh>> = gltf.document.meshes().map(|mesh| {
         let primitives = mesh.primitives().map(|primitive| {
             MeshPrimitive {
