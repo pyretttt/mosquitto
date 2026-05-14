@@ -36,3 +36,5 @@ then BDP is
 1,14e+8 * 0.001803 = 205542 bits
 
 in kbytes it is 25.69 kbytes
+
+The TCP congestion window is much larger than BDP, so throughput is not window-limited. Throughput (~114 Mbps) is not limited by RTT or TCP window (BDP is small), and is likely constrained by path bottlenecks such as link capacity, congestion, or packet loss
