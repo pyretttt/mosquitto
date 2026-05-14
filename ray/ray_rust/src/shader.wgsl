@@ -9,7 +9,13 @@ var<uniform> camera: CameraUniform;
 
 struct VertexInput {
     @location(0) position: vec3<f32>,
-    @location(1) tex_coords: vec2<f32>,
+    @location(1) normal: vec3<f32>,
+    @location(2) tangent: vec3<f32>,
+    @location(3) text_coords0: vec2<f32>,
+    @location(4) text_coords1: vec2<f32>,
+    @location(5) color: vec3<f32>,
+    @location(6) joint: vec3<f32>,
+    @location(7) weight: vec3<f32>,
 };
 
 struct InstanceInput {

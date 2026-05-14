@@ -73,6 +73,7 @@ pub struct MeshPrimitive {
 
 #[derive(Clone)]
 pub struct GpuBufferView {
+    pub gltf_data: Rc<gltf::buffer::Data>,
     pub buf: wgpu::Buffer,            // dedup target; Arc-shared internally
     pub offset: wgpu::BufferAddress,  // view.offset() — within source blob
     pub length: wgpu::BufferAddress,  // view.length()
@@ -260,6 +261,7 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
 
         let gpu_accessor = GpuAccessor {
             view: GpuBufferView {
+                gltf_data: Rc::clone(&gltf.buffers[accessor_view.buffer().index()]),
                 buf: buffers.get(&accessor_view.buffer().index()).expect("Buffer not found").clone(),
                 offset: accessor_view.offset() as u64,
                 length: accessor_view.length() as u64,

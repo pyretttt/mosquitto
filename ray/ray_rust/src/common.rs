@@ -496,7 +496,7 @@ impl State {
                     }),
                     stencil_ops: None,
                 }),
-                            occlusion_query_set: None,
+                occlusion_query_set: None,
                 timestamp_writes: None,
                 multiview_mask: None,
             });
