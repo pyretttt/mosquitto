@@ -17,7 +17,7 @@ pub struct GLTF {
 #[derive(Clone)]
 pub struct Model {
     pub scenes: Vec<Scene>,
-    pub default_scene: Option<usize>,
+    pub selected_scene: Option<usize>,
 }
 
 #[derive(Clone)]
@@ -67,8 +67,6 @@ pub struct MeshPrimitive {
     pub indices: Option<GpuAccessor>,
     pub material: Option<Material>,
     pub mode: wgpu::PrimitiveTopology,
-
-    pub render_pipeline: Option<wgpu::RenderPipeline>,
 }
 
 #[derive(Clone)]
@@ -275,8 +273,6 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
         accessors.insert(accessor.index(), gpu_accessor);
     });
 
-    let render_pipeline = gltf_wgpu::make_render_pipeline(device, &shader, &vertex_layout);
-
     let meshes: Vec<Rc<Mesh>> = gltf.document.meshes().map(|mesh| {
         let primitives = mesh.primitives().map(|primitive| {
             MeshPrimitive {
@@ -288,7 +284,6 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
                 ),
                 material: primitive.material().index().map(|index| materials.get(index)).flatten().cloned(),
                 mode: private::map_gltf_mesh_mode(&primitive.mode()),
-                render_pipeline: None,
             }
         }).collect::<Vec<_>>();
 
@@ -366,7 +361,7 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
 
     Model {
         scenes,
-        default_scene: gltf.document.default_scene().map(|scene| { scene.index() }),
+        selected_scene: gltf.document.default_scene().map(|scene| { scene.index() }),
     }
 }
 
