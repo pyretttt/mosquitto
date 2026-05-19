@@ -1,47 +1,6 @@
 use crate::gltf;
 use std::collections::HashMap;
 
-const fn separate_vertex_layout(
-    shader_location: u32,
-    format: wgpu::VertexFormat,
-    array_stride: wgpu::BufferAddress,
-) -> wgpu::VertexBufferLayout<'static> {
-    wgpu::VertexBufferLayout {
-        array_stride,
-        step_mode: wgpu::VertexStepMode::Vertex,
-        attributes: &[wgpu::VertexAttribute {
-            format,
-            offset: 0,
-            shader_location,
-        }],
-    }
-}
-
-/// One buffer slot per vertex attribute (matches `pbr.wgsl` locations 0–7).
-const PBR_VERTEX_BUFFER_LAYOUTS: [wgpu::VertexBufferLayout<'static>; 8] = [
-    separate_vertex_layout(0, wgpu::VertexFormat::Float32x3, 12),
-    separate_vertex_layout(1, wgpu::VertexFormat::Float32x3, 12),
-    separate_vertex_layout(2, wgpu::VertexFormat::Float32x3, 12),
-    separate_vertex_layout(3, wgpu::VertexFormat::Float32x2, 8),
-    separate_vertex_layout(4, wgpu::VertexFormat::Float32x2, 8),
-    separate_vertex_layout(5, wgpu::VertexFormat::Float32x3, 12),
-    separate_vertex_layout(6, wgpu::VertexFormat::Float32x3, 12),
-    separate_vertex_layout(7, wgpu::VertexFormat::Float32x3, 12),
-];
-
-// fn map_semantic(semantic: &Semantic) -> Option<u32> {
-//     match semantic {
-//         Semantic::Positions => Some(0),
-//         Semantic::Normals => Some(1),
-//         Semantic::Tangents => Some(2),
-//         Semantic::TexCoords(x) if *x < 2 => Some(3 + x),
-//         Semantic::Colors(x) if *x == 0 => Some(5),
-//         Semantic::Joints(x) if *x == 0 => Some(6),
-//         Semantic::Weights(x) if *x == 0 => Some(7),
-//         _ => None,
-//     }
-// }
-
 pub struct RenderController {
     pub render_pipelines: HashMap<String, wgpu::RenderPipeline>,
     pub device: wgpu::Device,
@@ -112,7 +71,6 @@ impl RenderController {
                     .for_each(|primitive| {
                         self.render_primitive(primitive, &mut render_pass);
                     });
-                // mesh.primitives.iter().filter()
             });
         });
         Ok(())
@@ -122,18 +80,20 @@ impl RenderController {
         let pipeline = self.render_pipelines.get(&primitive.pipeline_key()).unwrap();
         render_pass.set_pipeline(pipeline);
         primitive.attributes.iter().for_each(|(semantic, accessor)| {
-            let Some(slot) = map_semantic(semantic) else { return };
+            let Some(slot) = helpers::map_semantic(semantic) else { return };
             let byte_offset = accessor.view.offset + accessor.offset;
             render_pass.set_vertex_buffer(
                 slot,
                 accessor.view.buf.slice(byte_offset..),
             );
         });
-
-        // render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        // render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
-        // render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
-        // render_pass.draw_indexed(0..vertex::INDICES.len() as u32, 0, 0..self.instances.len() as _);
+        if let Some(indices) = &primitive.indices {
+            let offset = indices.offset + indices.view.offset;
+            render_pass.set_index_buffer(indices.view.buf.slice(offset..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..indices.count as u32, 0, 0..1);
+        } else {
+            render_pass.draw(0..primitive.attributes.len() as u32, 0..1);
+        }
     }
 }
 
@@ -145,6 +105,42 @@ impl gltf::MeshPrimitive {
 
 mod helpers {
     use super::*;
+    use ::gltf::Semantic;
+
+    pub fn map_semantic(semantic: &Semantic) -> Option<u32> {
+        match semantic {
+            Semantic::Positions => Some(0),
+            Semantic::Normals => Some(1),
+            Semantic::Tangents => Some(2),
+            Semantic::TexCoords(x) if *x < 2 => Some(3 + x),
+            Semantic::Colors(x) if *x == 0 => Some(5),
+            Semantic::Joints(x) if *x == 0 => Some(6),
+            Semantic::Weights(x) if *x == 0 => Some(7),
+            _ => None,
+        }
+    }
+
+    const PBR_VERTEX_BUFFER_LAYOUTS: [wgpu::VertexAttribute; 8] = [
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 1 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 2 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x2, offset: 0, shader_location: 3 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x2, offset: 0, shader_location: 4 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 5 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 6 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 7 },
+    ];
+
+    const fn separate_vertex_layout<'a>(
+        attribute: &'a [wgpu::VertexAttribute],
+        array_stride: wgpu::BufferAddress,
+    ) -> wgpu::VertexBufferLayout<'a> {
+        wgpu::VertexBufferLayout {
+            array_stride,
+            step_mode: wgpu::VertexStepMode::Vertex,
+            attributes: attribute,
+        }
+    }
 
     pub fn make_prb_render_pipeline(
         render_controller: &RenderController
@@ -167,7 +163,16 @@ mod helpers {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vertex_main"),
-                buffers: &PBR_VERTEX_BUFFER_LAYOUTS,
+                buffers: &[
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(0..1).expect("wrong pbr buffers"), 12),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(1..2).expect("wrong pbr buffers"), 12),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(2..3).expect("wrong pbr buffers"), 12),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(3..4).expect("wrong pbr buffers"), 8),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(4..5).expect("wrong pbr buffers"), 8),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(5..6).expect("wrong pbr buffers"), 12),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(6..7).expect("wrong pbr buffers"), 12),
+                    separate_vertex_layout(&PBR_VERTEX_BUFFER_LAYOUTS.get(7..8).expect("wrong pbr buffers"), 12),
+                ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState { // 3.
