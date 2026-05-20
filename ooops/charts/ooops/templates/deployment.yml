@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Deployment
+metadata:
+  name: {{ .Values.mlops.deploy.name }}-deploy
+  labels:
+    {{- toYaml .Values.mlops.deploy.labels | nindent 4 }}
+spec:
+  replicas: {{ .Values.mlops.deploy.replicas }}
+  selector:
+    matchLabels:
+      {{- toYaml .Values.mlops.deploy.labels | nindent 4 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- toYaml .Values.mlops.deploy.labels | nindent 4 }}
+    spec:
+      containers:
+      - name: {{ .Values.mlops.deploy.name }}
+        image: {{ .Values.mlops.deploy.image }}
+        ports:
+        - containerPort: {{ .Values.mlops.deploy.port }}
+        resources:
+          limits:
+            memory: {{ .Values.mlops.resources.limits.memory }}
+            cpu: {{ .Values.mlops.resources.limits.cpu }}
+

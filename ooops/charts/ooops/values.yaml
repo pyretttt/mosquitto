@@ -1,0 +1,8 @@
+mlops:
+  deploy:
+    name: mlops
+    replicas: 1
+    labels:
+      app: mlops
+    image: 
+    resources:
