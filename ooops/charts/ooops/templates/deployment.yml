@@ -19,6 +19,30 @@ spec:
       labels:
         {{- toYaml .Values.mlops.deploy.labels | nindent 4 }}
     spec:
+      {{- if .Values.mlops.mlflowWait.enabled }}
+      initContainers:
+      - name: wait-for-mlflow
+        image: {{ .Values.mlops.mlflowWait.image }}
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            host="{{ include "ooops.mlflowServiceHost" . }}"
+            port="{{ .Values.mlops.mlflowWait.port }}"
+            path="{{ .Values.mlops.mlflowWait.path }}"
+            timeout="{{ .Values.mlops.mlflowWait.timeoutSeconds }}"
+            interval="{{ .Values.mlops.mlflowWait.intervalSeconds }}"
+            echo "Waiting for mlflow at http://${host}:${port}${path}..."
+            elapsed=0
+            until curl -sf "http://${host}:${port}${path}"; do
+              if [ "$elapsed" -ge "$timeout" ]; then
+                echo "Timed out after ${timeout}s waiting for mlflow"
+                exit 1
+              fi
+              sleep "$interval"
+              elapsed=$((elapsed + interval))
+            done
+            echo "mlflow is ready"
+      {{- end }}
       containers:
       - name: {{ .Values.mlops.deploy.name }}
         image: {{ .Values.mlops.deploy.image }}

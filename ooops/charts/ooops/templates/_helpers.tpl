@@ -60,3 +60,21 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+{{/*
+DNS name of the mlflow subchart Service (<release>-mlflow unless mlflow.fullnameOverride is set).
+*/}}
+{{- define "ooops.mlflowServiceHost" -}}
+{{- if .Values.mlops.mlflowWait.host }}
+{{- .Values.mlops.mlflowWait.host }}
+{{- else if .Values.mlflow.fullnameOverride }}
+{{- .Values.mlflow.fullnameOverride }}
+{{- else }}
+{{- $name := "mlflow" }}
+{{- if contains $name .Release.Name }}
+{{- .Release.Name | trunc 63 | trimSuffix "-" }}
+{{- else }}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" }}
+{{- end }}
+{{- end }}
+{{- end }}

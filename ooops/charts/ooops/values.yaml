@@ -10,6 +10,16 @@ mlops:
       requests:
         memory: 128Mi
         cpu: 0.1
+  # Block mlops pods until the mlflow subchart Service responds on /health.
+  mlflowWait:
+    enabled: true
+    # Leave empty to use <helm-release>-mlflow (must match mlflow subchart Service name).
+    host: ""
+    port: 80
+    path: /health
+    timeoutSeconds: 300
+    intervalSeconds: 2
+    image: curlimages/curl:8.11.1
 
 mlflow:
   backendStore:
@@ -31,3 +41,11 @@ mlflow:
     MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000
   serviceMonitor:
     enabled: true
+  initContainers:
+    - name: create-minio-bucket
+      image: minio/mc:latest
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          mc alias set minio http://minio-service:9000 minioadmin minioadmin
+          mc mb --ignore-existing minio/mlflow
