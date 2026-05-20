@@ -4,5 +4,10 @@ mlops:
     replicas: 1
     labels:
       app: mlops
-    image: 
+    port: 8080
+    
+    image:
     resources:
+      requests:
+        memory: 128Mi
+        cpu: 0.1

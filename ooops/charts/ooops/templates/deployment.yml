@@ -25,7 +25,7 @@ spec:
         ports:
         - containerPort: {{ .Values.mlops.deploy.port }}
         resources:
-          limits:
-            memory: {{ .Values.mlops.resources.limits.memory }}
-            cpu: {{ .Values.mlops.resources.limits.cpu }}
+          requests:
+            memory: {{ .Values.mlops.deploy.resources.requests.memory }}
+            cpu: {{ .Values.mlops.deploy.resources.requests.cpu }}
 
