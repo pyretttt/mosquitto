@@ -1,13 +1,33 @@
 mlops:
   deploy:
     name: mlops
-    replicas: 1
+    replicas: 2
     labels:
       app: mlops
     port: 8080
-    
-    image:
+    image: registry.gitlab.com/percalee/oops/mlops:latest
     resources:
       requests:
         memory: 128Mi
         cpu: 0.1
+
+mlflow:
+  backendStore:
+    databaseMigration: true
+    postgres:
+      enabled: true
+      host: postgres-service
+      port: 5432
+      database: postgres
+      user: postgres
+      password: postgres
+  artifactRoot:
+    s3:
+      enabled: true
+      bucket: mlflow
+      awsAccessKeyId: minioadmin
+      awsSecretAccessKey: minioadmin
+  extraEnvVars:
+    MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000
+  serviceMonitor:
+    enabled: true
