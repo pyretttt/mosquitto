@@ -66,22 +66,21 @@ pub struct MeshPrimitive {
     pub attributes: HashMap<gltf::Semantic, GpuAccessor>,
     pub indices: Option<GpuAccessor>,
     pub material: Option<Material>,
-    pub mode: wgpu::PrimitiveTopology,
+    pub mode: gltf::mesh::Mode,
 }
 
 #[derive(Clone)]
 pub struct GpuBufferView {
     pub gltf_data: Rc<gltf::buffer::Data>,
-    pub buf: wgpu::Buffer,            // dedup target; Arc-shared internally
-    pub offset: wgpu::BufferAddress,  // view.offset() — within source blob
-    pub length: wgpu::BufferAddress,  // view.length()
+    pub offset: usize,  // view.offset() — within source blob
+    pub length: usize,  // view.length()
     pub byte_stride: Option<u32>,     // view.stride(); None = tightly packed
 }
 
 #[derive(Clone)]
 pub struct GpuAccessor {
     pub view: GpuBufferView,
-    pub offset: wgpu::BufferAddress,
+    pub offset: usize,
     pub count: usize,
     pub component_type: DataType,
     pub dimensions: Dimensions,
@@ -90,9 +89,6 @@ pub struct GpuAccessor {
 #[derive(Clone)]
 pub struct TextureInfo {
     pub gltf_image: Rc<gltf::image::Data>,
-    pub texture: wgpu::Texture,
-    pub view: wgpu::TextureView,
-    pub sampler: wgpu::Sampler,
 }
 
 #[derive(Clone)]
@@ -211,45 +207,45 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
         }
     }).collect::<Vec<_>>();
 
-    let mut buffers_usages: HashMap<usize, wgpu::BufferUsages> = HashMap::new();
-    gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
-        mesh.primitives().for_each(|primitive| {
-            primitive.attributes().for_each(|(_, attribute_accessor)| {
-                let Some(buffer_view) = attribute_accessor.view() else {
-                    return;
-                };
-                *buffers_usages.entry(buffer_view.buffer().index())
-                    .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::VERTEX;
-            });
+    // let mut buffers_usages: HashMap<usize, wgpu::BufferUsages> = HashMap::new();
+    // gltf.document.meshes().for_each(|mesh: gltf::Mesh<'_>| {
+    //     mesh.primitives().for_each(|primitive| {
+    //         primitive.attributes().for_each(|(_, attribute_accessor)| {
+    //             let Some(buffer_view) = attribute_accessor.view() else {
+    //                 return;
+    //             };
+    //             *buffers_usages.entry(buffer_view.buffer().index())
+    //                 .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::VERTEX;
+    //         });
 
-            let Some(indices_accessor) = primitive.indices() else {
-                return;
-            };
-            let Some(index_buffer_view) = indices_accessor.view() else {
-                return;
-            };
-            *buffers_usages.entry(index_buffer_view.buffer().index())
-                .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::INDEX;
-        });
-    });
+    //         let Some(indices_accessor) = primitive.indices() else {
+    //             return;
+    //         };
+    //         let Some(index_buffer_view) = indices_accessor.view() else {
+    //             return;
+    //         };
+    //         *buffers_usages.entry(index_buffer_view.buffer().index())
+    //             .or_insert(wgpu::BufferUsages::empty()) |= wgpu::BufferUsages::INDEX;
+    //     });
+    // });
 
-    let mut buffers: HashMap<usize, wgpu::Buffer> = HashMap::new();
-    gltf.document.buffers().for_each(|buffer| {
-        let buffer_index = buffer.index();
+    // let mut buffers: HashMap<usize, wgpu::Buffer> = HashMap::new();
+    // gltf.document.buffers().for_each(|buffer| {
+    //     let buffer_index = buffer.index();
 
-        if let Some(buffer_usages) = buffers_usages.get(&buffer_index) {
-            let buffer_data = &gltf.buffers[buffer_index];
-            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(&format!("Buffer({})", buffer_index)),
-                contents: buffer_data.0.as_slice(),
-                usage: *buffer_usages,
-            });
+    //     if let Some(buffer_usages) = buffers_usages.get(&buffer_index) {
+    //         let buffer_data = &gltf.buffers[buffer_index];
+    //         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+    //             label: Some(&format!("Buffer({})", buffer_index)),
+    //             contents: buffer_data.0.as_slice(),
+    //             usage: *buffer_usages,
+    //         });
 
-            buffers.insert(buffer_index, buffer);
-        } else {
-            println!("Buffer({}) not used", buffer_index);
-        }
-    });
+    //         buffers.insert(buffer_index, buffer);
+    //     } else {
+    //         println!("Buffer({}) not used", buffer_index);
+    //     }
+    // });
 
     let mut accessors: HashMap<usize, GpuAccessor> = HashMap::new();
     gltf.document.accessors().for_each(|accessor| {
@@ -260,12 +256,11 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
         let gpu_accessor = GpuAccessor {
             view: GpuBufferView {
                 gltf_data: Rc::clone(&gltf.buffers[accessor_view.buffer().index()]),
-                buf: buffers.get(&accessor_view.buffer().index()).expect("Buffer not found").clone(),
-                offset: accessor_view.offset() as u64,
-                length: accessor_view.length() as u64,
+                offset: accessor_view.offset(),
+                length: accessor_view.length(),
                 byte_stride: accessor_view.stride().map(|s| s as u32),
             },
-            offset: accessor.offset() as u64,
+            offset: accessor.offset(),
             count: accessor.count(),
             component_type: accessor.data_type(),
             dimensions: accessor.dimensions(),
@@ -283,7 +278,7 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
                     accessors.get(&indices_accessor.index()).expect("Accessor not found").clone()
                 ),
                 material: primitive.material().index().map(|index| materials.get(index)).flatten().cloned(),
-                mode: private::map_gltf_mesh_mode(&primitive.mode()),
+                mode: primitive.mode(),
             }
         }).collect::<Vec<_>>();
 
@@ -366,9 +361,7 @@ pub fn make_model(gltf: &GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> Mo
 }
 
 mod private {
-    use gltf::image::Format;
     use super::HashMap;
-    use super::DeviceExt;
 
     pub const PBR_BASE_COLOR_TEXTURE_KEY: &str = "pbr_base_color";
     pub const NORMAL_TEXTURE_KEY: &str = "normal";
@@ -382,20 +375,20 @@ mod private {
         pub tex_type: String
     }
 
-    struct SamplerWrapper<'a>(gltf::texture::Sampler<'a>);
+    // struct SamplerWrapper<'a>(gltf::texture::Sampler<'a>);
 
-    impl<'a> SamplerWrapper<'a> {
-        fn make_descriptor(&self, label: &'a str) -> wgpu::SamplerDescriptor<'a> {
-            wgpu::SamplerDescriptor {
-                label: Some(label),
-                address_mode_u: map_address_mode(&self.0.wrap_s()),
-                address_mode_v: map_address_mode(&self.0.wrap_t()),
-                mag_filter: self.0.mag_filter().as_ref().map(map_mag_filter).unwrap_or_default(),
-                min_filter: self.0.min_filter().as_ref().map(map_min_filter).unwrap_or_default(),
-                ..Default::default()
-            }
-        }
-    }
+    // impl<'a> SamplerWrapper<'a> {
+    //     fn make_descriptor(&self, label: &'a str) -> wgpu::SamplerDescriptor<'a> {
+    //         wgpu::SamplerDescriptor {
+    //             label: Some(label),
+    //             address_mode_u: map_address_mode(&self.0.wrap_s()),
+    //             address_mode_v: map_address_mode(&self.0.wrap_t()),
+    //             mag_filter: self.0.mag_filter().as_ref().map(map_mag_filter).unwrap_or_default(),
+    //             min_filter: self.0.min_filter().as_ref().map(map_min_filter).unwrap_or_default(),
+    //             ..Default::default()
+    //         }
+    //     }
+    // }
 
     pub fn load_textures(gltf: &super::GLTF, device: &wgpu::Device, queue: &wgpu::Queue) -> HashMap<TextureKey, super::TextureInfo> {
         let mut textures: HashMap<TextureKey, super::TextureInfo> = HashMap::new();
@@ -406,7 +399,7 @@ mod private {
                     tex_type: PBR_BASE_COLOR_TEXTURE_KEY.to_owned(),
                 };
                 textures.entry(key).or_insert(
-                    load_texture_info(gltf, device, queue, &base_color_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb)
+                    load_texture_info(gltf, &base_color_texture.texture())
                 );
             }
 
@@ -416,7 +409,7 @@ mod private {
                     tex_type: NORMAL_TEXTURE_KEY.to_owned(),
                 };
                 textures.entry(key).or_insert(
-                    load_texture_info(gltf, device, queue, &normal_texture.texture(), wgpu::TextureFormat::Rgba8Unorm)
+                    load_texture_info(gltf, &normal_texture.texture())
                 );
             }
 
@@ -426,7 +419,7 @@ mod private {
                     tex_type: OCCLUSION_TEXTURE_KEY.to_owned(),
                 };
                 textures.entry(key).or_insert(
-                    load_texture_info(gltf, device, queue, &occlusion_texture.texture(), wgpu::TextureFormat::Rgba8Unorm)
+                    load_texture_info(gltf, &occlusion_texture.texture())
                 );
             }
 
@@ -436,7 +429,7 @@ mod private {
                     tex_type: EMISSIVE_TEXTURE_KEY.to_owned(),
                 };
                 textures.entry(key).or_insert(
-                    load_texture_info(gltf, device, queue, &emissive_texture.texture(), wgpu::TextureFormat::Rgba8UnormSrgb)
+                    load_texture_info(gltf, &emissive_texture.texture())
                 );
             }
 
@@ -446,7 +439,7 @@ mod private {
                     tex_type: METALLIC_ROUGHNESS_TEXTURE_KEY.to_owned(),
                 };
                 textures.entry(key).or_insert(
-                    load_texture_info(gltf, device, queue, &metallic_roughness_texture.texture(), wgpu::TextureFormat::Rgba8Unorm)
+                    load_texture_info(gltf, &metallic_roughness_texture.texture())
                 );
             }
         });
@@ -456,100 +449,67 @@ mod private {
 
     fn load_texture_info(
         gltf: &super::GLTF,
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
         texture: &gltf::texture::Texture<'_>,
-        format: wgpu::TextureFormat
     ) -> super::TextureInfo {
         let texture_data = gltf.textures.get(texture.index()).expect("Failed to obtain texture");
-        let upload_pixels = convert_gltf_image_to_rgba8(texture_data);
-        let size = wgpu::Extent3d {
-            width: texture_data.width,
-            height: texture_data.height,
-            depth_or_array_layers: 1,
-        };
-        let wgpu_texture = device.create_texture_with_data(
-            queue,
-            &wgpu::TextureDescriptor {
-                label: Some(&format!("Texture({})", texture.index())),
-                size,
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: format,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-                view_formats: &[],
-            },
-            Default::default(),
-            upload_pixels.as_slice(),
-        );
-        let texture_view = wgpu_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let sampler_wrapper = SamplerWrapper(texture.sampler());
-        let texture_sampler = device.create_sampler(&sampler_wrapper.make_descriptor(
-            sampler_wrapper.0.name().unwrap_or(&format!("Sampler({})", texture.index()))
-        ));
-
         super::TextureInfo {
-            gltf_image: texture_data.clone(),
-            texture: wgpu_texture,
-            view: texture_view,
-            sampler: texture_sampler,
+            gltf_image: texture_data.clone()
         }
     }
 
-    fn convert_gltf_image_to_rgba8(texture_data: &gltf::image::Data) -> Vec<u8> {
-        match texture_data.format {
-            Format::R8G8B8A8 => texture_data.pixels.clone(),
-            Format::R8G8B8 => texture_data.pixels
-                .chunks_exact(3)
-                .flat_map(|px| [px[0], px[1], px[2], 255])
-                .collect(),
-            Format::R8 => texture_data.pixels
-                .iter()
-                .flat_map(|v| [*v, *v, *v, 255])
-                .collect(),
-            Format::R8G8 => texture_data.pixels
-                .chunks_exact(2)
-                .flat_map(|px| [px[0], px[1], 0, 255])
-                .collect(),
-            _ => panic!("Unsupported glTF texture format: {:?}", texture_data.format),
-        }
-    }
+    // fn convert_gltf_image_to_rgba8(texture_data: &gltf::image::Data) -> Vec<u8> {
+    //     match texture_data.format {
+    //         Format::R8G8B8A8 => texture_data.pixels.clone(),
+    //         Format::R8G8B8 => texture_data.pixels
+    //             .chunks_exact(3)
+    //             .flat_map(|px| [px[0], px[1], px[2], 255])
+    //             .collect(),
+    //         Format::R8 => texture_data.pixels
+    //             .iter()
+    //             .flat_map(|v| [*v, *v, *v, 255])
+    //             .collect(),
+    //         Format::R8G8 => texture_data.pixels
+    //             .chunks_exact(2)
+    //             .flat_map(|px| [px[0], px[1], 0, 255])
+    //             .collect(),
+    //         _ => panic!("Unsupported glTF texture format: {:?}", texture_data.format),
+    //     }
+    // }
 
-    pub fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
-        match mode {
-            gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
-            gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
-            gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
-            gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
-            gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
-            _ => panic!("Unsupported primitive mode: {:?}", mode),
-        }
-    }
+    // pub fn map_gltf_mesh_mode(mode: &gltf::mesh::Mode) -> wgpu::PrimitiveTopology {
+    //     match mode {
+    //         gltf::mesh::Mode::Points => wgpu::PrimitiveTopology::PointList,
+    //         gltf::mesh::Mode::Lines => wgpu::PrimitiveTopology::LineList,
+    //         gltf::mesh::Mode::LineStrip => wgpu::PrimitiveTopology::LineStrip,
+    //         gltf::mesh::Mode::Triangles => wgpu::PrimitiveTopology::TriangleList,
+    //         gltf::mesh::Mode::TriangleStrip => wgpu::PrimitiveTopology::TriangleStrip,
+    //         _ => panic!("Unsupported primitive mode: {:?}", mode),
+    //     }
+    // }
 
-    fn map_address_mode(mode: &gltf::texture::WrappingMode) -> wgpu::AddressMode {
-        match mode {
-            gltf::texture::WrappingMode::ClampToEdge => wgpu::AddressMode::ClampToEdge,
-            gltf::texture::WrappingMode::Repeat => wgpu::AddressMode::Repeat,
-            gltf::texture::WrappingMode::MirroredRepeat => wgpu::AddressMode::MirrorRepeat,
-        }
-    }
+    // fn map_address_mode(mode: &gltf::texture::WrappingMode) -> wgpu::AddressMode {
+    //     match mode {
+    //         gltf::texture::WrappingMode::ClampToEdge => wgpu::AddressMode::ClampToEdge,
+    //         gltf::texture::WrappingMode::Repeat => wgpu::AddressMode::Repeat,
+    //         gltf::texture::WrappingMode::MirroredRepeat => wgpu::AddressMode::MirrorRepeat,
+    //     }
+    // }
 
-    fn map_mag_filter(mode: &gltf::texture::MagFilter) -> wgpu::FilterMode {
-        match mode {
-            gltf::texture::MagFilter::Nearest => wgpu::FilterMode::Nearest,
-            gltf::texture::MagFilter::Linear => wgpu::FilterMode::Linear,
-        }
-    }
+    // fn map_mag_filter(mode: &gltf::texture::MagFilter) -> wgpu::FilterMode {
+    //     match mode {
+    //         gltf::texture::MagFilter::Nearest => wgpu::FilterMode::Nearest,
+    //         gltf::texture::MagFilter::Linear => wgpu::FilterMode::Linear,
+    //     }
+    // }
 
-    fn map_min_filter(mode: &gltf::texture::MinFilter) -> wgpu::FilterMode {
-        match mode {
-            gltf::texture::MinFilter::Nearest => wgpu::FilterMode::Nearest,
-            gltf::texture::MinFilter::Linear => wgpu::FilterMode::Linear,
-            gltf::texture::MinFilter::NearestMipmapNearest => wgpu::FilterMode::Nearest,
-            gltf::texture::MinFilter::LinearMipmapNearest => wgpu::FilterMode::Linear,
-            gltf::texture::MinFilter::NearestMipmapLinear => wgpu::FilterMode::Nearest,
-            gltf::texture::MinFilter::LinearMipmapLinear => wgpu::FilterMode::Linear,
-        }
-    }
+    // fn map_min_filter(mode: &gltf::texture::MinFilter) -> wgpu::FilterMode {
+    //     match mode {
+    //         gltf::texture::MinFilter::Nearest => wgpu::FilterMode::Nearest,
+    //         gltf::texture::MinFilter::Linear => wgpu::FilterMode::Linear,
+    //         gltf::texture::MinFilter::NearestMipmapNearest => wgpu::FilterMode::Nearest,
+    //         gltf::texture::MinFilter::LinearMipmapNearest => wgpu::FilterMode::Linear,
+    //         gltf::texture::MinFilter::NearestMipmapLinear => wgpu::FilterMode::Nearest,
+    //         gltf::texture::MinFilter::LinearMipmapLinear => wgpu::FilterMode::Linear,
+    //     }
+    // }
 }
