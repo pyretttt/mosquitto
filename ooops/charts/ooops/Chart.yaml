@@ -29,3 +29,4 @@ dependencies:
   alias: mlflow
   version: "1.8.1"
   repository: "https://community-charts.github.io/helm-charts"
+  

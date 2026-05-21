@@ -20,17 +20,14 @@ mlops:
     timeoutSeconds: 300
     intervalSeconds: 2
     image: curlimages/curl:8.11.1
-
 mlflow:
+  postgresql:
+    enabled: true
+    # mlflow expects the service at {release}-mlflow-postgresql, but Bitnami
+    # defaults to {release}-postgresql when mlflow is used as a subchart.
+    fullnameOverride: mlapp-mlflow-postgresql
   backendStore:
     databaseMigration: true
-    postgres:
-      enabled: true
-      host: postgres-service
-      port: 5432
-      database: postgres
-      user: postgres
-      password: postgres
   artifactRoot:
     s3:
       enabled: true

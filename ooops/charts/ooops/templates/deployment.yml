@@ -1,4 +1,4 @@
-apiVersion: v1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ .Values.mlops.deploy.name }}-deploy
@@ -8,7 +8,7 @@ spec:
   replicas: {{ .Values.mlops.deploy.replicas }}
   selector:
     matchLabels:
-      {{- toYaml .Values.mlops.deploy.labels | nindent 4 }}
+      {{- toYaml .Values.mlops.deploy.labels | nindent 6 }}
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- toYaml .Values.mlops.deploy.labels | nindent 4 }}
+        {{- toYaml .Values.mlops.deploy.labels | nindent 8 }}
     spec:
       {{- if .Values.mlops.mlflowWait.enabled }}
       initContainers:
