@@ -52,4 +52,20 @@ spec:
           requests:
             memory: {{ .Values.mlops.deploy.resources.requests.memory }}
             cpu: {{ .Values.mlops.deploy.resources.requests.cpu }}
+        env:
+          - name: MLFLOW_TRACKING_URI
+            value: {{ include "ooops.mlflowServiceHost" . }}
+          - name: MLFLOW_EXPERIMENT_NAME
+            value: iris-classifier
+          - name: ML_MODEL_NAME
+            value: iris-classifier
+          - name: ML_MODEL_STAGE
+            value: None
+          - name: ADMIN_TOKEN
+            value: mlapp-admin
+          - name: MLFLOW_TRACKING_USERNAME
+            value: admin
+          - name: MLFLOW_TRACKING_PASSWORD
+            value: adminpassword
+
 

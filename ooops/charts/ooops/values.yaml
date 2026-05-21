@@ -5,7 +5,7 @@ mlops:
     labels:
       app: mlops
     port: 8080
-    image: registry.gitlab.com/percalee/oops/mlops:latest
+    image: registry.gitlab.com/percalee/oops:latest
     resources:
       requests:
         memory: 128Mi
@@ -20,6 +20,7 @@ mlops:
     timeoutSeconds: 300
     intervalSeconds: 2
     image: curlimages/curl:8.11.1
+
 mlflow:
   postgresql:
     enabled: true
