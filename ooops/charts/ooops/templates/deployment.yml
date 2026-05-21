@@ -26,7 +26,7 @@ spec:
         command: ["/bin/sh", "-c"]
         args:
           - |
-            host="{{ include "ooops.mlflowServiceHost" . }}"
+            host="{{ "ooops.mlflow.fullnameOverride" }}"
             port="{{ .Values.mlops.mlflowWait.port }}"
             path="{{ .Values.mlops.mlflowWait.path }}"
             timeout="{{ .Values.mlops.mlflowWait.timeoutSeconds }}"
@@ -54,7 +54,7 @@ spec:
             cpu: {{ .Values.mlops.deploy.resources.requests.cpu }}
         env:
           - name: MLFLOW_TRACKING_URI
-            value: {{ include "ooops.mlflowServiceHost" . }}
+            value: {{ .Values.mlflow.fullnameOverride }}
           - name: MLFLOW_EXPERIMENT_NAME
             value: iris-classifier
           - name: ML_MODEL_NAME

@@ -13,8 +13,6 @@ mlops:
   # Block mlops pods until the mlflow subchart Service responds on /health.
   mlflowWait:
     enabled: true
-    # Leave empty to use <helm-release>-mlflow (must match mlflow subchart Service name).
-    host: ""
     port: 80
     path: /health
     timeoutSeconds: 300
@@ -22,11 +20,14 @@ mlops:
     image: curlimages/curl:8.11.1
 
 mlflow:
+  fullnameOverride: mlflow-service
   postgresql:
     enabled: true
     # mlflow expects the service at {release}-mlflow-postgresql, but Bitnami
     # defaults to {release}-postgresql when mlflow is used as a subchart.
-    fullnameOverride: mlapp-mlflow-postgresql
+    fullnameOverride: mlflow-service-postgresql
+    usernameKey: "username"
+    passwordKey: "password"
   backendStore:
     databaseMigration: true
   artifactRoot:
