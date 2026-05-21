@@ -1,5 +1,5 @@
 
-pub mod gltf;
+pub mod gltf_models;
 pub mod common;
 pub mod vertex;
 pub mod texture;

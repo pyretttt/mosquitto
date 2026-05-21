@@ -11,7 +11,7 @@ use crate::vertex as vertex;
 use wgpu::util::DeviceExt;
 use cgmath::prelude::*;
 use crate::model::Vertex;
-use crate::gltf;
+use crate::gltf_models;
 
 
 const NUM_INSTANCES_PER_ROW: u32 = 10;
@@ -148,7 +148,7 @@ pub struct State {
     instances: Vec<Instance>,
     instance_buffer: wgpu::Buffer,
     depth_texture: crate::texture::Texture,
-    world: gltf::Model,
+    world: gltf_models::Model,
 }
 
 impl State {
@@ -185,9 +185,9 @@ impl State {
         ).await?;
 
 
-        let gltf = gltf::load_gltf(std::path::Path::new("/Users/bob/mosquitto/ray/ray_rust/resources/girl/scene.gltf"))
+        let gltf = gltf_models::load_gltf(std::path::Path::new("/Users/bob/mosquitto/ray/ray_rust/resources/girl/scene.gltf"))
             .expect("Failed to load GLTF");
-        let world = gltf::make_model(&gltf, &device, &queue);
+        let world = gltf_models::make_model(&gltf, &device, &queue);
 
         let surface_caps = surface.get_capabilities(&adapter);
         let surface_format = surface_caps.formats.iter()

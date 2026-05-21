@@ -4,7 +4,6 @@ use std::rc::Weak;
 use std::cell::RefCell;
 use gltf::accessor::{DataType, Dimensions};
 use std::collections::HashMap;
-use wgpu::util::DeviceExt;
 
 
 #[derive(Debug)]
