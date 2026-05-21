@@ -40,11 +40,20 @@ mlflow:
     MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000
   serviceMonitor:
     enabled: true
-  initContainers:
-    - name: create-minio-bucket
-      image: minio/mc:latest
-      command: ["/bin/sh", "-c"]
-      args:
-        - |
-          mc alias set minio http://minio-service:9000 minioadmin minioadmin
-          mc mb --ignore-existing minio/mlflow
+
+minio:
+  fullnameOverride: minio-service
+  auth:
+    rootUser: minioadmin
+    rootPassword: minioadminsecret
+  defaultBuckets:
+    - mlflow
+
+initContainers:
+  - name: create-minio-bucket
+    image: minio/mc:latest
+    command: ["/bin/sh", "-c"]
+    args:
+      - |
+        mc alias set minio http://minio-service:9000 minioadmin minioadmin
+        mc mb --ignore-existing minio/mlflow

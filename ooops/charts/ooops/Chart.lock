@@ -2,5 +2,8 @@ dependencies:
 - name: mlflow
   repository: https://community-charts.github.io/helm-charts
   version: 1.8.1
-digest: sha256:f3cedd1c31c34bbc680238281432d9a5ba0b896ce15187fdae6dfabfc4f64b99
-generated: "2026-05-20T18:33:28.901665+03:00"
+- name: minio
+  repository: https://charts.bitnami.com/bitnami
+  version: 17.0.21
+digest: sha256:e8cb0d75e41d8014122c944dd6c28e358e2912bcb081df207bbf154fef6b3369
+generated: "2026-05-21T18:49:21.608538+03:00"
