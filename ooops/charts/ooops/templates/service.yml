@@ -1,0 +1,10 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: {{ .Values.mlops.service.metadata.name }}
+spec:
+  type: {{ .Values.mlops.service.spec.type }}
+  selector:
+    {{- toYaml .Values.mlops.service.spec.selector | nindent 4 }}
+  ports:
+    {{- toYaml .Values.mlops.service.spec.ports | nindent 4 }}

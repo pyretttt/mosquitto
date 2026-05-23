@@ -1,10 +1,21 @@
 mlops:
+  service:
+    metadata:
+      name: mlops-service
+    spec:
+      type: LoadBalancer
+      selector:
+        app: mlops
+      ports:
+        - port: 8080
+          targetPort: 8000
+
   deploy:
     name: mlops
     replicas: 2
     labels:
       app: mlops
-    port: 8080
+    port: 8000
     image: registry.gitlab.com/percalee/oops:latest
     resources:
       requests:
