@@ -26,47 +26,64 @@ mlflow:
     # mlflow expects the service at {release}-mlflow-postgresql, but Bitnami
     # defaults to {release}-postgresql when mlflow is used as a subchart.
     fullnameOverride: mlflow-service-postgresql
-    usernameKey: "username"
-    passwordKey: "password"
+    auth:
+      username: mlflow
+      password: mlflow
+      database: mlflow
   backendStore:
     databaseMigration: true
   artifactRoot:
+    # Match docker-compose --serve-artifacts: clients fetch artifacts via MLflow.
+    proxiedArtifactStorage: true
     s3:
       enabled: true
       bucket: mlflow
-      awsAccessKeyId: minioadmin
-      awsSecretAccessKey: minioadmin
+      awsAccessKeyId: mlflowadmin
+      awsSecretAccessKey: mlflowsecret
   extraEnvVars:
-    MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000
+    # RustFS chart exposes the S3 API on {fullnameOverride}-svc.
+    MLFLOW_S3_ENDPOINT_URL: http://rustfs-service-svc:9000
+  # MLflow does not create S3 buckets; ensure the artifact bucket exists before start.
+  initContainers:
+    - name: create-rustfs-bucket
+      image: amazon/aws-cli:2.22.35
+      command: ["/bin/sh", "-c"]
+      args:
+        - |
+          set -e
+          ENDPOINT="http://rustfs-service-svc:9000"
+          until aws --endpoint-url "$ENDPOINT" s3api list-buckets >/dev/null 2>&1; do
+            echo "waiting for rustfs at ${ENDPOINT}..."
+            sleep 2
+          done
+          if ! aws --endpoint-url "$ENDPOINT" s3api head-bucket --bucket mlflow 2>/dev/null; then
+            aws --endpoint-url "$ENDPOINT" s3 mb "s3://mlflow"
+          fi
+          echo "rustfs bucket mlflow is ready"
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          value: mlflowadmin
+        - name: AWS_SECRET_ACCESS_KEY
+          value: mlflowsecret
+        - name: AWS_DEFAULT_REGION
+          value: us-east-1
   serviceMonitor:
     enabled: true
 
-minio:
-  image:
-    repository: minio/minio
-    tag: latest
-    pullPolicy: IfNotPresent
-  fullnameOverride: minio-service
-  mode: standalone
-  persistence:
-    size: 10Gi
-  resources:
-    requests:
-      memory: 1Gi
-  accessKey: "minioadmin"  # Change this
-  secretKey: "minioadminsecret"  # Change this
-  buckets:
-  - name: mlflow
-    policy: none
-    purge: false
-  service:
-    type: ClusterIP
-
-initContainers:
-  - name: create-minio-bucket
-    image: minio/mc:latest
-    command: ["/bin/sh", "-c"]
-    args:
-      - |
-        mc alias set minio http://minio-service:9000 minioadmin minioadmin
-        mc mb --ignore-existing minio/mlflow
+rustfs:
+  fullnameOverride: rustfs-service
+  replicaCount: 1
+  mode:
+    standalone:
+      enabled: true
+    distributed:
+      enabled: false
+  secret:
+    rustfs:
+      access_key: mlflowadmin
+      secret_key: mlflowsecret
+  ingress:
+    enabled: false
+  # RustFS defaults to storageClass "local-path" (k3d/kind). This cluster uses "standard".
+  storageclass:
+    name: standard

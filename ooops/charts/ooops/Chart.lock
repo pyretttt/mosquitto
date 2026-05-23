@@ -2,8 +2,8 @@ dependencies:
 - name: mlflow
   repository: https://community-charts.github.io/helm-charts
   version: 1.8.1
-- name: minio
-  repository: https://charts.bitnami.com/bitnami
-  version: 17.0.21
-digest: sha256:e8cb0d75e41d8014122c944dd6c28e358e2912bcb081df207bbf154fef6b3369
-generated: "2026-05-23T08:51:50.964034+03:00"
+- name: rustfs
+  repository: https://charts.rustfs.com
+  version: 0.4.0
+digest: sha256:6c663b0ddff13a7575f749e099ca3626298cc7ddb213112390a9512f99c02282
+generated: "2026-05-23T11:29:24.334455+03:00"

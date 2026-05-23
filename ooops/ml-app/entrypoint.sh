@@ -65,6 +65,6 @@ PY
 # training into CI (LEARNING_PATH step 9), delete the line below.
 # Until you implement the wait above, this WILL fail on a clean start —
 # that's the symptom that should drive you to fix it. ✅
-# python -m src.train || echo "training failed (likely mlflow not ready) — API will start in degraded mode"
+python -m src.train || echo "training failed (likely mlflow not ready) — API will start in degraded mode"
 
 exec uvicorn src.api:app --host 0.0.0.0 --port 8000

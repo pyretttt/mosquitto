@@ -29,7 +29,7 @@ dependencies:
   alias: mlflow
   version: "1.8.1"
   repository: "https://community-charts.github.io/helm-charts"
-- name: minio
-  alias: minio
-  version: "5.4.0"
-  repository: "https://charts.min.io/"
+- name: rustfs
+  alias: rustfs
+  version: "0.4.0"
+  repository: "https://charts.rustfs.com"
