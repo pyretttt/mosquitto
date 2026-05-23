@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.env
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+dist/
+build/
+
+# Editors
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Project artifacts
+infra/triton/model_repository/*/1/*.onnx
+infra/triton/model_repository/*/1/*.bin
+data/
+*.log
+
+# Docker
+.docker/
+
+# k8s
+kubeconfig

@@ -1,0 +1,66 @@
+# Minimal Triton deployment for the kind cluster.
+#
+# For the lab, the model_repository is delivered via a configmap mount of a
+# placeholder; in real life you'd bake the model into the image or pull
+# from S3/GCS at startup. The deployment is here so the api Pod can dial
+# `triton:8001`. Set replicas: 0 to skip during a quick kind smoke-test if
+# you only want to validate the chart.
+apiVersion: v1
+kind: Service
+metadata:
+  name: triton
+  namespace: mlops
+spec:
+  selector:
+    app: triton
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+    - name: grpc
+      port: 8001
+      targetPort: 8001
+    - name: metrics
+      port: 8002
+      targetPort: 8002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: triton
+  namespace: mlops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: triton
+  template:
+    metadata:
+      labels:
+        app: triton
+    spec:
+      containers:
+        - name: triton
+          image: nvcr.io/nvidia/tritonserver:24.08-py3
+          args:
+            - tritonserver
+            - --model-repository=/models
+            - --strict-model-config=false
+            - --model-control-mode=poll
+            - --repository-poll-secs=30
+          ports:
+            - containerPort: 8000
+            - containerPort: 8001
+            - containerPort: 8002
+          readinessProbe:
+            httpGet:
+              path: /v2/health/ready
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          volumeMounts:
+            - name: models
+              mountPath: /models
+      volumes:
+        - name: models
+          emptyDir: {}

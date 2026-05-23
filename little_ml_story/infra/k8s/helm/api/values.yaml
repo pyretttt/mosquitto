@@ -1,0 +1,48 @@
+replicaCount: 2
+
+image:
+  repository: little-ml-story-api
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: NodePort
+  port: 8000
+  nodePort: 30080
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+env:
+  TRITON_URL: "triton:8001"
+  TRITON_MODEL_NAME: "resnet50"
+  TRITON_MODEL_VERSION: "1"
+  POSTGRES_HOST: "postgres"
+  POSTGRES_PORT: "5432"
+  POSTGRES_USER: "mlops"
+  POSTGRES_PASSWORD: "mlops"
+  POSTGRES_DB: "mlops"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  KAFKA_BOOTSTRAP_SERVERS: "redpanda:9092"
+  KAFKA_PREDICTION_TOPIC: "predictions"
+  CLICKHOUSE_HOST: "clickhouse"
+  CLICKHOUSE_PORT: "8123"
+  CLICKHOUSE_DATABASE: "mlops"
+
+probes:
+  liveness:
+    path: /livez
+  readiness:
+    path: /healthz
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70

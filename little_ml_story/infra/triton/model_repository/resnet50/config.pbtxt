@@ -1,0 +1,32 @@
+name: "resnet50"
+platform: "onnxruntime_onnx"
+max_batch_size: 8
+
+input [
+  {
+    name: "data"
+    data_type: TYPE_FP32
+    format: FORMAT_NCHW
+    dims: [ 3, 224, 224 ]
+  }
+]
+
+output [
+  {
+    name: "resnetv17_dense0_fwd"
+    data_type: TYPE_FP32
+    dims: [ 1000 ]
+  }
+]
+
+dynamic_batching {
+  preferred_batch_size: [ 2, 4, 8 ]
+  max_queue_delay_microseconds: 1000
+}
+
+instance_group [
+  {
+    count: 1
+    kind: KIND_CPU
+  }
+]

@@ -1,0 +1,54 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "id": null,
+  "title": "Predictions - ClickHouse analytics",
+  "tags": ["clickhouse", "analytics", "little-ml-story"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {"from": "now-6h", "to": "now"},
+  "panels": [
+    {
+      "id": 1,
+      "title": "Predictions per minute",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "ClickHouse"},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+      "targets": [
+        {
+          "rawSql": "SELECT toStartOfMinute(event_time) AS t, count() AS n FROM mlops.prediction_events WHERE $__timeFilter(event_time) GROUP BY t ORDER BY t",
+          "format": 0
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Top classes (last hour)",
+      "type": "table",
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "ClickHouse"},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+      "targets": [
+        {
+          "rawSql": "SELECT top_class_label AS class, count() AS n, round(avg(top_class_score), 3) AS avg_score FROM mlops.prediction_events WHERE event_time > now() - INTERVAL 1 HOUR GROUP BY class ORDER BY n DESC LIMIT 20",
+          "format": 1
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Avg server-side latency (ms)",
+      "type": "timeseries",
+      "datasource": {"type": "grafana-clickhouse-datasource", "uid": "ClickHouse"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {
+          "rawSql": "SELECT toStartOfMinute(event_time) AS t, avg(latency_ms) AS avg_ms FROM mlops.prediction_events WHERE $__timeFilter(event_time) GROUP BY t ORDER BY t",
+          "format": 0
+        }
+      ]
+    }
+  ]
+}
