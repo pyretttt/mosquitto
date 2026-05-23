@@ -24,6 +24,7 @@ dependencies = [
     "clickhouse-connect>=0.8",
     "prometheus-fastapi-instrumentator>=7.0",
     "orjson>=3.10",
+    "psycopg2-binary>=2.9,<3.0"
 ]
 
 [project.optional-dependencies]

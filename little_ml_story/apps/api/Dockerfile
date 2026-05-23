@@ -11,7 +11,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-COPY pyproject.toml /app/pyproject.toml
+COPY pyproject.toml README.md /app/
 COPY apps /app/apps
 
 RUN pip install --upgrade pip \

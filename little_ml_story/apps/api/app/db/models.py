@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import JSON, DateTime, Float, Integer, String, func
+from sqlalchemy import JSON, DateTime, Float, Integer, String, func, Index, desc
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -11,6 +11,9 @@ class Base(DeclarativeBase):
 
 class Prediction(Base):
     __tablename__ = "predictions"
+    __table_args__ = (
+        Index("ix_predictions_model_name_created_at", "model_name", desc("created_at")),
+    )
 
     id: Mapped[str] = mapped_column(UUID(as_uuid=False), primary_key=True)
     created_at: Mapped[datetime] = mapped_column(

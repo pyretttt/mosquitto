@@ -176,7 +176,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./apps:/app/apps:ro
+      - ./apps:/app/apps
       - ./tests:/app/tests:ro
     labels:
       logs: "include"
