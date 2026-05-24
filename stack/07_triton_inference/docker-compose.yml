@@ -1,0 +1,20 @@
+services:
+  triton:
+    # CPU-friendly Triton image, ~3GB. On Apple Silicon it runs under Rosetta.
+    image: nvcr.io/nvidia/tritonserver:24.08-py3
+    platform: linux/amd64
+    container_name: mlops_triton
+    command:
+      - tritonserver
+      - --model-repository=/models
+      - --model-control-mode=poll
+      - --repository-poll-secs=5
+      - --strict-model-config=false
+      - --log-verbose=0
+    ports:
+      - "8000:8000"  # HTTP
+      - "8001:8001"  # gRPC
+      - "8002:8002"  # Prometheus metrics
+    volumes:
+      - ./model_repository:/models
+    shm_size: 1g

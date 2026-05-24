@@ -1,0 +1,26 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.10
+    container_name: mlops_clickhouse
+    ports:
+      - "8123:8123"   # HTTP / Play UI
+      - "9000:9000"   # native protocol
+    environment:
+      CLICKHOUSE_DB: mlops
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - chdata:/var/lib/clickhouse
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  chdata:

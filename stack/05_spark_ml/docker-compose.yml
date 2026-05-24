@@ -1,0 +1,16 @@
+services:
+  spark:
+    # Bitnami images bundle Spark + Python + Hadoop client; ideal for "local[*]".
+    image: bitnami/spark:3.5
+    container_name: mlops_spark
+    user: root
+    working_dir: /work
+    command: ["tail", "-f", "/dev/null"]   # keep alive; we exec into it
+    ports:
+      - "4040:4040"   # Spark application UI
+    volumes:
+      - ./:/work
+      - sparkdata:/work/models
+
+volumes:
+  sparkdata:
