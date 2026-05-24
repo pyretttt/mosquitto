@@ -50,7 +50,7 @@ def make_batch(n: int, base_ts: datetime) -> list[list]:
 
 
 def main() -> None:
-    client = clickhouse_connect.get_client(host=CH_HOST, database="mlops")
+    client = clickhouse_connect.get_client(host=CH_HOST, database="mlops", user="mlflow", password="mlflow")
     columns = [
         "ts", "model_name", "model_version", "request_id", "user_id",
         "latency_ms", "status", "feature_age", "feature_amount",

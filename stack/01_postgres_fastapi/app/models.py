@@ -48,7 +48,8 @@ class ModelVersion(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     experiment_id: Mapped[int] = mapped_column(
-        ForeignKey("experiments.id", ondelete="CASCADE")
+        ForeignKey("experiments.id", ondelete="CASCADE"),
+        index=True
     )
     version: Mapped[str] = mapped_column(String(40))
     metric_name: Mapped[str] = mapped_column(String(40))

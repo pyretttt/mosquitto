@@ -39,7 +39,7 @@ SETTINGS index_granularity = 8192;
 
 
 def main() -> None:
-    client = clickhouse_connect.get_client(host=CH_HOST, database="mlops")
+    client = clickhouse_connect.get_client(host=CH_HOST, database="mlops", user="mlflow", password="mlflow")
     client.command(DDL)
     print("OK — table `inferences` is ready.")
 

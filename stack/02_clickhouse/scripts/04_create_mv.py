@@ -10,8 +10,7 @@ import clickhouse_connect
 
 CH_HOST = "localhost"
 
-ROLLUP_TABLE = """
-CREATE TABLE IF NOT EXISTS inferences_per_minute
+ROLLUP_TABLE = """CREATE TABLE IF NOT EXISTS inferences_per_minute
 (
     minute        DateTime,
     model_version LowCardinality(String),
@@ -20,11 +19,9 @@ CREATE TABLE IF NOT EXISTS inferences_per_minute
     sum_latency   Float64
 )
 ENGINE = SummingMergeTree
-ORDER BY (model_version, minute);
-"""
+ORDER BY (model_version, minute);"""
 
-MV = """
-CREATE MATERIALIZED VIEW IF NOT EXISTS inferences_per_minute_mv
+MV = """CREATE MATERIALIZED VIEW IF NOT EXISTS inferences_per_minute_mv
 TO inferences_per_minute AS
 SELECT
     toStartOfMinute(ts) AS minute,
@@ -32,21 +29,18 @@ SELECT
     count() AS n,
     countIf(status != 'OK') AS errors,
     sum(latency_ms) AS sum_latency
-FROM inferences
-GROUP BY minute, model_version;
-"""
+FROM mlops.inferences
+GROUP BY minute, model_version;"""
 
-CHECK = """
-SELECT minute, model_version, n, errors,
+CHECK = """SELECT minute, model_version, n, errors,
        round(sum_latency / n, 2) AS mean_latency
-FROM inferences_per_minute
+FROM mlops.inferences_per_minute
 ORDER BY minute DESC
-LIMIT 5;
-"""
+LIMIT 5;"""
 
 
 def main() -> None:
-    client = clickhouse_connect.get_client(host=CH_HOST, database="mlops")
+    client = clickhouse_connect.get_client(host=CH_HOST, database="mlops", user="mlflow", password="mlflow")
     client.command(ROLLUP_TABLE)
     client.command(MV)
     print("MV created. Note: it only sees data inserted AFTER creation.")

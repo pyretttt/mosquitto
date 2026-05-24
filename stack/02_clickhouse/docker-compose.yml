@@ -7,8 +7,8 @@ services:
       - "9000:9000"   # native protocol
     environment:
       CLICKHOUSE_DB: mlops
-      CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_USER: mlflow
+      CLICKHOUSE_PASSWORD: "mlflow"
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
     ulimits:
       nofile:
