@@ -28,7 +28,7 @@ app = FastAPI(title="MLOps Model Registry")
 async def create_experiment(
     payload: ExperimentIn,
     session: AsyncSession = Depends(get_session),
-) -> Experiment:
+) -> ExperimentOut:
     exp = Experiment(**payload.model_dump())
     session.add(exp)
     try:
@@ -37,8 +37,13 @@ async def create_experiment(
         await session.rollback()
         raise HTTPException(409, "experiment name already exists")
     await session.refresh(exp)
-    # No versions yet, so empty list is fine.
-    return exp
+    return ExperimentOut(
+        id=exp.id,
+        name=exp.name,
+        owner=exp.owner,
+        created_at=exp.created_at,
+        versions=[],
+    )
 
 
 @app.get("/experiments/{exp_id}", response_model=ExperimentOut)
