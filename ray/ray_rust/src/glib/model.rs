@@ -24,6 +24,7 @@ pub struct Node {
     pub gtlf_node: Rc<RefCell<gltf_models::Node>>,
     pub children: Vec<Rc<RefCell<Node>>>,
     pub parent: Option<Weak<RefCell<Node>>>,
+    pub mesh: Option<Rc<Mesh>>,
 }
 
 #[derive(Clone)]
@@ -34,7 +35,7 @@ pub struct Mesh {
 
 #[derive(Clone)]
 pub struct MeshPrimitive {
-    pub gtlf_pimitive: gltf_models::MeshPrimitive,
+    pub gtlf_primitive: gltf_models::MeshPrimitive,
     pub attributes: HashMap<gltf::Semantic, GpuAccessor>,
     pub indices: Option<GpuAccessor>,
     pub material: Option<Material>,
@@ -49,7 +50,7 @@ pub struct GpuAccessor {
 #[derive(Clone)]
 pub struct BufferView {
     pub gtlf_buffer_view: gltf_models::GpuBufferView,
-    pub buffer: u32,
+    pub buffer_id: u32,
 }
 
 #[derive(Clone)]

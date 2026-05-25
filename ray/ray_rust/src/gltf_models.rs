@@ -86,8 +86,20 @@ pub struct GpuAccessor {
 }
 
 #[derive(Clone)]
+pub struct Sampler {
+    pub mag_filter: Option<gltf::texture::MagFilter>,
+    pub min_filter: Option<gltf::texture::MinFilter>,
+    pub wrap_s: gltf::texture::WrappingMode,
+    pub wrap_t: gltf::texture::WrappingMode,
+    pub border: [f32; 4],
+    pub mipmaps: bool,
+    pub bit_format: gltf::image::Format,
+}
+
+#[derive(Clone)]
 pub struct TextureInfo {
     pub gltf_image: Rc<gltf::image::Data>,
+    pub gltf_sampler: Option<Sampler>,
 }
 
 #[derive(Clone)]
@@ -452,7 +464,8 @@ mod private {
     ) -> super::TextureInfo {
         let texture_data = gltf.textures.get(texture.index()).expect("Failed to obtain texture");
         super::TextureInfo {
-            gltf_image: texture_data.clone()
+            gltf_image: texture_data.clone(),
+            gltf_sampler: None,
         }
     }
 
