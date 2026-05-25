@@ -26,6 +26,7 @@ BOOTSTRAP = "localhost:9092"
 
 producer = Producer({
     "bootstrap.servers": BOOTSTRAP,
+    "security.protocol": "PLAINTEXT",
     "client.id": "predictions-api",
     # acks=all is the safe default; leader will wait for in-sync replicas.
     "acks": "all",

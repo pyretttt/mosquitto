@@ -16,13 +16,14 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(mess
 log = logging.getLogger("consumer")
 
 TOPIC = "predictions"
-GROUP_ID = "predictions-logger"  # change to start a fresh replay (with earliest)
+GROUP_ID = "replayer"  # change to start a fresh replay (with earliest)
 BOOTSTRAP = "localhost:9092"
 
 
 def main() -> None:
     consumer = Consumer({
         "bootstrap.servers": BOOTSTRAP,
+        "security.protocol": "PLAINTEXT",
         "group.id": GROUP_ID,
         # earliest = if no committed offset for this group, replay from start
         "auto.offset.reset": "earliest",

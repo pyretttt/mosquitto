@@ -27,15 +27,24 @@ docker compose up -d
 docker compose logs -f kafka   # wait for "Kafka Server started"
 ```
 
+`docker-compose.yml` uses **PLAINTEXT** listeners (`PLAINTEXT_HOST` on `0.0.0.0:9092`, advertised as `localhost:9092`) so FastAPI on your Mac can connect through the published port. If you see `Disconnected while requesting ApiVersion` / “SSL listener” from `confluent-kafka`, the broker was almost certainly bound to `localhost` *inside* the container only — recreate with `docker compose up -d` after any listener change.
+
 ### Step 2 — Create a topic with 3 partitions
 
+The `apache/kafka` image ships admin scripts under `/opt/kafka/bin/` (they are not on `PATH` like the old Bitnami image).
+
 ```bash
-docker compose exec kafka kafka-topics.sh \
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
   --bootstrap-server localhost:9092 \
   --create --topic predictions --partitions 3 --replication-factor 1
 ```
 
-List it: `docker compose exec kafka kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic predictions`.
+List it:
+
+```bash
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:9092 --describe --topic predictions
+```
 
 Notice: **3 partitions, 1 replica** (1 because we have 1 broker; in prod you'd want 3 replicas across 3 brokers).
 
