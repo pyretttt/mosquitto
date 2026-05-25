@@ -1,7 +1,7 @@
 services:
   spark:
     # Bitnami images bundle Spark + Python + Hadoop client; ideal for "local[*]".
-    image: bitnami/spark:3.5
+    image: apache/spark:4.1.2
     container_name: mlops_spark
     user: root
     working_dir: /work
