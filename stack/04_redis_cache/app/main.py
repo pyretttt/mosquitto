@@ -1,6 +1,6 @@
 """FastAPI demo of two Redis patterns:
 
-1. /score  : cache-aside in front of an artificially slow "model".
+1. /score  : cache-aside + single-flight lock in front of a slow "model".
 2. /predict: per-API-key sliding-window rate limiter using a sorted set.
 
 Run:  uvicorn app.main:app --reload --port 8000
@@ -23,9 +23,10 @@ app = FastAPI(title="Redis cache + rate limit demo")
 rds: redis.Redis = redis.from_url("redis://localhost:6379/0", decode_responses=True)
 
 
-# ---------- 1. cache-aside ----------
+# ---------- 1. cache-aside + single-flight (stampede guard) ----------
 
-CACHE_TTL = 60  # seconds
+CACHE_TTL = 1  # short TTL to surface thundering herd in load tests (README step 5)
+LOCK_TTL = 5  # seconds; NX lock while one worker recomputes
 
 
 async def _expensive_score(user_id: int) -> dict:
@@ -34,20 +35,33 @@ async def _expensive_score(user_id: int) -> dict:
     return {"user_id": user_id, "score": (user_id * 1_103_515_245 + 12345) % 1000 / 1000}
 
 
-@app.get("/score")
-async def score(user_id: int) -> dict:
-    key = f"score:{user_id}"
-
+async def _get_with_lock(key: str, user_id: int) -> dict:
+    """Cache-aside with SET NX lock so only one miss recomputes at a time."""
     cached = await rds.get(key)
     if cached is not None:
         log.info("HIT  %s", key)
         return json.loads(cached)
 
-    log.info("MISS %s", key)
-    result = await _expensive_score(user_id)
-    # SET with TTL — atomic in one round-trip.
-    await rds.set(key, json.dumps(result), ex=CACHE_TTL)
-    return result
+    lock_key = f"lock:{key}"
+    if await rds.set(lock_key, "1", nx=True, ex=LOCK_TTL):
+        log.info("MISS %s", key)
+        result = await _expensive_score(user_id)
+        await rds.set(key, json.dumps(result), ex=CACHE_TTL)
+        return result
+
+    for _ in range(LOCK_TTL * 10):
+        await asyncio.sleep(0.1)
+        cached = await rds.get(key)
+        if cached is not None:
+            log.info("HIT  %s (waited)", key)
+            return json.loads(cached)
+
+    return await _get_with_lock(key, user_id)
+
+
+@app.get("/score")
+async def score(user_id: int) -> dict:
+    return await _get_with_lock(f"score:{user_id}", user_id)
 
 
 # ---------- 2. sliding-window rate limiter ----------
