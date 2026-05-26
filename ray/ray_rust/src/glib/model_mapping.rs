@@ -2,6 +2,7 @@ use crate::glib::model as glib_models;
 use crate::gltf_models;
 use std::rc::Rc;
 use std::cell::RefCell;
+use std::ffi::c_void;
 
 pub fn map_model(gltf_model: gltf_models::Model) -> glib_models::Model {
     glib_models::Model {
@@ -42,11 +43,44 @@ fn map_mesh(gltf_mesh: &Rc<gltf_models::Mesh>) -> Rc<glib_models::Mesh> {
 }
 
 fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::MeshPrimitive {
+    let attributes = gltf_primitive.attributes.iter().map(|(semantic, accessor)| {
+        (semantic.clone(), map_accessor(&accessor))
+    }).collect();
+
+    // 0: Positions, 1: Normal, 2: Tangent, 3: TexCoord, 4: Color, 5: Joints, 6: Weights
+    let mut vbos: Vec<u32> = (0..7).collect();
+    let mut ebo = 0;
+    let mut vao = 0;
+    let has_ebo = gltf_primitive.indices.is_some();
+
+    unsafe {
+        gl::GenVertexArrays(1, &raw mut vao);
+        gl::BindVertexArray(vao);
+
+        if has_ebo {
+            gl::GenBuffers(1, &raw mut ebo);
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+        }
+
+
+        (0..7).for_each(|idx| {
+            gl::GenBuffers(1, &raw mut vbos[idx]);
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbos[idx]);
+            
+        });
+
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbos[0]);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            gltf_primitive.attributes.values().map(|accessor| accessor.view.length as isize).sum(),
+            gltf_primitive.attributes.values().map(|accessor| accessor.view.data.as_ptr() as *const c_void).sum(),
+            gl::STATIC_DRAW
+        );
+    }
+
     glib_models::MeshPrimitive {
         gtlf_primitive: gltf_primitive.clone(),
-        attributes: gltf_primitive.attributes.iter().map(|(semantic, accessor)| {
-            (semantic.clone(), map_accessor(&accessor))
-        }).collect(),
+        attributes: attributes,
         indices: gltf_primitive.indices.as_ref().map(map_accessor),
         material: gltf_primitive.material.as_ref().map(map_material),
     }
@@ -84,12 +118,64 @@ fn map_pbr_metallic_roughness(gltf_pbr_metallic_roughness: &gltf_models::PbrMeta
     }
 }
 
-fn map_texture_info(gltf_texture: &gltf_models::TextureInfo) -> glib_models::TextureInfo {
-    glib_models::TextureInfo {
-        gltf_texture_info: gltf_texture.clone(),
-        id: 0,
-        texture_modes: map_texture_modes(&gltf_texture),
+fn map_normal_texture(gltf_normal_texture: &gltf_models::NormalTexture) -> glib_models::NormalTexture {
+    glib_models::NormalTexture {
+        gltf_normal_texture: gltf_normal_texture.clone(),
+        normal_texture: map_texture_info(&gltf_normal_texture.normal_texture),
     }
+}
+
+fn map_occlusion_texture(gltf_occlusion_texture: &gltf_models::OcclusionTexture) -> glib_models::OcclusionTexture {
+    glib_models::OcclusionTexture {
+        gltf_occlusion_texture: gltf_occlusion_texture.clone(),
+        occlusion_texture: map_texture_info(&gltf_occlusion_texture.occlusion_texture),
+    }
+}
+
+fn map_emissive_texture(gltf_emissive_texture: &gltf_models::EmissiveTexture) -> glib_models::EmissiveTexture {
+    glib_models::EmissiveTexture {
+        gltf_emissive_texture: gltf_emissive_texture.clone(),
+        emissive_texture: map_texture_info(&gltf_emissive_texture.emissive_texture),
+    }
+}
+
+fn map_texture_info(gltf_texture: &gltf_models::TextureInfo) -> glib_models::TextureInfo {
+    let modes = map_texture_modes(&gltf_texture);
+    let mut texture = 0;
+    unsafe {
+        gl::GenTextures(1, &raw mut texture);
+        gl::BindTexture(gl::TEXTURE_2D, texture);
+
+        gl::TexImage2D(
+            gl::TEXTURE_2D,
+            0,
+            gl::RGBA as i32,
+            gltf_texture.gltf_image.width as i32,
+            gltf_texture.gltf_image.height as i32,
+            0,
+            modes.bit_format,
+            gl::UNSIGNED_BYTE,
+            gltf_texture.gltf_image.pixels.as_ptr() as *const c_void
+        );
+        if modes.mipmaps {
+            gl::GenerateMipmap(gl::TEXTURE_2D);
+        }
+
+        gl::TexParameterfv(gl::TEXTURE_2D, gl::TEXTURE_BORDER_COLOR, modes.border.as_ptr() as *const f32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, modes.wrap_mode_s as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, modes.wrap_mode_t as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, modes.minifying_filter as i32);
+        gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, modes.magnifying_filter as i32);
+    }
+
+    let texture = glib_models::TextureInfo {
+        gltf_texture_info: gltf_texture.clone(),
+        id: texture,
+        texture_modes: modes,
+    };
+
+    unsafe { gl::BindTexture(gl::TEXTURE_2D, 0) };
+    texture
 }
 
 fn map_texture_modes(_gltf_texture_info: &gltf_models::TextureInfo) -> glib_models::TextureModes {
@@ -100,6 +186,6 @@ fn map_texture_modes(_gltf_texture_info: &gltf_models::TextureInfo) -> glib_mode
         minifying_filter: gl::LINEAR,
         border: [1.0, 1.0, 1.0, 1.0],
         mipmaps: true,
-        bit_format: gl::RGB,
+        bit_format: gl::RGBA,
     }
 }
