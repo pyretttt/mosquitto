@@ -115,6 +115,12 @@ class HTTPClient():
                 return http_msg
             elif http_msg.status_code in (204, ):
                 return http_msg
+            elif (
+                "Transfer-Encoding" not in http_msg.headers
+                and "Content-Length" not in http_msg.headers
+                and http_msg.headers.get("Connection") == "close"
+            ):
+                return None
             else:
                 assert False, "Unexpected HTTP message"
                 return http_msg
