@@ -1,0 +1,34 @@
+name: "churn_onnx"
+backend: "onnxruntime"
+max_batch_size: 64
+
+input [
+  {
+    name: "input"
+    data_type: TYPE_FP32
+    dims: [ 8 ]
+  }
+]
+output [
+  {
+    name: "label"
+    data_type: TYPE_INT64
+    dims: [ 1 ]
+  },
+  {
+    name: "probabilities"
+    data_type: TYPE_FP32
+    dims: [ 2 ]
+  }
+]
+
+# Triton merges concurrent small requests into one batch on the backend.
+dynamic_batching {
+  preferred_batch_size: [ 8, 16, 32 ]
+  max_queue_delay_microseconds: 500
+}
+
+# Serve the two newest versions side by side (used in step 5 of README).
+version_policy: { latest: { num_versions: 2 } }
+
+instance_group [ { count: 1 kind: KIND_CPU } ]

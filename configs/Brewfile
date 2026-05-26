@@ -6,6 +6,7 @@ brew "mole"
 brew "font-meslo-lg-nerd-font"
 brew "StanMarek/tap/ghost-complete"
 brew "k9s"
+brew "helix"
 
 cask "aerospace"
 cask "fork"
