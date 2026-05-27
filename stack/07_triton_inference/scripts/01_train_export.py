@@ -49,33 +49,27 @@ def write_config() -> None:
     cfg = textwrap.dedent(f"""
         name: "churn_onnx"
         backend: "onnxruntime"
-        max_batch_size: 64
+        max_batch_size: 0
 
         input [
           {{
             name: "input"
             data_type: TYPE_FP32
-            dims: [ {N_FEATURES} ]
+            dims: [ -1, {N_FEATURES} ]
           }}
         ]
         output [
           {{
             name: "label"
             data_type: TYPE_INT64
-            dims: [ 1 ]
+            dims: [ -1 ]
           }},
           {{
             name: "probabilities"
             data_type: TYPE_FP32
-            dims: [ 2 ]
+            dims: [ -1, 2 ]
           }}
         ]
-
-        # Triton merges concurrent small requests into one batch on the backend.
-        dynamic_batching {{
-          preferred_batch_size: [ 8, 16, 32 ]
-          max_queue_delay_microseconds: 500
-        }}
 
         # Serve the two newest versions side by side (used in step 5 of README).
         version_policy: {{ latest: {{ num_versions: 2 }} }}
@@ -88,11 +82,11 @@ def write_config() -> None:
 
 def main() -> None:
     model = train()
-    export(model, REPO / "1" / "model.onnx")
+    export(model, REPO / "2" / "model.onnx")
     write_config()
     # quick sanity check that the ONNX runs
     import onnxruntime as ort
-    sess = ort.InferenceSession(str(REPO / "1" / "model.onnx"))
+    sess = ort.InferenceSession(str(REPO / "2" / "model.onnx"))
     sample = np.random.randn(2, N_FEATURES).astype(np.float32)
     outs = sess.run(None, {"input": sample})
     print("onnx sanity check outputs:")
