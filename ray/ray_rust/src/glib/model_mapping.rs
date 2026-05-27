@@ -3,6 +3,7 @@ use crate::gltf_models;
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::ffi::c_void;
+use std::collections::HashMap;
 
 pub fn map_model(gltf_model: gltf_models::Model) -> glib_models::Model {
     glib_models::Model {
@@ -43,12 +44,17 @@ fn map_mesh(gltf_mesh: &Rc<gltf_models::Mesh>) -> Rc<glib_models::Mesh> {
 }
 
 fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::MeshPrimitive {
-    let attributes = gltf_primitive.attributes.iter().map(|(semantic, accessor)| {
-        (semantic.clone(), map_accessor(&accessor))
-    }).collect();
+    let attributes: HashMap<gltf::Semantic, glib_models::GpuAccessor> = gltf_primitive.attributes.iter()
+        .map(|(semantic, accessor)| {
+            (semantic.clone(), map_accessor(&accessor))
+        }).collect();
+
+    let num_positions = attributes.get(&gltf::Semantic::Positions)
+        .expect("Positions attribute not found")
+        .gtlf_accessor.count as isize;
 
     // 0: Positions, 1: Normal, 2: Tangent, 3: TexCoord, 4: Color, 5: Joints, 6: Weights
-    let mut vbos: Vec<u32> = (0..7).collect();
+    let mut vbos: Vec<u32> = (0..8).collect();
     let mut ebo = 0;
     let mut vao = 0;
     let has_ebo = gltf_primitive.indices.is_some();
@@ -63,19 +69,21 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
         }
 
 
-        (0..7).for_each(|idx| {
+        (0..8).for_each(|idx| {
+            let semantic = index_to_semantic(idx);
             gl::GenBuffers(1, &raw mut vbos[idx]);
             gl::BindBuffer(gl::ARRAY_BUFFER, vbos[idx]);
-            
+            let accessor = attributes.get(&semantic);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                attributes.get(&semantic).map(|acc| acc.gtlf_accessor.count).unwrap_or(num_positions)
+                    * semantic_to_size(index_to_semantic(idx)) as isize,
+                gltf_primitive.attributes.values().map(|accessor| accessor.view.data.as_ptr() as *const c_void).sum(),
+                gl::STATIC_DRAW
+            );
         });
 
         gl::BindBuffer(gl::ARRAY_BUFFER, vbos[0]);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            gltf_primitive.attributes.values().map(|accessor| accessor.view.length as isize).sum(),
-            gltf_primitive.attributes.values().map(|accessor| accessor.view.data.as_ptr() as *const c_void).sum(),
-            gl::STATIC_DRAW
-        );
     }
 
     glib_models::MeshPrimitive {
@@ -187,5 +195,33 @@ fn map_texture_modes(_gltf_texture_info: &gltf_models::TextureInfo) -> glib_mode
         border: [1.0, 1.0, 1.0, 1.0],
         mipmaps: true,
         bit_format: gl::RGBA,
+    }
+}
+
+fn index_to_semantic(index: usize) -> gltf::Semantic {
+    match index {
+        0 => gltf::Semantic::Positions,
+        1 => gltf::Semantic::Normals,
+        2 => gltf::Semantic::Tangents,
+        3 => gltf::Semantic::TexCoords(0),
+        4 => gltf::Semantic::TexCoords(1),
+        5 => gltf::Semantic::Colors(0),
+        6 => gltf::Semantic::Joints(0),
+        7 => gltf::Semantic::Weights(0),
+        _ => panic!("Invalid semantic index: {}", index),
+    }
+}
+
+fn semantic_to_size(semantic: gltf::Semantic) -> usize {
+    match semantic {
+        gltf::Semantic::Positions => 3,
+        gltf::Semantic::Normals => 3,
+        gltf::Semantic::Tangents => 4,
+        gltf::Semantic::TexCoords(0) => 2,
+        gltf::Semantic::TexCoords(1) => 2,
+        gltf::Semantic::Colors(0) => 4,
+        gltf::Semantic::Joints(0) => 4,
+        gltf::Semantic::Weights(0) => 4,
+        _ => panic!("Invalid semantic: {:?}", semantic),
     }
 }
