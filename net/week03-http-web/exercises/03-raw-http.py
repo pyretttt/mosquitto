@@ -113,7 +113,7 @@ class HTTPClient():
                 http_msg.body = bytes(self.recv_buffer[header_end_idx + 4:])
                 self.recv_buffer.clear()
                 return http_msg
-            elif http_msg.status_code in (204, ):
+            elif http_msg.status_code in (204, 304):
                 return http_msg
             elif (
                 "Transfer-Encoding" not in http_msg.headers

@@ -4,13 +4,15 @@
 
 Persistent connection is about using the same TCP connection through socket, which is not closed after request-response pair. Allowing to send multiple requests/responses through single TCP connection.
 
-Head-of-line blocking arised because, single connection now serves multiple connection. Each request/response served back-to-back, so transmitting huge resources could block transmitting other resources.
+Head-of-line blocking arises because a single connection now serves multiple requests. Each response is sent in request order, so a slow or large response blocks everything behind it on that connection.
 
 - Explain HTTP/2's binary framing, streams, HPACK, and what HoL blocking it solves vs. what it doesn't.
 
-HTTP/2 uses Framing sublayer, so that each response/request is splitted to HTTP frame. It's used to avoid HOL problem, because frames are usually lower in size, so that we can transmit frames concurrently.
+HTTP/2 uses a binary framing sublayer: each request/response is split into frames (HEADERS, DATA, etc.) that can be **interleaved** across streams on one TCP connection. That removes HTTP/1.1 application-layer HoL—you are not stuck waiting for one full response before another stream's bytes can flow.
 
-Streams are uniquely identified transport channels, that used to concurrently transmit request/response data. So that frames of request transmitted in channel, if transmit fails, it doesn't affect other channels. Usually multuple streams lives in single TCP connection.
+Streams are uniquely identified channels for one request/response exchange. Many streams share a single TCP connection; the peer multiplexes by stream id. A problem on one stream does not force you to drain another stream's whole response first (unlike pipelining).
+
+Note: all streams still share the **same TCP connection**, so TCP-level loss still stalls every stream until the lost packet is retransmitted.
 
 HPACK is the header compression format used by HTTP/2. HPACK compresses headers using:
 
@@ -20,7 +22,7 @@ HPACK is the header compression format used by HTTP/2. HPACK compresses headers 
 
 Without compression, header overhead would explode.
 
-HTTP/2 solved HTTP HOL blocking by introducing frames, now multiple requests are send simulatenously. But HTTP/2 do not solve TCP HOL blocking, when packet is lost all other subsequent packets _(with frames of different streams)_ need to wait until this packet is retransmitted.
+HTTP/2 solves **HTTP-layer** HoL via multiplexed streams and interleaved frames. It does **not** solve **TCP** HoL blocking: when a packet is lost, all later bytes on that connection (including frames from other streams) wait for the retransmit.
 
 
 - Know where caching sits (browser, CDN, reverse proxy) and what Cache-Control, ETag, Vary do.
@@ -35,7 +37,7 @@ CDN is global distributed cache system, used to deliver content faster. If conte
 * static HTML
 * API responses (sometimes)
 
-CDN and reverse proxy are almost the same thing, reverse proxy usually don't have to be local to user to be efficient. Besides caching it also used to hide and protect backend servers, but caching works in the same terms.
+A CDN is essentially a **distributed reverse proxy at the edge** (close to users). An origin-side reverse proxy sits in front of your app servers; caching semantics are similar (`Cache-Control`, etc.), but a CDN's main win is geographic proximity and scale at the edge.
 
 
 Cache-Control controls cache in browser and shared caches _(Cache that exists between the origin server and clients: Proxies, CDNs)_.
@@ -44,7 +46,7 @@ Etag - entity tag is used as identifier of resources in response message. It let
 
 With the help of the `ETag` and the `If-Match` headers, you can detect mid-air edit collisions (conflicts). When saving changes to a wiki page (posting data), the POST request will contain the If-Match header containing the ETag values to check freshness against.
 
-It can also be used with header `If-None-Match` with value of previosly obtained `Etag`. The server compares the client's ETag (sent with If-None-Match) with the ETag for its current version of the resource, and if both values match (that is, the resource has not changed), the server sends back a 304 Not Modified status, without a body, which tells the client that the cached version of the response is still good to use (fresh).
+It can also be used with header `If-None-Match` with value of previously obtained `ETag`. The server compares the client's ETag (sent with If-None-Match) with the ETag for its current version of the resource, and if both values match (that is, the resource has not changed), the server sends back a 304 Not Modified status, without a body, which tells the client that the cached version of the response is still good to use (fresh).
 
 The HTTP `Vary` response header. describes the parts of the request message (aside from the method and URL) that influenced the content of the response it occurs in. Including a Vary header ensures that responses are separately cached based on the headers listed in the Vary field.
 
@@ -57,7 +59,7 @@ The HTTP `Vary` response header. describes the parts of the request message (asi
 `HttpOnly` - Forbids JavaScript from accessing the cookie, for example, through the Document.cookie property.
 
 
-## Execises
+## Exercises
 
 - Why does HTTP/1.1 with pipelining never really worked in practice?
 
@@ -76,10 +78,33 @@ One slow request blocks all later responses.
 
 - In HTTP/2, what does *stream priority* do? What does it *not* solve?
 
-Stream priority is used to give HTTP message to be sent over stream. Without priority all streams have the same priority. Priority allows to send frames of given message through more important _(higher priority)_ stream.
+**Does:** Priority is a hint from the client about which streams should get bandwidth first when the connection is constrained (weighted dependency tree). Each request/response already has its own stream; priority ranks streams relative to each other.
 
+**Does not solve:** TCP-level HoL (packet loss still blocks all streams on that connection). It does not guarantee faster page load—many servers ignore or simplify priorities. It does not remove the need to complete a large response on a stream; it only influences scheduling among competing streams.
 
 - For a small static site, would you bother enabling HTTP/3? Why or why not?
 
-Small static site are perfect candidate to use multiplexing introduced in HTTP/2 and HTTP/3 to open less connections on the server. If HTTP/2 already used it's not that profitable to move to HTTP/3. Also DNS or reverse proxy caching may take the most workload - so that HTTP/3 is redundant.
+Usually **not** worth the effort if HTTP/2 plus CDN or browser caching already covers you. A tiny static site has few parallel assets, so multiplexing wins are small. HTTP/3 adds QUIC/UDP deployment and ops complexity (and UDP is sometimes blocked) for modest gain on good networks. HTTP/3 shines more on lossy mobile/Wi‑Fi paths; for a simple site, cache hits and TLS termination at the edge often matter more than the HTTP version.
 
+
+## Self-check
+
+- Without notes: list 5 HTTP status codes you should know cold and what they mean.
+
+200 - OK, 204 - No Content, 302 - redirect, 304 - Not Modified (cache still valid), 404 - not found, 500 - server error
+
+- What's the wire difference between `Connection: close` and `Connection: keep-alive`?
+
+`Connection: close` — the peer should close the TCP socket after this response (no further requests on that connection). `Connection: keep-alive` — leave the TCP connection open for another request/response round-trip (HTTP/1.1 defaults to persistent unless either side sends `close`). Idle connections are closed after a timeout.
+
+- Why does HTTP/2 exist if HTTP/1.1 supports keep-alive and pipelining?
+
+HTTP/1.1 pipelining performs poorly, because of HOL problem, which blocked small resources while big resource being transferred. Responses must be in order of requests.
+
+- Where does TLS sit relative to HTTP/2 in the stack? Where does it sit for HTTP/3?
+
+Stack (bottom to top):
+
+- **HTTP/1.1:** TCP → TLS → HTTP text
+- **HTTP/2:** TCP → TLS → HTTP/2 frames (TLS is **below** framing; frames are carried inside the encrypted byte stream, not "after" TLS in the stack)
+- **HTTP/3:** UDP → QUIC (integrates TLS 1.3 in the handshake) → HTTP/3 frames on QUIC streams (no TCP; encryption is part of QUIC, not a separate layer above it like TCP+TLS)
