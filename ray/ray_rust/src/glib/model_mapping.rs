@@ -51,7 +51,7 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
 
     let num_positions = attributes.get(&gltf::Semantic::Positions)
         .expect("Positions attribute not found")
-        .gtlf_accessor.count as isize;
+        .gtlf_accessor.count;
 
     // 0: Positions, 1: Normal, 2: Tangent, 3: TexCoord, 4: Color, 5: Joints, 6: Weights
     let mut vbos: Vec<u32> = (0..8).collect();
@@ -71,14 +71,20 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
 
         (0..8).for_each(|idx| {
             let semantic = index_to_semantic(idx);
+            let num_bytes = attributes.get(&semantic).map(|acc| acc.gtlf_accessor.count).unwrap_or(num_positions)
+                * semantic_to_size(index_to_semantic(idx));
+
             gl::GenBuffers(1, &raw mut vbos[idx]);
             gl::BindBuffer(gl::ARRAY_BUFFER, vbos[idx]);
             let accessor = attributes.get(&semantic);
+
+            let data = accessor.map(|acc| {
+                acc.gtlf_accessor.view.gltf_data.0.as_ptr().add(acc.gtlf_accessor.view.offset + acc.gtlf_accessor.offset)
+            }).unwrap_or(std::ptr::null()) as *const c_void;
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                attributes.get(&semantic).map(|acc| acc.gtlf_accessor.count).unwrap_or(num_positions)
-                    * semantic_to_size(index_to_semantic(idx)) as isize,
-                gltf_primitive.attributes.values().map(|accessor| accessor.view.data.as_ptr() as *const c_void).sum(),
+                num_bytes as isize,
+                data,
                 gl::STATIC_DRAW
             );
         });
