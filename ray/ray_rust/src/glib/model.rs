@@ -39,6 +39,9 @@ pub struct MeshPrimitive {
     pub attributes: HashMap<gltf::Semantic, GpuAccessor>,
     pub indices: Option<GpuAccessor>,
     pub material: Option<Material>,
+    pub vao: u32,
+    pub vbos: Vec<u32>,
+    pub ebo: Option<u32>,
 }
 
 #[derive(Clone)]

@@ -68,27 +68,42 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
         }
 
-
         (0..8).for_each(|idx| {
             let semantic = index_to_semantic(idx);
-            let num_bytes = attributes.get(&semantic).map(|acc| acc.gtlf_accessor.count).unwrap_or(num_positions)
-                * semantic_to_size(index_to_semantic(idx));
+            let accessor = attributes.get(&semantic);
+            let element_size = accessor
+                .map(|acc| component_type_to_size(&acc.gtlf_accessor))
+                .unwrap_or(1);
+            let num = accessor.map(|acc| acc.gtlf_accessor.count).unwrap_or(num_positions);
 
             gl::GenBuffers(1, &raw mut vbos[idx]);
             gl::BindBuffer(gl::ARRAY_BUFFER, vbos[idx]);
-            let accessor = attributes.get(&semantic);
 
             let data = accessor.map(|acc| {
                 acc.gtlf_accessor.view.gltf_data.0.as_ptr().add(acc.gtlf_accessor.view.offset + acc.gtlf_accessor.offset)
             }).unwrap_or(std::ptr::null()) as *const c_void;
             gl::BufferData(
                 gl::ARRAY_BUFFER,
-                num_bytes as isize,
+                (element_size * num) as isize,
                 data,
                 gl::STATIC_DRAW
             );
+
+            gl::VertexAttribPointer(
+                idx as u32,
+                accessor.map(|acc| acc.gtlf_accessor.dimensions.multiplicity()).unwrap_or(1) as i32,
+                accessor.map(|acc| acc.gtlf_accessor.component_type.as_gl_enum()).unwrap_or(gl::FLOAT),
+                gl::FALSE,
+                element_size as i32,
+                std::ptr::null() as *const c_void,
+            );
+            gl::EnableVertexAttribArray(idx as u32);
         });
 
+        gl::BindVertexArray(0);
+        if has_ebo {
+            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, 0);
+        }
         gl::BindBuffer(gl::ARRAY_BUFFER, vbos[0]);
     }
 
@@ -230,4 +245,8 @@ fn semantic_to_size(semantic: gltf::Semantic) -> usize {
         gltf::Semantic::Weights(0) => 4,
         _ => panic!("Invalid semantic: {:?}", semantic),
     }
+}
+
+fn component_type_to_size(accessor: &gltf_models::GpuAccessor) -> usize {
+    accessor.dimensions.multiplicity() * accessor.component_type.size()
 }
