@@ -16,22 +16,25 @@ pub fn map_model(gltf_model: gltf_models::Model) -> glib_models::Model {
 }
 
 fn map_scene(gltf_scene: &gltf_models::Scene) -> glib_models::Scene {
-    glib_models::Scene {
+    let scene = glib_models::Scene {
         gtlf_scene: gltf_scene.clone(),
         nodes: gltf_scene.nodes.iter().map(map_node).collect::<Vec<_>>(),
-    }
+    };
+
+    scene.nodes.iter().for_each(|node|{
+        node.borrow().children.iter().for_each(|child| {
+            child.borrow_mut().parent = Some(Rc::downgrade(node));
+        });
+    });
+
+    scene
 }
 
 fn map_node(gltf_node: &Rc<RefCell<gltf_models::Node>>) -> Rc<RefCell<glib_models::Node>> {
     Rc::new(RefCell::new(glib_models::Node {
         gtlf_node: gltf_node.clone(),
         children: gltf_node.borrow().children.iter().map(map_node).collect(),
-        parent: gltf_node.borrow().parent.as_ref().map(|parent| {
-            match parent.upgrade() {
-                Some(parent) => Some(Rc::downgrade(&map_node(&parent))),
-                None => None,
-            }
-        }).flatten(),
+        parent: None,
         mesh: gltf_node.borrow().mesh.as_ref().map(map_mesh)
     }))
 }
