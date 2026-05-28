@@ -66,9 +66,15 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
         gl::GenVertexArrays(1, &raw mut vao);
         gl::BindVertexArray(vao);
 
-        if has_ebo {
+        if let Some(indices) = gltf_primitive.indices.as_ref() {
             gl::GenBuffers(1, &raw mut ebo);
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
+            gl::BufferData(
+                gl::ELEMENT_ARRAY_BUFFER,
+                (component_type_to_size(indices) * num_positions) as isize,
+                indices.view.gltf_data.0.as_ptr().add(indices.view.offset + indices.offset) as *const c_void,
+                gl::STATIC_DRAW
+            );
         }
 
         (0..8).for_each(|idx| {
@@ -97,7 +103,9 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
                 accessor.map(|acc| acc.gtlf_accessor.dimensions.multiplicity()).unwrap_or(1) as i32,
                 accessor.map(|acc| acc.gtlf_accessor.component_type.as_gl_enum()).unwrap_or(gl::FLOAT),
                 gl::FALSE,
-                element_size as i32,
+                accessor.map(|acc| acc.gtlf_accessor.view.byte_stride)
+                    .flatten()
+                    .unwrap_or(element_size as u32) as i32,
                 std::ptr::null() as *const c_void,
             );
             gl::EnableVertexAttribArray(idx as u32);
