@@ -71,7 +71,7 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
             gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, ebo);
             gl::BufferData(
                 gl::ELEMENT_ARRAY_BUFFER,
-                (component_type_to_size(indices) * num_positions) as isize,
+                (component_type_to_size(indices) * indices.count) as isize,
                 indices.view.gltf_data.0.as_ptr().add(indices.view.offset + indices.offset) as *const c_void,
                 gl::STATIC_DRAW
             );
