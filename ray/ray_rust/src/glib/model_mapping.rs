@@ -115,6 +115,9 @@ fn map_primitive(gltf_primitive: &gltf_models::MeshPrimitive) -> glib_models::Me
         attributes: attributes,
         indices: gltf_primitive.indices.as_ref().map(map_accessor),
         material: gltf_primitive.material.as_ref().map(map_material),
+        vao: vao,
+        vbos: vbos,
+        ebo: if has_ebo { Some(ebo) } else { None }
     }
 }
 
