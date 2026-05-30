@@ -20,7 +20,7 @@ function main() {
     world.scene.background = new Color('red');
 
     // 2. Render the scene
-    world.render();
+    world.start();
 }
 
 main();

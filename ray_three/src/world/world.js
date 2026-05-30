@@ -5,6 +5,7 @@ import { createLights } from './components/lights.js';
 
 import { createRenderer } from './systems/renderer.js';
 import { Resizer } from './systems/resizer.js';
+import { Loop } from './systems/loop.js';
 
 import { Vector3 } from 'three';
 
@@ -14,6 +15,7 @@ class World {
         this.camera = createCamera();
         this.scene = createScene();
         this.renderer = createRenderer();
+        this.loop = new Loop(this.camera, this.scene, this.renderer);
         container.append(this.renderer.domElement);
 
         const cube = createCube();
@@ -31,10 +33,21 @@ class World {
         this.scene.add(cube, light);
 
         this.resizer = new Resizer(container, this.camera, this.renderer);
+        this.resizer.onResize = () => {
+            this.render();
+        }
     }
 
     render() {
         this.renderer.render(this.scene, this.camera);
+    }
+
+    start() {
+        this.loop.start();
+    }
+
+    stop() {
+        this.loop.end();
     }
 }
 
