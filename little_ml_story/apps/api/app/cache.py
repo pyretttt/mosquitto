@@ -1,6 +1,10 @@
 import orjson
 import redis.asyncio as aioredis
 
+from prometheus_client import Counter
+
+CACHE_HITS = Counter('cache_hits', 'Number of cache hits')
+CACHE_MISSES = Counter('cache_misses', 'Number of cache misses')
 
 class RedisCache:
     """Tiny JSON cache + sliding-window rate limiter on top of Redis."""
@@ -17,7 +21,9 @@ class RedisCache:
     async def get_json(self, key: str) -> dict | None:
         raw = await self._client.get(key)
         if raw is None:
+            CACHE_MISSES.inc()
             return None
+        CACHE_HITS.inc()
         return orjson.loads(raw)
 
     async def set_json(self, key: str, value: dict) -> None:
