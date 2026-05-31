@@ -19,14 +19,26 @@ class World {
         container.append(this.renderer.domElement);
 
         const cube = createCube();
-        cube.rotation.x = Math.PI / 4;
-        cube.scale.set(0.5, 0.5, 0.5);
-        const subCube = createCube();
-        subCube.material.color.set('green');
-        subCube.position.x = -3;
-        subCube.rotation.x = Math.PI / 4;
-        subCube.scale.set(2, 2, 2);
-        cube.add(subCube);
+        cube.update = (delta) => {
+            console.log(delta);
+            cube.rotation.z +=  0.5238 * delta;
+            cube.rotation.x += 0.5238 * delta;
+            cube.rotation.y += 0.5238 * delta;
+        };
+        this.camera.update = (delta) => {
+            this.camera.fov = (Math.sin(performance.now() / 1000) * 0.5 + 0.5) * Math.PI/4 + Math.PI / 4;
+            this.camera.fov = this.camera.fov * 180 / Math.PI;
+            this.camera.updateProjectionMatrix();
+        };
+        this.loop.updatables.push(cube, this.camera);
+        // cube.rotation.x = Math.PI / 4;
+        // cube.scale.set(0.5, 0.5, 0.5);
+        // const subCube = createCube();
+        // subCube.material.color.set('green');
+        // subCube.position.x = -3;
+        // subCube.rotation.x = Math.PI / 4;
+        // subCube.scale.set(2, 2, 2);
+        // cube.add(subCube);
 
         const light = createLights();
 
