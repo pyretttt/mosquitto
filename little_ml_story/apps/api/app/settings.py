@@ -18,7 +18,7 @@ class Settings(BaseSettings):
 
     redis_host: str = Field(default="redis")
     redis_port: int = Field(default=6379)
-    redis_cache_ttl_seconds: int = Field(default=300)
+    redis_cache_ttl_seconds: int = Field(default=10)
 
     kafka_bootstrap_servers: str = Field(default="redpanda:9092")
     kafka_prediction_topic: str = Field(default="predictions")

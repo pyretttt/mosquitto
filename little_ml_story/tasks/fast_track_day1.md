@@ -68,8 +68,8 @@ Add `model_warmup` to [config.pbtxt](../infra/triton/model_repository/resnet50/c
 
 ## Definition of done
 
-- [ ] `make up && make migrate` succeeds from a clean checkout.
-- [ ] `make predict` returns a sensible top-1 label.
-- [ ] Repeated `make predict` shows `cache_hit: true`.
-- [ ] `predictions` table has rows; you've added at least one custom index.
-- [ ] You can describe the request lifecycle to yourself out loud in 90 seconds.
+- [x] `make up && make migrate` succeeds from a clean checkout.
+- [x] `make predict` returns a sensible top-1 label.
+- [x] Repeated `make predict` shows `cache_hit: true`.
+- [x] `predictions` table has rows; you've added at least one custom index.
+- [x] You can describe the request lifecycle to yourself out loud in 90 seconds.
