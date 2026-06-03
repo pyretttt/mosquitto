@@ -4,6 +4,7 @@ import { createScene } from './components/scene.js';
 import { createLights } from './components/lights.js';
 import { createControls } from './systems/control.js';
 import { createMeshGroup } from './components/group.js';
+import { Train } from './components/train/train.js';
 
 import { createRenderer } from './systems/renderer.js';
 import { Resizer } from './systems/resizer.js';
@@ -26,9 +27,10 @@ class World {
         };
         const { directionalLight, ambientLight } = createLights();
         const meshGroup = createMeshGroup();
+        const train = new Train();
 
-        this.loop.updatables.push(meshGroup, this.camera, this.controls);
-        this.scene.add(meshGroup, directionalLight, ambientLight);
+        this.loop.updatables.push(train, this.camera, this.controls);
+        this.scene.add(train, directionalLight, ambientLight);
 
         this.resizer = new Resizer(container, this.camera, this.renderer);
         this.resizer.onResize = () => {
