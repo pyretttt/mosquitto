@@ -1,10 +1,8 @@
 import { createCamera } from './components/camera.js';
-import { createCube } from './components/cube.js';
 import { createScene } from './components/scene.js';
 import { createLights } from './components/lights.js';
 import { createControls } from './systems/control.js';
 import { createMeshGroup } from './components/group.js';
-import { Train } from './components/train/train.js';
 import { loadGirl } from './girl.js';
 
 import { createRenderer } from './systems/renderer.js';
