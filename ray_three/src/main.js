@@ -7,22 +7,15 @@ import {
     Scene,
     WebGLRenderer,
 } from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-import { World } from './world/world.js';
+import { PerspectiveRenderUseCase } from './world/render.js';
 
 async function main() {
-    // Get a reference to the container element
-    const container = document.querySelector('#scene-container');
+    const vampire_scene = await new GLTFLoader().loadAsync("asset/jill_vampire/scene.gltf");
+    const render_use_case = new PerspectiveRenderUseCase(vampire_scene);
 
-    // 1. Create an instance of the World app
-    const world = new World(container);
-
-    world.scene.background = new Color('red');
-
-    await world.init();
-
-    // 2. Render the scene
-    world.start();
+    render_use_case.start();
 }
 
 main().catch((err) => {
