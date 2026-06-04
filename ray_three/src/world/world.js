@@ -11,7 +11,7 @@ import { createRenderer } from './systems/renderer.js';
 import { Resizer } from './systems/resizer.js';
 import { Loop } from './systems/loop.js';
 
-import { Vector3 } from 'three';
+import { Box3, Vector3 } from 'three';
 
 
 class World {
@@ -27,11 +27,11 @@ class World {
             this.camera.updateProjectionMatrix();
         };
         const { directionalLight, ambientLight } = createLights();
+        directionalLight.position.set(5, 10, 7);
         const meshGroup = createMeshGroup();
-        const train = new Train();
 
-        this.loop.updatables.push(train, this.camera, this.controls);
-        this.scene.add(train, directionalLight, ambientLight);
+        this.loop.updatables.push(this.camera, this.controls);
+        this.scene.add(directionalLight, ambientLight);
 
         this.resizer = new Resizer(container, this.camera, this.renderer);
         this.resizer.onResize = () => {
@@ -40,8 +40,8 @@ class World {
     }
 
     async init() {
-        const girl = await loadGirl();
-        this.scene.add(girl);
+        const girlScene = await loadGirl();
+        this.scene.add(girlScene);
     }
 
     render() {
