@@ -1,0 +1,11 @@
+Model Information:
+* title:	Jill Vampire
+* source:	https://sketchfab.com/3d-models/jill-vampire-4c515f9412034eaba05aa5e078d0448c
+* author:	Vasian-Digital3D (https://sketchfab.com/Vasian-Digital3D)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Jill Vampire" (https://sketchfab.com/3d-models/jill-vampire-4c515f9412034eaba05aa5e078d0448c) by Vasian-Digital3D (https://sketchfab.com/Vasian-Digital3D) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

@@ -5,6 +5,7 @@ import { createLights } from './components/lights.js';
 import { createControls } from './systems/control.js';
 import { createMeshGroup } from './components/group.js';
 import { Train } from './components/train/train.js';
+import { loadGirl } from './girl.js';
 
 import { createRenderer } from './systems/renderer.js';
 import { Resizer } from './systems/resizer.js';
@@ -36,6 +37,11 @@ class World {
         this.resizer.onResize = () => {
             this.render();
         }
+    }
+
+    async init() {
+        const girl = await loadGirl();
+        this.scene.add(girl);
     }
 
     render() {

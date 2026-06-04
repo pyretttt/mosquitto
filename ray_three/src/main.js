@@ -10,7 +10,7 @@ import {
 
 import { World } from './world/world.js';
 
-function main() {
+async function main() {
     // Get a reference to the container element
     const container = document.querySelector('#scene-container');
 
@@ -19,8 +19,12 @@ function main() {
 
     world.scene.background = new Color('red');
 
+    await world.init();
+
     // 2. Render the scene
     world.start();
 }
 
-main();
+main().catch((err) => {
+    console.error(err);
+});

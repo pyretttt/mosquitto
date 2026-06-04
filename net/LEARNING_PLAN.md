@@ -35,6 +35,7 @@ Each week:
 4. Write your own summary in `weekNN/notes.md` (it's gitignored by default).
 5. Answer the self-check questions in your head, in writing, or to a rubber duck.
 6. Commit your work with a descriptive message: `wNN: <what you did>`.
+7. [Solve exercises at website](http://gaia.cs.umass.edu/kurose_ross/wireshark.php)
 
 If you skip a step, you skip the learning. The book is good but passive; the labs are where production-grade intuition is built.
 
