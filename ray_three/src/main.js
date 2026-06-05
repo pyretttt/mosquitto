@@ -1,6 +1,6 @@
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
-import { PerspectiveRenderUseCase } from './world/render.js';
+import { PerspectiveRenderUseCase } from './use_cases/perspective_render.js';
 
 async function main() {
     const gltf = await new GLTFLoader().loadAsync('asset/jill_vampire/scene.gltf');

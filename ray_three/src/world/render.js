@@ -1,4 +1,4 @@
-import { PerspectiveCamera, WebGLRenderer, Timer, Scene, Color } from 'three';
+import { PerspectiveCamera, WebGLRenderer, Timer, Scene, Color, AmbientLight, DirectionalLight } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 function resize(camera, renderer, canvas) {
@@ -56,48 +56,4 @@ class RenderPipeline {
     }
 }
 
-class PerspectiveRenderUseCase {
-    constructor(scene) {
-        const rootScene = new Scene();
-        rootScene.add(scene);
-        rootScene.background = new Color('red');
-
-        const canvas = document.querySelector('#scene-container');
-        const renderer = new WebGLRenderer({
-            antialias: true,
-            depth: true,
-        });
-        canvas.append(renderer.domElement);
-
-        const camera = new PerspectiveCamera(
-            75,
-            16/9,
-            0.1,
-            1000
-        );
-        camera.position.set(0, 0, 10);
-        const orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.updateTick = (delta) => {
-            orbitControls.update();
-        };
-        renderer.physicallyCorrectLights = true;
-        this.renderPipeline = new RenderPipeline(
-            camera,
-            rootScene,
-            renderer
-        );
-
-        this.controller = new RenderController(this.renderPipeline, canvas, orbitControls);
-        this.controller.updatables.push(orbitControls);
-    }
-
-    start() {
-        this.controller.startRenderLoop();
-    }
-
-    stop() {
-        this.controller.stopRenderLoop();
-    }
-}
-
-export { PerspectiveRenderUseCase, RenderController, RenderPipeline };
+export { RenderController, RenderPipeline };
