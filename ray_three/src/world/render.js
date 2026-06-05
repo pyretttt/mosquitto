@@ -1,18 +1,23 @@
 import { PerspectiveCamera, WebGLRenderer, Timer } from 'three';
 
+function resize(camera, renderer, canvas) {
+    camera.aspect = canvas.clientWidth / canvas.clientHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+}
+
 class RenderController {
-    constructor(pipeline) {
+    constructor(pipeline, canvas) {
         this.pipeline = pipeline;
         this.isRendering = true;
         this.timer = new Timer();
+        this.canvas = canvas;
 
         this.updatables = [];
         window.addEventListener('resize', () => {
-            this.pipeline.camera.aspect = container.clientWidth / container.clientHeight;
-            this.pipeline.camera.updateProjectionMatrix();
-
-            this.pipeline.renderer.setSize(container.clientWidth, container.clientHeight);
-            this.pipeline.renderer.setPixelRatio(window.devicePixelRatio);
+            resize(this.pipeline.camera, this.pipeline.renderer, canvas);
         });
     }
 
@@ -48,8 +53,9 @@ class RenderPipeline {
 
 class PerspectiveRenderUseCase {
     constructor(scene) {
+        const canvas = document.querySelector('#scene-container').domElement;
         const renderer = new WebGLRenderer({
-            canvas: document.querySelector('#scene-container').domElement,
+            canvas: canvas,
             antialias: true,
             depth: true,
         });
@@ -65,7 +71,7 @@ class PerspectiveRenderUseCase {
             renderer
         );
 
-        this.controller = new RenderController(this.renderPipeline);
+        this.controller = new RenderController(this.renderPipeline, canvas);
     }
 
     start() {
