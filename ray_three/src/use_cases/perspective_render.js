@@ -1,6 +1,7 @@
 import { PerspectiveCamera, WebGLRenderer, Scene, Color, AmbientLight, DirectionalLight, Group } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RenderPipeline, RenderController } from '../world/render.js';
+import { modify } from '../common.js';
 
 function createLightGroup() {
     const ambientLight = new AmbientLight(new Color('white'), 1);
@@ -15,40 +16,51 @@ function createLightGroup() {
 
 class PerspectiveRenderUseCase {
     constructor(scene) {
-        const rootScene = new Scene();
-        rootScene.add(scene);
-        rootScene.background = new Color('red');
-
         const lightGroup = createLightGroup();
-        rootScene.add(lightGroup);
+        const rootScene = modify(
+            new Scene(),
+            (rootScene) => {
+                rootScene.add(scene);
+                rootScene.background = new Color('red');
+                rootScene.add(lightGroup);
+             }
+        );
 
         const canvas = document.querySelector('#scene-container');
-        const renderer = new WebGLRenderer({
+        const renderer = modify(new WebGLRenderer({
             antialias: true,
             depth: true,
-        });
+        }), (renderer) => renderer.physicallyCorrectLights = true);
         canvas.append(renderer.domElement);
 
-        const camera = new PerspectiveCamera(
-            75,
-            16/9,
-            0.1,
-            1000
+        const camera = modify(
+            new PerspectiveCamera(
+                75,
+                16/9,
+                0.1,
+                1000
+            ),
+            (camera) => camera.position.set(0, 0, 5)
         );
-        camera.position.set(0, 0, 5);
-        const orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.updateTick = (delta) => {
-            orbitControls.update();
-        };
-        renderer.physicallyCorrectLights = true;
+
+        const orbitControls = modify(
+            new OrbitControls(camera, renderer.domElement),
+            (orbitControls) => {
+                orbitControls.updateTick = (delta) => {
+                    orbitControls.update();
+                };
+            }
+        );
         this.renderPipeline = new RenderPipeline(
             camera,
             rootScene,
             renderer
         );
 
-        this.controller = new RenderController(this.renderPipeline, canvas, orbitControls);
-        this.controller.updatables.push(orbitControls);
+        this.controller = modify(
+            new RenderController(this.renderPipeline, canvas, orbitControls),
+            (controller) => controller.updatables.push(orbitControls)
+        );
     }
 
     start() {
