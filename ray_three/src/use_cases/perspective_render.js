@@ -1,4 +1,4 @@
-import { PerspectiveCamera, WebGLRenderer, Scene, Color, AmbientLight, DirectionalLight, Group } from 'three';
+import { PerspectiveCamera, Mesh, BoxGeometry, WebGLRenderer, Scene, Color, AmbientLight, DirectionalLight, Group, MeshStandardMaterial } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RenderPipeline, RenderController } from '../world/render.js';
 import { modify } from '../common.js';
