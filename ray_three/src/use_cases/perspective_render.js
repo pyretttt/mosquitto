@@ -61,6 +61,12 @@ class PerspectiveRenderUseCase {
             new RenderController(this.renderPipeline, canvas, orbitControls),
             (controller) => controller.updatables.push(orbitControls)
         );
+
+        this.controller.updatables.push(new Closure((delta) => {
+            for (bones in scene.skeleton.bones) {
+                
+            }
+        }));
     }
 
     start() {
@@ -69,6 +75,16 @@ class PerspectiveRenderUseCase {
 
     stop() {
         this.controller.stopRenderLoop();
+    }
+}
+
+class Closure {
+    constructor(update) {
+        this.update = update;
+    }
+
+    updateTick(delta) {
+        this.update(delta);
     }
 }
 
