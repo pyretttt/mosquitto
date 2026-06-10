@@ -15,8 +15,16 @@
 
 2. **Practical - TCP echo.** In `exercises/04-echo-server.py` build:
    - A concurrent server (using `asyncio` or threads) on `0.0.0.0:9000` that echoes any line back.
+
+   Done in `echo_server.py` server requests concurrently
+
    - A client that sends 100 lines and verifies the responses.
+
+   Did just simple echo client similar to server, core mechanics are the same.
+
    - Capture the TCP handshake on the wire.
+
+   
 3. **Practical - hand-rolled DNS query.** In `exercises/04-dns-query.py`, using `socket` + `struct`, build a DNS query for `A` of `cursor.com`, send it as UDP to `1.1.1.1:53`, parse the response. Don't use `dnspython` for the wire format - read RFC 1035 section 4.1 and write the bytes yourself. (You may use `dnslib` for unit tests / verification.)
 
 ## Self-check
