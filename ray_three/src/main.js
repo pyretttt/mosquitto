@@ -1,11 +1,9 @@
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
 import { PerspectiveRenderUseCase } from './use_cases/perspective_render.js';
+import { createSkeletalAnimationDemo } from './use_cases/skeletal_animation.js';
 
 async function main() {
-    const gltf = await new GLTFLoader().loadAsync('asset/jill_vampire/scene.gltf');
-    console.log(gltf)
-    const render_use_case = new PerspectiveRenderUseCase(gltf.scene);
+    const demo = createSkeletalAnimationDemo();
+    const render_use_case = new PerspectiveRenderUseCase(demo, [demo]);
 
     render_use_case.start();
 }

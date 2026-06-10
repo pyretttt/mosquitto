@@ -1,4 +1,4 @@
-import { PerspectiveCamera, Mesh, BoxGeometry, WebGLRenderer, Scene, Color, AmbientLight, DirectionalLight, Group, MeshStandardMaterial } from 'three';
+import { PerspectiveCamera, WebGLRenderer, Scene, Color, AmbientLight, DirectionalLight, Group } from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RenderPipeline, RenderController } from '../world/render.js';
 import { modify } from '../common.js';
@@ -15,13 +15,13 @@ function createLightGroup() {
 }
 
 class PerspectiveRenderUseCase {
-    constructor(scene) {
+    constructor(scene, updatables = []) {
         const lightGroup = createLightGroup();
         const rootScene = modify(
             new Scene(),
             (rootScene) => {
                 rootScene.add(scene);
-                rootScene.background = new Color('red');
+                rootScene.background = new Color('#20242a');
                 rootScene.add(lightGroup);
              }
         );
@@ -40,7 +40,7 @@ class PerspectiveRenderUseCase {
                 0.1,
                 1000
             ),
-            (camera) => camera.position.set(0, 0, 5)
+            (camera) => camera.position.set(0, 1.1, 4)
         );
 
         const orbitControls = modify(
@@ -59,14 +59,8 @@ class PerspectiveRenderUseCase {
 
         this.controller = modify(
             new RenderController(this.renderPipeline, canvas, orbitControls),
-            (controller) => controller.updatables.push(orbitControls)
+            (controller) => controller.updatables.push(orbitControls, ...updatables)
         );
-
-        this.controller.updatables.push(new Closure((delta) => {
-            for (bones in scene.skeleton.bones) {
-                
-            }
-        }));
     }
 
     start() {
@@ -75,16 +69,6 @@ class PerspectiveRenderUseCase {
 
     stop() {
         this.controller.stopRenderLoop();
-    }
-}
-
-class Closure {
-    constructor(update) {
-        this.update = update;
-    }
-
-    updateTick(delta) {
-        this.update(delta);
     }
 }
 
