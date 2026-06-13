@@ -28,3 +28,5 @@ ml/object_detection/faster_rcnn_fork/VOC2007-test
 /specter/specter.xcodeproj
 
 node_modules
+
+.terraform/
