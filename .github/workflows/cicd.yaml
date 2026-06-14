@@ -2,7 +2,7 @@ name: CI/CD
 on:
   push:
     branches:
-      - master
+      - release/bianka
     paths:
       - bianka/**
   workflow_dispatch:
