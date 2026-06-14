@@ -153,9 +153,10 @@ resource "oci_containerengine_node_pool" "k8s_node_pool" {
     memory_in_gbs = 6
     ocpus         = 1
   }
+
   node_source_details {
-    # https://docs.oracle.com/en-us/iaas/images/oracle-linux-9x/oracle-linux-9-7-aarch64-2026-05-28-0.htm
-    image_id    = "ocid1.image.oc1.me-dubai-1.aaaaaaaa2zcql3hcgbvmjzzaxyakhxhd3kbhmo4ysuf3lclz7pepjgh62idq"
+    # Linux 7.9
+    image_id    = "ocid1.image.oc1.me-dubai-1.aaaaaaaarqcig5soskrxcccj7u4l5uzbtcdl37kgksni746t6yoiwtinoasq"
     source_type = "image"
   }
   initial_node_labels {
