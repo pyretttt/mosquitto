@@ -1,24 +1,111 @@
 provider "oci" {
-    region = var.region
+  region = var.region
 }
 
-# # Virtual Cloud Network (VCN)
+# Virtual Cloud Network (VCN)
+# with 10.0.0.0/16 + /24 subnets
+# 10  .  0  .  1  .  42
+# │   │     │     │
+# │   │     │     └── host within subnet (8 bits → 256 addresses)
+# │   │     └───────  subnet ID (which /24 block)
+# │   └────────────  VCN prefix (shared by all subnets)
+# └─────────────────  VCN prefix
 module "vcn" {
-    source  = "oracle-terraform-modules/vcn/oci"
-    version = "3.6.0"
+  source  = "oracle-terraform-modules/vcn/oci"
+  version = "3.6.0"
 
-    compartment_id = var.compartment_id
-    region = var.region
+  compartment_id = var.compartment_id
+  region         = var.region
 
-    internet_gateway_route_rules = null
-    local_peering_gateways = null
-    nat_gateway_route_rules = null
+  internet_gateway_route_rules = null
+  local_peering_gateways       = null
+  nat_gateway_route_rules      = null
 
-    vcn_name = "k8s-vcn"
-    vcn_dns_label = "k8svcn"
-    vcn_cidrs = ["10.0.0.0/16"]
+  vcn_name      = "k8s-vcn"
+  vcn_dns_label = "k8svcn"
+  vcn_cidrs     = ["10.0.0.0/16"]
 
-    create_internet_gateway = true
-    create_nat_gateway = true
-    create_service_gateway = true
+  # An Internet Gateway (IGW) — lets public subnets reach the public internet (bidirectional: inbound + outbound).
+  # A route table with a default rule: 0.0.0.0/0 → Internet Gateway.
+  create_internet_gateway = true
+  # A NAT Gateway (NAT GW) — lets private subnets initiate outbound connections to the internet, but not receive unsolicited inbound traffic from the internet.
+  create_nat_gateway = true
+  # An LPG lets two VCNs in the same region talk to each other privately, as if they were one network (no public internet involved). Each map key becomes the LPG display name.
+  create_service_gateway = true
 }
+
+resource "oci_core_security_list" "private_subnet_sl" {
+  compartment_id = var.compartment_id
+  vcn_id         = module.vcn.vcn_id
+  display_name   = "k8s-private-subnet-sl"
+
+  # subnet-level virtual firewall in OCI:
+  # Rules for outbound traffic leaving instances in subnets that use this security list.
+  egress_security_rules {
+    stateless        = false
+    destination      = "0.0.0.0/0" # allows all outbound traffic to any destination
+    destination_type = "CIDR_BLOCK"
+    protocol         = "all" # any protocol
+  }
+
+  # Rules for inbound traffic arriving at instances in those subnets.
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/16" # inside this vcn, traffic from public internet is not allowed
+    source_type = "CIDR_BLOCK"
+    protocol    = "all" # allow all protocols
+  }
+}
+
+resource "oci_core_security_list" "public_subnet_sl" {
+  compartment_id = var.compartment_id
+  vcn_id         = module.vcn.vcn_id
+  display_name   = "k8s-public-subnet-sl"
+  egress_security_rules {
+    stateless        = false
+    destination      = "0.0.0.0/0" # all outbound traffic is allowed
+    destination_type = "CIDR_BLOCK"
+    protocol         = "all" # allow all protocols
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/16" # allows vcn inbound traffic
+    source_type = "CIDR_BLOCK"
+    protocol    = "all"
+  }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "0.0.0.0/0" # allows all inbound traffic
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options { # for tcp port 6443
+      min = 6443
+      max = 6443
+    }
+  }
+}
+
+# Create private subnet in vcn
+resource "oci_core_subnet" "vcn_private_subnet" {
+  compartment_id             = var.compartment_id
+  vcn_id                     = module.vcn.vcn_id
+  cidr_block                 = "10.0.1.0/24" # 256 addresses in the subnet
+  route_table_id             = module.vcn.nat_route_id
+  security_list_ids          = [oci_core_security_list.private_subnet_sl.id]
+  display_name               = "k8s-private-subnet"
+  prohibit_public_ip_on_vnic = true
+}
+
+# Create public subnet in vcn
+resource "oci_core_subnet" "vcn_public_subnet" {
+  compartment_id    = var.compartment_id
+  vcn_id            = module.vcn.vcn_id
+  cidr_block        = "10.0.0.0/24" # 256 addresses in the subnet
+  route_table_id    = module.vcn.ig_route_id
+  security_list_ids = [oci_core_security_list.public_subnet_sl.id]
+  display_name      = "k8s-public-subnet"
+}
+
+# Kubernetes Cluster
