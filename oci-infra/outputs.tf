@@ -7,3 +7,6 @@ output "public_subnet_id" {
 output "node_pool_id" {
   value = oci_containerengine_node_pool.k8s_node_pool.id
 }
+output "oci_artifacts_container_repository" {
+  value = oci_artifacts_container_repository.docker_repository
+}

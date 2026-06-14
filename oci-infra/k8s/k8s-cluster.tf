@@ -19,40 +19,6 @@ resource "kubernetes_namespace" "core_namespace" {
   }
 }
 
-resource "kubernetes_deployment_v1" "nginx_deployment" {
-  metadata {
-    name = "nginx"
-    labels = {
-      app = "nginx"
-    }
-    namespace = kubernetes_namespace.core_namespace.id
-  }
-  spec {
-    replicas = 1
-    selector {
-      match_labels = {
-        app = "nginx"
-      }
-    }
-    template {
-      metadata {
-        labels = {
-          app = "nginx"
-        }
-      }
-      spec {
-        container {
-          image = "docker.io/library/nginx:latest"
-          name  = "nginx"
-          port {
-            container_port = 80
-          }
-        }
-      }
-    }
-  }
-}
-
 resource "kubernetes_service" "nginx_service" {
   metadata {
     name      = "nginx-service"
