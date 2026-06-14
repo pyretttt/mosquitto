@@ -55,6 +55,27 @@ resource "oci_core_security_list" "private_subnet_sl" {
     source_type = "CIDR_BLOCK"
     protocol    = "all" # allow all protocols
   }
+
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options { # health checking the cluster from the Network Load Balancer
+      min = 10256
+      max = 10256
+    }
+  }
+  ingress_security_rules {
+    stateless   = false
+    source      = "10.0.0.0/24"
+    source_type = "CIDR_BLOCK"
+    protocol    = "6"
+    tcp_options {
+      min = 31600
+      max = 31600 # NodePort
+    }
+  }
 }
 
 resource "oci_core_security_list" "public_subnet_sl" {
@@ -66,6 +87,26 @@ resource "oci_core_security_list" "public_subnet_sl" {
     destination      = "0.0.0.0/0" # all outbound traffic is allowed
     destination_type = "CIDR_BLOCK"
     protocol         = "all" # allow all protocols
+  }
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "6"
+    tcp_options {
+      min = 31600 # NodePort
+      max = 31600
+    }
+  }
+  egress_security_rules {
+    stateless        = false
+    destination      = "10.0.1.0/24"
+    destination_type = "CIDR_BLOCK"
+    protocol         = "6"
+    tcp_options {
+      min = 10256 # health checking the cluster from the Network Load Balancer
+      max = 10256
+    }
   }
 
   ingress_security_rules {
@@ -83,6 +124,16 @@ resource "oci_core_security_list" "public_subnet_sl" {
     tcp_options { # for tcp port 6443
       min = 6443
       max = 6443
+    }
+  }
+  ingress_security_rules {
+    protocol    = "6"
+    source      = "0.0.0.0/0"
+    source_type = "CIDR_BLOCK"
+    stateless   = false
+    tcp_options {
+      max = 80 # for load balancing to be able to comminicate with the public subnet
+      min = 80
     }
   }
 }
@@ -115,7 +166,7 @@ resource "oci_containerengine_cluster" "k8s_cluster" {
   name               = "k8s-cluster"
   vcn_id             = module.vcn.vcn_id
   endpoint_config {
-    is_public_ip_enabled = true # allows public access to the cluster
+    is_public_ip_enabled = true                                 # allows public access to the cluster
     subnet_id            = oci_core_subnet.vcn_public_subnet.id # public subnet
   }
   options {

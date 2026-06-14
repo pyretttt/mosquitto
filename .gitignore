@@ -30,3 +30,4 @@ ml/object_detection/faster_rcnn_fork/VOC2007-test
 node_modules
 
 .terraform/
+*.auto.tfvars
