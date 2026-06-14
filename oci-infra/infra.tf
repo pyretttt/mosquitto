@@ -88,6 +88,7 @@ resource "oci_core_security_list" "public_subnet_sl" {
     destination_type = "CIDR_BLOCK"
     protocol         = "all" # allow all protocols
   }
+
   egress_security_rules {
     stateless        = false
     destination      = "10.0.1.0/24"
