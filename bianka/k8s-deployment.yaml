@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: dxb.ocir.io/ax871f0napcp/bianka-app:latest
+          image: dxb.ocir.io/<DOCKER_OBJECT_STORAGE_NAMESPACE>/bianka-app:latest
           ports:
             - containerPort: 80
       imagePullSecrets:
