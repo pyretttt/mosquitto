@@ -79,7 +79,7 @@ We already set `enable_idempotence=True`. Reason about what would change if we u
 
 ## Definition of done
 
-- [ ] `make up-all` brings up 12+ healthy containers.
-- [ ] `make load` populates the API RED and Triton dashboards.
+- [x] `make up-all` brings up 12+ healthy containers.
+- [x] `make load` populates the API RED and Triton dashboards.
 - [ ] At least one Prometheus alert has gone `FIRING` and recovered.
 - [ ] You can describe the path of a single prediction event from FastAPI to a Grafana panel and to an OpenSearch search hit.

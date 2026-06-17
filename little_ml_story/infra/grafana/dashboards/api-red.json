@@ -60,6 +60,20 @@
         }
       ],
       "fieldConfig": {"defaults": {"unit": "s"}}
+    },
+    {
+      "id": 4,
+      "title": "Error budget burn",
+      "type": "timeseries",
+      "datasource": {"type": "prometheus", "uid": "Prometheus"},
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {
+          "expr": "1 - (sum(rate(http_requests_total{service=\"api\",status=~\"5..\"}[5m])) / sum(rate(http_requests_total{service=\"api\"}[5m])))",
+          "legendFormat": "Error budget"
+        }
+      ],
+      "fieldConfig": {"defaults": {"unit": "percentunit"}}
     }
   ]
 }
