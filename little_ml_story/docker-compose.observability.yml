@@ -111,4 +111,3 @@ volumes:
 networks:
   default:
     name: little-ml-story
-    external: true
