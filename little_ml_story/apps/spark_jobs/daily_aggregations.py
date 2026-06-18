@@ -74,8 +74,10 @@ def main() -> None:
     rolled = (
         src.groupBy("top_class_label")
         .agg(count(lit(1)).alias("n"), avg("top_class_score").alias("avg_score"))
+        .agg(count(lit(1)).alias("n"), min("top_class_score").alias("min_score"))
+        .agg(count(lit(1)).alias("n"), max("top_class_score").alias("max_score"))
         .withColumn("day", to_timestamp(lit(day.isoformat())))
-        .selectExpr("day", "top_class_label as class_label", "n", "avg_score")
+        .selectExpr("day", "top_class_label as class_label", "n", "avg_score", "min_score", "max_score")
     )
 
     pg_url = f"jdbc:postgresql://{pg_host}:{pg_port}/{pg_db}"
@@ -98,7 +100,7 @@ def main() -> None:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO daily_class_counts (day, class_label, n, avg_score)
+                INSERT INTO daily_class_counts (day, class_label, n, avg_score, min_score, max_score)
                 SELECT day, class_label, n, avg_score FROM spark_daily_staging
                 ON CONFLICT (day, class_label) DO UPDATE
                   SET n = EXCLUDED.n,

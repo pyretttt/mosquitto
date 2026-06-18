@@ -45,6 +45,8 @@ def upgrade() -> None:
         sa.Column("class_label", sa.String(128), primary_key=True),
         sa.Column("n", sa.Integer, nullable=False),
         sa.Column("avg_score", sa.Float, nullable=False),
+        sa.Column("min_score", sa.Float, nullable=False),
+        sa.Column("max_score", sa.Float, nullable=False),
     )
 
 
