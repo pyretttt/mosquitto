@@ -9,13 +9,14 @@ include_labels = ["logs=include"]
 type = "remap"
 inputs = ["docker"]
 source = '''
+  .service = get(.label, ["com.docker.compose.service"]) ?? "unknown"
+  del(.label)
   parsed, err = parse_json(.message)
   if err == null {
     . = merge(., object!(parsed))
   } else {
     .raw = .message
   }
-  .service = .label.com_docker_compose_service || "unknown"
 '''
 
 [sinks.opensearch]
