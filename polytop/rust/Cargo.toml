@@ -1,0 +1,10 @@
+[package]
+name = "polytop"
+version = "0.1.0"
+edition = "2021"
+description = "Polymarket monitor TUI"
+
+[dependencies]
+crossterm = "0.28"
+ratatui = "0.29"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
