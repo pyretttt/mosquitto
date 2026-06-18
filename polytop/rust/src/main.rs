@@ -1,3 +1,5 @@
+pub mod models;
+
 use std::io::{self, stdout};
 
 use crossterm::{
