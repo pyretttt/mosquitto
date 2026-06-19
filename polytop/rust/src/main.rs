@@ -49,8 +49,7 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<impl io::Write>>) -> c
         terminal.draw(|frame| {
             ui::draw(frame, &mut app_state);
         })?;
-        let event = env.event_loop.next().await?;
-        match event {
+        match env.event_loop.next().await? {
             event_loop::Event::App(action) => {
                 app_state_reduce(&mut app_state, action, &env);
             }

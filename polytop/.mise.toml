@@ -1,3 +1,5 @@
 [tools]
 go = "latest"
 rust = "latest"
+python = "3.14"
+uv = "latest"

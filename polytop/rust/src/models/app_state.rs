@@ -1,13 +1,34 @@
 use tokio::sync::mpsc;
 use crate::event_loop::{EventLoop, Event};
 
-#[derive(Clone)]
+// AppState
+
+#[derive(Clone, Debug)]
 pub struct AppState {
     pub page: Page,
     pub counter: i32,
 }
 
+#[derive(Clone, Debug)]
+pub enum Page {
+    Intro(IntroPage),
+}
 
+#[derive(Clone, Debug)]
+pub struct IntroPage {
+    pub title: String,
+    pub text: String,
+}
+
+impl AppState {
+    pub fn reduce(&mut self, action: Action, env: &Env) {
+        match action {
+            Action::Next => app_state.counter += 1,
+        }    
+    }
+}
+
+// Environment
 pub struct Env {
     pub event_tx: mpsc::UnboundedSender<Event>,
     pub event_loop: EventLoop,
@@ -24,23 +45,7 @@ impl Env {
     }
 }
 
-pub fn app_state_reduce(app_state: &mut AppState, action: Action, env: &Env) {
-    match action {
-        Action::Next => app_state.counter += 1,
-    }
-}
-
-#[derive(Clone)]
-pub enum Page {
-    Intro(IntroPage),
-}
-
-#[derive(Clone)]
-pub struct IntroPage {
-    pub title: String,
-    pub text: String,
-}
-
+// Actions
 pub enum Action {
     Next,
 }
