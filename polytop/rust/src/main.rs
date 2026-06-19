@@ -1,4 +1,6 @@
 pub mod models;
+pub mod event_loop;
+pub mod config;
 
 use std::io::{self, stdout};
 
