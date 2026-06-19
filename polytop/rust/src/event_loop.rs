@@ -1,7 +1,6 @@
 use std::time::Duration;
-use std::env;
 
-use color_eyre::eyre::OptionExt;
+use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 use crossterm::event::Event as CrosstermEvent;
 
@@ -27,22 +26,22 @@ impl EventLoop {
         Self { sender, receiver }
     }
 
-    pub fn run_(&mut self) -> color_eyre::Result<()> {
+    pub async fn run_(&mut self) -> color_eyre::Result<()> {
         let mut reader = crossterm::event::EventStream::new();
         let mut tick = tokio::time::interval(Duration::from_secs_f64(1.0 / config().tick_rate));
         loop {
             let tick_delay = tick.tick();
-            let crossterm_event = reader..fuse();
+            let crossterm_event = reader.next().fuse();
 
             tokio::select! {
                 _ = self.sender.closed() => {
                     break;
                 }
                 _ = tick_delay => {
-                    self.sender.send(Event::Tick);
+                    let _ = self.sender.send(Event::Tick);
                 }
                 Some(Ok(evt)) = crossterm_event => {
-                    self.sender.send(Event::Crossterm(evt));
+                    let _ = self.sender.send(Event::Crossterm(evt));
                 }
             }
         }

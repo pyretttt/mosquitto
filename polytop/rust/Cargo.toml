@@ -6,7 +6,8 @@ description = "Polymarket monitor TUI"
 
 [dependencies]
 color-eyre = "0.6.5"
-crossterm = { version = "0.28", features = ["event-stream"] }
+futures = "0.3.31"
+crossterm = { version = "0.28.1", features = ["event-stream"] }
 ratatui = "0.29"
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1", features = ["full"] }
