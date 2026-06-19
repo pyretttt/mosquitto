@@ -1,64 +1,13 @@
-pub mod models;
-pub mod event_loop;
 pub mod config;
+pub mod event_loop;
+pub mod models;
 pub mod ui;
+pub mod env;
 
-use std::io::{self, stdout};
+use iocraft::prelude::*;
 
-use crossterm::{
-    event::{self, Event, KeyCode, KeyEventKind},
-    execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
-};
-use ratatui::{
-    prelude::*,
-    widgets::{Block, Borders, Paragraph},
-};
-use tokio::time::{sleep, Duration};
-
-use models::app_state::{AppState, Page, IntroPage, Env, app_state_reduce, Action};
-use event_loop::{EventLoop};
-
-
-#[tokio::main]
-async fn main() -> color_eyre::Result<()> {
-    enable_raw_mode()?;
-    let mut stdout = stdout();
-    execute!(stdout, EnterAlternateScreen)?;
-    let mut terminal = Terminal::new(CrosstermBackend::new(stdout))?;
-
-    let result = run_app(&mut terminal).await;
-
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
-    terminal.show_cursor()?;
-
-    result
-}
-
-async fn run_app(terminal: &mut Terminal<CrosstermBackend<impl io::Write>>) -> color_eyre::Result<()> {
-    let mut app_state = AppState {
-        page: Page::Intro(IntroPage{title: "Polytop - Polymarket Monitor".to_owned(), text: "Hello, world!".to_owned()}),
-        counter: 0,
-    };
-    let mut env = Env::new();
-    let sender = env.event_loop.sender.clone();
-    tokio::spawn(async move { event_loop::run(sender).await });
-
-    loop {
-        terminal.draw(|frame| {
-            ui::draw(frame, &mut app_state);
-        })?;
-        match env.event_loop.next().await? {
-            event_loop::Event::App(action) => {
-                app_state_reduce(&mut app_state, action, &env);
-            }
-            _ => {
-                println!("Received event");
-            }
-        }
-        env.event_loop.sender.send(crate::event_loop::Event::App(Action::Next));
-    }
-
+fn main() -> color_eyre::Result<()> {
+    color_eyre::install()?;
+    smol::block_on(element!(ui::App).fullscreen())?;
     Ok(())
 }
