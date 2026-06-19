@@ -21,12 +21,11 @@ pub struct EventLoop {
 }
 
 impl EventLoop {
-    pub fn new() -> Self {
-        let (sender, receiver) = mpsc::unbounded_channel::<Event>();
-        Self { sender, receiver }
+    pub fn new(tx: mpsc::UnboundedSender<Event>, rx: mpsc::UnboundedReceiver<Event>) -> Self {
+        Self { sender: tx, receiver: rx }
     }
 
-    pub async fn run_(&mut self) -> color_eyre::Result<()> {
+    pub async fn run(&mut self) -> color_eyre::Result<()> {
         let mut reader = crossterm::event::EventStream::new();
         let mut tick = tokio::time::interval(Duration::from_secs_f64(1.0 / config().tick_rate));
         loop {
@@ -46,6 +45,13 @@ impl EventLoop {
             }
         }
         Ok(())
+    }
+
+    pub async fn next(&mut self) -> color_eyre::Result<Event> {
+        self.receiver
+            .recv()
+            .await
+            .ok_or(color_eyre::eyre::eyre!("Failed to receive event"))
     }
 }
 

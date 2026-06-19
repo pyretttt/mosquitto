@@ -1,6 +1,7 @@
 pub mod models;
 pub mod event_loop;
 pub mod config;
+pub mod ui;
 
 use std::io::{self, stdout};
 
@@ -15,8 +16,12 @@ use ratatui::{
 };
 use tokio::time::{sleep, Duration};
 
+use models::app_state::{AppState, Page, IntroPage, Env, app_state_reduce};
+use event_loop::{EventLoop};
+
+
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> color_eyre::Result<()> {
     enable_raw_mode()?;
     let mut stdout = stdout();
     execute!(stdout, EnterAlternateScreen)?;
@@ -31,31 +36,27 @@ async fn main() -> io::Result<()> {
     result
 }
 
-async fn run_app(terminal: &mut Terminal<CrosstermBackend<impl io::Write>>) -> io::Result<()> {
+async fn run_app(terminal: &mut Terminal<CrosstermBackend<impl io::Write>>) -> color_eyre::Result<()> {
+    let mut app_state = AppState {
+        page: Page::Intro(IntroPage{title: "Polytop - Polymarket Monitor".to_owned(), text: "Hello, world!".to_owned()}),
+        counter: 0,
+    };
+    let env = Env::new();
+    tokio::spawn(async { env.event_loop.run().await });
+
     loop {
         terminal.draw(|frame| {
-            let block = Block::default()
-                .title(" Polytop - Polymarket Monitor ")
-                .borders(Borders::ALL);
-
-            let paragraph = Paragraph::new("Hello, world!")
-                .block(block)
-                .alignment(Alignment::Center);
-
-            frame.render_widget(paragraph, frame.area());
+            ui::draw(frame, &mut app_state);
         })?;
-
-        if event::poll(Duration::from_millis(250))? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind == KeyEventKind::Press
-                    && matches!(key.code, KeyCode::Char('q') | KeyCode::Esc)
-                {
-                    break;
-                }
+        let event = env.event_loop.next().await?;
+        match event {
+            event_loop::Event::App(action) => {
+                app_state_reduce(&mut app_state, action, &env);
+            }
+            _ => {
+                continue;
             }
         }
-
-        sleep(Duration::from_millis(100)).await;
     }
 
     Ok(())
