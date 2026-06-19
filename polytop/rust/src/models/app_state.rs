@@ -26,7 +26,7 @@ impl Env {
 
 pub fn app_state_reduce(app_state: &mut AppState, action: Action, env: &Env) {
     match action {
-        Action::Next => {},
+        Action::Next => app_state.counter += 1,
     }
 }
 

@@ -16,7 +16,7 @@ use ratatui::{
 };
 use tokio::time::{sleep, Duration};
 
-use models::app_state::{AppState, Page, IntroPage, Env, app_state_reduce};
+use models::app_state::{AppState, Page, IntroPage, Env, app_state_reduce, Action};
 use event_loop::{EventLoop};
 
 
@@ -41,8 +41,9 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<impl io::Write>>) -> c
         page: Page::Intro(IntroPage{title: "Polytop - Polymarket Monitor".to_owned(), text: "Hello, world!".to_owned()}),
         counter: 0,
     };
-    let env = Env::new();
-    tokio::spawn(async { env.event_loop.run().await });
+    let mut env = Env::new();
+    let sender = env.event_loop.sender.clone();
+    tokio::spawn(async move { event_loop::run(sender).await });
 
     loop {
         terminal.draw(|frame| {
@@ -54,9 +55,10 @@ async fn run_app(terminal: &mut Terminal<CrosstermBackend<impl io::Write>>) -> c
                 app_state_reduce(&mut app_state, action, &env);
             }
             _ => {
-                continue;
+                println!("Received event");
             }
         }
+        env.event_loop.sender.send(crate::event_loop::Event::App(Action::Next));
     }
 
     Ok(())
