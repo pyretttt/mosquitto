@@ -47,6 +47,7 @@ pub struct LoadingPage {
     pub throbbler_state: throbber_widgets_tui::ThrobberState,
     pub loading_tip: &'static str,
     pub throbbler_caption: String,
+    pub logo_color_index: usize,
     loading_tip_index: usize,
     loading_tip_tick: u8,
 }
@@ -58,6 +59,7 @@ impl LoadingPage {
             loading_tip: LOADING_TIPS[0],
             throbbler_state: throbber_widgets_tui::ThrobberState::default(),
             throbbler_caption: throbbler_caption.into(),
+            logo_color_index: 0,
             loading_tip_index: 0,
             loading_tip_tick: 0,
         }
@@ -67,6 +69,7 @@ impl LoadingPage {
         self.loading_tip_tick = self.loading_tip_tick.wrapping_add(1);
         if self.loading_tip_tick % 3 == 0 {
             self.throbbler_state.calc_next();
+            self.logo_color_index = self.logo_color_index.wrapping_add(1);
         }
         if self.loading_tip_tick % (get_config().tick_rate * 2.0) as u8 == 0 {
             self.loading_tip_index = (self.loading_tip_index + 1) % LOADING_TIPS.len();

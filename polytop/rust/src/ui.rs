@@ -34,6 +34,33 @@ const POLYTOP_LOGO: [&str; 6] = [
     "╚═╝      ╚═════╝ ╚══════╝╚═╝      ╚═╝    ╚═════╝ ╚═╝     ",
 ];
 
+const BLUES_LOGO_COLORS: [Color; 16] = [
+    Color::Rgb(247, 251, 255),
+    Color::Rgb(232, 241, 250),
+    Color::Rgb(217, 232, 245),
+    Color::Rgb(198, 219, 239),
+    Color::Rgb(174, 209, 231),
+    Color::Rgb(150, 198, 224),
+    Color::Rgb(124, 185, 217),
+    Color::Rgb(99, 166, 207),
+    Color::Rgb(74, 144, 194),
+    Color::Rgb(48, 122, 181),
+    Color::Rgb(30, 101, 168),
+    Color::Rgb(16, 81, 150),
+    Color::Rgb(8, 64, 129),
+    Color::Rgb(8, 48, 107),
+    Color::Rgb(8, 33, 82),
+    Color::Rgb(8, 20, 55),
+];
+
+fn blues_logo_color(logo_color_index: usize) -> Color {
+    let mut mirrored_index = logo_color_index % (BLUES_LOGO_COLORS.len() * 2);
+    if mirrored_index >= BLUES_LOGO_COLORS.len() {
+        mirrored_index = BLUES_LOGO_COLORS.len() - (mirrored_index % BLUES_LOGO_COLORS.len()) - 1;
+    }
+    BLUES_LOGO_COLORS[mirrored_index]
+}
+
 fn draw_intro_page(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
     let [title_area, text_area, counter_area, help_area] = Layout::vertical([
         Constraint::Length(1),
@@ -86,7 +113,9 @@ pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
             .alignment(Alignment::Center)
             .style(
                 Style::default()
-                    .fg(Color::Magenta)
+                    .fg(
+                        blues_logo_color(loading.logo_color_index)
+                    )
                     .add_modifier(Modifier::BOLD),
             ),
         logo_area,
@@ -105,7 +134,7 @@ pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
         throbber_area.offset(Offset::new(0, 1)),
     );
 
-    frame.render_widget(Block::new(), fill_area);
+    frame.render_widget(Block::new().style(Style::default().fg(Color::Black)), fill_area);
 
     let progress = loading.progress.clamp(0.0, 1.0) as f64;
     frame.render_widget(
