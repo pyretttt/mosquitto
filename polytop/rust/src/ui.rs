@@ -7,12 +7,17 @@ use ratatui::{
 };
 use ratatui::DefaultTerminal;
 
-use crate::models::app_state::{AppState, Page, app_reducer};
+use crate::models::app_state::{AppState, Page, app_reducer, IntroPage};
 use crate::env::Env;
 
-fn draw(frame: &mut Frame, state: &AppState) {
-    let Page::Intro(intro) = &state.page;
+fn draw_app(frame: &mut Frame, state: &AppState) {
+    match &state.page {
+        Page::Intro(intro) => draw_intro(frame, state, intro),
+        Page::Main(_) => (),
+    }
+}
 
+fn draw_intro(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
     let [title_area, text_area, counter_area, help_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),
@@ -54,12 +59,15 @@ pub async fn run(
     terminal: &mut DefaultTerminal,
 ) -> color_eyre::Result<()> {
     while app_state.running {
-        terminal.draw(|frame| draw(frame, app_state))?;
+        terminal.draw(|frame| draw_app(frame, app_state))?;
         let mut event = env.receiver
             .recv()
             .await
             .ok_or(color_eyre::eyre::eyre!("Event receiver closed"))?;
         app_reducer(app_state, &mut event, env);
+        if !app_state.running {
+            break;
+        }
     }
     Ok(())
 }
