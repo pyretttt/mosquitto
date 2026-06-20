@@ -5,13 +5,8 @@ from textual.widgets import Button, Footer, Header, Static
 
 
 class IntroScreen(Screen):
-    BINDINGS = [
-        ("d", "go_dashboard", "Dashboard"),
-        ("s", "go_settings", "Settings"),
-    ]
 
     def compose(self) -> ComposeResult:
-        # yield Header()
         with Center():
             with Middle():
                 yield Static("Polytop - Polymarket Monitor", id="title")

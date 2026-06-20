@@ -1,22 +1,21 @@
-use futures::channel::mpsc;
-use crate::models::app_state::Action;
+use tokio::sync::mpsc;
 
-pub enum Event {
-    Tick,
-    App(Action),
-}
+use crate::event::Event;
+use crate::config::{get_config, Config};
 
 pub struct Env {
-    pub event_tx: mpsc::UnboundedSender<Event>,
-    pub event_rx: mpsc::UnboundedReceiver<Event>,
+    pub sender: mpsc::UnboundedSender<Event>,
+    pub receiver: mpsc::UnboundedReceiver<Event>,
+    pub config: &'static Config,
 }
 
 impl Env {
     pub fn new() -> Self {
-        let (event_tx, event_rx) = mpsc::unbounded();
+        let (sender, receiver) = mpsc::unbounded_channel::<Event>();
         Self {
-            event_tx,
-            event_rx,
+            sender,
+            receiver,
+            config: get_config(),
         }
     }
 }

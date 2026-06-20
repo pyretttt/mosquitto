@@ -1,12 +1,29 @@
 pub mod config;
+pub mod env;
+pub mod event;
 pub mod models;
 pub mod ui;
-pub mod env;
 
-use iocraft::prelude::*;
+use tokio::spawn;
 
-fn main() -> color_eyre::Result<()> {
+use env::Env;
+use models::app_state::{AppState};
+use ui::run;
+use event::sidecar_event_loop;
+
+#[tokio::main]
+async fn main() -> color_eyre::Result<()> {
     color_eyre::install()?;
-    smol::block_on(element!(ui::App).fullscreen())?;
+    let mut terminal = ratatui::init();
+    let mut env = Env::new();
+
+    spawn(sidecar_event_loop(env.sender.clone()));
+
+    run(
+        &mut AppState::default(),
+        &mut env,
+        &mut terminal
+    ).await?;
+    ratatui::restore();
     Ok(())
 }
