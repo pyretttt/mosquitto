@@ -1,9 +1,9 @@
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 
-from polytop.screens.dashboard import DashboardScreen
-from polytop.screens.intro import IntroScreen
-from polytop.screens.settings import SettingsScreen
+from screens.dashboard import DashboardScreen
+from screens.intro import IntroScreen
+from screens.settings import SettingsScreen
 
 
 class PolytopApp(App):

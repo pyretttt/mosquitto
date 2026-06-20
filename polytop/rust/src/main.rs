@@ -1,5 +1,4 @@
 pub mod config;
-pub mod event_loop;
 pub mod models;
 pub mod ui;
 pub mod env;

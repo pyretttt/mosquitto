@@ -1,5 +1,4 @@
-use crate::event_loop::{Event};
-use crate::env::Env;
+use crate::env::{Event, Env};
 
 #[derive(Clone, Debug)]
 pub struct AppState {
