@@ -34,31 +34,31 @@ const POLYTOP_LOGO: [&str; 6] = [
     "╚═╝      ╚═════╝ ╚══════╝╚═╝      ╚═╝    ╚═════╝ ╚═╝     ",
 ];
 
-const BLUES_LOGO_COLORS: [Color; 16] = [
-    Color::Rgb(247, 251, 255),
-    Color::Rgb(232, 241, 250),
-    Color::Rgb(217, 232, 245),
-    Color::Rgb(198, 219, 239),
-    Color::Rgb(174, 209, 231),
-    Color::Rgb(150, 198, 224),
-    Color::Rgb(124, 185, 217),
-    Color::Rgb(99, 166, 207),
-    Color::Rgb(74, 144, 194),
-    Color::Rgb(48, 122, 181),
-    Color::Rgb(30, 101, 168),
-    Color::Rgb(16, 81, 150),
-    Color::Rgb(8, 64, 129),
-    Color::Rgb(8, 48, 107),
-    Color::Rgb(8, 33, 82),
-    Color::Rgb(8, 20, 55),
+const PUBU_LOGO_COLORS: [Color; 16] = [
+    Color::Rgb(255, 247, 251),
+    Color::Rgb(244, 237, 246),
+    Color::Rgb(236, 231, 242),
+    Color::Rgb(221, 222, 235),
+    Color::Rgb(208, 209, 230),
+    Color::Rgb(186, 198, 222),
+    Color::Rgb(166, 189, 219),
+    Color::Rgb(138, 177, 213),
+    Color::Rgb(116, 169, 207),
+    Color::Rgb(77, 153, 198),
+    Color::Rgb(54, 144, 192),
+    Color::Rgb(20, 125, 178),
+    Color::Rgb(5, 112, 176),
+    Color::Rgb(4, 90, 141),
+    Color::Rgb(3, 72, 114),
+    Color::Rgb(2, 56, 88),
 ];
 
-fn blues_logo_color(logo_color_index: usize) -> Color {
-    let mut mirrored_index = logo_color_index % (BLUES_LOGO_COLORS.len() * 2);
-    if mirrored_index >= BLUES_LOGO_COLORS.len() {
-        mirrored_index = BLUES_LOGO_COLORS.len() - (mirrored_index % BLUES_LOGO_COLORS.len()) - 1;
+fn pubu_logo_color(logo_color_index: usize) -> Color {
+    let mut mirrored_index = logo_color_index % (PUBU_LOGO_COLORS.len() * 2);
+    if mirrored_index >= PUBU_LOGO_COLORS.len() {
+        mirrored_index = PUBU_LOGO_COLORS.len() - (mirrored_index % PUBU_LOGO_COLORS.len()) - 1;
     }
-    BLUES_LOGO_COLORS[mirrored_index]
+    PUBU_LOGO_COLORS[mirrored_index]
 }
 
 fn draw_intro_page(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
@@ -114,7 +114,7 @@ pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
             .style(
                 Style::default()
                     .fg(
-                        blues_logo_color(loading.logo_color_index)
+                        pubu_logo_color(loading.logo_color_index)
                     )
                     .add_modifier(Modifier::BOLD),
             ),

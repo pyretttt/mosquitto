@@ -80,7 +80,7 @@ impl LoadingPage {
 
 impl Default for LoadingPage {
     fn default() -> Self {
-        Self::new("Preparing smooth performance...")
+        Self::new("Cooking smooth performance...")
     }
 }
 
