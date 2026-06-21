@@ -2,6 +2,8 @@ use tokio::sync::mpsc;
 
 use crate::event::Event;
 use crate::config::{get_config, Config};
+use tokio::task::JoinHandle;
+use std::future::Future;
 
 pub struct Env {
     pub sender: mpsc::UnboundedSender<Event>,
@@ -17,5 +19,10 @@ impl Env {
             receiver,
             config: get_config(),
         }
+    }
+
+    pub fn fire_and_forget<F: Future + Send + 'static>(&self, future: F) -> JoinHandle<F::Output>
+        where F::Output: Send + 'static {
+        tokio::spawn(future)
     }
 }

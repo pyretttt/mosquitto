@@ -4,8 +4,6 @@ pub mod event;
 pub mod models;
 pub mod ui;
 
-use tokio::spawn;
-
 use env::Env;
 use models::app_state::{AppState};
 use ui::run;
@@ -17,7 +15,7 @@ async fn main() -> color_eyre::Result<()> {
     let mut terminal = ratatui::init();
     let mut env = Env::new();
 
-    spawn(sidecar_event_loop(env.sender.clone()));
+    env.fire_and_forget(sidecar_event_loop(env.sender.clone()));
 
     run(
         &mut AppState::default(),

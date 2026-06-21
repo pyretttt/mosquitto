@@ -54,7 +54,7 @@ pub struct LoadingPage {
     pub throbbler_caption: String,
     pub logo_color_index: usize,
     loading_tip_index: usize,
-    loading_tip_tick: u8,
+    loading_tip_tick: u16,
 }
 
 impl LoadingPage {
@@ -76,7 +76,7 @@ impl LoadingPage {
             self.throbbler_state.calc_next();
             self.logo_color_index = self.logo_color_index.wrapping_add(1);
         }
-        if self.loading_tip_tick % (get_config().tick_rate * 2.0) as u8 == 0 {
+        if self.loading_tip_tick % (get_config().tick_rate * 2.0) as u16 == 0 {
             self.loading_tip_index = (self.loading_tip_index + 1) % LOADING_TIPS.len();
             self.loading_tip = LOADING_TIPS[self.loading_tip_index];
         }
@@ -137,12 +137,12 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                             let token = Uuid::new_v4().to_string();
                             app_state.increment_token = Some(token.clone());
                             let sender = env.sender.clone();
-                            tokio::spawn(async move {
+                            env.fire_and_forget(async move {
                                 tokio::time::sleep(Duration::from_secs(1)).await;
                                 sender.send(Event::App(Action::Next(token)))
                             });
                         },
-                        KeyCode::Char('?') if key_event.modifiers == KeyModifiers::SHIFT => {
+                        KeyCode::Char('/') => {
                             app_state.command_pallette = Some(CommandPallette::new());
                         }
                         _ => {}

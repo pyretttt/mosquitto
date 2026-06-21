@@ -22,6 +22,7 @@ fn draw_app(frame: &mut Frame, state: &AppState) {
         Page::Intro(intro) => draw_intro_page(frame, state, intro),
         Page::Main(_) => (),
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
+        Page::Help(_) => (),
     }
 }
 
@@ -73,7 +74,7 @@ fn draw_intro_page(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
 
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
-            intro.title.as_str(),
+            "intro.title.as_str()",
             Style::default()
                 .fg(Color::Magenta)
                 .add_modifier(Modifier::BOLD),
@@ -81,7 +82,7 @@ fn draw_intro_page(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
         title_area,
     );
 
-    frame.render_widget(Paragraph::new(intro.text.as_str()), text_area);
+    frame.render_widget(Paragraph::new("intro.text.as_str()"), text_area);
 
     frame.render_widget(
         Paragraph::new(format!("counter: {}", 0)),
