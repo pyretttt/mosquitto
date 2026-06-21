@@ -84,7 +84,7 @@ fn draw_intro_page(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
     frame.render_widget(Paragraph::new(intro.text.as_str()), text_area);
 
     frame.render_widget(
-        Paragraph::new(format!("counter: {}", state.counter)),
+        Paragraph::new(format!("counter: {}", 0)),
         counter_area,
     );
 

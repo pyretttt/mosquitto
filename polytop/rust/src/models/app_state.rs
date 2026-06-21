@@ -6,13 +6,14 @@ use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 use crate::env::Env;
 use crate::event::{Event};
 use crate::config::get_config;
+use crate::models::command::{CommandPallette, Command};
 
 #[derive(Clone, Debug)]
 pub struct AppState {
     pub page: Page,
-    pub counter: i32,
     pub running: bool,
     pub increment_token: Option<String>,
+    pub command_pallette: Option<CommandPallette>,
 }
 
 #[derive(Clone, Debug)]
@@ -20,18 +21,22 @@ pub enum Page {
     Intro(IntroPage),
     LoadingPage(LoadingPage),
     Main(MainPage),
+    Help(HelpPage),
 }
 
 #[derive(Clone, Debug)]
 pub struct IntroPage {
-    pub title: String,
-    pub text: String,
 }
 
 #[derive(Clone, Debug)]
 pub struct MainPage {
     pub title: String,
     pub text: String,
+}
+
+#[derive(Clone, Debug)]
+pub struct HelpPage {
+
 }
 
 const LOADING_TIPS: [&str; 4] = [
@@ -87,13 +92,25 @@ impl Default for LoadingPage {
 #[derive(Clone, Debug)]
 pub enum Action {
     Next(String),
+    CommandPallette(Command),
     Quit,
 }
 
 pub fn app_state_reduce(app_state: &mut AppState, action: &Action) {
     match action {
         Action::Next(ref token) if app_state.increment_token.as_ref() == Some(token) => {
-            app_state.counter += 1
+            //
+        },
+        Action::CommandPallette(command) => {
+            match command {
+                Command::Help => {
+                    app_state.page = Page::Help(HelpPage {});
+                },
+                Command::Quit => app_state.running = false,
+                Command::Intro => {
+                    app_state.page = Page::Intro(IntroPage { });
+                },
+            }
         },
         Action::Next(_) => (),
         Action::Quit => app_state.running = false,
@@ -125,6 +142,9 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                                 sender.send(Event::App(Action::Next(token)))
                             });
                         },
+                        KeyCode::Char('?') if key_event.modifiers == KeyModifiers::SHIFT => {
+                            app_state.command_pallette = Some(CommandPallette::new());
+                        }
                         _ => {}
                     }
                 }
@@ -138,9 +158,9 @@ impl Default for AppState {
     fn default() -> Self {
         Self {
             page: Page::LoadingPage(LoadingPage::default()),
-            counter: 0,
             running: true,
             increment_token: None,
+            command_pallette: None,
         }
     }
 }
