@@ -16,6 +16,7 @@ use crate::models::app_state::{
     LoadingPage
 };
 use crate::env::Env;
+use crate::ui_components::command_popup::draw_command_popup;
 
 fn draw_app(frame: &mut Frame, state: &AppState) {
     match &state.page {
@@ -23,6 +24,10 @@ fn draw_app(frame: &mut Frame, state: &AppState) {
         Page::Main(_) => (),
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
         Page::Help(_) => (),
+    }
+
+    if let Some(command_pallette) = &state.command_pallette {
+        draw_command_popup(frame, command_pallette);
     }
 }
 

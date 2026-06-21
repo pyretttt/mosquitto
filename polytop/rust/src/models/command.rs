@@ -17,11 +17,10 @@ impl CommandPallette {
         }
     }
 
-    pub fn available_commands(&self) -> Vec<&Command> {
+    pub fn available_commands(&self) -> impl Iterator<Item = &Command> {
         COMMANDS
             .iter()
             .filter(|command| command.name().starts_with(&self.input_text))
-            .collect::<Vec<_>>()
     }
 }
 

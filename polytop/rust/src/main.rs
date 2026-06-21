@@ -3,6 +3,7 @@ pub mod env;
 pub mod event;
 pub mod models;
 pub mod ui;
+pub mod ui_components;
 
 use env::Env;
 use models::app_state::{AppState};
