@@ -91,7 +91,7 @@ impl Default for LoadingPage {
 #[derive(Clone, Debug)]
 pub enum Action {
     Next(String),
-    CommandPallette(Command),
+    CommandSent(Command),
     Quit,
 }
 
@@ -100,7 +100,7 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &Action) {
         Action::Next(ref token) if app_state.increment_token.as_ref() == Some(token) => {
             //
         },
-        Action::CommandPallette(command) => {
+        Action::CommandSent(command) => {
             match command {
                 Command::Help => {
                     app_state.page = Page::Help(HelpPage {});
@@ -125,6 +125,9 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
         }
         Event::Crossterm(crossterm_event) => {
             if let crossterm::event::Event::Key(key_event) = crossterm_event {
+                if command_pallete_key_input_middleware(app_state, key_event, env) {
+                    return;
+                }
                 if key_event.kind == KeyEventKind::Press {
                     match key_event.code {
                         KeyCode::Esc | KeyCode::Char('q') => app_state.running = false,
@@ -165,7 +168,44 @@ impl Default for AppState {
 }
 
 fn command_pallete_key_input_middleware(
-    downstream: impl Fn(&mut crossterm::event::KeyEvent)
-) -> color_eyre::Result<()> {
-
+    app_state: &mut AppState,
+    key_event: &mut crossterm::event::KeyEvent,
+    env: &Env,
+) -> bool {
+    match & mut app_state.command_pallette {
+        Some(command_pallette) => {
+            match key_event.code {
+                KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
+                    false
+                },
+                KeyCode::Backspace => {
+                    command_pallette.input_text.pop();
+                    true
+                },
+                KeyCode::Esc => {
+                    app_state.command_pallette = None;
+                    true
+                },
+                KeyCode::Tab => {
+                    if let Some(command) = command_pallette.command_to_complete() {
+                        command_pallette.input_text = command.name().to_string();
+                    }
+                    true
+                }
+                KeyCode::Enter => {
+                    if let Ok(command) = Command::try_from(command_pallette.input_text.as_str()) {
+                        _ = env.sender.send(Event::App(Action::CommandSent(command)));
+                        app_state.command_pallette = None;
+                    }
+                    true
+                },
+                KeyCode::Char(char) if char.is_ascii_punctuation() || char.is_alphabetic() || char.is_numeric() => {
+                    command_pallette.input_text.push(char);
+                    true
+                },
+                _ => false
+            }
+        }
+        None => false,
+    }
 }

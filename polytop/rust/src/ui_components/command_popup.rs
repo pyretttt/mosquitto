@@ -106,17 +106,16 @@ impl CommandPallette {
             Line::from_iter([span].into_iter())
         } else {
             let span = Span::styled(self.input_text.as_str(), Style::default().fg(Color::White));
-            let matching_cmd_name = self.commands.iter()
-                .find(|command| command.name().starts_with(self.input_text.as_str()) );
-            if let Some(command) = matching_cmd_name {
-                let cmd_span = Span::styled(command.name(), Style::default().fg(Color::Gray));
+            if let Some(command) = self.command_to_complete() {
+                let suffix = &command.name()[self.input_text.len()..];
+                let cmd_span = Span::styled(suffix, Style::default().fg(Color::DarkGray));
                 Line::from_iter([span, cmd_span].into_iter())
             } else {
                 Line::from_iter([span].into_iter())
             }
         };
 
-        
+
         Text::from(line).left_aligned()
     }
 }
