@@ -2,9 +2,10 @@ use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Clear, Paragraph, Wrap},
+    text::Span,
+    widgets::{Block, Cell, Clear, Row, Table},
 };
+use ratatui_textarea::TextArea;
 
 use crate::models::command::CommandPallette;
 
@@ -24,60 +25,60 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
     );
 
     frame.render_widget(
-        Paragraph::new(command_lines(command_pallette))
-            .wrap(Wrap { trim: false })
-            .style(Style::default().fg(Color::Gray)),
+        Table::new(
+            command_rows(command_pallette),
+            [Constraint::Length(12), Constraint::Fill(1)],
+        )
+        .column_spacing(2)
+        .style(Style::default().fg(Color::Gray)),
         commands_area.inner(ratatui::layout::Margin {
             horizontal: 2,
             vertical: 1,
         }),
     );
 
+    let text_area = TextArea::from([&command_pallette.input_text]);
     frame.render_widget(
-        Paragraph::new(Line::from(vec![
-            Span::styled("/", Style::default().fg(Color::DarkGray)),
-            Span::raw(command_pallette.input_text.as_str()),
-        ]))
-        .block(Block::bordered().title(" Command "))
-        .style(Style::default().fg(Color::White)),
+        &text_area,
         input_area,
     );
 }
 
-fn command_lines(command_pallette: &CommandPallette) -> impl Iterator<Item = Line<'static>> {
-    let commands = command_pallette.available_commands();
-    if commands.len() {
-        return Some(Line::from(Span::styled(
+fn command_rows(command_pallette: &CommandPallette) -> impl Iterator<Item = Row<'static>> + use<'_> {
+    let mut commands = command_pallette.available_commands().enumerate().peekable();
+
+    let placeholder = if commands.peek().is_none() {
+        Some(Row::new([Cell::from(Span::styled(
             "No commands",
             Style::default().fg(Color::DarkGray),
-        )));
-    }
+        ))]))
+    } else {
+        None
+    };
 
-    commands
-        .iter()
-        .enumerate()
-        .flat_map(|(index, command)| {
-            let style = if index == 0 {
+    placeholder.into_iter().chain(commands.map(|(index, command)| {
+        let (name_style, description_style) = if index == 0 {
+            (
                 Style::default()
                     .fg(FOCUS_COLOR)
-                    .add_modifier(Modifier::BOLD)
-            } else {
-                Style::default().fg(Color::White)
-            };
+                    .add_modifier(Modifier::BOLD),
+                Style::default().fg(FOCUS_COLOR),
+            )
+        } else {
+            (
+                Style::default().fg(Color::White),
+                Style::default().fg(Color::DarkGray),
+            )
+        };
 
-            [
-                Line::from(Span::styled(command.name().to_owned(), style)),
-                Line::from(Span::styled(
-                    command.description().to_owned(),
-                    if index == 0 {
-                        Style::default().fg(FOCUS_COLOR)
-                    } else {
-                        Style::default().fg(Color::DarkGray)
-                    },
-                )),
-                Line::default(),
-            ]
-        })
+        Row::new([
+            Cell::from(Span::styled(command.name().to_owned(), name_style)),
+            Cell::from(Span::styled(
+                command.description().to_owned(),
+                description_style,
+            )),
+        ])
+    }))
 }
 
 fn popup_area(area: Rect) -> Rect {
