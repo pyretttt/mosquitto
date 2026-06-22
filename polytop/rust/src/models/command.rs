@@ -6,6 +6,7 @@ static COMMANDS: &'static [Command] = &[
 #[derive(Clone, Debug)]
 pub struct CommandPallette {
     pub input_text: String,
+    pub input_placeholder: &'static str,
     pub commands: &'static [Command],
 }
 
@@ -13,6 +14,7 @@ impl CommandPallette {
     pub fn new() -> Self {
         Self {
             input_text: String::new(),
+            input_placeholder: "Type a command",
             commands: COMMANDS,
         }
     }

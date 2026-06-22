@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use uuid::Uuid;
 use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 
 use crate::env::Env;
@@ -134,7 +133,7 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                         }
                         KeyCode::Enter => {
                             // Debounce example
-                            let token = Uuid::new_v4().to_string();
+                            let token = (env.gen_token)();
                             app_state.increment_token = Some(token.clone());
                             let sender = env.sender.clone();
                             env.fire_and_forget(async move {
@@ -163,4 +162,10 @@ impl Default for AppState {
             command_pallette: None,
         }
     }
+}
+
+fn command_pallete_key_input_middleware(
+    downstream: impl Fn(&mut crossterm::event::KeyEvent)
+) -> color_eyre::Result<()> {
+
 }

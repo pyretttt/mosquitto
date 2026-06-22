@@ -1,11 +1,10 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect},
+    layout::{Constraint, Layout, Rect, Margin},
     style::{Color, Modifier, Style},
-    text::Span,
-    widgets::{Block, Cell, Clear, Row, Table},
+    text::{Span, Text, Line},
+    widgets::{Block, Cell, Clear, Row, Table, Paragraph, Borders},
 };
-use ratatui_textarea::TextArea;
 
 use crate::models::command::CommandPallette;
 
@@ -31,16 +30,23 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
         )
         .column_spacing(2)
         .style(Style::default().fg(Color::Gray)),
-        commands_area.inner(ratatui::layout::Margin {
+        commands_area.inner(Margin {
             horizontal: 2,
             vertical: 1,
         }),
     );
 
-    let text_area = TextArea::from([&command_pallette.input_text]);
     frame.render_widget(
-        &text_area,
-        input_area,
+        Paragraph::new(command_pallette.input_text_ui())
+        .block(
+            Block::default()
+            .borders(Borders::TOP)
+                .border_style(Style::default().fg(Color::Gray)),
+        ),
+        input_area.inner(Margin {
+            horizontal: 1,
+            vertical: 0,
+        }),
     );
 }
 
@@ -90,5 +96,27 @@ fn popup_area(area: Rect) -> Rect {
         y: area.y + area.height.saturating_sub(height),
         width: area.width,
         height,
+    }
+}
+
+impl CommandPallette {
+    fn input_text_ui(&self) -> Text<'_> {
+        let line = if self.input_text.is_empty() {
+            let span = Span::styled(self.input_placeholder, Style::default().fg(Color::DarkGray));
+            Line::from_iter([span].into_iter())
+        } else {
+            let span = Span::styled(self.input_text.as_str(), Style::default().fg(Color::White));
+            let matching_cmd_name = self.commands.iter()
+                .find(|command| command.name().starts_with(self.input_text.as_str()) );
+            if let Some(command) = matching_cmd_name {
+                let cmd_span = Span::styled(command.name(), Style::default().fg(Color::Gray));
+                Line::from_iter([span, cmd_span].into_iter())
+            } else {
+                Line::from_iter([span].into_iter())
+            }
+        };
+
+        
+        Text::from(line).left_aligned()
     }
 }
