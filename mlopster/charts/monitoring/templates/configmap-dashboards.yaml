@@ -1,0 +1,21 @@
+# One ConfigMap per dashboard JSON in files/dashboards/. The Grafana sidecar
+# (grafana.sidecar.dashboards) watches for the `grafana_dashboard` label and
+# loads each into Grafana automatically — dashboards as code, no UI clicking.
+{{- if .Values.app.grafanaProvisioning.dashboards }}
+{{- range $path, $_ := .Files.Glob "files/dashboards/**.json" }}
+{{- $name := base $path | trimSuffix ".json" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-{{ $name }}
+  labels:
+    grafana_dashboard: "1"
+    {{- include "monitoring.crdLabels" $ | nindent 4 }}
+  annotations:
+    grafana_folder: "mlopster"
+data:
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- end }}

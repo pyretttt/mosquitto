@@ -1,0 +1,11 @@
+# Python deps the training DAG needs ON the Airflow workers.
+#
+# Prefer baking these into a CUSTOM Airflow image (FROM apache/airflow:<ver>)
+# rather than installing at runtime — runtime installs slow every task and
+# break reproducibility. See airflow/README.md.
+boto3>=1.34,<2.0
+scikit-learn>=1.3,<2.0
+pandas>=2.0,<3.0
+joblib>=1.3,<2.0
+# Reserved for later:
+# mlflow>=2.0,<3.0

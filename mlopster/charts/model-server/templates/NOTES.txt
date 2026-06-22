@@ -1,0 +1,16 @@
+model-server installed as release "{{ .Release.Name }}".
+
+Local access:
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "model-server.fullname" . }} 8000:{{ .Values.service.port }}
+  open http://localhost:8000/docs
+
+Endpoints:
+  GET  /health    liveness/readiness (503 until the model is loaded)
+  GET  /metrics   Prometheus exposition (scraped by the monitoring ServiceMonitor)
+  POST /predict   run an inference
+  POST /admin/reload-model   (Bearer ADMIN_TOKEN) re-pull the artifact from S3
+
+Reminders:
+  - This namespace needs the "{{ .Values.s3.existingSecret }}" Secret (S3 creds).
+  - The model artifact "{{ .Values.config.modelKey }}" must exist in the models
+    bucket, otherwise /health reports degraded until Airflow trains one.

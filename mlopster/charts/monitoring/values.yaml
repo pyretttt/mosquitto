@@ -1,0 +1,216 @@
+# Base (portable / production-leaning) values for the monitoring umbrella.
+#
+# Everything for the bundled stack lives under the `kube-prometheus-stack:` key
+# (that's the subchart name). Local overrides go in values-local.yaml.
+#
+# Docs: https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack
+
+kube-prometheus-stack:
+
+  # -------------------------------------------------------------------------
+  # Prometheus
+  # -------------------------------------------------------------------------
+  prometheus:
+    prometheusSpec:
+      # The operator only adopts CRDs whose labels match these selectors.
+      # `false` here means: "select by label", and our CRDs are labelled
+      # `release: monitoring`. Set to true to grab ALL ServiceMonitors/Rules in
+      # the cluster regardless of label (convenient locally, noisy in prod).
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      probeSelectorNilUsesHelmValues: false
+
+      retention: 15d
+      retentionSize: 8GB
+      scrapeInterval: 30s
+      evaluationInterval: 30s
+
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          memory: 2Gi
+
+      # Persistent TSDB. storageClassName is intentionally unset here so it
+      # uses the cluster default; pin it per-env in values-local.yaml / prod.
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 20Gi
+
+      # TODO(you): for long-term storage, look at remote-write / Thanos here.
+      # additionalScrapeConfigs / additionalScrapeConfigsSecret also live under
+      # prometheusSpec — see TASKS.md section 1.
+
+  # -------------------------------------------------------------------------
+  # Alertmanager
+  # -------------------------------------------------------------------------
+  alertmanager:
+    alertmanagerSpec:
+      resources:
+        requests:
+          cpu: 50m
+          memory: 128Mi
+        limits:
+          memory: 256Mi
+      storage:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 5Gi
+
+    # Global routing/receivers. This is the "inline via values" approach.
+    # The namespaced AlertmanagerConfig CRD is an alternative — see
+    # templates/alertmanagerconfig-example.yaml.
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ["alertname", "namespace"]
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 4h
+        receiver: "null"
+        routes:
+          - matchers:
+              - severity = "critical"
+            receiver: "critical"
+            continue: true
+      receivers:
+        - name: "null"
+        # TODO(you): wire a real receiver. Keep secrets OUT of git — use
+        # `alertmanager.alertmanagerSpec.secrets` or an env/secret ref.
+        - name: "critical"
+          # webhook_configs:
+          #   - url: "https://webhook.site/your-uuid"
+          #     send_resolved: true
+      inhibit_rules:
+        - source_matchers: ['severity = "critical"']
+          target_matchers: ['severity = "warning"']
+          equal: ["alertname", "namespace"]
+
+  # -------------------------------------------------------------------------
+  # Grafana  (persistence + security live here; provisioning in grafana/)
+  # -------------------------------------------------------------------------
+  grafana:
+    enabled: true
+
+    # SECURITY: do NOT keep a real password here. For prod, set
+    # admin.existingSecret + userKey/passwordKey and create the secret out of band.
+    adminPassword: "admin"  # TODO(you): replace with admin.existingSecret. See TASKS.md section 2.
+
+    persistence:
+      enabled: true
+      size: 5Gi
+      # storageClassName: set per-env (values-local.yaml uses the default)
+
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+      limits:
+        memory: 256Mi
+
+    # Provisioned datasources should not drift from git.
+    datasources:
+      datasources.yaml:
+        apiVersion: 1
+        datasources:
+          - name: Prometheus
+            uid: prometheus
+            type: prometheus
+            access: proxy
+            # In-cluster URL of the bundled Prometheus service.
+            url: http://monitoring-kube-prometheus-stack-prometheus.monitoring:9090
+            isDefault: true
+            editable: false
+            jsonData:
+              timeInterval: 30s
+
+    # The sidecar watches for ConfigMaps with these labels and loads them as
+    # dashboards / alerting / contact points. We ship those ConfigMaps from
+    # this chart's templates (rendered from the files in grafana/).
+    sidecar:
+      dashboards:
+        enabled: true
+        label: grafana_dashboard
+        labelValue: "1"
+        folderAnnotation: grafana_folder
+        provider:
+          foldersFromFilesStructure: true
+      datasources:
+        enabled: false  # we provision the datasource inline above
+      alerts:
+        enabled: true
+        label: grafana_alert
+        labelValue: "1"
+
+    grafana.ini:
+      server:
+        root_url: "%(protocol)s://%(domain)s/"
+      security:
+        # TODO(you): set cookie_secure true behind TLS, and a real secret.
+        disable_gravatar: true
+      users:
+        allow_sign_up: false
+      analytics:
+        reporting_enabled: false
+        check_for_updates: false
+
+    # Ingress is off by default (local uses port-forward). Turn on for a real
+    # cluster and add TLS via cert-manager (see docs/ADMIN_TASKS.md).
+    ingress:
+      enabled: false
+      # ingressClassName: nginx
+      # annotations:
+      #   cert-manager.io/cluster-issuer: letsencrypt-prod
+      # hosts: [grafana.example.com]
+      # tls:
+      #   - secretName: grafana-tls
+      #     hosts: [grafana.example.com]
+
+  # -------------------------------------------------------------------------
+  # Built-in exporters / rules
+  # -------------------------------------------------------------------------
+  nodeExporter:
+    enabled: true
+  kubeStateMetrics:
+    enabled: true
+
+  defaultRules:
+    create: true
+
+# ---------------------------------------------------------------------------
+# Values consumed by THIS chart's own templates (the app CRDs).
+# ---------------------------------------------------------------------------
+app:
+  # Label the operator uses to adopt our CRDs. Must match the helm release name
+  # of kube-prometheus-stack (here: the umbrella release "monitoring").
+  releaseLabel: monitoring
+
+  modelServer:
+    # Where the model server runs (so the ServiceMonitor can find it).
+    namespace: model-server
+    serviceSelectorLabel: app.kubernetes.io/name
+    serviceSelectorValue: model-server
+    metricsPort: http
+    metricsPath: /metrics
+
+  # Namespaced AlertmanagerConfig CRD (off by default — see the template).
+  alertmanagerConfig:
+    enabled: false
+    webhookUrl: "https://webhook.site/your-uuid"
+
+  # Ship Grafana dashboards + native alerting as ConfigMaps the Grafana sidecar
+  # discovers. Source files live in charts/monitoring/files/ so Helm can bundle
+  # them. Authoring workflow: build in the UI → export JSON → drop in files/.
+  grafanaProvisioning:
+    dashboards: true
+    alerting: true

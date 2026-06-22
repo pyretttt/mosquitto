@@ -1,0 +1,49 @@
+# PrometheusRule: alerting (and recording) rules as a CRD. The operator renders
+# these into the running Prometheus rule files. This is the storage mechanism
+# the user asked about: rules live in git as a CRD, not in prometheus.yml.
+#
+# TODO(you): verify these exprs match the metric names your FastAPI app actually
+# exposes via prometheus-fastapi-instrumentator (http_requests_total,
+# http_request_duration_seconds_bucket, and your custom ml_* metrics).
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: model-server-rules
+  labels:
+    {{- include "monitoring.crdLabels" . | nindent 4 }}
+spec:
+  groups:
+    - name: model-server.rules
+      rules:
+        - alert: ModelServerDown
+          expr: up{job=~".*model-server.*"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Model server is down"
+            description: "No metrics scraped from {{`{{ $labels.namespace }}/{{ $labels.pod }}`}} for 1m."
+
+        - alert: ModelServerHighErrorRate
+          expr: |
+            sum(rate(http_requests_total{job=~".*model-server.*",status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total{job=~".*model-server.*"}[5m])) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Model server 5xx error rate > 5%"
+            description: "Error ratio is {{`{{ $value | humanizePercentage }}`}} over 5m."
+
+        - alert: ModelServerHighLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket{job=~".*model-server.*"}[5m])) by (le)
+            ) > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Model server p95 latency > 500ms"
+            description: "p95 request latency is {{`{{ $value }}`}}s over 5m."

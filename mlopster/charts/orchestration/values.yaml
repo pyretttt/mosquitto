@@ -1,0 +1,94 @@
+# Base values for the orchestration umbrella (Apache Airflow).
+# Subchart values live under `airflow:`.
+# Docs: https://airflow.apache.org/docs/helm-chart/stable/index.html
+
+airflow:
+  # Each task runs in its own pod — a good fit for training jobs that need
+  # different resources than the scheduler. Alternatives: CeleryExecutor.
+  executor: KubernetesExecutor
+
+  # SECURITY: the chart needs a stable webserver secret key. Generate one and
+  # store it in a Secret; never let the chart auto-generate it across upgrades.
+  # webserverSecretKeySecretName: airflow-webserver-secret
+  webserverSecretKey: "CHANGE_ME_generate_a_random_key"  # TODO(you): move to a Secret.
+
+  # Default admin user for the web UI.
+  webserver:
+    defaultUser:
+      enabled: true
+      username: admin
+      password: admin   # TODO(you): move to a Secret / disable and use real auth.
+      role: Admin
+      email: admin@example.com
+      firstName: admin
+      lastName: user
+    service:
+      type: ClusterIP
+
+  # Bundled Postgres for Airflow metadata. Fine for local; for prod use an
+  # external managed DB (set postgresql.enabled=false + data.metadataConnection).
+  postgresql:
+    enabled: true
+  # External DB option (prod):
+  # data:
+  #   metadataConnection:
+  #     ...
+
+  # DAGs delivered via git-sync from THIS repo. Points the scheduler/workers at
+  # airflow/dags/ without baking an image. Set your repo URL + branch.
+  dags:
+    gitSync:
+      enabled: true
+      repo: "https://gitlab.com/your-group/mlopster.git"  # TODO(you): your repo URL
+      branch: main
+      subPath: "airflow/dags"
+      # For private repos, reference an SSH key / token Secret here.
+      # credentialsSecret: git-credentials
+
+  # Make S3 credentials available to every Airflow component as env vars.
+  # Requires a Secret named `s3-credentials` in the orchestration namespace
+  # (copy it from the storage namespace — see TASKS.md section 8).
+  extraEnvFrom: |
+    - secretRef:
+        name: s3-credentials
+
+  # Extra Python deps the DAGs need (boto3, scikit-learn). For anything heavy,
+  # bake a custom image instead of installing at runtime.
+  extraPipPackages: []  # TODO(you): prefer a custom image; see airflow/README.md
+
+  # StatsD metrics -> Prometheus (scrape via a ServiceMonitor later).
+  statsd:
+    enabled: true
+
+  # Keep the local footprint sane; size up for real clusters.
+  workers:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  scheduler:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 256Mi
+  triggerer:
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+
+# ---------------------------------------------------------------------------
+# RESERVED: MLflow config (kept here so the seam is visible). Enable the
+# dependency in Chart.yaml first. See TASKS.md section 5.
+# ---------------------------------------------------------------------------
+# mlflow:
+#   backendStore:
+#     postgres:
+#       enabled: true
+#   artifactRoot:
+#     proxiedArtifactStorage: true
+#     s3:
+#       enabled: true
+#       bucket: mlflow
+#   extraEnvVars:
+#     MLFLOW_S3_ENDPOINT_URL: http://storage-minio.storage:9000

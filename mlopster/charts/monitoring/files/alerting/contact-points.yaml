@@ -1,0 +1,15 @@
+# Grafana contact points (provisioned). Start with a webhook you can inspect
+# (https://webhook.site). Swap for Slack/email/PagerDuty later.
+#
+# TODO(you): do NOT commit a real Slack URL / token. Use Grafana's secure
+# settings or an env var + file templating in a real setup.
+apiVersion: 1
+contactPoints:
+  - orgId: 1
+    name: webhook-default
+    receivers:
+      - uid: webhook-default
+        type: webhook
+        settings:
+          url: https://webhook.site/your-uuid
+          httpMethod: POST

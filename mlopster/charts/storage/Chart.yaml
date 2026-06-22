@@ -1,0 +1,15 @@
+apiVersion: v2
+name: storage
+description: |
+  S3-compatible object storage for mlopster, backed by MinIO. Holds datasets
+  ("data" bucket) and trained model artifacts ("models" bucket). On a real
+  cluster you can drop MinIO and point everything at managed S3 by only
+  changing the endpoint + credentials.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: minio
+    version: "5.4.0"  # TODO(you): `helm search repo minio/minio` and pin a reviewed version.
+    repository: "https://charts.min.io/"

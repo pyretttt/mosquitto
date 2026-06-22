@@ -1,0 +1,65 @@
+# Base values for the storage umbrella (MinIO).
+# Subchart values live under `minio:`. Docs: https://github.com/minio/minio/tree/master/helm/minio
+
+minio:
+  # standalone is fine for local + small clusters. Use `distributed` for HA.
+  mode: standalone
+  replicas: 1
+
+  # SECURITY: replace with an existing Secret for anything real.
+  # rootUser/rootPassword are the S3 access key / secret key.
+  # existingSecret: minio-root-creds
+  rootUser: "minioadmin"          # TODO(you): move to a Secret. See TASKS.md section 8 + Admin track.
+  rootPassword: "minioadmin123"   # TODO(you): move to a Secret.
+
+  persistence:
+    enabled: true
+    size: 20Gi
+    # storageClass: set per-env (local overlay pins it)
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 512Mi
+
+  # Buckets created by the chart's post-install job. This is the
+  # "bucket-creation job" — provided by the MinIO chart itself.
+  buckets:
+    - name: data
+      policy: none
+      purge: false
+    - name: models
+      policy: none
+      purge: false
+
+  # Console (web UI). API is the S3 endpoint on port 9000.
+  consoleService:
+    type: ClusterIP
+
+  # No ingress locally; turn on + add TLS for a real cluster.
+  ingress:
+    enabled: false
+  consoleIngress:
+    enabled: false
+
+  # Expose MinIO metrics to Prometheus. The monitoring chart can scrape this
+  # via a ServiceMonitor (TODO in TASKS.md section 1).
+  metrics:
+    serviceMonitor:
+      enabled: false  # enable once kube-prometheus-stack is installed
+
+# ---------------------------------------------------------------------------
+# Consumed by this chart's own templates.
+# ---------------------------------------------------------------------------
+# Emit a Secret (in THIS namespace) with the S3 connection info, so the value
+# is defined in one place. NOTE: k8s Secrets are namespaced — the model-server
+# and airflow namespaces need their own copy (see TASKS.md / docs).
+s3Secret:
+  enabled: true
+  name: s3-credentials
+  endpoint: "http://storage-minio.storage:9000"
+  region: "us-east-1"
+  dataBucket: "data"
+  modelsBucket: "models"

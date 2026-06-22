@@ -1,0 +1,17 @@
+# Test stage: pytest for the model server.
+
+pytest:
+  stage: test
+  image: python:3.11-slim
+  before_script:
+    - cd model-server
+    - pip install -r requirements-dev.txt
+  script:
+    - pytest --junitxml=report.xml
+  artifacts:
+    when: always
+    reports:
+      junit: model-server/report.xml
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH'

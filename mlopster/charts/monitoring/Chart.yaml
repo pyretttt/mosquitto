@@ -1,0 +1,14 @@
+apiVersion: v2
+name: monitoring
+description: |
+  Monitoring umbrella for mlopster. Wraps kube-prometheus-stack (Prometheus
+  Operator + Prometheus + Alertmanager + Grafana) and layers the application's
+  own CRDs (ServiceMonitor, PrometheusRule, AlertmanagerConfig) on top.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: kube-prometheus-stack
+    version: "86.3.2"  # TODO(you): `helm search repo prometheus-community/kube-prometheus-stack` and pin a version you've reviewed.
+    repository: "https://prometheus-community.github.io/helm-charts"

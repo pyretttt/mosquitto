@@ -1,0 +1,49 @@
+# Grafana unified alerting rule (provisioned). Mirrors the Prometheus
+# ModelServerDown rule but evaluated by Grafana. Compare the two approaches.
+#
+# TODO(you): generate the real thing from the UI (Alerting -> export as
+# provisioning file). This is a minimal hand-written version.
+apiVersion: 1
+groups:
+  - orgId: 1
+    name: model-server
+    folder: mlopster
+    interval: 1m
+    rules:
+      - uid: model-server-down
+        title: model-server-down
+        condition: C
+        data:
+          - refId: A
+            datasourceUid: prometheus
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              editorMode: code
+              expr: up{job=~".*model-server.*"}
+              instant: true
+              refId: A
+          - refId: B
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              type: reduce
+              expression: A
+              reducer: last
+              refId: B
+          - refId: C
+            datasourceUid: __expr__
+            relativeTimeRange: { from: 600, to: 0 }
+            model:
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [1] }
+              refId: C
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: model-server is down
+        isPaused: false

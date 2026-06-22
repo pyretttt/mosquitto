@@ -1,0 +1,28 @@
+# Build stage: build + push the model-server image with Kaniko.
+#
+# Kaniko builds images in userspace, so it works on GitLab's unprivileged
+# shared runners (no docker:dind, no privileged mode). It authenticates to the
+# GitLab Container Registry using the CI job token automatically.
+
+build-model-server:
+  stage: build
+  image:
+    name: gcr.io/kaniko-project/executor:v1.23.2-debug
+    entrypoint: [""]
+  script:
+    - mkdir -p /kaniko/.docker
+    - |
+      echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" \
+        > /kaniko/.docker/config.json
+    - |
+      /kaniko/executor \
+        --context "$CI_PROJECT_DIR/model-server" \
+        --dockerfile "$CI_PROJECT_DIR/model-server/Dockerfile" \
+        --destination "$MODEL_IMAGE:$CI_COMMIT_SHORT_SHA" \
+        --destination "$MODEL_IMAGE:latest" \
+        --cache=true
+  rules:
+    # Only build on the default branch (and tags). MRs run lint+test only to
+    # save free-tier minutes.
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+    - if: '$CI_COMMIT_TAG'

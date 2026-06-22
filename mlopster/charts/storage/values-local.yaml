@@ -1,0 +1,12 @@
+# Local overlay for MinIO.
+minio:
+  persistence:
+    size: 5Gi
+    # TODO(you): kind/minikube -> "standard", k3d/k3s -> "local-path".
+    storageClass: standard
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 256Mi

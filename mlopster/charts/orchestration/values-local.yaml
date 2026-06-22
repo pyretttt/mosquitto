@@ -1,0 +1,27 @@
+# Local overlay for Airflow. Minimal resources, default storage class.
+airflow:
+  # git-sync is great but annoying for first-run local dev. Easiest local loop:
+  # disable git-sync and mount DAGs from a hostPath/PV, OR keep git-sync but
+  # point it at a public mirror. We keep it enabled; flip off if you prefer.
+  # dags:
+  #   gitSync:
+  #     enabled: false
+
+  postgresql:
+    primary:
+      persistence:
+        storageClass: standard  # TODO(you): k3d/k3s -> "local-path"
+        size: 2Gi
+
+  workers:
+    persistence:
+      storageClassName: standard
+      size: 2Gi
+
+  triggerer:
+    persistence:
+      storageClassName: standard
+      size: 1Gi
+
+  redis:
+    enabled: false  # not needed for KubernetesExecutor

@@ -1,0 +1,30 @@
+# mlopster CI — targets GitLab free tier (shared SaaS runners).
+#
+# Pipeline: lint -> test -> build -> (manual) deploy
+#
+# The heavy lifting is split into reusable templates under ci/ so this file
+# stays a thin orchestrator. Shared runners are unprivileged, so image builds
+# use Kaniko (no docker-in-docker / privileged mode needed).
+
+stages:
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  # Where the model-server image is pushed. GitLab provides $CI_REGISTRY_IMAGE.
+  MODEL_IMAGE: "$CI_REGISTRY_IMAGE/model-server"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+
+# Speed up free-tier runs by caching pip downloads between jobs.
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  paths:
+    - .cache/pip
+
+include:
+  - local: ci/lint.gitlab-ci.yml
+  - local: ci/test.gitlab-ci.yml
+  - local: ci/build.gitlab-ci.yml
+  - local: ci/deploy.gitlab-ci.yml

@@ -1,0 +1,145 @@
+# mise config for mlopster — tool versions + local bootstrap tasks.
+# Run a task:   mise run <task>      (e.g. `mise run up-local`)
+# List tasks:   mise tasks
+# Install tools: mise install
+#
+# These tasks wrap helm/kubectl so the README quick-start is reproducible.
+# Everything uses the *-local.yaml overlays. For a real cluster, call helm
+# directly with your own values (see docs/ARCHITECTURE.md).
+
+[tools]
+helm = "latest"
+kubectl = "latest"
+kind = "latest"
+k3d = "latest"
+
+[env]
+CLUSTER_NAME = "mlopster"
+NS_MONITORING = "monitoring"
+NS_STORAGE = "storage"
+NS_ORCH = "orchestration"
+NS_APP = "model-server"
+
+# ---------------------------------------------------------------------------
+# Local cluster lifecycle
+# ---------------------------------------------------------------------------
+[tasks.cluster-kind]
+description = "Create a local kind cluster"
+run = "kind create cluster --name $CLUSTER_NAME"
+
+[tasks.cluster-k3d]
+description = "Create a local k3d cluster (with a registry on :5000)"
+run = "k3d cluster create $CLUSTER_NAME --registry-create $CLUSTER_NAME-registry:0.0.0.0:5000"
+
+[tasks.cluster-delete]
+description = "Delete the local cluster (kind or k3d)"
+run = "kind delete cluster --name $CLUSTER_NAME || k3d cluster delete $CLUSTER_NAME"
+
+# ---------------------------------------------------------------------------
+# Helm dependencies
+# ---------------------------------------------------------------------------
+[tasks.repos]
+description = "Add the helm repos used by the charts"
+run = [
+  "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts",
+  "helm repo add minio https://charts.min.io/",
+  "helm repo add apache-airflow https://airflow.apache.org",
+  "helm repo add community-charts https://community-charts.github.io/helm-charts",
+  "helm repo update",
+]
+
+[tasks.deps]
+description = "Build chart dependencies (downloads subchart archives)"
+depends = ["repos"]
+run = [
+  "helm dependency build charts/monitoring",
+  "helm dependency build charts/storage",
+  "helm dependency build charts/orchestration",
+]
+
+# ---------------------------------------------------------------------------
+# Install / upgrade (local overlays)
+# ---------------------------------------------------------------------------
+[tasks.up-local]
+description = "Install all components locally"
+depends = ["storage-local", "monitoring-local", "orchestration-local", "model-local"]
+
+[tasks.monitoring-local]
+description = "Install monitoring stack (Prometheus + Grafana + Alertmanager)"
+run = """
+helm upgrade --install monitoring charts/monitoring -n $NS_MONITORING --create-namespace \
+  -f charts/monitoring/values.yaml -f charts/monitoring/values-local.yaml
+"""
+
+[tasks.storage-local]
+description = "Install MinIO (S3)"
+run = """
+helm upgrade --install storage charts/storage -n $NS_STORAGE --create-namespace \
+  -f charts/storage/values.yaml -f charts/storage/values-local.yaml
+"""
+
+[tasks.orchestration-local]
+description = "Install Apache Airflow"
+run = """
+helm upgrade --install orchestration charts/orchestration -n $NS_ORCH --create-namespace \
+  -f charts/orchestration/values.yaml -f charts/orchestration/values-local.yaml
+"""
+
+[tasks.model-local]
+description = "Install the model-server app"
+run = """
+helm upgrade --install model-server charts/model-server -n $NS_APP --create-namespace \
+  -f charts/model-server/values.yaml -f charts/model-server/values-local.yaml
+"""
+
+[tasks.down]
+description = "Uninstall all releases"
+run = [
+  "helm uninstall model-server -n $NS_APP || true",
+  "helm uninstall orchestration -n $NS_ORCH || true",
+  "helm uninstall monitoring -n $NS_MONITORING || true",
+  "helm uninstall storage -n $NS_STORAGE || true",
+]
+
+# ---------------------------------------------------------------------------
+# Render / lint (no cluster needed) — handy in CI
+# ---------------------------------------------------------------------------
+[tasks.lint]
+description = "helm lint every chart"
+run = "helm lint charts/monitoring charts/storage charts/orchestration charts/model-server"
+
+[tasks.template]
+description = "Render every chart (catches templating errors)"
+run = [
+  "helm template monitoring charts/monitoring -f charts/monitoring/values-local.yaml > /dev/null",
+  "helm template storage charts/storage -f charts/storage/values-local.yaml > /dev/null",
+  "helm template orchestration charts/orchestration -f charts/orchestration/values-local.yaml > /dev/null",
+  "helm template model-server charts/model-server -f charts/model-server/values-local.yaml > /dev/null",
+]
+
+# ---------------------------------------------------------------------------
+# Port-forwards
+# ---------------------------------------------------------------------------
+[tasks.pf-grafana]
+description = "Port-forward Grafana to localhost:3000"
+run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-grafana 3000:80"
+
+[tasks.pf-prometheus]
+description = "Port-forward Prometheus to localhost:9090"
+run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-kube-prometheus-stack-prometheus 9090:9090"
+
+[tasks.pf-alertmanager]
+description = "Port-forward Alertmanager to localhost:9093"
+run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-kube-prometheus-stack-alertmanager 9093:9093"
+
+[tasks.pf-model]
+description = "Port-forward the model server to localhost:8000"
+run = "kubectl -n $NS_APP port-forward svc/model-server 8000:80"
+
+[tasks.pf-minio]
+description = "Port-forward MinIO console to localhost:9001"
+run = "kubectl -n $NS_STORAGE port-forward svc/storage-minio-console 9001:9001"
+
+[tasks.pf-airflow]
+description = "Port-forward the Airflow webserver to localhost:8080"
+run = "kubectl -n $NS_ORCH port-forward svc/orchestration-airflow-webserver 8080:8080"

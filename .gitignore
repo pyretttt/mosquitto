@@ -31,3 +31,23 @@ node_modules
 
 .terraform/
 *.auto.tfvars
+
+# Python (extra)
+**/*.py[cod]
+**/*.egg-info/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+
+# mlopster
+mlopster/data/
+mlopster/model-server/models/*.joblib
+mlopster/model-server/models/*.pkl
+# Helm: vendored dependency archives + rendered output (keep Chart.lock tracked).
+mlopster/charts/*/charts/
+*.rendered.yaml
+# Secrets — never commit. Use *.example as the tracked template.
+*.secret.yaml
+secrets/
+.env
+!*.example

@@ -1,0 +1,20 @@
+monitoring ({{ .Chart.Version }}) installed as release "{{ .Release.Name }}".
+
+Prometheus Operator is now reconciling these CRDs (from this chart):
+  - ServiceMonitor/model-server   (scrape target)
+  - PrometheusRule/model-server-rules  (alerts)
+{{- if .Values.app.alertmanagerConfig.enabled }}
+  - AlertmanagerConfig/model-server-routing
+{{- end }}
+
+Grafana dashboards + alerting are provisioned from ConfigMaps the sidecar picks
+up (source: charts/monitoring/files/).
+
+Access (local, port-forward):
+  Grafana:       kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-grafana 3000:80
+  Prometheus:    kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-kube-prometheus-stack-prometheus 9090:9090
+  Alertmanager:  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-kube-prometheus-stack-alertmanager 9093:9093
+
+Verify the operator adopted the model-server target:
+  Prometheus UI -> Status -> Targets -> look for "model-server".
+If it's missing, check the CRD `release` label matches "{{ .Values.app.releaseLabel }}".

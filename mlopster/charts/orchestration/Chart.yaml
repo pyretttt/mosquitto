@@ -1,0 +1,22 @@
+apiVersion: v2
+name: orchestration
+description: |
+  Workflow orchestration for mlopster, backed by Apache Airflow. Runs the model
+  training DAGs (pull data from S3 -> train -> push artifact to S3). MLflow is
+  reserved as a (currently disabled) dependency for experiment tracking + model
+  registry later.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: airflow
+    version: "1.16.0"  # TODO(you): `helm search repo apache-airflow/airflow` and pin a reviewed version.
+    repository: "https://airflow.apache.org"
+
+  # RESERVED — do not enable yet. Uncomment when you add experiment tracking.
+  # See TASKS.md section 5.
+  # - name: mlflow
+  #   alias: mlflow
+  #   version: "1.8.1"
+  #   repository: "https://community-charts.github.io/helm-charts"

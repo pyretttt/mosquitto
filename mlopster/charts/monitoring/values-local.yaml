@@ -1,0 +1,55 @@
+# Local overlay for the monitoring umbrella.
+# Smaller footprint, no ingress, default storage class.
+#
+# Usage:
+#   helm upgrade --install monitoring charts/monitoring -n monitoring \
+#     -f charts/monitoring/values.yaml -f charts/monitoring/values-local.yaml
+
+kube-prometheus-stack:
+  prometheus:
+    prometheusSpec:
+      retention: 3d
+      retentionSize: 2GB
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          memory: 1Gi
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            # TODO(you): kind/minikube -> "standard", k3d/k3s -> "local-path".
+            storageClassName: standard
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 5Gi
+
+  alertmanager:
+    alertmanagerSpec:
+      storage:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: standard
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 1Gi
+
+  grafana:
+    persistence:
+      enabled: true
+      size: 2Gi
+      storageClassName: standard
+
+  # Local clusters often have a single node; these control-plane scrape jobs
+  # are noisy/unavailable on kind/k3d. Disable to keep the targets page green.
+  kubeControllerManager:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false
+  kubeEtcd:
+    enabled: false

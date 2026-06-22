@@ -1,0 +1,28 @@
+# Deploy stage: OPTIONAL + MANUAL. Free-tier shared runners can't reach your
+# local cluster, so this is a scaffold for when you have a reachable cluster
+# (or a self-hosted runner inside it). Until then it just dry-runs.
+#
+# TODO(you):
+#   - add a KUBECONFIG CI/CD variable (masked, protected) for your cluster.
+#   - drop --dry-run once you're confident.
+#   - consider a GitOps tool (Argo CD / Flux) instead of pushing from CI.
+
+deploy-model-server:
+  stage: deploy
+  image:
+    name: alpine/helm:3.16.2
+    entrypoint: [""]
+  variables:
+    KUBECONFIG: /tmp/kubeconfig
+  script:
+    - test -n "$KUBE_CONFIG_B64" && echo "$KUBE_CONFIG_B64" | base64 -d > $KUBECONFIG || echo "no kubeconfig; dry-run only"
+    - |
+      helm upgrade --install model-server charts/model-server \
+        -n model-server --create-namespace \
+        --set image.repository="$MODEL_IMAGE" \
+        --set image.tag="$CI_COMMIT_SHORT_SHA" \
+        --dry-run   # TODO(you): remove once a real cluster is wired up
+  rules:
+    - if: '$CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+      when: manual
+  allow_failure: true

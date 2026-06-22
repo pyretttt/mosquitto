@@ -1,0 +1,16 @@
+orchestration (Airflow) installed as release "{{ .Release.Name }}".
+
+Web UI (local):
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-airflow-webserver 8080:8080
+  open http://localhost:8080  (user: admin / pass: admin -- CHANGE THIS)
+
+Before the training DAG can run:
+  1. Copy the S3 credentials Secret into this namespace ({{ .Release.Namespace }}):
+       kubectl -n storage get secret s3-credentials -o yaml \
+         | sed 's/namespace: storage/namespace: {{ .Release.Namespace }}/' \
+         | kubectl apply -f -
+  2. Make sure git-sync points at your repo (airflow.dags.gitSync.repo) so
+     airflow/dags/train_model.py is synced in.
+  3. Unpause and trigger the `train_iris_model` DAG.
+
+MLflow is reserved/disabled — see TASKS.md section 5 to enable later.

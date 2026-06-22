@@ -1,0 +1,9 @@
+apiVersion: v2
+name: model-server
+description: |
+  The mlopster FastAPI inference service. Loads a model artifact from S3 and
+  serves predictions, exposing Prometheus metrics on /metrics. This is a
+  first-party chart (no external dependencies).
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

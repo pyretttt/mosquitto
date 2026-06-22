@@ -1,0 +1,15 @@
+storage (MinIO) installed as release "{{ .Release.Name }}".
+
+S3 API endpoint (in-cluster):  http://{{ .Release.Name }}-minio.{{ .Release.Namespace }}:9000
+Buckets created:               data, models
+Credentials:                   Secret/{{ .Values.s3Secret.name }} (this namespace)
+
+Console (local):
+  kubectl -n {{ .Release.Namespace }} port-forward svc/{{ .Release.Name }}-minio-console 9001:9001
+  open http://localhost:9001  (user: {{ index .Values "minio" "rootUser" }})
+
+Other namespaces (model-server, orchestration) need their own copy of the
+S3 credentials Secret. Quick local copy:
+  kubectl -n {{ .Release.Namespace }} get secret {{ .Values.s3Secret.name }} -o yaml \
+    | sed 's/namespace: {{ .Release.Namespace }}/namespace: model-server/' \
+    | kubectl apply -f -

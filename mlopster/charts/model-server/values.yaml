@@ -1,0 +1,92 @@
+# Base values for the model-server app chart.
+
+replicaCount: 2
+
+image:
+  # CI pushes here: registry.gitlab.com/<group>/mlopster/model-server
+  repository: registry.gitlab.com/your-group/mlopster/model-server  # TODO(you): your registry path
+  tag: latest          # TODO(you): pin to $CI_COMMIT_SHORT_SHA in deploys
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []   # e.g. [{ name: gitlab-registry }] for a private registry
+
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8000
+  # The port NAME ("http") is what the monitoring ServiceMonitor scrapes.
+  portName: http
+
+# App configuration -> container env. S3 connection comes from the Secret.
+config:
+  modelKey: "models/model.joblib"   # object key inside the models bucket
+  logLevel: "info"
+
+# Pull S3 creds from the shared Secret (must exist in this namespace).
+s3:
+  existingSecret: s3-credentials    # keys: AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, S3_ENDPOINT_URL, ...
+
+# Admin token for POST /admin/reload-model. Move to a Secret for real use.
+adminToken:
+  value: "change-me"                # TODO(you): use existingSecret instead
+  existingSecret: ""
+  existingSecretKey: "ADMIN_TOKEN"
+
+# Reserved for when MLflow is enabled (model.py would load from the registry).
+mlflow:
+  trackingUri: ""                   # e.g. http://mlflow.orchestration:5000
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    memory: 512Mi
+
+# Probes hit /health. readiness should fail until the model is loaded so the
+# Service doesn't route traffic to a model-less pod.
+probes:
+  enabled: true
+  path: /health
+  liveness:
+    initialDelaySeconds: 10
+    periodSeconds: 15
+  readiness:
+    initialDelaySeconds: 5
+    periodSeconds: 10
+
+# Non-root, locked-down by default (portable to PSA-restricted namespaces).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: ["ALL"]
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 6
+  targetCPUUtilizationPercentage: 70
+
+ingress:
+  enabled: false
+  # className: nginx
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt-prod
+  # hosts:
+  #   - host: model.example.com
+  #     paths: [{ path: /, pathType: Prefix }]
+  # tls:
+  #   - secretName: model-server-tls
+  #     hosts: [model.example.com]

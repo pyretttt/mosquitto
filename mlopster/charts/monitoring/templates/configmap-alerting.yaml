@@ -1,0 +1,20 @@
+# Grafana UNIFIED ALERTING provisioned from files. The sidecar
+# (grafana.sidecar.alerts) loads ConfigMaps labelled `grafana_alert` into
+# /etc/grafana/provisioning/alerting. This is Grafana's own alerting engine —
+# separate from the Prometheus PrometheusRule + Alertmanager path. Same data,
+# different evaluator. See TASKS.md section 3 for when to use which.
+{{- if .Values.app.grafanaProvisioning.alerting }}
+{{- range $path, $_ := .Files.Glob "files/alerting/*.yaml" }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-alert-{{ base $path | trimSuffix ".yaml" }}
+  labels:
+    grafana_alert: "1"
+    {{- include "monitoring.crdLabels" $ | nindent 4 }}
+data:
+  {{ base $path }}: |-
+{{ $.Files.Get $path | indent 4 }}
+{{- end }}
+{{- end }}

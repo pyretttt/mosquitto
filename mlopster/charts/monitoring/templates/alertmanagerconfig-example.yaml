@@ -1,0 +1,31 @@
+# AlertmanagerConfig CRD — the NAMESPACED alternative to the big global
+# `alertmanager.config` blob in values.yaml. Useful when different teams /
+# namespaces own their own routing and you don't want one giant central config.
+#
+# Disabled by default (set app.alertmanagerConfig.enabled=true to render it).
+# It's here so you can compare the two storage styles — see TASKS.md section 1.
+{{- if .Values.app.alertmanagerConfig.enabled }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: model-server-routing
+  labels:
+    {{- include "monitoring.crdLabels" . | nindent 4 }}
+spec:
+  route:
+    groupBy: ["alertname"]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 4h
+    receiver: team-webhook
+    routes:
+      - matchers:
+          - name: severity
+            value: critical
+        receiver: team-webhook
+  receivers:
+    - name: team-webhook
+      webhookConfigs:
+        - url: {{ .Values.app.alertmanagerConfig.webhookUrl | quote }}
+          sendResolved: true
+{{- end }}
