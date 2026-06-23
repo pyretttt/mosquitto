@@ -11,7 +11,7 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: airflow
-    version: "1.16.0"  # TODO(you): `helm search repo apache-airflow/airflow` and pin a reviewed version.
+    version: "1.22.0"  # TODO(you): `helm search repo apache-airflow/airflow` and pin a reviewed version.
     repository: "https://airflow.apache.org"
 
   # RESERVED — do not enable yet. Uncomment when you add experiment tracking.

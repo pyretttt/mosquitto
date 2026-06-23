@@ -10,17 +10,17 @@ airflow:
   postgresql:
     primary:
       persistence:
-        storageClass: standard  # TODO(you): k3d/k3s -> "local-path"
+        storageClass: local-path  # TODO(you): k3d/k3s -> "local-path"
         size: 2Gi
 
   workers:
     persistence:
-      storageClassName: standard
+      storageClassName: local-path
       size: 2Gi
 
   triggerer:
     persistence:
-      storageClassName: standard
+      storageClassName: local-path
       size: 1Gi
 
   redis:

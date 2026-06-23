@@ -10,5 +10,5 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: kube-prometheus-stack
-    version: "86.3.2"  # TODO(you): `helm search repo prometheus-community/kube-prometheus-stack` and pin a version you've reviewed.
+    version: "87.0.1"  # TODO(you): `helm search repo prometheus-community/kube-prometheus-stack` and pin a version you've reviewed. ✅
     repository: "https://prometheus-community.github.io/helm-charts"

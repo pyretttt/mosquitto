@@ -28,8 +28,8 @@ description = "Create a local kind cluster"
 run = "kind create cluster --name $CLUSTER_NAME"
 
 [tasks.cluster-k3d]
-description = "Create a local k3d cluster (with a registry on :5000)"
-run = "k3d cluster create $CLUSTER_NAME --registry-create $CLUSTER_NAME-registry:0.0.0.0:5000"
+description = "Create a local k3d cluster (with a registry on :50001)"
+run = "k3d cluster create $CLUSTER_NAME --registry-create $CLUSTER_NAME-registry:0.0.0.0:50001"
 
 [tasks.cluster-delete]
 description = "Delete the local cluster (kind or k3d)"
@@ -55,6 +55,7 @@ run = [
   "helm dependency build charts/monitoring",
   "helm dependency build charts/storage",
   "helm dependency build charts/orchestration",
+  "helm dependency build charts/model-server",
 ]
 
 # ---------------------------------------------------------------------------
@@ -100,6 +101,11 @@ run = [
   "helm uninstall monitoring -n $NS_MONITORING || true",
   "helm uninstall storage -n $NS_STORAGE || true",
 ]
+
+# ---------------------------------------------------------------------------
+# Docker-local
+# ---------------------------------------------------------------------------
+# TODO: Implement
 
 # ---------------------------------------------------------------------------
 # Render / lint (no cluster needed) — handy in CI

@@ -13,10 +13,11 @@ secrets) is intentionally separate — do the main tracks first, then harden.
 
 ## 0. Bootstrap
 
-- [~] Create a local cluster (`mise run cluster-kind` or `mise run cluster-k3d`).
-- [~] Add helm repos + build deps (`mise run repos && mise run deps`).
-- [ ] Decide your local storage class. kind/minikube → `standard`,
+- [x] Create a local cluster (`mise run cluster-kind` or `mise run cluster-k3d`).
+- [x] Add helm repos + build deps (`mise run repos && mise run deps`).
+- [x] Decide your local storage class. kind/minikube → `standard`,
       k3d/k3s → `local-path`. Set it once in each `values-local.yaml`.
+- [ ] Setup mise task that pushes docker image of `model-server` to local image registry.
 - [ ] `mise run up-local` and confirm every pod reaches `Running`.
 
 ---

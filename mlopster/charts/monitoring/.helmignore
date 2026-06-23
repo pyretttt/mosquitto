@@ -2,7 +2,6 @@
 *.tmproj
 .vscode/
 .idea/
-*.tgz
 .git/
 .gitignore
 .DS_Store

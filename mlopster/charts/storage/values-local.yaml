@@ -3,7 +3,7 @@ minio:
   persistence:
     size: 5Gi
     # TODO(you): kind/minikube -> "standard", k3d/k3s -> "local-path".
-    storageClass: standard
+    storageClass: local-path
   resources:
     requests:
       cpu: 50m

@@ -4,7 +4,7 @@ replicaCount: 1
 image:
   # For local dev, build into your cluster's registry and reference it here.
   # kind:  kind load docker-image model-server:dev --name mlopster
-  # k3d:   docker build -t localhost:5000/model-server:dev . && docker push ...
+  # k3d:   docker build -t localhost:50001/model-server:dev . && docker push ...
   repository: model-server
   tag: dev
   pullPolicy: IfNotPresent   # set to Never if you `kind load` the image
