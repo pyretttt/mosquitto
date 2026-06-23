@@ -178,8 +178,23 @@ fn command_pallete_key_input_middleware(
                 KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                     false
                 },
+                KeyCode::Char('w' | 'W') if key_event.modifiers == KeyModifiers::CONTROL => {
+                    let mut words = command_pallette.input_text.split(' ').collect::<Vec<&str>>();
+                    if words.pop().is_some() {
+                        command_pallette.input_text = words.join(" ");
+                    }
+                    true
+                },
                 KeyCode::Backspace => {
                     command_pallette.input_text.pop();
+                    true
+                },
+                KeyCode::Up | KeyCode::Down => {
+                    if key_event.code == KeyCode::Up {
+                        command_pallette.commands.rotate_right(1);
+                    } else {
+                        command_pallette.commands.rotate_left(1);
+                    }
                     true
                 },
                 KeyCode::Esc => {
@@ -196,10 +211,15 @@ fn command_pallete_key_input_middleware(
                     if let Ok(command) = Command::try_from(command_pallette.input_text.as_str()) {
                         _ = env.sender.send(Event::App(Action::CommandSent(command)));
                         app_state.command_pallette = None;
+                    } else if command_pallette.input_text.is_empty() {
+                        command_pallette.input_text = command_pallette.commands.front().map_or(
+                            "".to_string(),
+                            |command| command.name().to_string()
+                        );
                     }
                     true
                 },
-                KeyCode::Char(char) if char.is_ascii_punctuation() || char.is_alphabetic() || char.is_numeric() => {
+                KeyCode::Char(char) if !char.is_control() => {
                     command_pallette.input_text.push(char);
                     true
                 },

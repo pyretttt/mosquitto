@@ -3,7 +3,7 @@ use ratatui::{
     layout::{Constraint, Layout, Rect, Margin},
     style::{Color, Modifier, Style},
     text::{Span, Text, Line},
-    widgets::{Block, Cell, Clear, Row, Table, Paragraph, Borders},
+    widgets::{Block, Cell, Clear, Row, Table, Paragraph, Borders, BorderType},
 };
 
 use crate::models::command::CommandPallette;
@@ -19,6 +19,7 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
     frame.render_widget(
         Block::bordered()
             .title(" Commands ")
+            .border_type(BorderType::Rounded)
             .style(Style::default().fg(Color::White)),
         area,
     );
@@ -54,10 +55,14 @@ fn command_rows(command_pallette: &CommandPallette) -> impl Iterator<Item = Row<
     let mut commands = command_pallette.available_commands().enumerate().peekable();
 
     let placeholder = if commands.peek().is_none() {
-        Some(Row::new([Cell::from(Span::styled(
-            "No commands",
-            Style::default().fg(Color::DarkGray),
-        ))]))
+        Some(
+            Row::new([
+                Cell::from(Span::styled(
+                "No commands",
+                Style::default().fg(Color::DarkGray),
+                ))
+            ])
+        )
     } else {
         None
     };
@@ -78,9 +83,9 @@ fn command_rows(command_pallette: &CommandPallette) -> impl Iterator<Item = Row<
         };
 
         Row::new([
-            Cell::from(Span::styled(command.name().to_owned(), name_style)),
+            Cell::from(Span::styled(command.name(), name_style)),
             Cell::from(Span::styled(
-                command.description().to_owned(),
+                command.description(),
                 description_style,
             )),
         ])

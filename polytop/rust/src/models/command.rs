@@ -1,13 +1,16 @@
+use std::collections::VecDeque;
+
 static COMMANDS: &'static [Command] = &[
     Command::Help,
     Command::Quit,
+    Command::Intro,
 ];
 
 #[derive(Clone, Debug)]
 pub struct CommandPallette {
     pub input_text: String,
     pub input_placeholder: &'static str,
-    pub commands: &'static [Command],
+    pub commands: VecDeque<&'static Command>,
 }
 
 impl CommandPallette {
@@ -15,13 +18,14 @@ impl CommandPallette {
         Self {
             input_text: String::new(),
             input_placeholder: "Type a command",
-            commands: COMMANDS,
+            commands: VecDeque::from_iter(COMMANDS.iter()),
         }
     }
 
     pub fn available_commands(&self) -> impl Iterator<Item = &Command> {
-        COMMANDS
+        self.commands
             .iter()
+            .copied()
             .filter(|command| command.name().starts_with(&self.input_text))
     }
 
@@ -40,7 +44,7 @@ pub enum Command {
 }
 
 impl Command {
-    pub fn description(&self) -> &str {
+    pub fn description(&self) -> &'static str {
         match self {
             Command::Help => "Show help",
             Command::Quit => "Quit the application",
@@ -48,7 +52,7 @@ impl Command {
         }
     }
 
-    pub fn name(&self) -> &str {
+    pub fn name(&self) -> &'static str {
         match self {
             Command::Help => "help",
             Command::Quit => "quit",
