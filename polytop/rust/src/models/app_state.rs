@@ -172,29 +172,32 @@ fn command_pallete_key_input_middleware(
     key_event: &mut crossterm::event::KeyEvent,
     env: &Env,
 ) -> bool {
-    match & mut app_state.command_pallette {
+    match &mut app_state.command_pallette {
         Some(command_pallette) => {
             match key_event.code {
                 KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
                     false
                 },
                 KeyCode::Char('w' | 'W') if key_event.modifiers == KeyModifiers::CONTROL => {
-                    let mut words = command_pallette.input_text.split(' ').collect::<Vec<&str>>();
+                    let mut words = command_pallette.text_area_state.text.split(' ').collect::<Vec<&str>>();
                     if words.pop().is_some() {
-                        command_pallette.input_text = words.join(" ");
+                        let words = words.join(" ");
+                        command_pallette.change_text(|text| *text = words);
                     }
                     true
                 },
                 KeyCode::Backspace => {
-                    command_pallette.input_text.pop();
+                    command_pallette.change_text(|text| {
+                        text.pop();
+                    });
                     true
                 },
-                KeyCode::Up | KeyCode::Down => {
-                    if key_event.code == KeyCode::Up {
-                        command_pallette.commands.rotate_right(1);
-                    } else {
-                        command_pallette.commands.rotate_left(1);
-                    }
+                KeyCode::Up => {
+                    command_pallette.table_state.select_previous();
+                    true
+                },
+                KeyCode::Down => {
+                    command_pallette.table_state.select_next();
                     true
                 },
                 KeyCode::Esc => {
@@ -203,24 +206,23 @@ fn command_pallete_key_input_middleware(
                 },
                 KeyCode::Tab => {
                     if let Some(command) = command_pallette.command_to_complete() {
-                        command_pallette.input_text = command.name().to_string();
+                        command_pallette.text_area_state.text = command.name().to_string();
                     }
                     true
                 }
                 KeyCode::Enter => {
-                    if let Ok(command) = Command::try_from(command_pallette.input_text.as_str()) {
+                    if let Ok(command) = Command::try_from(command_pallette.text_area_state.text.as_str()) {
                         _ = env.sender.send(Event::App(Action::CommandSent(command)));
                         app_state.command_pallette = None;
-                    } else if command_pallette.input_text.is_empty() {
-                        command_pallette.input_text = command_pallette.commands.front().map_or(
-                            "".to_string(),
-                            |command| command.name().to_string()
-                        );
+                    } else if command_pallette.text_area_state.text.is_empty() {
+                        if let Some(command) = command_pallette.selected_command() {
+                            command_pallette.text_area_state.text = command.name().to_owned();
+                        }
                     }
                     true
                 },
                 KeyCode::Char(char) if !char.is_control() => {
-                    command_pallette.input_text.push(char);
+                    command_pallette.change_text(|text| text.push(char));
                     true
                 },
                 _ => false

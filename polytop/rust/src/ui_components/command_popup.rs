@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, Cell, Clear, Row, Table, Paragraph, Borders, BorderType},
 };
 
-use crate::models::command::CommandPallette;
+use crate::models::command::{Command, CommandPallette, TextAreaState};
 
 const FOCUS_COLOR: Color = Color::Rgb(0x68, 0x78, 0xF8);
 
@@ -24,21 +24,36 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
         area,
     );
 
-    frame.render_widget(
-        Table::new(
-            command_rows(command_pallette),
-            [Constraint::Length(12), Constraint::Fill(1)],
-        )
-        .column_spacing(2)
-        .style(Style::default().fg(Color::Gray)),
+    let command_rows = command_rows(command_pallette.available_commands());
+    let table = Table::new(
+        command_rows,
+        [Constraint::Length(12), Constraint::Fill(1)],
+    )
+    .column_spacing(2)
+    .style(Style::default().fg(Color::Gray))
+    .row_highlight_style(
+        Style::default()
+            .fg(FOCUS_COLOR)
+            .add_modifier(Modifier::BOLD),
+    );
+
+    frame.render_stateful_widget(
+        table,
         commands_area.inner(Margin {
             horizontal: 2,
             vertical: 1,
         }),
+        &mut command_pallette.table_state.clone(),
     );
 
     frame.render_widget(
-        Paragraph::new(command_pallette.input_text_ui())
+        Paragraph::new(
+            command_pallette.text_area_state.ui(
+                command_pallette
+                    .command_to_complete()
+                    .map(|command| command.name())
+            )
+        )
         .block(
             Block::default()
             .borders(Borders::TOP)
@@ -51,45 +66,32 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
     );
 }
 
-fn command_rows(command_pallette: &CommandPallette) -> impl Iterator<Item = Row<'static>> + use<'_> {
-    let mut commands = command_pallette.available_commands().enumerate().peekable();
+fn command_rows<'a>(commands: impl Iterator<Item = &'a Command>) -> impl Iterator<Item = Row<'a>> {
+    let mut commands_iter = commands.peekable();
 
-    let placeholder = if commands.peek().is_none() {
-        Some(
-            Row::new([
-                Cell::from(Span::styled(
-                "No commands",
-                Style::default().fg(Color::DarkGray),
-                ))
-            ])
-        )
+    let fallback = if commands_iter.peek().is_none() {
+        Some(Row::new([Cell::from(Span::styled(
+            "No commands",
+            Style::default().fg(Color::DarkGray),
+        ))]))
     } else {
         None
     };
 
-    placeholder.into_iter().chain(commands.map(|(index, command)| {
-        let (name_style, description_style) = if index == 0 {
-            (
-                Style::default()
-                    .fg(FOCUS_COLOR)
-                    .add_modifier(Modifier::BOLD),
-                Style::default().fg(FOCUS_COLOR),
-            )
-        } else {
-            (
-                Style::default().fg(Color::White),
-                Style::default().fg(Color::DarkGray),
-            )
-        };
-
-        Row::new([
-            Cell::from(Span::styled(command.name(), name_style)),
-            Cell::from(Span::styled(
-                command.description(),
-                description_style,
-            )),
-        ])
-    }))
+    commands_iter
+        .map(|command| {
+            Row::new([
+                Cell::from(Span::styled(
+                    command.name(),
+                    Style::default().fg(Color::White),
+                )),
+                Cell::from(Span::styled(
+                    command.description(),
+                    Style::default().fg(Color::DarkGray),
+                )),
+            ])
+        })
+        .chain(fallback) // Option<Row> implements IntoIterator
 }
 
 fn popup_area(area: Rect) -> Rect {
@@ -104,22 +106,21 @@ fn popup_area(area: Rect) -> Rect {
     }
 }
 
-impl CommandPallette {
-    fn input_text_ui(&self) -> Text<'_> {
-        let line = if self.input_text.is_empty() {
+impl TextAreaState {
+    fn ui<'a>(&'a self, text_to_complete: Option<&'a str>) -> Text<'a> {
+        let line = if self.text.is_empty() {
             let span = Span::styled(self.input_placeholder, Style::default().fg(Color::DarkGray));
             Line::from_iter([span].into_iter())
         } else {
-            let span = Span::styled(self.input_text.as_str(), Style::default().fg(Color::White));
-            if let Some(command) = self.command_to_complete() {
-                let suffix = &command.name()[self.input_text.len()..];
+            let span = Span::styled(self.text.as_str(), Style::default().fg(Color::White));
+            if let Some(text_to_complete) = text_to_complete {
+                let suffix = &text_to_complete[self.text.len()..];
                 let cmd_span = Span::styled(suffix, Style::default().fg(Color::DarkGray));
                 Line::from_iter([span, cmd_span].into_iter())
             } else {
                 Line::from_iter([span].into_iter())
             }
         };
-
 
         Text::from(line).left_aligned()
     }

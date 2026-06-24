@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use ratatui::widgets::TableState;
 
 static COMMANDS: &'static [Command] = &[
     Command::Help,
@@ -8,31 +8,53 @@ static COMMANDS: &'static [Command] = &[
 
 #[derive(Clone, Debug)]
 pub struct CommandPallette {
-    pub input_text: String,
+    pub text_area_state: TextAreaState,
+    pub table_state: TableState,
+}
+
+#[derive(Clone, Debug)]
+pub struct TextAreaState {
+    pub text: String,
+    pub cursor_position: usize,
     pub input_placeholder: &'static str,
-    pub commands: VecDeque<&'static Command>,
 }
 
 impl CommandPallette {
     pub fn new() -> Self {
         Self {
-            input_text: String::new(),
-            input_placeholder: "Type a command",
-            commands: VecDeque::from_iter(COMMANDS.iter()),
+            text_area_state: TextAreaState {
+                text: String::new(),
+                cursor_position: 0,
+                input_placeholder: "Type a command",
+            },
+            table_state: TableState::default().with_selected(0),
         }
     }
 
     pub fn available_commands(&self) -> impl Iterator<Item = &Command> {
-        self.commands
+        COMMANDS
             .iter()
-            .copied()
-            .filter(|command| command.name().starts_with(&self.input_text))
+            .filter(|command| command.name().starts_with(&self.text_area_state.text))
+    }
+
+    pub fn selected_command(&self) -> Option<&Command> {
+        self.table_state
+            .selected()
+            .and_then(|index| self.available_commands().nth(index))
+    }
+
+    pub fn change_text(&mut self, modify: impl FnOnce(&mut String) -> ()) {
+        modify(&mut self.text_area_state.text);
+        self.table_state.select_first();
     }
 
     pub fn command_to_complete(&self) -> Option<&Command> {
-        if self.input_text.len() == 0 { return None; }
+        if self.text_area_state.text.len() == 0 {
+            return None;
+        }
 
-        self.available_commands().find(|command| command.name().starts_with(self.input_text.as_str()))
+        self.available_commands()
+            .find(|command| command.name().starts_with(self.text_area_state.text.as_str()))
     }
 }
 
@@ -67,7 +89,7 @@ impl TryFrom<&str> for Command {
     fn try_from(value: &str) -> Result<Self, Self::Error> {
         match value {
             val if val == Command::Help.name() => Ok(Command::Help),
-            val if val == Command::Quit.name()=> Ok(Command::Quit),
+            val if val == Command::Quit.name() => Ok(Command::Quit),
             val if val == Command::Intro.name() => Ok(Command::Intro),
             _ => Err(()),
         }
