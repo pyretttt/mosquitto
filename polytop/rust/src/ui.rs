@@ -13,23 +13,10 @@ use crate::models::app_state::{
     Page,
     app_reducer,
     IntroPage,
-    LoadingPage
 };
+use crate::models::loading_page::LoadingPage;
 use crate::env::Env;
 use crate::ui_components::command_popup::draw_command_popup;
-
-fn draw_app(frame: &mut Frame, state: &AppState) {
-    match &state.page {
-        Page::Intro(intro) => draw_intro_page(frame, state, intro),
-        Page::Main(_) => (),
-        Page::LoadingPage(loading) => draw_loading_page(frame, loading),
-        Page::Help(_) => (),
-    }
-
-    if let Some(command_pallette) = &state.command_pallette {
-        draw_command_popup(frame, command_pallette);
-    }
-}
 
 const POLYTOP_LOGO: [&str; 6] = [
     "██████╗  ██████╗ ██╗  ██╗   ██╗████████╗ ██████╗ ██████╗ ",
@@ -58,6 +45,19 @@ const PUBU_LOGO_COLORS: [Color; 16] = [
     Color::Rgb(3, 72, 114),
     Color::Rgb(2, 56, 88),
 ];
+
+fn draw_app(frame: &mut Frame, state: &AppState) {
+    match &state.page {
+        Page::Intro(intro) => draw_intro_page(frame, state, intro),
+        Page::Top(_) => (),
+        Page::LoadingPage(loading) => draw_loading_page(frame, loading),
+        Page::Help(_) => (),
+    }
+
+    if let Some(command_pallette) = &state.command_pallette {
+        draw_command_popup(frame, command_pallette);
+    }
+}
 
 fn pubu_logo_color(logo_color_index: usize) -> Color {
     let mut mirrored_index = logo_color_index % (PUBU_LOGO_COLORS.len() * 2);
