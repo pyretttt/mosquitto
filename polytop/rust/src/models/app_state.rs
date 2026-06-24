@@ -1,4 +1,5 @@
 use std::time::Duration;
+use std::assert;
 
 use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 
@@ -27,7 +28,7 @@ pub enum Page {
 pub struct IntroPage {
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct MainPage {
     pub title: String,
     pub text: String,
@@ -104,10 +105,17 @@ pub enum Action {
     Next(String),
     CommandSent(Command),
     LoadingPage(LoadingPageAction),
+    OpenPage(Page),
     Quit,
 }
 
-pub fn app_state_reduce(app_state: &mut AppState, action: &Action) {
+impl Into<Event> for Action {
+    fn into(self) -> Event {
+        Event::App(self)
+    }
+}
+
+pub fn app_state_reduce(app_state: &mut AppState, action: &Action, env: &Env) {
     match action {
         Action::Next(ref token) if app_state.increment_token.as_ref() == Some(token) => {
             //
@@ -125,7 +133,15 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &Action) {
         },
         Action::Next(_) => (),
         Action::Quit => app_state.running = false,
-        Action::LoadingPage(LoadingPageAction::Finished) => {
+        Action::LoadingPage(action) => {
+            if let Page::LoadingPage(ref mut loading) = app_state.page {
+                loading_page_reducer(loading, action, env);
+            } else {
+                assert!(false, "Action dispatched to non-loading page");
+            }
+        },
+        Action::OpenPage(page) => {
+            app_state.page = page.clone();
         }
     }
 }
@@ -155,7 +171,7 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                             let sender = env.sender.clone();
                             env.fire_and_forget(async move {
                                 tokio::time::sleep(Duration::from_secs(1)).await;
-                                sender.send(Event::App(Action::Next(token)))
+                                _ = sender.send(Action::Next(token).into());
                             });
                         },
                         KeyCode::Char('/') => {
@@ -166,7 +182,26 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                 }
             }
         }
-        Event::App(action) => app_state_reduce(app_state, action),
+        Event::App(action) => app_state_reduce(app_state, action, env),
+    }
+}
+
+fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction, env: &Env) {
+    match action {
+        LoadingPageAction::Finished => {
+            state.is_finished = true;
+            state.progress = 1.0;
+            let sender = env.sender.clone();
+            tokio::spawn(async move {
+                tokio::time::sleep(Duration::from_millis(300)).await;
+                _ = sender.send(
+                    Action::OpenPage(
+                        Page::Main(MainPage::default())
+                    ).into()
+                );
+
+            });
+        }
     }
 }
 
@@ -226,8 +261,8 @@ fn command_pallete_key_input_middleware(
                 }
                 KeyCode::Enter => {
                     if let Ok(command) = Command::try_from(command_pallette.text_area_state.text.as_str()) {
-                        _ = env.sender.send(Event::App(Action::CommandSent(command)));
                         app_state.command_pallette = None;
+                        _ = env.sender.send(Action::CommandSent(command).into());
                     } else if command_pallette.text_area_state.text.is_empty() {
                         if let Some(command) = command_pallette.selected_command() {
                             command_pallette.text_area_state.text = command.name().to_owned();
