@@ -7,6 +7,9 @@
 # Everything uses the *-local.yaml overlays. For a real cluster, call helm
 # directly with your own values (see docs/ARCHITECTURE.md).
 
+[settings]
+env_shell_expand = true
+
 [tools]
 helm = "latest"
 kubectl = "latest"
@@ -19,6 +22,8 @@ NS_MONITORING = "monitoring"
 NS_STORAGE = "storage"
 NS_ORCH = "orchestration"
 NS_APP = "model-server"
+IMAGE_REGISTRY = "${CLUSTER_NAME}-registry"
+REGISTRY_PORT = 50001
 
 # ---------------------------------------------------------------------------
 # Local cluster lifecycle
@@ -28,12 +33,16 @@ description = "Create a local kind cluster"
 run = "kind create cluster --name $CLUSTER_NAME"
 
 [tasks.cluster-k3d]
-description = "Create a local k3d cluster (with a registry on :50001)"
-run = "k3d cluster create $CLUSTER_NAME --registry-create $CLUSTER_NAME-registry:0.0.0.0:50001"
+description = "Create a local k3d cluster (with a registry on :REGISTRY_PORT)"
+run = "k3d cluster create $CLUSTER_NAME --registry-create $IMAGE_REGISTRY:${REGISTRY_PORT}"
 
 [tasks.cluster-delete]
 description = "Delete the local cluster (kind or k3d)"
-run = "kind delete cluster --name $CLUSTER_NAME || k3d cluster delete $CLUSTER_NAME"
+run = [
+  "kind delete cluster --name ${CLUSTER_NAME}",
+  "k3d registry delete ${IMAGE_REGISTRY}",
+  "k3d cluster delete ${CLUSTER_NAME}",
+]
 
 # ---------------------------------------------------------------------------
 # Helm dependencies
@@ -105,7 +114,12 @@ run = [
 # ---------------------------------------------------------------------------
 # Docker-local
 # ---------------------------------------------------------------------------
-# TODO: Implement
+[tasks.update-model-server]
+description = "Build and pushes model-server to image registry"
+run = """
+docker build -t model-server:latest ./model-server
+k3d image import model-server:latest -c ${CLUSTER_NAME}
+"""
 
 # ---------------------------------------------------------------------------
 # Render / lint (no cluster needed) — handy in CI

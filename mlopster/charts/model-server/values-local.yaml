@@ -6,7 +6,7 @@ image:
   # kind:  kind load docker-image model-server:dev --name mlopster
   # k3d:   docker build -t localhost:50001/model-server:dev . && docker push ...
   repository: model-server
-  tag: dev
+  tag: latest
   pullPolicy: IfNotPresent   # set to Never if you `kind load` the image
 
 resources:
