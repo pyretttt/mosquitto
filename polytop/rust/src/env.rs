@@ -1,16 +1,20 @@
+use std::ops::Range;
+use std::future::Future;
+
+use tokio::task::JoinHandle;
 use tokio::sync::mpsc;
 use uuid::Uuid;
+use rand::RngExt;
 
 use crate::event::Event;
 use crate::config::{get_config, Config};
-use tokio::task::JoinHandle;
-use std::future::Future;
 
 pub struct Env {
     pub sender: mpsc::UnboundedSender<Event>,
     pub receiver: mpsc::UnboundedReceiver<Event>,
     pub config: &'static Config,
     pub gen_token: Box<dyn Fn() -> String + 'static + Send + Sync>,
+    pub rng: Box<dyn Fn(Option<Range<f32>>) -> f32 + 'static + Send + Sync>,
 }
 
 impl Env {
@@ -21,6 +25,7 @@ impl Env {
             receiver,
             config: get_config(),
             gen_token: Box::new(|| Uuid::new_v4().to_string()),
+            rng: Box::new(|range| rand::rng().random_range(range.unwrap_or(0.0..1.0))),
         }
     }
 

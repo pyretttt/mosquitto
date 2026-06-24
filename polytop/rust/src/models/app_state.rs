@@ -53,7 +53,8 @@ pub struct LoadingPage {
     pub throbbler_caption: String,
     pub logo_color_index: usize,
     loading_tip_index: usize,
-    loading_tip_tick: u16,
+    tick: u16,
+    pub is_finished: bool,
 }
 
 impl LoadingPage {
@@ -65,19 +66,24 @@ impl LoadingPage {
             throbbler_caption: throbbler_caption.into(),
             logo_color_index: 0,
             loading_tip_index: 0,
-            loading_tip_tick: 0,
+            tick: 0,
+            is_finished: false,
         }
     }
 
-    pub fn tick(&mut self) {
-        self.loading_tip_tick = self.loading_tip_tick.wrapping_add(1);
-        if self.loading_tip_tick % 3 == 0 {
+    pub fn tick(&mut self, env: &Env) {
+        self.tick = self.tick.wrapping_add(1);
+        if self.tick % 3 == 0 {
             self.throbbler_state.calc_next();
             self.logo_color_index = self.logo_color_index.wrapping_add(1);
         }
-        if self.loading_tip_tick % (get_config().tick_rate * 2.0) as u16 == 0 {
+        if self.tick % (get_config().tick_rate * 2.0) as u16 == 0 {
             self.loading_tip_index = (self.loading_tip_index + 1) % LOADING_TIPS.len();
             self.loading_tip = LOADING_TIPS[self.loading_tip_index];
+        }
+        if !self.is_finished && self.tick % 10 == 0 {
+            let rng = (env.rng)(Some(0.01..0.05));
+            self.progress = (self.progress + rng).min(0.87);
         }
     }
 }
@@ -89,9 +95,15 @@ impl Default for LoadingPage {
 }
 
 #[derive(Clone, Debug)]
+pub enum LoadingPageAction {
+    Finished,
+}
+
+#[derive(Clone, Debug)]
 pub enum Action {
     Next(String),
     CommandSent(Command),
+    LoadingPage(LoadingPageAction),
     Quit,
 }
 
@@ -113,6 +125,8 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &Action) {
         },
         Action::Next(_) => (),
         Action::Quit => app_state.running = false,
+        Action::LoadingPage(LoadingPageAction::Finished) => {
+        }
     }
 }
 
@@ -120,7 +134,7 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
     match event {
         Event::Tick => {
             if let Page::LoadingPage(ref mut loading) = app_state.page {
-                loading.tick();
+                loading.tick(env);
             }
         }
         Event::Crossterm(crossterm_event) => {
