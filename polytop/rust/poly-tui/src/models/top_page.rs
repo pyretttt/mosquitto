@@ -20,5 +20,5 @@ pub struct MarketHeat {
 #[derive(Clone, Debug, Default)]
 pub struct TopMarkets {
     pub title: &'static str,
-    pub markets: Vec<Market>,
+    // pub markets: Vec<Market>,
 }
