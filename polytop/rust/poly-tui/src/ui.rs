@@ -17,6 +17,7 @@ use crate::models::app_state::{
 use crate::models::loading_page::LoadingPage;
 use crate::env::Env;
 use crate::ui_components::command_popup::draw_command_popup;
+use crate::ui_components::top_page_ui::top_page_ui;
 
 const POLYTOP_LOGO: [&str; 6] = [
     "██████╗  ██████╗ ██╗  ██╗   ██╗████████╗ ██████╗ ██████╗ ",
@@ -46,10 +47,10 @@ const PUBU_LOGO_COLORS: [Color; 16] = [
     Color::Rgb(2, 56, 88),
 ];
 
-fn draw_app(frame: &mut Frame, state: &AppState) {
+fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
     match &state.page {
         Page::Intro(intro) => draw_intro_page(frame, state, intro),
-        Page::Top(_) => (),
+        Page::Top(top) => top_page_ui(frame, state, top, env),
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
         Page::Help(_) => (),
     }
@@ -168,7 +169,7 @@ pub async fn run(
     terminal: &mut DefaultTerminal,
 ) -> color_eyre::Result<()> {
     while app_state.running {
-        terminal.draw(|frame| draw_app(frame, &mut *app_state))?;
+        terminal.draw(|frame| draw_app(frame, &mut *app_state, env))?;
         let mut event = env.receiver
             .recv()
             .await

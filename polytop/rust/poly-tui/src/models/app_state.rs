@@ -105,6 +105,7 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                             let sender = env.sender.clone();
                             env.fire_and_forget(async move {
                                 tokio::time::sleep(Duration::from_secs(1)).await;
+                                _ = sender.send(Action::LoadingPage(LoadingPageAction::Finished).into());
                                 _ = sender.send(Action::Next(token).into());
                             });
                         },
