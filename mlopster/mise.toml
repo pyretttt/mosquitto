@@ -54,6 +54,7 @@ run = [
   "helm repo add minio https://charts.min.io/",
   "helm repo add apache-airflow https://airflow.apache.org",
   "helm repo add community-charts https://community-charts.github.io/helm-charts",
+  "helm repo add emberstack https://emberstack.github.io/helm-charts",
   "helm repo update",
 ]
 
@@ -72,7 +73,13 @@ run = [
 # ---------------------------------------------------------------------------
 [tasks.up-local]
 description = "Install all components locally"
-depends = ["storage-local", "monitoring-local", "orchestration-local", "model-local"]
+depends = ["reflector", "storage-local", "monitoring-local", "orchestration-local", "model-local"]
+
+[tasks.reflector]
+description = "Install reflector for secret syncronization"
+run = """
+helm upgrade --install reflector emberstack/reflector
+"""
 
 [tasks.monitoring-local]
 description = "Install monitoring stack (Prometheus + Grafana + Alertmanager)"

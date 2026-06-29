@@ -63,3 +63,9 @@ s3Secret:
   region: "us-east-1"
   dataBucket: "data"
   modelsBucket: "models"
+
+app:
+  modelServer:
+    namespace: model-server
+  orchestration:
+    namespace: orchestration
