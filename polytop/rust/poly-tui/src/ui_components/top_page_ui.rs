@@ -51,21 +51,20 @@ pub fn top_page_ui(
 
 fn render_status_bar(frame: &mut Frame, area: Rect) {
     frame.render_widget(
-        Paragraph::new(Line::from(vec![
+        Paragraph::new(Line::from_iter([
             Span::styled(" ✓ ", Style::default().fg(POSITIVE)),
-            Span::styled("net online", Style::default().fg(MUTED).bg(BG)),
-            Span::styled("   ws live", Style::default().fg(ACCENT).bg(BG)),
-            Span::styled("   latency 42ms", Style::default().fg(MUTED).bg(BG)),
-            Span::styled("   refresh 500ms", Style::default().fg(MUTED).bg(BG)),
-            Span::styled("   mode observe", Style::default().fg(MUTED).bg(BG)),
-        ]))
-        .style(Style::default().bg(BG)),
+            Span::styled("net online", Style::default().fg(Color::Gray)),
+            Span::styled("   ws live", Style::default().fg(ACCENT)),
+            Span::styled("   latency 42ms", Style::default().fg(Color::White)),
+            Span::styled("   refresh 500ms", Style::default().fg(Color::Gray)),
+            Span::styled("   mode observe", Style::default().fg(Color::Gray)),
+        ])),
         area,
     );
 }
 
 fn render_top_markets(frame: &mut Frame, area: Rect) {
-    let header = Row::new(vec![
+    let header = Row::new([
         header_cell("#"),
         header_cell("★"),
         header_cell("Market"),
@@ -76,7 +75,7 @@ fn render_top_markets(frame: &mut Frame, area: Rect) {
         header_cell("Spread"),
     ]);
 
-    let rows = vec![
+    let rows = [
         market_row(
             "1",
             "★",
@@ -155,13 +154,13 @@ fn render_lower_panes(frame: &mut Frame, area: Rect) {
 }
 
 fn render_selected_market(frame: &mut Frame, area: Rect) {
-    let lines = vec![
+    let lines = [
         Line::styled(
             "Will BTC hit 100k in 2026?",
             Style::default().fg(Color::White).bg(BG),
         ),
         Line::from(""),
-        Line::from(vec![
+        Line::from_iter([
             Span::styled("yes  ", Style::default().fg(POSITIVE).bg(BG)),
             Span::styled(
                 "63¢",
@@ -175,7 +174,7 @@ fn render_selected_market(frame: &mut Frame, area: Rect) {
                 Style::default().fg(MUTED).bg(BG),
             ),
         ]),
-        Line::from(vec![
+        Line::from_iter([
             Span::styled("no   ", Style::default().fg(NEGATIVE).bg(BG)),
             Span::styled(
                 "38¢",
@@ -194,7 +193,7 @@ fn render_selected_market(frame: &mut Frame, area: Rect) {
     ];
 
     frame.render_widget(
-        Paragraph::new(lines)
+        Paragraph::new(lines.as_slice())
             .block(pane_block("[2] - Selected Market: summary", Borders::ALL, false))
             .style(Style::default().bg(BG)),
         area,
@@ -202,7 +201,7 @@ fn render_selected_market(frame: &mut Frame, area: Rect) {
 }
 
 fn render_chart_activity(frame: &mut Frame, area: Rect) {
-    let lines = vec![
+    let lines = [
         Line::styled(
             " 70¢ ┤                     ╭╮",
             Style::default().fg(ACCENT).bg(BG),
@@ -231,7 +230,7 @@ fn render_chart_activity(frame: &mut Frame, area: Rect) {
     ];
 
     frame.render_widget(
-        Paragraph::new(lines)
+        Paragraph::new(lines.as_slice())
             .block(pane_block("[3] - Chart + Activity", Borders::ALL, false))
             .style(Style::default().bg(BG)),
         area,
@@ -269,16 +268,16 @@ fn header_cell(label: &'static str) -> Cell<'static> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn market_row(
-    rank: &'static str,
-    bookmark: &'static str,
-    market: &'static str,
-    yes: &'static str,
-    no: &'static str,
-    volume: &'static str,
-    movement: &'static str,
-    spread: &'static str,
-) -> Row<'static> {
+fn market_row<'a>(
+    rank: &'a str,
+    bookmark: &'a str,
+    market: &'a str,
+    yes: &'a str,
+    no: &'a str,
+    volume: &'a str,
+    movement: &'a str,
+    spread: &'a str,
+) -> Row<'a> {
     let move_color = if movement.starts_with('+') {
         POSITIVE
     } else if movement.starts_with('-') {
@@ -287,7 +286,7 @@ fn market_row(
         MUTED
     };
 
-    Row::new(vec![
+    Row::new([
         Cell::from(rank).style(Style::default().fg(MUTED).bg(BG)),
         Cell::from(bookmark).style(Style::default().fg(WARNING).bg(BG)),
         Cell::from(market).style(Style::default().fg(Color::White).bg(BG)),
@@ -300,19 +299,19 @@ fn market_row(
 }
 
 fn metric_line(label: &'static str, value: &'static str) -> Line<'static> {
-    Line::from(vec![
+    Line::from_iter([
         Span::styled(format!("{label:<14}"), Style::default().fg(MUTED).bg(BG)),
         Span::styled(value, Style::default().fg(Color::White).bg(BG)),
     ])
 }
 
-fn activity_line(
-    time: &'static str,
-    label: &'static str,
-    value: &'static str,
+fn activity_line<'a>(
+    time: &'a str,
+    label: &'a str,
+    value: &'a str,
     value_color: Color,
-) -> Line<'static> {
-    Line::from(vec![
+) -> Line<'a> {
+    Line::from_iter([
         Span::styled(time, Style::default().fg(MUTED).bg(BG)),
         Span::styled(format!(" {label:<8} "), Style::default().fg(Color::White).bg(BG)),
         Span::styled(value, Style::default().fg(value_color).bg(BG)),
@@ -325,9 +324,8 @@ fn pane_block(title: &'static str, borders: Borders, focused: bool) -> Block<'st
     Block::default()
         .borders(borders)
         .border_type(BorderType::Rounded)
-        .border_style(Style::default().fg(border_color).bg(BG))
-        .style(Style::default().bg(BG))
-        .title(Line::from(title).left_aligned())
+        .border_style(Style::default().fg(border_color))
+        .title_top(Line::from(title).left_aligned())
 }
 
 fn clock_hms() -> String {
