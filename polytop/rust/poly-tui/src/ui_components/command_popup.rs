@@ -10,12 +10,14 @@ use crate::models::command::{Command, CommandPallette, TextAreaState};
 
 const FOCUS_COLOR: Color = Color::Rgb(0x68, 0x78, 0xF8);
 
+
 pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette) {
     let area = popup_area(frame.area());
     let [commands_area, input_area] =
         Layout::vertical([Constraint::Fill(1), Constraint::Length(3)]).areas(area);
 
     frame.render_widget(Clear, area);
+    frame.render_widget(Block::new().style(Style::default().bg(Color::Black)), area);
     frame.render_widget(
         Block::bordered()
             .title(" Commands ")

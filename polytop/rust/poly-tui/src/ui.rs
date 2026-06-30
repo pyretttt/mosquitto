@@ -48,6 +48,7 @@ const PUBU_LOGO_COLORS: [Color; 16] = [
 ];
 
 fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
+    frame.render_widget(Block::new().style(Style::default().bg(Color::Black)), frame.area());
     match &state.page {
         Page::Intro(intro) => draw_intro_page(frame, state, intro),
         Page::Top(top) => top_page_ui(frame, state, top, env),

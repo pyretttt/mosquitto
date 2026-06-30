@@ -16,15 +16,20 @@ Polymarket APIs:
 
 ## Visual Direction
 
-- Background: near-black `#0B1020`
-- Pane borders: muted slate `#334155`
-- Primary accent: electric cyan `#22D3EE`
+- Background: black `#000000`, matching the flat terminal canvas used by
+  `fplot`.
+- Pane borders: dark gray / muted slate. Borders should frame content without
+  competing with table data.
+- Primary accent: cyan for live status glyphs, focused borders, and selection
+  gutter.
 - Positive / yes: green `#22C55E`
 - Negative / no: red `#EF4444`
-- Warning / large move: amber `#F59E0B`
-- Muted text: gray `#94A3B8`
+- Warning / large move: yellow / amber `#F59E0B`
+- Muted text: dark gray for helper and status copy
+- Table headers: bold yellow, like `fplot`
 - Focused pane border: cyan, optionally bold
-- Selected row: deep blue background with bright text
+- Selected row: dark gray background with bold white text and a cyan `▶`
+  highlight marker
 - Recently changed prices: flash green/red for one tick, then fade
 - Pane titles live in the border, prefixed by the number key that focuses them
 
@@ -40,9 +45,9 @@ draw under it.
 
 ```text
 ╭─ POLYTOP ───────────────────────────────────────────────────────────── 17:42:31 ─╮
-│ net: online   ws: live   latency: 42ms   refresh: 500ms   mode: observe          │
+│ ✓  net online   ws live   latency 42ms   refresh 500ms   mode observe            │
 ├─ [1] - Top Markets: all ─────────────────────────────────────────────────────────┤
-│  #  ★  Market                                      Yes   No   24h    Move Spread │
+│▶ #  ★  Market                                      Yes   No   24h    Move Spread │
 │  1  ★  Will BTC hit 100k in 2026?                  63¢  38¢  842k    +4¢    2¢   │
 │  2     Fed cuts rates by Sep?                      41¢  60¢  611k    -2¢    3¢   │
 │  3     Lakers win tonight?                         55¢  46¢  570k    +1¢    2¢   │
@@ -62,7 +67,7 @@ draw under it.
 │ open interest $2.4M                      │ 17:40 trade 219 @45¢                  │
 │ end date      2026-12-31                 │ 17:39 spread 2¢                       │
 ├─ Command Popup ──────────────────────────────────────────────────────────────────┤
-│  f find   1-3 focus   ↑↓ move   b bookmarks/all   w bookmark   Tab expand chart  │
+│  f find   1-3 focus   ↑↓ move   b bookmarks/all   w bookmark   Tab chart   ? help│
 │  Filter: politics volume>100k sort:move                               NORMAL     │
 ╰──────────────────────────────────────────────────────────────────────────────────╯
 ```
