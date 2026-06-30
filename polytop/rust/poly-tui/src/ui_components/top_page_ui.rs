@@ -12,7 +12,7 @@ use crate::models::top_page::TopPage;
 
 const BG: Color = Color::Black;
 const BORDER: Color = Color::Rgb(0x33, 0x41, 0x55);
-const ACCENT: Color = Color::Rgb(0x22, 0xD3, 0xEE);
+const ACCENT: Color = Color::LightGreen;
 const POSITIVE: Color = Color::Rgb(0x22, 0xC5, 0x5E);
 const NEGATIVE: Color = Color::Rgb(0xEF, 0x44, 0x44);
 const WARNING: Color = Color::Rgb(0xF5, 0x9E, 0x0B);
@@ -25,18 +25,15 @@ pub fn top_page_ui(
     _top_page: &TopPage,
     _env: &Env,
 ) {
-    frame.render_widget(Block::new().style(Style::default().bg(BG)), frame.area());
-
     let outer = Block::default()
-        .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
+        .borders(Borders::TOP)
         .border_style(Style::default().fg(BORDER).bg(BG))
         .style(Style::default().bg(BG))
         .title_top(Line::from(" POLYTOP ").left_aligned())
         .title_top(Line::from(clock_hms()).right_aligned());
 
-    frame.render_widget(outer.clone(), frame.area());
     let dashboard = outer.inner(frame.area());
+    frame.render_widget(outer, frame.area());
 
     let [status_area, markets_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
@@ -55,7 +52,7 @@ pub fn top_page_ui(
 fn render_status_bar(frame: &mut Frame, area: Rect) {
     frame.render_widget(
         Paragraph::new(Line::from(vec![
-            Span::styled(" ✓ ", Style::default().fg(POSITIVE).bg(BG)),
+            Span::styled(" ✓ ", Style::default().fg(POSITIVE)),
             Span::styled("net online", Style::default().fg(MUTED).bg(BG)),
             Span::styled("   ws live", Style::default().fg(ACCENT).bg(BG)),
             Span::styled("   latency 42ms", Style::default().fg(MUTED).bg(BG)),
