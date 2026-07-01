@@ -3,9 +3,9 @@ airflow:
   # git-sync is great but annoying for first-run local dev. Easiest local loop:
   # disable git-sync and mount DAGs from a hostPath/PV, OR keep git-sync but
   # point it at a public mirror. We keep it enabled; flip off if you prefer.
-  # dags:
-  #   gitSync:
-  #     enabled: false
+  dags:
+    gitSync:
+      enabled: false
 
   postgresql:
     primary:
