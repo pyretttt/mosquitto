@@ -78,7 +78,7 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
                 tokio::time::sleep(Duration::from_millis(300)).await;
                 _ = sender.send(
                     Action::OpenPage(
-                        Page::Top(TopPage::default())
+                        Page::Top(TopPage::mock_data())
                     ).into()
                 );
 
