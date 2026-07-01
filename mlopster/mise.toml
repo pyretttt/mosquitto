@@ -25,6 +25,10 @@ NS_APP = "model-server"
 IMAGE_REGISTRY = "${CLUSTER_NAME}-registry"
 REGISTRY_PORT = 50001
 
+[tasks.bootstrap-k3d]
+description = "Bootstrap K3d cluster"
+depends = ["cluster-k3d", "repos", "deps", "update-model-server", "up-local"]
+
 # ---------------------------------------------------------------------------
 # Local cluster lifecycle
 # ---------------------------------------------------------------------------

@@ -39,7 +39,7 @@ airflow:
   dags:
     gitSync:
       enabled: true
-      repo: "https://gitlab.com/your-group/mlopster.git"  # TODO(you): your repo URL
+      repo: "https://gitlab.com/percalee/mlopster.git"  # TODO(you): your repo URL
       branch: main
       subPath: "airflow/dags"
       # For private repos, reference an SSH key / token Secret here.
