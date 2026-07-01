@@ -7,7 +7,7 @@ use crate::env::Env;
 use crate::event::{Event};
 use crate::models::loading_page::{LoadingPage, LoadingPageAction, loading_page_reducer};
 use crate::models::command::{CommandPallette, Command};
-use crate::models::top_page::TopPage;
+use crate::models::top_page::{TopPage, TopPageAction, top_page_reducer};
 
 #[derive(Clone, Debug)]
 pub struct AppState {
@@ -37,8 +37,10 @@ pub struct HelpPage {
 #[derive(Clone, Debug)]
 pub enum Action {
     Next(String),
+    CommandClose,
     CommandSent(Command),
     LoadingPage(LoadingPageAction),
+    TopPage(TopPageAction),
     OpenPage(Page),
     Quit,
 }
@@ -53,6 +55,9 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &Action, env: &Env) {
     match action {
         Action::Next(ref token) if app_state.increment_token.as_ref() == Some(token) => {
             //
+        },
+        Action::CommandClose => {
+            app_state.command_pallette = None;
         },
         Action::CommandSent(command) => {
             match command {
@@ -76,6 +81,13 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &Action, env: &Env) {
         },
         Action::OpenPage(page) => {
             app_state.page = page.clone();
+        },
+        Action::TopPage(action) => {
+            if let Page::Top(ref mut top_page) = app_state.page {
+                top_page_reducer(top_page, action, env);
+            } else {
+                assert!(false, "Action dispatched to non-loading page");
+            }
         }
     }
 }
@@ -89,8 +101,15 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
         }
         Event::Crossterm(crossterm_event) => {
             if let crossterm::event::Event::Key(key_event) = crossterm_event {
-                if command_pallete_key_input_middleware(app_state, key_event, env) {
-                    return;
+                if let Page::Top(ref mut top_page) = app_state.page {
+                    if top_page.key_input_middleware(key_event, env) {
+                        return;
+                    }
+                }
+                if let Some(command_pallette) = &mut app_state.command_pallette {
+                    if command_pallette.command_pallete_key_input_middleware(key_event, env) {
+                        return;
+                    }
                 }
                 if key_event.kind == KeyEventKind::Press {
                     match key_event.code {
@@ -129,70 +148,5 @@ impl Default for AppState {
             increment_token: None,
             command_pallette: None,
         }
-    }
-}
-
-fn command_pallete_key_input_middleware(
-    app_state: &mut AppState,
-    key_event: &mut crossterm::event::KeyEvent,
-    env: &Env,
-) -> bool {
-    match &mut app_state.command_pallette {
-        Some(command_pallette) => {
-            match key_event.code {
-                KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
-                    false
-                },
-                KeyCode::Char('w' | 'W') if key_event.modifiers == KeyModifiers::CONTROL => {
-                    let mut words = command_pallette.text_area_state.text.split(' ').collect::<Vec<&str>>();
-                    if words.pop().is_some() {
-                        let words = words.join(" ");
-                        command_pallette.change_text(|text| *text = words);
-                    }
-                    true
-                },
-                KeyCode::Backspace => {
-                    command_pallette.change_text(|text| {
-                        text.pop();
-                    });
-                    true
-                },
-                KeyCode::Up => {
-                    command_pallette.table_state.select_previous();
-                    true
-                },
-                KeyCode::Down => {
-                    command_pallette.table_state.select_next();
-                    true
-                },
-                KeyCode::Esc => {
-                    app_state.command_pallette = None;
-                    true
-                },
-                KeyCode::Tab => {
-                    if let Some(command) = command_pallette.command_to_complete() {
-                        command_pallette.text_area_state.text = command.name().to_string();
-                    }
-                    true
-                }
-                KeyCode::Enter => {
-                    if let Ok(command) = Command::try_from(command_pallette.text_area_state.text.as_str()) {
-                        app_state.command_pallette = None;
-                        _ = env.sender.send(Action::CommandSent(command).into());
-                    } else if command_pallette.text_area_state.text.is_empty() {
-                        if let Some(command) = command_pallette.selected_command() {
-                            command_pallette.text_area_state.text = command.name().to_owned();
-                        }
-                    }
-                    true
-                },
-                KeyCode::Char(char) if !char.is_control() => {
-                    command_pallette.change_text(|text| text.push(char));
-                    true
-                },
-                _ => false
-            }
-        }
-        None => false,
     }
 }

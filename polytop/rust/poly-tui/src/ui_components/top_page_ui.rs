@@ -1,10 +1,10 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::layout::{Constraint, Layout, Rect, Margin};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Paragraph, Row, Table, TableState};
+use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table, TableState};
 
 use crate::env::Env;
 use crate::models::app_state::AppState;
@@ -22,7 +22,7 @@ const HEADER: Color = Color::Yellow;
 pub fn top_page_ui(
     frame: &mut Frame,
     _app_state: &AppState,
-    _top_page: &TopPage,
+    top_page: &TopPage,
     _env: &Env,
 ) {
     let outer = Block::default()
@@ -44,8 +44,8 @@ pub fn top_page_ui(
     .areas(dashboard);
 
     render_status_bar(frame, status_area);
-    render_top_markets(frame, markets_area);
-    render_lower_panes(frame, lower_area);
+    render_top_markets(frame, markets_area, top_page);
+    render_lower_panes(frame, lower_area, top_page);
     render_command_popup(frame, cmd_area);
 }
 
@@ -63,7 +63,7 @@ fn render_status_bar(frame: &mut Frame, area: Rect) {
     );
 }
 
-fn render_top_markets(frame: &mut Frame, area: Rect) {
+fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let header = Row::new([
         header_cell("#"),
         header_cell("★"),
@@ -128,7 +128,7 @@ fn render_top_markets(frame: &mut Frame, area: Rect) {
     )
     .header(header)
     .block(
-        pane_block("[1] - Top Markets: all", Borders::ALL, true)
+        pane_block(" [1] - Top Markets: all ", Borders::ALL, top_page.current_pane == 1)
             .title_bottom(
                 Line::from(" 8 markets | ↑↓ move | b bookmarks/all | w bookmark ").centered(),
             ),
@@ -145,15 +145,15 @@ fn render_top_markets(frame: &mut Frame, area: Rect) {
     frame.render_stateful_widget(table, area, &mut state);
 }
 
-fn render_lower_panes(frame: &mut Frame, area: Rect) {
+fn render_lower_panes(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let [selected_area, chart_activity_area] =
         Layout::horizontal([Constraint::Ratio(1, 2), Constraint::Ratio(1, 2)]).areas(area);
 
-    render_selected_market(frame, selected_area);
-    render_chart_activity(frame, chart_activity_area);
+    render_selected_market(frame, selected_area, top_page);
+    render_chart_activity(frame, chart_activity_area, top_page);
 }
 
-fn render_selected_market(frame: &mut Frame, area: Rect) {
+fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let lines = [
         Line::styled(
             "Will BTC hit 100k in 2026?",
@@ -194,13 +194,16 @@ fn render_selected_market(frame: &mut Frame, area: Rect) {
 
     frame.render_widget(
         Paragraph::new(lines.as_slice())
-            .block(pane_block("[2] - Selected Market: summary", Borders::ALL, false))
+            .block(
+                pane_block(" [2] - Selected Market: summary ", Borders::ALL, top_page.current_pane == 2)
+                .padding(Padding::horizontal(1))
+            )
             .style(Style::default().bg(BG)),
         area,
     );
 }
 
-fn render_chart_activity(frame: &mut Frame, area: Rect) {
+fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let lines = [
         Line::styled(
             " 70¢ ┤                     ╭╮",
@@ -231,7 +234,7 @@ fn render_chart_activity(frame: &mut Frame, area: Rect) {
 
     frame.render_widget(
         Paragraph::new(lines.as_slice())
-            .block(pane_block("[3] - Chart + Activity", Borders::ALL, false))
+            .block(pane_block(" [3] - Chart + Activity ", Borders::ALL, top_page.current_pane == 3))
             .style(Style::default().bg(BG)),
         area,
     );
