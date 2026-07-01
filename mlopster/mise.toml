@@ -157,6 +157,17 @@ run = [
 # ---------------------------------------------------------------------------
 # Port-forwards
 # ---------------------------------------------------------------------------
+[tasks.pf]
+description = "Port-forward all services"
+depends = [
+  "pf-grafana",
+  "pf-prometheus",
+  "pf-alertmanager",
+  "pf-model",
+  "pf-minio",
+  "pf-airflow",
+]
+
 [tasks.pf-grafana]
 description = "Port-forward Grafana to localhost:3000"
 run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-grafana 3000:80"
