@@ -27,7 +27,13 @@ REGISTRY_PORT = 50001
 
 [tasks.bootstrap-k3d]
 description = "Bootstrap K3d cluster"
-depends = ["cluster-k3d", "repos", "deps", "update-model-server", "up-local"]
+run = [
+  { task = "cluster-k3d" },
+  { task = "repos" },
+  { task = "deps" },
+  { task = "update-model-server" },
+  { task = "up-local" },
+]
 
 # ---------------------------------------------------------------------------
 # Local cluster lifecycle
