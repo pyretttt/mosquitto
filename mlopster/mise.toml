@@ -174,11 +174,11 @@ run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-grafana 3000:80"
 
 [tasks.pf-prometheus]
 description = "Port-forward Prometheus to localhost:9090"
-run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-kube-prometheus-stack-prometheus 9090:9090"
+run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-kube-prometheus-prometheus 9090:9090"
 
 [tasks.pf-alertmanager]
 description = "Port-forward Alertmanager to localhost:9093"
-run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-kube-prometheus-stack-alertmanager 9093:9093"
+run = "kubectl -n $NS_MONITORING port-forward svc/monitoring-kube-prometheus-alertmanager 9093:9093"
 
 [tasks.pf-model]
 description = "Port-forward the model server to localhost:8000"
@@ -190,4 +190,4 @@ run = "kubectl -n $NS_STORAGE port-forward svc/storage-minio-console 9001:9001"
 
 [tasks.pf-airflow]
 description = "Port-forward the Airflow webserver to localhost:8080"
-run = "kubectl -n $NS_ORCH port-forward svc/orchestration-airflow-webserver 8080:8080"
+run = "kubectl -n $NS_ORCH port-forward svc/orchestration-api-server 8080:8080"

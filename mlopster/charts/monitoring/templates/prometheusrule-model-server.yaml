@@ -4,7 +4,7 @@
 #
 # TODO(you): verify these exprs match the metric names your FastAPI app actually
 # exposes via prometheus-fastapi-instrumentator (http_requests_total,
-# http_request_duration_seconds_bucket, and your custom ml_* metrics).
+# http_request_duration_seconds_bucket, and your custom ml_* metrics). ✅
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
