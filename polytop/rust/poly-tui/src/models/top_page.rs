@@ -195,7 +195,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                     ));
                     let sleep_fn = env.sleep.clone();
                     _ = env.fire_and_forget(async move {
-                        sleep_fn.sleep(1500).await;
+                        sleep_fn.sleep(3000).await;
                         _ = sender.send(TopPageAction::HideErrorMsg { token: current_token }.into());
                     });
                 }
@@ -217,9 +217,10 @@ impl TopPage {
                 true
             },
             KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
-                if x == 'j' && self.markets_pane.markets.len() > self.markets_pane.table_state.selected().unwrap_or(0) {
+                let selected_idx = self.markets_pane.table_state.selected().unwrap_or(0);
+                if x == 'j' && self.markets_pane.markets.len() > selected_idx + 1 {
                     self.markets_pane.table_state.select_next();
-                } else {
+                } else if x == 'k' && selected_idx > 0 {
                     self.markets_pane.table_state.select_previous();
                 }
                 true
