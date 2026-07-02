@@ -1,8 +1,10 @@
 use std::time::Duration;
+
 use crate::models::app_state::{Action, Page};
 use crate::models::top_page::TopPage;
 use crate::env::Env;
 use crate::config::get_config;
+use crate::models::top_page::TopPageAction;
 
 static LOADING_TIPS: [&str; 4] = [
     "Press `q` to quit",
@@ -80,6 +82,9 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
                     Action::OpenPage(
                         Page::Top(TopPage::mock_data())
                     ).into()
+                );
+                _ = sender.send(
+                    TopPageAction::ViewDidLoad.into()
                 );
 
             });

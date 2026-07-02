@@ -122,7 +122,7 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         pane_block(&pane_title, Borders::ALL, top_page.current_pane == 1)
             .title_bottom(
                 Line::from(format!(
-                    " {market_count} markets | ↑↓ move | b bookmarks/all | w bookmark "
+                    " {market_count} markets | j/k move | b bookmarks/all | w bookmark "
                 ))
                 .centered(),
             ),
@@ -135,8 +135,7 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     )
     .highlight_symbol("▶ ");
 
-    let mut state = TableState::default().with_selected(Some(top_page.markets_pane.selected_index));
-    frame.render_stateful_widget(table, area, &mut state);
+    frame.render_stateful_widget(table, area, &mut top_page.markets_pane.table_state.clone());
 }
 
 fn render_lower_panes(frame: &mut Frame, area: Rect, top_page: &TopPage) {
@@ -266,7 +265,7 @@ fn render_command_popup(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     );
 }
 
-fn market_row(rank: usize, market: &Market) -> Row<'static> {
+fn market_row<'a>(rank: usize, market: &'a Market) -> Row<'a> {
     let bookmark = if market.bookmarked { "★" } else { "" };
     let movement = format_movement(market.movement);
     let move_color = movement_color(&movement);
@@ -274,7 +273,7 @@ fn market_row(rank: usize, market: &Market) -> Row<'static> {
     Row::new([
         Cell::from(rank.to_string()).style(Style::default().fg(MUTED).bg(BG)),
         Cell::from(bookmark).style(Style::default().fg(WARNING).bg(BG)),
-        Cell::from(market.title).style(Style::default().fg(Color::White).bg(BG)),
+        Cell::from(market.title.as_str()).style(Style::default().fg(Color::White).bg(BG)),
         Cell::from(format_cents(market.yes_market_price))
             .style(Style::default().fg(POSITIVE).bg(BG)),
         Cell::from(format_cents(market.no_market_price))

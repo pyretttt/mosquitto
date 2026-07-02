@@ -1,5 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent};
+use ratatui::widgets::TableState;
 
+use crate::models::app_state::Action;
+use crate::event::Event;
 use crate::env::Env;
 
 static TOP_PAGE_TITLE: &str = "Polytop";
@@ -38,12 +41,12 @@ pub struct MarketsPane {
     pub title: &'static str,
     pub filter: String,
     pub markets: Vec<Market>,
-    pub selected_index: usize,
+    pub table_state: TableState,
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct Market {
-    pub title: &'static str,
+    pub title: String,
     pub slug: String,
     pub bookmarked: bool,
     pub yes_market_price: f64,
@@ -105,12 +108,57 @@ pub struct CommandPopup {
 #[derive(Clone, Debug)]
 pub enum TopPageAction {
     SelectPane(u32),
+    ViewDidLoad,
+    MarketsLoaded(Vec<Market>),
 }
 
-pub fn top_page_reducer(top_page: &mut TopPage, action: &TopPageAction, _env: &Env) {
+impl Into<Event> for TopPageAction {
+    fn into(self) -> Event {
+        Event::App(Action::TopPage(self))
+    }
+}
+
+pub fn top_page_reducer(top_page: &mut TopPage, action: &TopPageAction, env: &Env) {
     match action {
         TopPageAction::SelectPane(pane) => {
             top_page.current_pane = *pane;
+        }
+        TopPageAction::ViewDidLoad => {
+            let sender = env.sender.clone();
+            let polymarket_client = env.polymarket_client.clone();
+            env.fire_and_forget(
+                async move {
+                    // TODO: Handle unwrap correctly
+                    let markets = polymarket_client.markets(None).await.unwrap();
+                    let markets = markets.data.into_iter().map(|market| {
+                        let token_price = |outcome: &str| {
+                            market.tokens
+                                .iter()
+                                .find(|token| token.outcome.eq_ignore_ascii_case(outcome))
+                                .and_then(|token| token.price.to_string().parse::<f64>().ok())
+                                .map(|price| price * 100.0)
+                                .unwrap_or_default()
+                        };
+                        let yes_market_price = token_price("Yes");
+                        let no_market_price = token_price("No");
+
+                        Market {
+                            title: market.question,
+                            slug: market.market_slug,
+                            bookmarked: false,
+                            yes_market_price,
+                            no_market_price,
+                            volume24h: 0.0,
+                            movement: 0.0,
+                            spread: 0.0,
+                        }
+                    });
+                    _ = sender.send(TopPageAction::MarketsLoaded(markets.collect()).into());
+                }
+            );
+        }
+        TopPageAction::MarketsLoaded(markets) => {
+            top_page.markets_pane.markets = markets.to_owned();
         }
     }
 }
@@ -120,6 +168,14 @@ impl TopPage {
         match key_event.code {
             KeyCode::Char(x) if ['1', '2', '3'].contains(&x) => {
                 self.current_pane = x.to_digit(10).unwrap_or(1);
+                true
+            },
+            KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
+                if x == 'j' && self.markets_pane.markets.len() > self.markets_pane.table_state.selected().unwrap_or(0) {
+                    self.markets_pane.table_state.select_next();
+                } else {
+                    self.markets_pane.table_state.select_previous();
+                }
                 true
             }
             _ => false,
@@ -146,10 +202,9 @@ impl TopPage {
             markets_pane: MarketsPane {
                 title: "Top Markets",
                 filter: "all".into(),
-                selected_index: 0,
                 markets: vec![
                     Market {
-                        title: "Will BTC hit 100k in 2026?",
+                        title: "Will BTC hit 100k in 2026?".to_owned(),
                         slug: "btc-100k-2026".into(),
                         bookmarked: true,
                         yes_market_price: 63.0,
@@ -159,7 +214,7 @@ impl TopPage {
                         spread: 2.0,
                     },
                     Market {
-                        title: "Fed cuts rates by Sep?",
+                        title: "Fed cuts rates by Sep?".to_owned(),
                         slug: "fed-cuts-sep".into(),
                         bookmarked: false,
                         yes_market_price: 41.0,
@@ -169,7 +224,7 @@ impl TopPage {
                         spread: 3.0,
                     },
                     Market {
-                        title: "Lakers win tonight?",
+                        title: "Lakers win tonight?".to_owned(),
                         slug: "lakers-win-tonight".into(),
                         bookmarked: false,
                         yes_market_price: 55.0,
@@ -179,7 +234,7 @@ impl TopPage {
                         spread: 2.0,
                     },
                     Market {
-                        title: "ETH ETF inflows above $1B?",
+                        title: "ETH ETF inflows above $1B?".to_owned(),
                         slug: "eth-etf-inflows-1b".into(),
                         bookmarked: false,
                         yes_market_price: 72.0,
@@ -189,7 +244,7 @@ impl TopPage {
                         spread: 4.0,
                     },
                     Market {
-                        title: "Trump wins popular vote?",
+                        title: "Trump wins popular vote?".to_owned(),
                         slug: "trump-popular-vote".into(),
                         bookmarked: true,
                         yes_market_price: 49.0,
@@ -199,7 +254,7 @@ impl TopPage {
                         spread: 2.0,
                     },
                     Market {
-                        title: "CPI below forecast?",
+                        title: "CPI below forecast?".to_owned(),
                         slug: "cpi-below-forecast".into(),
                         bookmarked: false,
                         yes_market_price: 36.0,
@@ -209,7 +264,7 @@ impl TopPage {
                         spread: 5.0,
                     },
                     Market {
-                        title: "SpaceX launch this week?",
+                        title: "SpaceX launch this week?".to_owned(),
                         slug: "spacex-launch-week".into(),
                         bookmarked: false,
                         yes_market_price: 83.0,
@@ -219,7 +274,7 @@ impl TopPage {
                         spread: 3.0,
                     },
                     Market {
-                        title: "Oil closes above $90?",
+                        title: "Oil closes above $90?".to_owned(),
                         slug: "oil-above-90".into(),
                         bookmarked: false,
                         yes_market_price: 22.0,
@@ -229,6 +284,7 @@ impl TopPage {
                         spread: 4.0,
                     },
                 ],
+                table_state: TableState::default().with_selected(Some(0)),
             },
             selected_market_pane: MarketSummary {
                 title: "Will BTC hit 100k in 2026?",

@@ -1,5 +1,5 @@
 [workspace]
-members = ["poly-tui", "polytop-core"]
+members = ["poly-tui", "poly-core"]
 resolver = "2"
 
 [workspace.package]

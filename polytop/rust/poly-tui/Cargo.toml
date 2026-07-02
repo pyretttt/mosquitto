@@ -5,7 +5,7 @@ edition.workspace = true
 description = "Polymarket monitor TUI"
 
 [dependencies]
-polytop-core = { path = "../polytop-core" }
+poly-core = { path = "../poly-core" }
 color-eyre = "0.6.5"
 crossterm = { version = "0.28.1", features = ["event-stream"] }
 futures = "0.3.31"
