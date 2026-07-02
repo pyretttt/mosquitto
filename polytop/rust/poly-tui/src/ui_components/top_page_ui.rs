@@ -91,12 +91,17 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         header_cell("Spread"),
     ]);
 
-    let rows: Vec<Row> = top_page.markets_pane
+    let selected_index = top_page.markets_pane.table_state.selected();
+    let rows = top_page.markets_pane
         .markets
         .iter()
         .enumerate()
-        .map(|(index, market)| market_row(index + 1, market))
-        .collect();
+        .map(|(index, market)|
+            market_row(
+                index + 1, market,
+                selected_index.map_or(false, |val| val == index)
+            )
+        );
 
     let market_count = top_page.markets_pane.markets.len();
     let pane_title = format!(
@@ -126,12 +131,6 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
                 ))
                 .centered(),
             ),
-    )
-    .row_highlight_style(
-        Style::default()
-            .bg(Color::DarkGray)
-            .fg(Color::White)
-            .add_modifier(Modifier::BOLD),
     )
     .highlight_symbol("▶ ");
 
@@ -265,24 +264,24 @@ fn render_command_popup(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     );
 }
 
-fn market_row<'a>(rank: usize, market: &'a Market) -> Row<'a> {
+fn market_row<'a>(rank: usize, market: &'a Market, is_selected: bool) -> Row<'a> {
     let bookmark = if market.bookmarked { "★" } else { "" };
     let movement = format_movement(market.movement);
     let move_color = movement_color(&movement);
 
     Row::new([
-        Cell::from(rank.to_string()).style(Style::default().fg(MUTED).bg(BG)),
-        Cell::from(bookmark).style(Style::default().fg(WARNING).bg(BG)),
-        Cell::from(market.title.as_str()).style(Style::default().fg(Color::White).bg(BG)),
+        Cell::from(rank.to_string()).style(Style::default().fg(if is_selected { WARNING } else { MUTED })),
+        Cell::from(bookmark).style(Style::default().fg(WARNING)),
+        Cell::from(market.title.as_str()).style(Style::default().fg(if is_selected { WARNING } else { Color::White })),
         Cell::from(format_cents(market.yes_market_price))
-            .style(Style::default().fg(POSITIVE).bg(BG)),
+            .style(Style::default().fg(POSITIVE)),
         Cell::from(format_cents(market.no_market_price))
-            .style(Style::default().fg(NEGATIVE).bg(BG)),
+            .style(Style::default().fg(NEGATIVE)),
         Cell::from(format_volume_compact(market.volume24h))
-            .style(Style::default().fg(Color::White).bg(BG)),
-        Cell::from(movement).style(Style::default().fg(move_color).bg(BG)),
+            .style(Style::default().fg(Color::White)),
+        Cell::from(movement).style(Style::default().fg(move_color)),
         Cell::from(format_cents(market.spread))
-            .style(Style::default().fg(MUTED).bg(BG)),
+            .style(Style::default().fg(MUTED)),
     ])
 }
 
