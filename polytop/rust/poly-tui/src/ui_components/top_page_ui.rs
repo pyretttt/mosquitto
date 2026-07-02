@@ -30,7 +30,7 @@ pub fn top_page_ui(
         .border_style(Style::default().fg(BORDER).bg(BG))
         .style(Style::default().bg(BG))
         .title_top(Line::from(format!(" {} ", top_page.left_title.to_uppercase())).left_aligned())
-        .title_top(Line::from(clock_hms()).right_aligned());
+        .title_top(Line::from("").right_aligned());
 
     let dashboard = outer.inner(frame.area());
     frame.render_widget(outer, frame.area());
@@ -372,18 +372,4 @@ fn format_dollar_compact(value: f64) -> String {
     } else {
         format!("${:.0}", value)
     }
-}
-
-fn clock_hms() -> String {
-    let seconds = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|duration| duration.as_secs() % 86_400)
-        .unwrap_or(0);
-
-    format!(
-        " {:02}:{:02}:{:02} ",
-        seconds / 3_600,
-        (seconds % 3_600) / 60,
-        seconds % 60
-    )
 }

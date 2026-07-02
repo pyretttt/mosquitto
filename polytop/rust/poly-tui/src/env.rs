@@ -1,5 +1,6 @@
 use std::ops::Range;
 use std::future::Future;
+use std::time::Duration;
 
 use tokio::task::JoinHandle;
 use tokio::sync::mpsc;
@@ -10,6 +11,21 @@ use poly_core::api::PolymarketClient;
 use crate::event::Event;
 use crate::config::{get_config, Config};
 
+#[derive(Clone, Debug)]
+pub struct SleepFn {}
+
+impl SleepFn {
+    pub async fn sleep(&self, milliseconds: u64) {
+        tokio::time::sleep(Duration::from_millis(milliseconds)).await;
+    }
+}
+
+impl Default for SleepFn {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
 pub struct Env {
     pub sender: mpsc::UnboundedSender<Event>,
     pub receiver: mpsc::UnboundedReceiver<Event>,
@@ -17,6 +33,7 @@ pub struct Env {
     pub gen_token: Box<dyn Fn() -> String + 'static + Send + Sync>,
     pub rng: Box<dyn Fn(Option<Range<f32>>) -> f32 + 'static + Send + Sync>,
     pub polymarket_client: PolymarketClient,
+    pub sleep: SleepFn,
 }
 
 impl Env {
@@ -29,6 +46,7 @@ impl Env {
             gen_token: Box::new(|| Uuid::new_v4().to_string()),
             rng: Box::new(|range| rand::rng().random_range(range.unwrap_or(0.0..1.0))),
             polymarket_client: PolymarketClient::default(),
+            sleep: SleepFn::default()
         }
     }
 

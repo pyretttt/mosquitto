@@ -1,6 +1,11 @@
+use std::error::Error;
+use std::fmt;
+use std::mem;
+
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::TableState;
 
+use crate::pair::Pair;
 use crate::models::app_state::Action;
 use crate::event::Event;
 use crate::env::Env;
@@ -12,6 +17,7 @@ pub struct TopPage {
     pub left_title: &'static str,
     pub right_title: String,
 
+    pub error_msg: Option<Pair<String, String>>,
     pub current_pane: u32,
 
     pub status_pane: StatusPane,
@@ -19,6 +25,8 @@ pub struct TopPage {
     pub selected_market_pane: MarketSummary,
     pub chart_activity_pane: ChartActivityPane,
     pub command_popup: CommandPopup,
+
+    pub markets_next_cursor: Option<String>,
 }
 
 impl Default for TopPage {
@@ -109,7 +117,8 @@ pub struct CommandPopup {
 pub enum TopPageAction {
     SelectPane(u32),
     ViewDidLoad,
-    MarketsLoaded(Vec<Market>),
+    MarketsRequestFinished(Result<Pair<Vec<Market>, String>, TopPageError>),
+    HideErrorMsg { token: String },
 }
 
 impl Into<Event> for TopPageAction {
@@ -118,48 +127,85 @@ impl Into<Event> for TopPageAction {
     }
 }
 
-pub fn top_page_reducer(top_page: &mut TopPage, action: &TopPageAction, env: &Env) {
+#[derive(Clone, Debug)]
+pub enum TopPageError {
+    MarketsRequestFailed,
+}
+
+pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env: &Env) {
     match action {
         TopPageAction::SelectPane(pane) => {
             top_page.current_pane = *pane;
-        }
+        },
         TopPageAction::ViewDidLoad => {
             let sender = env.sender.clone();
             let polymarket_client = env.polymarket_client.clone();
-            env.fire_and_forget(
-                async move {
-                    // TODO: Handle unwrap correctly
-                    let markets = polymarket_client.markets(None).await.unwrap();
-                    let markets = markets.data.into_iter().map(|market| {
-                        let token_price = |outcome: &str| {
-                            market.tokens
-                                .iter()
-                                .find(|token| token.outcome.eq_ignore_ascii_case(outcome))
-                                .and_then(|token| token.price.to_string().parse::<f64>().ok())
-                                .map(|price| price * 100.0)
-                                .unwrap_or_default()
-                        };
-                        let yes_market_price = token_price("Yes");
-                        let no_market_price = token_price("No");
+            let markets_next_cursor = top_page.markets_next_cursor.clone();
+            env.fire_and_forget(async move {
+                match polymarket_client.markets(markets_next_cursor).await {
+                    Ok(markets) => {
+                        let markets_data = markets.data.into_iter().map(|market| {
+                            let token_price = |outcome: &str| {
+                                market.tokens
+                                    .iter()
+                                    .find(|token| token.outcome.eq_ignore_ascii_case(outcome))
+                                    .and_then(|token| token.price.to_string().parse::<f64>().ok())
+                                    .map(|price| price * 100.0)
+                                    .unwrap_or_default()
+                            };
+                            let yes_market_price = token_price("Yes");
+                            let no_market_price = token_price("No");
 
-                        Market {
-                            title: market.question,
-                            slug: market.market_slug,
-                            bookmarked: false,
-                            yes_market_price,
-                            no_market_price,
-                            volume24h: 0.0,
-                            movement: 0.0,
-                            spread: 0.0,
-                        }
-                    });
-                    _ = sender.send(TopPageAction::MarketsLoaded(markets.collect()).into());
+                            Market {
+                                title: market.question,
+                                slug: market.market_slug,
+                                bookmarked: false,
+                                yes_market_price,
+                                no_market_price,
+                                volume24h: 0.0,
+                                movement: 0.0,
+                                spread: 0.0,
+                            }
+                        });
+                        let next_cursor = markets.next_cursor.clone();
+                        _ = sender.send(
+                            TopPageAction::MarketsRequestFinished(
+                                Ok(Pair::new(markets_data.collect(), next_cursor))
+                            ).into()
+                        );
+                    },
+                    Err(_) => {
+                        _ = sender.send(TopPageAction::MarketsRequestFinished(Err(TopPageError::MarketsRequestFailed)).into());
+                    }
                 }
-            );
-        }
-        TopPageAction::MarketsLoaded(markets) => {
-            top_page.markets_pane.markets = markets.to_owned();
-        }
+            });
+        },
+        TopPageAction::MarketsRequestFinished(ref mut result) => {
+            match result {
+                Ok(markets_and_cursor) => {
+                    top_page.markets_pane.markets = mem::take(&mut markets_and_cursor.left);
+                    top_page.markets_next_cursor = Some(mem::take(&mut markets_and_cursor.right));
+                },
+                Err(_) => {
+                    let current_token = (env.gen_token)();
+                    let sender = env.sender.clone();
+                    top_page.error_msg = Some(Pair::new(
+                        "Failed to load markets data, press `R` to retry".to_owned(),
+                        current_token.clone()
+                    ));
+                    let sleep_fn = env.sleep.clone();
+                    _ = env.fire_and_forget(async move {
+                        sleep_fn.sleep(1500).await;
+                        _ = sender.send(TopPageAction::HideErrorMsg { token: current_token }.into());
+                    });
+                }
+            }
+        },
+        TopPageAction::HideErrorMsg { ref token } => {
+            if top_page.error_msg.as_ref().map_or(false,|e| e.right.eq(token)) {
+                top_page.error_msg = None;
+            }
+        },
     }
 }
 
@@ -342,6 +388,16 @@ impl TopPage {
                 sort: "move".into(),
                 mode: "NORMAL".into(),
             },
+            error_msg: None,
+            markets_next_cursor: None,
         }
     }
 }
+
+impl fmt::Display for TopPageError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for TopPageError {}
