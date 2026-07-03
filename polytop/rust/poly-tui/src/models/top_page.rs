@@ -27,6 +27,9 @@ pub struct TopPage {
     pub command_popup: CommandPopup,
 
     pub markets_next_cursor: Option<String>,
+    pub markets_load_session: Option<String>,
+
+    pub is_loading: bool,
 }
 
 impl Default for TopPage {
@@ -114,10 +117,17 @@ pub struct CommandPopup {
 }
 
 #[derive(Clone, Debug)]
+pub struct MarketLoadResult {
+    pub markets: Vec<Market>,
+    pub next_cursor: String,
+    pub session: String,
+}
+
+#[derive(Clone, Debug)]
 pub enum TopPageAction {
     SelectPane(u32),
-    ViewDidLoad,
-    MarketsRequestFinished(Result<Pair<Vec<Market>, String>, TopPageError>),
+    MarketsLoadRequested,
+    MarketsRequestFinished(Result<MarketLoadResult, TopPageError>),
     HideErrorMsg { token: String },
 }
 
@@ -137,8 +147,12 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
         TopPageAction::SelectPane(pane) => {
             top_page.current_pane = *pane;
         },
-        TopPageAction::ViewDidLoad => {
-            let sender = env.sender.clone();
+        TopPageAction::MarketsLoadRequested => {
+            if top_page.markets_load_session.is_some() { return; }
+            
+            top_page.is_loading = true;
+            let current_session = (env.gen_token)();
+            let sender: tokio::sync::mpsc::UnboundedSender<Event> = env.sender.clone();
             let polymarket_client = env.polymarket_client.clone();
             let markets_next_cursor = top_page.markets_next_cursor.clone();
             env.fire_and_forget(async move {
@@ -170,7 +184,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                         let next_cursor = markets.next_cursor.clone();
                         _ = sender.send(
                             TopPageAction::MarketsRequestFinished(
-                                Ok(Pair::new(markets_data.collect(), next_cursor))
+                                Ok(MarketLoadResult { markets: markets_data.collect(), next_cursor, session: current_session } )
                             ).into()
                         );
                     },
@@ -180,11 +194,13 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                 }
             });
         },
-        TopPageAction::MarketsRequestFinished(ref mut result) => {
+        TopPageAction::MarketsRequestFinished(result) => {
             match result {
-                Ok(markets_and_cursor) => {
-                    top_page.markets_pane.markets = mem::take(&mut markets_and_cursor.left);
-                    top_page.markets_next_cursor = Some(mem::take(&mut markets_and_cursor.right));
+                Ok(load_result) => {
+                    if let Some(ref session) = top_page.markets_load_session && load_result.session.eq(session) {
+                        top_page.markets_pane.markets = mem::take(&mut load_result.markets);
+                        top_page.markets_next_cursor = Some(mem::take(&mut load_result.next_cursor));
+                    }
                 },
                 Err(_) => {
                     let current_token = (env.gen_token)();
@@ -200,8 +216,9 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                     });
                 }
             }
+            top_page.is_loading = false;
         },
-        TopPageAction::HideErrorMsg { ref token } => {
+        TopPageAction::HideErrorMsg { token } => {
             if top_page.error_msg.as_ref().map_or(false,|e| e.right.eq(token)) {
                 top_page.error_msg = None;
             }
@@ -210,7 +227,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
 }
 
 impl TopPage {
-    pub fn key_input_middleware(&mut self, key_event: &KeyEvent, _env: &Env) -> bool {
+    pub fn key_input_middleware(&mut self, key_event: &KeyEvent, env: &Env) -> bool {
         match key_event.code {
             KeyCode::Char(x) if ['1', '2', '3'].contains(&x) => {
                 self.current_pane = x.to_digit(10).unwrap_or(1);
@@ -220,6 +237,10 @@ impl TopPage {
                 let selected_idx = self.markets_pane.table_state.selected().unwrap_or(0);
                 if x == 'j' && self.markets_pane.markets.len() > selected_idx + 1 {
                     self.markets_pane.table_state.select_next();
+                    let count = self.markets_pane.markets.len();
+                    if self.markets_pane.table_state.selected().map_or(false, |idx| idx >= count - 1) {
+                        _ = env.sender.send(TopPageAction::MarketsLoadRequested.into());
+                    }
                 } else if x == 'k' && selected_idx > 0 {
                     self.markets_pane.table_state.select_previous();
                 }
@@ -391,6 +412,8 @@ impl TopPage {
             },
             error_msg: None,
             markets_next_cursor: None,
+            markets_load_session: None,
+            is_loading: false,
         }
     }
 }

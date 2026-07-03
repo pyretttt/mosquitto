@@ -84,7 +84,7 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
                     ).into()
                 );
                 _ = sender.send(
-                    TopPageAction::ViewDidLoad.into()
+                    TopPageAction::MarketsLoadRequested.into()
                 );
 
             });

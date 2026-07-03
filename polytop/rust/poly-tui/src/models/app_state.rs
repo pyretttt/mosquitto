@@ -53,7 +53,7 @@ impl Into<Event> for Action {
 
 pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env) {
     match action {
-        Action::Next(ref token) if app_state.increment_token.as_ref() == Some(token) => {
+        Action::Next(token) if app_state.increment_token.as_ref() == Some(token) => {
             //
         },
         Action::CommandClose => {
