@@ -1,10 +1,8 @@
-use std::time::{SystemTime, UNIX_EPOCH};
-
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout, Rect};
+use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table};
+use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table, Wrap};
 
 use crate::env::Env;
 use crate::models::app_state::AppState;
@@ -57,6 +55,25 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let ws_label = if status.ws_live { "   ws live" } else { "   ws down" };
     let ws_color = if status.ws_live { ACCENT } else { NEGATIVE };
 
+    let [left_area, right_area] = Layout::horizontal([
+        Constraint::Fill(1),
+        Constraint::Fill(1),
+    ]).areas(area.inner(Margin::new(1, 0)));
+
+    if let Some(error_msg) = top_page.error_msg.as_ref().map(|err| &err.left) {
+        frame.render_widget(
+            Paragraph::new(
+                Line::from_iter([
+                    Span::styled("⚠️ Error: ", Style::default().fg(WARNING)),
+                    Span::styled(error_msg, Style::default().fg(NEGATIVE)),
+                ])
+            ),
+            left_area
+        );
+    } else {
+        frame.render_widget(Block::default().style(Style::default().bg(BG)), left_area);
+    }
+
     frame.render_widget(
         Paragraph::new(Line::from_iter([
             Span::styled(online_icon, Style::default().fg(online_color)),
@@ -74,8 +91,8 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
                 format!("   mode {}", status.mode),
                 Style::default().fg(Color::Gray),
             ),
-        ])),
-        area,
+        ])).alignment(HorizontalAlignment::Right),
+        right_area,
     );
 }
 
