@@ -46,7 +46,7 @@ The scaffold demonstrates the CRD-first approach but you should know all of them
      the `Prometheus`/`Alertmanager` resources. With kube-prometheus-stack the
      default selector is `release: <helm-release-name>`. That's why every CRD
      here carries `labels.release: monitoring`.
-- [ ] **Task:** break the label on purpose, reload, and watch the target/rule
+- [x] **Task:** break the label on purpose, reload, and watch the target/rule
       disappear from the Prometheus UI. Understand `*SelectorNilUsesHelmValues`.
 
 2. **Inline via Helm values:**
