@@ -16,10 +16,10 @@ kube-prometheus-stack:
       # `false` here means: "select by label", and our CRDs are labelled
       # `release: monitoring`. Set to true to grab ALL ServiceMonitors/Rules in
       # the cluster regardless of label (convenient locally, noisy in prod).
-      serviceMonitorSelectorNilUsesHelmValues: false
-      podMonitorSelectorNilUsesHelmValues: false
-      ruleSelectorNilUsesHelmValues: false
-      probeSelectorNilUsesHelmValues: false
+      serviceMonitorSelectorNilUsesHelmValues: true
+      podMonitorSelectorNilUsesHelmValues: true
+      ruleSelectorNilUsesHelmValues: true
+      probeSelectorNilUsesHelmValues: true
 
       retention: 15d
       retentionSize: 8GB
