@@ -5,8 +5,8 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table, Wrap};
 
 use crate::env::Env;
-use crate::models::app_state::AppState;
-use crate::models::top_page::{ActivityKind, Market, TopPage};
+use crate::features::app::AppState;
+use crate::features::top_page::{ActivityKind, Market, TopPage};
 
 const BG: Color = Color::Black;
 const BORDER: Color = Color::Rgb(0x33, 0x41, 0x55);

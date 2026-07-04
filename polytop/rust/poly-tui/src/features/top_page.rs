@@ -6,7 +6,7 @@ use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::TableState;
 
 use crate::pair::Pair;
-use crate::models::app_state::Action;
+use crate::features::app::Action;
 use crate::event::Event;
 use crate::env::Env;
 
@@ -188,7 +188,8 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                             ).into()
                         );
                     },
-                    Err(_) => {
+                    Err(err) => {
+                        println!("MarketsRequestFailed: {:?}", err);
                         _ = sender.send(TopPageAction::MarketsRequestFinished(Err(TopPageError::MarketsRequestFailed)).into());
                     }
                 }

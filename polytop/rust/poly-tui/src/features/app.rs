@@ -5,9 +5,9 @@ use crossterm::event::{KeyCode, KeyEventKind, KeyModifiers};
 
 use crate::env::Env;
 use crate::event::{Event};
-use crate::models::loading_page::{LoadingPage, LoadingPageAction, loading_page_reducer};
-use crate::models::command::{CommandPallette, Command};
-use crate::models::top_page::{TopPage, TopPageAction, top_page_reducer};
+use crate::features::loading_page::{LoadingPage, LoadingPageAction, loading_page_reducer};
+use crate::features::command::{CommandPallette, Command};
+use crate::features::top_page::{TopPage, TopPageAction, top_page_reducer};
 
 #[derive(Clone, Debug)]
 pub struct AppState {

@@ -1,7 +1,7 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::env::Env;
-use crate::models::app_state::{AppState, Action};
+use crate::features::app::{AppState, Action};
 use ratatui::widgets::TableState;
 
 static COMMANDS: &'static [Command] = &[

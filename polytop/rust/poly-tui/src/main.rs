@@ -1,13 +1,13 @@
 pub mod config;
 pub mod env;
 pub mod event;
-pub mod models;
+pub mod features;
 pub mod ui;
 pub mod ui_components;
 pub mod pair;
 
 use env::Env;
-use models::app_state::{AppState};
+use features::app::{AppState};
 use ui::run;
 use event::sidecar_event_loop;
 

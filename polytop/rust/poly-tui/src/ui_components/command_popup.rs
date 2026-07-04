@@ -6,7 +6,7 @@ use ratatui::{
     widgets::{Block, Cell, Clear, Row, Table, Paragraph, Borders, BorderType},
 };
 
-use crate::models::command::{Command, CommandPallette, TextAreaState};
+use crate::features::command::{Command, CommandPallette, TextAreaState};
 
 const FOCUS_COLOR: Color = Color::Rgb(0x68, 0x78, 0xF8);
 

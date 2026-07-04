@@ -3,7 +3,7 @@ use futures::{FutureExt, StreamExt};
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-use crate::models::app_state::Action;
+use crate::features::app::Action;
 use crate::config::get_config;
 
 /// Representation of all possible events.

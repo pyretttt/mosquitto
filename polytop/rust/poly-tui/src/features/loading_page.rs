@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use crate::models::app_state::{Action, Page};
-use crate::models::top_page::TopPage;
+use crate::features::app::{Action, Page};
+use crate::features::top_page::TopPage;
 use crate::env::Env;
 use crate::config::get_config;
-use crate::models::top_page::TopPageAction;
+use crate::features::top_page::TopPageAction;
 
 static LOADING_TIPS: [&str; 4] = [
     "Press `q` to quit",

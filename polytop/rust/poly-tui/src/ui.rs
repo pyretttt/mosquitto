@@ -8,13 +8,13 @@ use ratatui::{
 use ratatui::DefaultTerminal;
 use throbber_widgets_tui::{Throbber, BRAILLE_EIGHT, WhichUse};
 
-use crate::models::app_state::{
+use crate::features::app::{
     AppState,
     Page,
     app_reducer,
     IntroPage,
 };
-use crate::models::loading_page::LoadingPage;
+use crate::features::loading_page::LoadingPage;
 use crate::env::Env;
 use crate::ui_components::command_popup::draw_command_popup;
 use crate::ui_components::top_page_ui::top_page_ui;
