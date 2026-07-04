@@ -32,6 +32,11 @@ kube-prometheus-stack:
           static_configs:
             - targets: [model-server.model-server.svc.cluster.local:80]
 
+      additionalScrapeConfigsSecret:
+        enabled: true
+        name: additional-scrape-configs
+        key: additional-scrape-configs.yaml
+
       resources:
         requests:
           cpu: 250m

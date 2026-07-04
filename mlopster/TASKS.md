@@ -59,7 +59,7 @@ The scaffold demonstrates the CRD-first approach but you should know all of them
 
 3. **`additionalScrapeConfigsSecret`** — keep raw scrape config (with creds) in
    a Secret instead of values. Note when you'd prefer this.
-- [ ] **Task:** write a one-paragraph note in `docs/ARCHITECTURE.md` on when to
+- [x] **Task:** write a one-paragraph note in `docs/ARCHITECTURE.md` on when to
       use CRDs vs inline values vs secret-backed config.
 
 ### Storage, retention, HA
