@@ -54,7 +54,7 @@ The scaffold demonstrates the CRD-first approach but you should know all of them
    - `additionalPrometheusRulesMap` to define rules straight in values.
    - `alertmanager.config` for the whole Alertmanager config (see
      `charts/monitoring/values.yaml`).
-- [ ] **Task:** add one `additionalScrapeConfigs` job (e.g. blackbox probe of
+- [x] **Task:** add one `additionalScrapeConfigs` job (e.g. blackbox probe of
       the model server `/health`) and compare the ergonomics vs a ServiceMonitor.
 
 3. **`additionalScrapeConfigsSecret`** — keep raw scrape config (with creds) in

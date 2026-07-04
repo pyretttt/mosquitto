@@ -26,6 +26,12 @@ kube-prometheus-stack:
       scrapeInterval: 30s
       evaluationInterval: 30s
 
+      additionalScrapeConfigs:
+        - job_name: test-server-raw
+          metrics_path: /metrics
+          static_configs:
+            - targets: [model-server.model-server.svc.cluster.local:80]
+
       resources:
         requests:
           cpu: 250m
