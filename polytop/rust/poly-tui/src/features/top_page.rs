@@ -150,8 +150,9 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
         TopPageAction::MarketsLoadRequested => {
             if top_page.markets_load_session.is_some() { return; }
 
-            top_page.is_loading = true;
             let current_session = (env.gen_token)();
+            top_page.is_loading = true;
+            top_page.markets_load_session = Some(current_session.clone());
             let sender: tokio::sync::mpsc::UnboundedSender<Event> = env.sender.clone();
             let polymarket_client = env.polymarket_client.clone();
             let markets_next_cursor = top_page.markets_next_cursor.clone();

@@ -11,8 +11,13 @@ use features::app::{AppState};
 use ui::run;
 use event::sidecar_event_loop;
 
+use tui_logger;
+
 #[tokio::main]
 async fn main() -> color_eyre::Result<()> {
+    tui_logger::init_logger(log::LevelFilter::Trace).unwrap();
+    tui_logger::set_default_level(log::LevelFilter::Trace);
+
     color_eyre::install()?;
     let mut terminal = ratatui::init();
     let mut env = Env::new();
