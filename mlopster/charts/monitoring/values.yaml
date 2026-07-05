@@ -214,19 +214,20 @@ app:
     metricsPort: http
     metricsPath: /metrics
 
-  minio:
+  airflow:
     # Where the model server runs (so the ServiceMonitor can find it).
-    namespace: storage
-    serviceSelectorLabel: app
-    serviceSelectorValue: minio
+    namespace: orchestration
+    matchLabels:
+      component: statsd
+      release: orchestration
     metricsPort: http
     metricsPath: /metrics
 
 
   # Namespaced AlertmanagerConfig CRD (off by default — see the template).
   alertmanagerConfig:
-    enabled: false
-    webhookUrl: "https://webhook.site/your-uuid"
+    enabled: true
+    webhookUrl: "https://webhook.site/8708510b-7b18-4301-8327-ba2880bcac4e"
 
   # Ship Grafana dashboards + native alerting as ConfigMaps the Grafana sidecar
   # discovers. Source files live in charts/monitoring/files/ so Helm can bundle

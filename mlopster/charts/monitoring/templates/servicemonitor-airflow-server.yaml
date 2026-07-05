@@ -5,19 +5,19 @@
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: minio
-  # Lives in the monitoring namespace; selects Services in the app namespace.
+  name: airflow
+  # Lives in the orchestration namespace; selects Services in the app namespace.
   labels:
     {{- include "monitoring.crdLabels" . | nindent 4 }}
 spec:
   namespaceSelector:
     matchNames:
-      - {{ .Values.app.minio.namespace }}
+      - {{ .Values.app.airflow.namespace }}
   selector:
     matchLabels:
-      {{ .Values.app.minio.serviceSelectorLabel }}: {{ .Values.app.minio.serviceSelectorValue }}
+      {{- toYaml .Values.app.airflow.matchLabels | nindent 6 }}
   endpoints:
-    - port: {{ .Values.app.minio.metricsPort }}
-      path: {{ .Values.app.minio.metricsPath }}
+    - port: {{ .Values.app.airflow.metricsPort }}
+      path: {{ .Values.app.airflow.metricsPath }}
       interval: 30s
       scrapeTimeout: 10s

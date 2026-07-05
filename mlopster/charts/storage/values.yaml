@@ -45,10 +45,13 @@ minio:
     enabled: false
 
   # Expose MinIO metrics to Prometheus. The monitoring chart can scrape this
-  # via a ServiceMonitor (TODO in TASKS.md section 1).
+  # via a ServiceMonitor (TODO in TASKS.md section 1). ✅
   metrics:
     serviceMonitor:
       enabled: true  # enable once kube-prometheus-stack is installed
+      additionalLabels:
+        release: monitoring
+      public: true
 
 # ---------------------------------------------------------------------------
 # Consumed by this chart's own templates.

@@ -69,15 +69,15 @@ The scaffold demonstrates the CRD-first approach but you should know all of them
 - [x] Set `retention` / `retentionSize` sensibly for local vs prod.
 - [x] **Task:** read about Thanos / remote-write for long-term storage and
       note the migration path (don't implement yet).
-- [ ] **Task:** add a `ServiceMonitor` for MinIO and one for Airflow's
+- [x] **Task:** add a `ServiceMonitor` for MinIO and one for Airflow's
       statsd/metrics exporter so the whole platform is observable.
 
 ### Alerting (Prometheus/Alertmanager side)
 
-- [~] `PrometheusRule` with `ModelServerDown`, `ModelServerHighErrorRate`,
+- [x] `PrometheusRule` with `ModelServerDown`, `ModelServerHighErrorRate`,
       `ModelServerHighLatency` is scaffolded — verify the exprs match the
       metric names your app actually exposes.
-- [ ] Wire a real Alertmanager receiver (Slack/email/webhook) in
+- [x] Wire a real Alertmanager receiver (Slack/email/webhook) in
       `charts/monitoring/values.yaml` → `alertmanager.config`. Keep the secret
       bits out of git (see Admin track).
 
