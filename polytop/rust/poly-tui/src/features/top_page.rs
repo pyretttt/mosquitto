@@ -9,6 +9,7 @@ use crate::pair::Pair;
 use crate::features::app::Action;
 use crate::event::Event;
 use crate::env::Env;
+pub use crate::top_controller::Market;
 
 static TOP_PAGE_TITLE: &str = "Polytop";
 
@@ -53,18 +54,6 @@ pub struct MarketsPane {
     pub filter: String,
     pub markets: Vec<Market>,
     pub table_state: TableState,
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct Market {
-    pub title: String,
-    pub slug: String,
-    pub bookmarked: bool,
-    pub yes_market_price: f64,
-    pub no_market_price: f64,
-    pub volume24h: f64,
-    pub movement: f64,
-    pub spread: f64,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -190,7 +179,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                         );
                     },
                     Err(err) => {
-                        log::error!("MarketsRequestFailed: {:?}", err);
+                        log::error!(target: "app", "[TopPage] MarketsRequestFailed: {:?}", err);
                         _ = sender.send(TopPageAction::MarketsRequestFinished(Err(TopPageError::MarketsRequestFailed)).into());
                     }
                 }

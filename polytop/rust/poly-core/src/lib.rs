@@ -1,3 +1,3 @@
-pub mod api;
+pub mod client;
 
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

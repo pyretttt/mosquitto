@@ -8,7 +8,7 @@ use crate::event::{Event};
 use crate::features::loading_page::{LoadingPage, LoadingPageAction, loading_page_reducer};
 use crate::features::command::{CommandPallette, Command};
 use crate::features::top_page::{TopPage, TopPageAction, top_page_reducer};
-use crate::features::log_page::{LogPage, log_page_reducer};
+use crate::features::log_page::{LogPage};
 
 #[derive(Clone, Debug)]
 pub struct AppState {
@@ -111,10 +111,18 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
         }
         Event::Crossterm(crossterm_event) => {
             if let crossterm::event::Event::Key(key_event) = crossterm_event {
-                if let Page::Top(ref mut top_page) = app_state.page {
-                    if top_page.key_input_middleware(key_event, env) {
-                        return;
+                match &mut app_state.page {
+                    Page::Log(log_page) => {
+                        if log_page.key_input_middleware(key_event, env) {
+                            return;
+                        }
+                    },
+                    Page::Top(top_page) => {
+                        if top_page.key_input_middleware(key_event, env) {
+                            return;
+                        }
                     }
+                    _ => ()
                 }
                 if let Some(command_pallette) = &mut app_state.command_pallette {
                     if command_pallette.command_pallete_key_input_middleware(key_event, env) {

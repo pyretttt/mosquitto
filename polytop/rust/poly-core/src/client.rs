@@ -10,6 +10,10 @@ pub struct PolymarketClient {
     clob_client: ClobClient,
 }
 
+#[derive(Debug)]
+pub struct PolyError(pub Error);
+
+
 impl Default for PolymarketClient {
     fn default() -> Self {
         Self {
@@ -19,7 +23,8 @@ impl Default for PolymarketClient {
 }
 
 impl PolymarketClient {
-    pub async fn markets(&self, next_cursor: Option<String>) -> Result<Page<MarketResponse>, Error> {
+    pub async fn markets(&self, next_cursor: Option<String>) -> Result<Page<MarketResponse>, PolyError> {
         self.clob_client.markets(next_cursor).await
+            .map_err(PolyError)
     }
 }

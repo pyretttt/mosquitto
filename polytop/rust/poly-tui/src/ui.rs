@@ -71,7 +71,7 @@ fn pubu_logo_color(logo_color_index: usize) -> Color {
     PUBU_LOGO_COLORS[mirrored_index]
 }
 
-fn draw_intro_page(frame: &mut Frame, state: &AppState, intro: &IntroPage) {
+fn draw_intro_page(frame: &mut Frame, _state: &AppState, _intro: &IntroPage) {
     let [title_area, text_area, counter_area, help_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(1),

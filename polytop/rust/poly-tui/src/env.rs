@@ -6,7 +6,7 @@ use tokio::task::JoinHandle;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use rand::RngExt;
-use poly_core::api::PolymarketClient;
+use poly_core::client::PolymarketClient;
 
 use crate::event::Event;
 use crate::config::{get_config, Config};
