@@ -190,7 +190,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                         );
                     },
                     Err(err) => {
-                        println!("MarketsRequestFailed: {:?}", err);
+                        log::error!("MarketsRequestFailed: {:?}", err);
                         _ = sender.send(TopPageAction::MarketsRequestFinished(Err(TopPageError::MarketsRequestFailed)).into());
                     }
                 }
