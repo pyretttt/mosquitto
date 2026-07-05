@@ -1,0 +1,23 @@
+# ServiceMonitor: tells the Prometheus Operator to scrape the model server.
+# This is the CRD-first way to register a scrape target (vs editing
+# prometheus.yml or using additionalScrapeConfigs). The operator finds this
+# because of the `release` label below matching the Prometheus instance.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: minio
+  # Lives in the monitoring namespace; selects Services in the app namespace.
+  labels:
+    {{- include "monitoring.crdLabels" . | nindent 4 }}
+spec:
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.app.minio.namespace }}
+  selector:
+    matchLabels:
+      {{ .Values.app.minio.serviceSelectorLabel }}: {{ .Values.app.minio.serviceSelectorValue }}
+  endpoints:
+    - port: {{ .Values.app.minio.metricsPort }}
+      path: {{ .Values.app.minio.metricsPath }}
+      interval: 30s
+      scrapeTimeout: 10s

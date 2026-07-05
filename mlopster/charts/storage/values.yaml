@@ -48,7 +48,7 @@ minio:
   # via a ServiceMonitor (TODO in TASKS.md section 1).
   metrics:
     serviceMonitor:
-      enabled: false  # enable once kube-prometheus-stack is installed
+      enabled: true  # enable once kube-prometheus-stack is installed
 
 # ---------------------------------------------------------------------------
 # Consumed by this chart's own templates.

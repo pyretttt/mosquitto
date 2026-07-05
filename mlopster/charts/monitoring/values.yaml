@@ -21,8 +21,8 @@ kube-prometheus-stack:
       ruleSelectorNilUsesHelmValues: true
       probeSelectorNilUsesHelmValues: true
 
-      retention: 15d
-      retentionSize: 8GB
+      retention: 10d
+      retentionSize: 24GB
       scrapeInterval: 30s
       evaluationInterval: 30s
 
@@ -40,7 +40,7 @@ kube-prometheus-stack:
       resources:
         requests:
           cpu: 250m
-          memory: 1Gi
+          memory: 2Gi
         limits:
           memory: 2Gi
 
@@ -52,7 +52,7 @@ kube-prometheus-stack:
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 20Gi
+                storage: 30Gi
 
       # TODO(you): for long-term storage, look at remote-write / Thanos here.
       # additionalScrapeConfigs / additionalScrapeConfigsSecret also live under
@@ -213,6 +213,15 @@ app:
     serviceSelectorValue: model-server
     metricsPort: http
     metricsPath: /metrics
+
+  minio:
+    # Where the model server runs (so the ServiceMonitor can find it).
+    namespace: storage
+    serviceSelectorLabel: app
+    serviceSelectorValue: minio
+    metricsPort: http
+    metricsPath: /metrics
+
 
   # Namespaced AlertmanagerConfig CRD (off by default — see the template).
   alertmanagerConfig:

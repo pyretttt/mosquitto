@@ -64,10 +64,10 @@ The scaffold demonstrates the CRD-first approach but you should know all of them
 
 ### Storage, retention, HA
 
-- [~] Persistent storage for Prometheus TSDB + Alertmanager (volumeClaimTemplate
+- [x] Persistent storage for Prometheus TSDB + Alertmanager (volumeClaimTemplate
       is scaffolded; pick sizes per env).
-- [ ] Set `retention` / `retentionSize` sensibly for local vs prod.
-- [ ] **Task:** read about Thanos / remote-write for long-term storage and
+- [x] Set `retention` / `retentionSize` sensibly for local vs prod.
+- [x] **Task:** read about Thanos / remote-write for long-term storage and
       note the migration path (don't implement yet).
 - [ ] **Task:** add a `ServiceMonitor` for MinIO and one for Airflow's
       statsd/metrics exporter so the whole platform is observable.
