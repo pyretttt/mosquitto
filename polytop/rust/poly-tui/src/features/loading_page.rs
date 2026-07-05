@@ -79,8 +79,8 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
             tokio::spawn(async move {
                 tokio::time::sleep(Duration::from_millis(300)).await;
                 _ = sender.send(
-                    Action::OpenPage(
-                        Page::Top(TopPage::mock_data())
+                    Action::OpenTopPage(
+                        TopPage::mock_data()
                     ).into()
                 );
                 _ = sender.send(

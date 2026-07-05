@@ -8,6 +8,7 @@ static COMMANDS: &'static [Command] = &[
     Command::Help,
     Command::Quit,
     Command::Intro,
+    Command::Log,
 ];
 
 #[derive(Clone, Debug)]
@@ -67,6 +68,7 @@ pub enum Command {
     Help,
     Quit,
     Intro,
+    Log
 }
 
 impl Command {
@@ -75,6 +77,7 @@ impl Command {
             Command::Help => "Show help",
             Command::Quit => "Quit the application",
             Command::Intro => "Show intro",
+            Command::Log => "Show logs",
         }
     }
 
@@ -83,6 +86,7 @@ impl Command {
             Command::Help => "help",
             Command::Quit => "quit",
             Command::Intro => "intro",
+            Command::Log => "log",
         }
     }
 }
@@ -95,6 +99,7 @@ impl TryFrom<&str> for Command {
             val if val == Command::Help.name() => Ok(Command::Help),
             val if val == Command::Quit.name() => Ok(Command::Quit),
             val if val == Command::Intro.name() => Ok(Command::Intro),
+            val if val == Command::Log.name() => Ok(Command::Log),
             _ => Err(()),
         }
     }

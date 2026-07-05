@@ -8,6 +8,7 @@ use crate::event::{Event};
 use crate::features::loading_page::{LoadingPage, LoadingPageAction, loading_page_reducer};
 use crate::features::command::{CommandPallette, Command};
 use crate::features::top_page::{TopPage, TopPageAction, top_page_reducer};
+use crate::features::log_page::{LogPage, log_page_reducer};
 
 #[derive(Clone, Debug)]
 pub struct AppState {
@@ -23,6 +24,7 @@ pub enum Page {
     LoadingPage(LoadingPage),
     Top(TopPage),
     Help(HelpPage),
+    Log(LogPage),
 }
 
 #[derive(Clone, Debug)]
@@ -41,7 +43,8 @@ pub enum Action {
     CommandSent(Command),
     LoadingPage(LoadingPageAction),
     TopPage(TopPageAction),
-    OpenPage(Page),
+    OpenTopPage(TopPage),
+    OpenLogPage,
     Quit,
 }
 
@@ -66,9 +69,13 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
                 },
                 Command::Quit => app_state.running = false,
                 Command::Intro => {
-                    app_state.page = Page::Intro(IntroPage { });
+                    app_state.page = Page::Intro(IntroPage {});
+                },
+                Command::Log => {
+                    app_state.page = Page::Log(LogPage::new());
                 },
             }
+            app_state.command_pallette = None;
         },
         Action::Next(_) => (),
         Action::Quit => app_state.running = false,
@@ -79,8 +86,11 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
                 assert!(false, "Action dispatched to non-loading page");
             }
         },
-        Action::OpenPage(page) => {
-            app_state.page = page.clone();
+        Action::OpenTopPage(page) => {
+            app_state.page = Page::Top(std::mem::take(page));
+        },
+        Action::OpenLogPage => {
+            app_state.page = Page::Log(LogPage::new());
         },
         Action::TopPage(action) => {
             if let Page::Top(ref mut top_page) = app_state.page {

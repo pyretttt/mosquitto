@@ -18,6 +18,7 @@ use crate::features::loading_page::LoadingPage;
 use crate::env::Env;
 use crate::ui_components::command_popup::draw_command_popup;
 use crate::ui_components::top_page_ui::top_page_ui;
+use crate::ui_components::log_page_ui::draw_log_page;
 
 const POLYTOP_LOGO: [&str; 6] = [
     "██████╗  ██████╗ ██╗  ██╗   ██╗████████╗ ██████╗ ██████╗ ",
@@ -54,6 +55,7 @@ fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
         Page::Top(top) => top_page_ui(frame, state, top, env),
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
         Page::Help(_) => (),
+        Page::Log(log) => draw_log_page(frame, log),
     }
 
     if let Some(command_pallette) = &state.command_pallette {

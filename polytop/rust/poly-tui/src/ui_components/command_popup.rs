@@ -10,7 +10,6 @@ use crate::features::command::{Command, CommandPallette, TextAreaState};
 
 const FOCUS_COLOR: Color = Color::Rgb(0x68, 0x78, 0xF8);
 
-
 pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette) {
     let area = popup_area(frame.area());
     let [commands_area, input_area] =
