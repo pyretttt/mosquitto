@@ -31,6 +31,8 @@ This week is about *first principles* of transport: how do you build reliability
 2. Add 10% packet loss on h2's interface:
    ```bash
    sudo ip netns exec h2 tc qdisc add dev veth-h2 root netem loss 10%
+   sudo ip netns exec h2 tc qdisc del dev veth-h2 root 2>/dev/null
+   sudo ip netns exec h1 tc qdisc add dev veth-h1 root netem loss 10%
    ```
 3. Run a UDP echo and observe:
    ```bash
