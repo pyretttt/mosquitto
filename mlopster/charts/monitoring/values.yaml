@@ -115,7 +115,11 @@ kube-prometheus-stack:
 
     # SECURITY: do NOT keep a real password here. For prod, set
     # admin.existingSecret + userKey/passwordKey and create the secret out of band.
-    adminPassword: "admin"  # TODO(you): replace with admin.existingSecret. See TASKS.md section 2.
+    # adminPassword: "admin"  # TODO(you): replace with admin.existingSecret. See TASKS.md section 2.
+    admin:
+      existingSecret: grafana-admin-secret
+      passwordKey: password
+      userKey: user
 
     persistence:
       enabled: true

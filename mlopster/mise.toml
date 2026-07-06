@@ -25,6 +25,22 @@ NS_APP = "model-server"
 IMAGE_REGISTRY = "${CLUSTER_NAME}-registry"
 REGISTRY_PORT = 50001
 
+[tasks.grafana-secret]
+description = "creates grafana admin secret out of band"
+run = """
+PASSWORD=$(openssl rand -base64 32)
+kubectl create secret -n $NS_MONITORING generic grafana-admin-secret \
+  --from-literal=password="$PASSWORD" \
+  --from-literal=user="admin"
+"""
+
+[tasks.grafana-creds]
+description = "creates grafana admin secret out of band"
+run = """
+echo "User: $(kubectl get secret -n ${NS_MONITORING} grafana-admin-secret -o jsonpath='{.data.user}' | base64 --decode)"
+echo "Password: $(kubectl get secret -n ${NS_MONITORING} grafana-admin-secret -o jsonpath='{.data.password}' | base64 --decode)"
+"""
+
 [tasks.bootstrap-k3d]
 description = "Bootstrap K3d cluster"
 run = [
@@ -32,6 +48,7 @@ run = [
   { task = "repos" },
   { task = "deps" },
   { task = "update-model-server" },
+  { task = "grafana-secret" },
   { task = "up-local" },
 ]
 

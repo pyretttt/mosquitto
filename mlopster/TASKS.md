@@ -91,9 +91,11 @@ datasources / alerting from files in `grafana/`.
 
 ### Persistence
 
-- [~] `grafana.persistence.enabled: true` with a PVC (scaffolded).
-- [ ] Decide: PVC (simple) vs an external DB (`grafana.ini` → `[database]`,
+- [x] `grafana.persistence.enabled: true` with a PVC (scaffolded).
+- [x] Decide: PVC (simple) vs an external DB (`grafana.ini` → `[database]`,
       Postgres) for HA. Note the tradeoff. For >1 replica you need the DB.
+
+PVC for now
 
 ### Security
 
