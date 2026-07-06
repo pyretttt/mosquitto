@@ -10,7 +10,10 @@ use crate::features::app::Action;
 use crate::event::Event;
 use crate::env::Env;
 pub use crate::top_page_service::Market;
-use crate::top_page_service::{TopPageSvc, MarketsData, SelectedMarket, ChartActivity};
+use crate::top_page_service::{
+    ActivityEntry, ActivityKind, ChartActivity,
+    MarketsData, SelectedMarket, TopPageSvc,
+};
 
 static TOP_PAGE_TITLE: &str = "Polytop";
 
@@ -75,7 +78,7 @@ pub struct CommandPopup {
 
 #[derive(Clone, Debug)]
 pub struct MarketLoadResult {
-    pub markets: MarketsData,
+    pub markets_data: MarketsData,
     pub session: String,
 }
 
@@ -105,7 +108,6 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
         },
         TopPageAction::MarketsLoadRequested => {
             if top_page.markets_load_session.is_some() { return; }
-
             let current_session = (env.gen_token)();
             top_page.is_loading = true;
             top_page.markets_load_session = Some(current_session.clone());
@@ -117,7 +119,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                     Ok(markets) => {
                         _ = sender.send(
                             TopPageAction::MarketsRequestFinished(
-                                Ok(MarketLoadResult { markets: markets, session: current_session } )
+                                Ok(MarketLoadResult { markets_data: markets, session: current_session } )
                             ).into()
                         );
                     },
@@ -132,7 +134,8 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             match result {
                 Ok(load_result) => {
                     if let Some(ref session) = top_page.markets_load_session && load_result.session.eq(session) {
-                        top_page.markets_pane.markets_data = mem::take(&mut load_result.markets);
+                        load_result.markets_data.markets = load_result.markets_data.markets.
+                        top_page.markets_pane.markets_data = mem::take(&mut load_result.markets_data);
                     }
                 },
                 Err(_) => {
@@ -149,6 +152,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                     });
                 }
             }
+            top_page.markets_load_session = None;
             top_page.is_loading = false;
         },
         TopPageAction::HideErrorMsg { token } => {
@@ -172,6 +176,7 @@ impl TopPage {
                     self.markets_pane.table_state.select_next();
                     let count = self.markets_pane.markets_data.markets.len();
                     if self.markets_pane.table_state.selected().map_or(false, |idx| idx >= count - 1) {
+                        log::info!(target: "app", "TopPage: Loading more markets");
                         _ = env.sender.send(TopPageAction::MarketsLoadRequested.into());
                     }
                 } else if x == 'k' && selected_idx > 0 {
@@ -203,140 +208,147 @@ impl TopPage {
             markets_pane: MarketsPane {
                 title: "Top Markets",
                 filter: "all".into(),
-                markets_data: vec![
-                    Market {
-                        title: "Will BTC hit 100k in 2026?".to_owned(),
-                        slug: "btc-100k-2026".into(),
-                        bookmarked: true,
-                        yes_market_price: 63.0,
-                        no_market_price: 38.0,
-                        volume24h: 842_000.0,
-                        movement: 4.0,
-                        spread: 2.0,
-                    },
-                    Market {
-                        title: "Fed cuts rates by Sep?".to_owned(),
-                        slug: "fed-cuts-sep".into(),
-                        bookmarked: false,
-                        yes_market_price: 41.0,
-                        no_market_price: 60.0,
-                        volume24h: 611_000.0,
-                        movement: -2.0,
-                        spread: 3.0,
-                    },
-                    Market {
-                        title: "Lakers win tonight?".to_owned(),
-                        slug: "lakers-win-tonight".into(),
-                        bookmarked: false,
-                        yes_market_price: 55.0,
-                        no_market_price: 46.0,
-                        volume24h: 570_000.0,
-                        movement: 1.0,
-                        spread: 2.0,
-                    },
-                    Market {
-                        title: "ETH ETF inflows above $1B?".to_owned(),
-                        slug: "eth-etf-inflows-1b".into(),
-                        bookmarked: false,
-                        yes_market_price: 72.0,
-                        no_market_price: 29.0,
-                        volume24h: 510_000.0,
-                        movement: 6.0,
-                        spread: 4.0,
-                    },
-                    Market {
-                        title: "Trump wins popular vote?".to_owned(),
-                        slug: "trump-popular-vote".into(),
-                        bookmarked: true,
-                        yes_market_price: 49.0,
-                        no_market_price: 52.0,
-                        volume24h: 421_000.0,
-                        movement: -1.0,
-                        spread: 2.0,
-                    },
-                    Market {
-                        title: "CPI below forecast?".to_owned(),
-                        slug: "cpi-below-forecast".into(),
-                        bookmarked: false,
-                        yes_market_price: 36.0,
-                        no_market_price: 65.0,
-                        volume24h: 390_000.0,
-                        movement: -5.0,
-                        spread: 5.0,
-                    },
-                    Market {
-                        title: "SpaceX launch this week?".to_owned(),
-                        slug: "spacex-launch-week".into(),
-                        bookmarked: false,
-                        yes_market_price: 83.0,
-                        no_market_price: 18.0,
-                        volume24h: 311_000.0,
-                        movement: 8.0,
-                        spread: 3.0,
-                    },
-                    Market {
-                        title: "Oil closes above $90?".to_owned(),
-                        slug: "oil-above-90".into(),
-                        bookmarked: false,
-                        yes_market_price: 22.0,
-                        no_market_price: 79.0,
-                        volume24h: 280_000.0,
-                        movement: -3.0,
-                        spread: 4.0,
-                    },
-                ],
+                markets_data: MarketsData {
+                    markets: vec![
+                        Market {
+                            title: "Will BTC hit 100k in 2026?".to_owned(),
+                            slug: "btc-100k-2026".into(),
+                            bookmarked: true,
+                            yes_market_price: 63.0,
+                            no_market_price: 38.0,
+                            volume24h: 842_000.0,
+                            movement24h: 4.0,
+                            spread: 2.0,
+                        },
+                        Market {
+                            title: "Fed cuts rates by Sep?".to_owned(),
+                            slug: "fed-cuts-sep".into(),
+                            bookmarked: false,
+                            yes_market_price: 41.0,
+                            no_market_price: 60.0,
+                            volume24h: 611_000.0,
+                            movement24h: -2.0,
+                            spread: 3.0,
+                        },
+                        Market {
+                            title: "Lakers win tonight?".to_owned(),
+                            slug: "lakers-win-tonight".into(),
+                            bookmarked: false,
+                            yes_market_price: 55.0,
+                            no_market_price: 46.0,
+                            volume24h: 570_000.0,
+                            movement24h: 1.0,
+                            spread: 2.0,
+                        },
+                        Market {
+                            title: "ETH ETF inflows above $1B?".to_owned(),
+                            slug: "eth-etf-inflows-1b".into(),
+                            bookmarked: false,
+                            yes_market_price: 72.0,
+                            no_market_price: 29.0,
+                            volume24h: 510_000.0,
+                            movement24h: 6.0,
+                            spread: 4.0,
+                        },
+                        Market {
+                            title: "Trump wins popular vote?".to_owned(),
+                            slug: "trump-popular-vote".into(),
+                            bookmarked: true,
+                            yes_market_price: 49.0,
+                            no_market_price: 52.0,
+                            volume24h: 421_000.0,
+                            movement24h: -1.0,
+                            spread: 2.0,
+                        },
+                        Market {
+                            title: "CPI below forecast?".to_owned(),
+                            slug: "cpi-below-forecast".into(),
+                            bookmarked: false,
+                            yes_market_price: 36.0,
+                            no_market_price: 65.0,
+                            volume24h: 390_000.0,
+                            movement24h: -5.0,
+                            spread: 5.0,
+                        },
+                        Market {
+                            title: "SpaceX launch this week?".to_owned(),
+                            slug: "spacex-launch-week".into(),
+                            bookmarked: false,
+                            yes_market_price: 83.0,
+                            no_market_price: 18.0,
+                            volume24h: 311_000.0,
+                            movement24h: 8.0,
+                            spread: 3.0,
+                        },
+                        Market {
+                            title: "Oil closes above $90?".to_owned(),
+                            slug: "oil-above-90".into(),
+                            bookmarked: false,
+                            yes_market_price: 22.0,
+                            no_market_price: 79.0,
+                            volume24h: 280_000.0,
+                            movement24h: -3.0,
+                            spread: 4.0,
+                        },
+                    ],
+                    next_cursor: 0,
+                },
                 table_state: TableState::default().with_selected(Some(0)),
             },
             selected_market_pane: MarketSummary {
                 title: "Will BTC hit 100k in 2026?",
-                slug: "btc-100k-2026".into(),
-                yes_market_price: 63.0,
-                no_market_price: 38.0,
-                yes_bid: 62.0,
-                yes_ask: 64.0,
-                no_bid: 37.0,
-                no_ask: 39.0,
-                spread: 2.0,
-                volume24h: 842_100.0,
-                liquidity: 184_300.0,
-                open_interest: 2_400_000.0,
-                end_date: "2026-12-31".into(),
+                selected_market: SelectedMarket {
+                    slug: "btc-100k-2026".into(),
+                    yes_market_price: 63.0,
+                    no_market_price: 38.0,
+                    yes_bid: 62.0,
+                    yes_ask: 64.0,
+                    no_bid: 37.0,
+                    no_ask: 39.0,
+                    spread: 2.0,
+                    volume24h: 842_100.0,
+                    liquidity: 184_300.0,
+                    open_interest: 2_400_000.0,
+                    end_date: "2026-12-31".into(),
+                },
             },
             chart_activity_pane: ChartActivityPane {
                 title: "Chart + Activity",
-                chart_lines: vec![
-                    " 70¢ ┤                     ╭╮".into(),
-                    " 65¢ ┤              ╭──────╯╰─╮".into(),
-                    " 60¢ ┤      ╭───────╯         ╰╮".into(),
-                    " 55¢ ┤ ╭────╯                  ╰─".into(),
-                    "     └────────────────────────────".into(),
-                ],
-                activities: vec![
-                    ActivityEntry {
-                        time: "17:42".into(),
-                        label: "price".into(),
-                        value: "+4¢".into(),
-                        kind: ActivityKind::Positive,
-                    },
-                    ActivityEntry {
-                        time: "17:41".into(),
-                        label: "best bid".into(),
-                        value: "62¢".into(),
-                        kind: ActivityKind::Accent,
-                    },
-                    ActivityEntry {
-                        time: "17:40".into(),
-                        label: "trade".into(),
-                        value: "219 @45¢".into(),
-                        kind: ActivityKind::Warning,
-                    },
-                    ActivityEntry {
-                        time: "17:39".into(),
-                        label: "spread".into(),
-                        value: "2¢".into(),
-                        kind: ActivityKind::Muted,
-                    },
-                ],
+                chart_activity: ChartActivity {
+                    chart_lines: vec![
+                        " 70¢ ┤                     ╭╮".into(),
+                        " 65¢ ┤              ╭──────╯╰─╮".into(),
+                        " 60¢ ┤      ╭───────╯         ╰╮".into(),
+                        " 55¢ ┤ ╭────╯                  ╰─".into(),
+                        "     └────────────────────────────".into(),
+                    ],
+                    activities: vec![
+                        ActivityEntry {
+                            time: "17:42".into(),
+                            label: "price".into(),
+                            value: "+4¢".into(),
+                            kind: ActivityKind::Positive,
+                        },
+                        ActivityEntry {
+                            time: "17:41".into(),
+                            label: "best bid".into(),
+                            value: "62¢".into(),
+                            kind: ActivityKind::Accent,
+                        },
+                        ActivityEntry {
+                            time: "17:40".into(),
+                            label: "trade".into(),
+                            value: "219 @45¢".into(),
+                            kind: ActivityKind::Warning,
+                        },
+                        ActivityEntry {
+                            time: "17:39".into(),
+                            label: "spread".into(),
+                            value: "2¢".into(),
+                            kind: ActivityKind::Muted,
+                        },
+                    ],
+                },
             },
             command_popup: CommandPopup {
                 filter: "politics volume>100k".into(),

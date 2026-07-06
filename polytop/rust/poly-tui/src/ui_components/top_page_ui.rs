@@ -286,7 +286,7 @@ fn render_command_popup(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 
 fn market_row<'a>(rank: usize, market: &'a Market, is_selected: bool) -> Row<'a> {
     let bookmark = if market.bookmarked { "★" } else { "" };
-    let movement = format_movement(market.movement);
+    let movement = format_movement(market.movement24h);
     let move_color = movement_color(&movement);
 
     Row::new([

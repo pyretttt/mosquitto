@@ -1,9 +1,11 @@
 use poly_core::client::{PolymarketClient, PolyError};
 
+const MARKETS_PER_PAGE: i32 = 20;
+
 pub trait TopPageSvc: Send + Sync + Clone {
     fn load_markets(
         &self,
-        next_cursor: Option<String>
+        next_cursor: i32
     ) -> impl Future<Output = Result<MarketsData, PolyError>> + Send;
 }
 
@@ -23,36 +25,33 @@ impl TopPageService {
 impl TopPageSvc for TopPageService {
     async fn load_markets(
         &self,
-        next_cursor: Option<String>
+        next_cursor: i32
     ) -> Result<MarketsData, PolyError> {
-        let markets = self.client.markets(next_cursor).await?;
-        let markets_data =markets.data.into_iter().map(|market| {
-            let token_price = |outcome: &str| {
-                market.tokens
-                    .iter()
-                    .find(|token| token.outcome.eq_ignore_ascii_case(outcome))
-                    .and_then(|token| token.price.to_string().parse::<f64>().ok())
-                    .map(|price| price * 100.0)
-                    .unwrap_or_default()
+        let markets = self.client.markets(MARKETS_PER_PAGE, next_cursor).await?;
+        let markets_data = markets.into_iter().filter_map(|market| {
+            let prices = market.outcome_prices?.clone();
+            let (yes_market_price, no_market_price) = if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "yes" {
+                (prices.get(0)?, prices.get(1)?)
+            } else if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "no" {
+                (prices.get(1)?, prices.get(0)?)
+            } else {
+                log::error!(target: "app", "Unexpected outcome: {:?} for market {:?}", market.outcomes, market.slug);
+                return None;
             };
-            let yes_market_price = token_price("Yes");
-            let no_market_price = token_price("No");
-
-            Market {
-                title: market.question,
-                slug: market.market_slug,
+            Some(Market {
+                title: market.question?.clone(),
+                slug: market.slug?.clone(),
                 bookmarked: false,
-                yes_market_price,
-                no_market_price,
-                volume24h: 0.0,
-                movement: 0.0,
-                spread: 0.0,
-            }
+                yes_market_price: yes_market_price.as_f64(),
+                no_market_price: no_market_price.as_f64(),
+                volume24h: market.volume_24hr?.as_f64(),
+                movement24h: market.one_day_price_change?.as_f64(),
+                spread: market.spread?.as_f64(),
+            })
         });
-        let next_cursor = markets.next_cursor.clone();
         Ok(MarketsData {
             markets: markets_data.collect(),
-            next_cursor: Some(next_cursor),
+            next_cursor: next_cursor + MARKETS_PER_PAGE,
         })
     }
 }
@@ -68,7 +67,7 @@ pub struct State {
 #[derive(Clone, Debug, Default)]
 pub struct MarketsData {
     pub markets: Vec<Market>,
-    pub next_cursor: Option<String>,
+    pub next_cursor: i32,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -79,7 +78,7 @@ pub struct Market {
     pub yes_market_price: f64,
     pub no_market_price: f64,
     pub volume24h: f64,
-    pub movement: f64,
+    pub movement24h: f64,
     pub spread: f64,
 }
 
