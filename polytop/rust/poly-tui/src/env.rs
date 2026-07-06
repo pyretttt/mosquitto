@@ -10,6 +10,7 @@ use poly_core::client::PolymarketClient;
 
 use crate::event::Event;
 use crate::config::{get_config, Config};
+use crate::top_page_service::TopPageService;
 
 #[derive(Clone, Debug)]
 pub struct SleepFn {}
@@ -34,11 +35,14 @@ pub struct Env {
     pub rng: Box<dyn Fn(Option<Range<f32>>) -> f32 + 'static + Send + Sync>,
     pub polymarket_client: PolymarketClient,
     pub sleep: SleepFn,
+    pub top_page_svc: TopPageService,
 }
 
 impl Env {
     pub fn new() -> Self {
         let (sender, receiver) = mpsc::unbounded_channel::<Event>();
+
+        let polymarket_client = PolymarketClient::default();
         Self {
             sender,
             receiver,
@@ -46,7 +50,8 @@ impl Env {
             gen_token: Box::new(|| Uuid::new_v4().to_string()),
             rng: Box::new(|range| rand::rng().random_range(range.unwrap_or(0.0..1.0))),
             polymarket_client: PolymarketClient::default(),
-            sleep: SleepFn::default()
+            sleep: SleepFn::default(),
+            top_page_svc: TopPageService::new(polymarket_client),
         }
     }
 

@@ -6,7 +6,8 @@ use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row
 
 use crate::env::Env;
 use crate::features::app::AppState;
-use crate::features::top_page::{ActivityKind, Market, TopPage};
+use crate::features::top_page::{Market, TopPage};
+use crate::top_page_service::ActivityKind;
 
 const BG: Color = Color::Black;
 const BORDER: Color = Color::Rgb(0x33, 0x41, 0x55);
@@ -110,6 +111,7 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 
     let selected_index = top_page.markets_pane.table_state.selected();
     let rows = top_page.markets_pane
+        .markets_data
         .markets
         .iter()
         .enumerate()
@@ -120,7 +122,7 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             )
         );
 
-    let market_count = top_page.markets_pane.markets.len();
+    let market_count = top_page.markets_pane.markets_data.markets.len();
     let pane_title = format!(
         " [1] - {}: {} ",
         top_page.markets_pane.title, top_page.markets_pane.filter
@@ -169,7 +171,7 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         Line::from_iter([
             Span::styled("yes  ", Style::default().fg(POSITIVE).bg(BG)),
             Span::styled(
-                format_cents(top_page.selected_market_pane.yes_market_price),
+                format_cents(top_page.selected_market_pane.selected_market.yes_market_price),
                 Style::default()
                     .fg(POSITIVE)
                     .bg(BG)
@@ -178,9 +180,9 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             Span::styled(
                 format!(
                     "  bid {} / ask {}   spread {}",
-                    format_cents(top_page.selected_market_pane.yes_bid),
-                    format_cents(top_page.selected_market_pane.yes_ask),
-                    format_cents(top_page.selected_market_pane.spread)
+                    format_cents(top_page.selected_market_pane.selected_market.yes_bid),
+                    format_cents(top_page.selected_market_pane.selected_market.yes_ask),
+                    format_cents(top_page.selected_market_pane.selected_market.spread)
                 ),
                 Style::default().fg(MUTED).bg(BG),
             ),
@@ -188,7 +190,7 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         Line::from_iter([
             Span::styled("no   ", Style::default().fg(NEGATIVE).bg(BG)),
             Span::styled(
-                format_cents(top_page.selected_market_pane.no_market_price),
+                format_cents(top_page.selected_market_pane.selected_market.no_market_price),
                 Style::default()
                     .fg(NEGATIVE)
                     .bg(BG)
@@ -197,17 +199,17 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             Span::styled(
                 format!(
                     "  bid {} / ask {}",
-                    format_cents(top_page.selected_market_pane.no_bid),
-                    format_cents(top_page.selected_market_pane.no_ask)
+                    format_cents(top_page.selected_market_pane.selected_market.no_bid),
+                    format_cents(top_page.selected_market_pane.selected_market.no_ask)
                 ),
                 Style::default().fg(MUTED).bg(BG),
             ),
         ]),
         Line::from(""),
-        metric_line("volume 24h", &format_dollar_compact(top_page.selected_market_pane.volume24h)),
-        metric_line("liquidity", &format_dollar_compact(top_page.selected_market_pane.liquidity)),
-        metric_line("open interest", &format_dollar_compact(top_page.selected_market_pane.open_interest)),
-        metric_line("end date", &top_page.selected_market_pane.end_date),
+        metric_line("volume 24h", &format_dollar_compact(top_page.selected_market_pane.selected_market.volume24h)),
+        metric_line("liquidity", &format_dollar_compact(top_page.selected_market_pane.selected_market.liquidity)),
+        metric_line("open interest", &format_dollar_compact(top_page.selected_market_pane.selected_market.open_interest)),
+        metric_line("end date", &top_page.selected_market_pane.selected_market.end_date),
     ];
 
     frame.render_widget(
@@ -228,13 +230,14 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let chart = &top_page.chart_activity_pane;
     let mut lines: Vec<Line> = chart
+        .chart_activity
         .chart_lines
         .iter()
         .map(|line| Line::styled(line.as_str(), Style::default().fg(ACCENT).bg(BG)))
         .collect();
     lines.push(Line::from(""));
 
-    for activity in &chart.activities {
+    for activity in &chart.chart_activity.activities {
         lines.push(activity_line(
             &activity.time,
             &activity.label,

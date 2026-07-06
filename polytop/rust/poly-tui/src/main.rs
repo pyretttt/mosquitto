@@ -5,7 +5,7 @@ pub mod features;
 pub mod ui;
 pub mod ui_components;
 pub mod pair;
-pub mod top_controller;
+pub mod top_page_service;
 
 use env::Env;
 use features::app::{AppState};

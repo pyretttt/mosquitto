@@ -9,7 +9,8 @@ use crate::pair::Pair;
 use crate::features::app::Action;
 use crate::event::Event;
 use crate::env::Env;
-pub use crate::top_controller::Market;
+pub use crate::top_page_service::Market;
+use crate::top_page_service::{TopPageSvc, MarketsData, SelectedMarket, ChartActivity};
 
 static TOP_PAGE_TITLE: &str = "Polytop";
 
@@ -26,10 +27,7 @@ pub struct TopPage {
     pub selected_market_pane: MarketSummary,
     pub chart_activity_pane: ChartActivityPane,
     pub command_popup: CommandPopup,
-
-    pub markets_next_cursor: Option<String>,
     pub markets_load_session: Option<String>,
-
     pub is_loading: bool,
 }
 
@@ -52,50 +50,20 @@ pub struct StatusPane {
 pub struct MarketsPane {
     pub title: &'static str,
     pub filter: String,
-    pub markets: Vec<Market>,
+    pub markets_data: MarketsData,
     pub table_state: TableState,
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct MarketSummary {
     pub title: &'static str,
-    pub slug: String,
-    pub yes_market_price: f64,
-    pub no_market_price: f64,
-    pub yes_bid: f64,
-    pub yes_ask: f64,
-    pub no_bid: f64,
-    pub no_ask: f64,
-    pub spread: f64,
-    pub volume24h: f64,
-    pub liquidity: f64,
-    pub open_interest: f64,
-    pub end_date: String,
+    pub selected_market: SelectedMarket,
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct ChartActivityPane {
     pub title: &'static str,
-    pub chart_lines: Vec<String>,
-    pub activities: Vec<ActivityEntry>,
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct ActivityEntry {
-    pub time: String,
-    pub label: String,
-    pub value: String,
-    pub kind: ActivityKind,
-}
-
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
-pub enum ActivityKind {
-    #[default]
-    Muted,
-    Positive,
-    Negative,
-    Accent,
-    Warning,
+    pub chart_activity: ChartActivity,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -107,8 +75,7 @@ pub struct CommandPopup {
 
 #[derive(Clone, Debug)]
 pub struct MarketLoadResult {
-    pub markets: Vec<Market>,
-    pub next_cursor: String,
+    pub markets: MarketsData,
     pub session: String,
 }
 
@@ -143,38 +110,14 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             top_page.is_loading = true;
             top_page.markets_load_session = Some(current_session.clone());
             let sender: tokio::sync::mpsc::UnboundedSender<Event> = env.sender.clone();
-            let polymarket_client = env.polymarket_client.clone();
-            let markets_next_cursor = top_page.markets_next_cursor.clone();
+            let top_page_svc = env.top_page_svc.clone();
+            let markets_next_cursor = top_page.markets_pane.markets_data.next_cursor.clone();
             env.fire_and_forget(async move {
-                match polymarket_client.markets(markets_next_cursor).await {
+                match top_page_svc.load_markets(markets_next_cursor).await {
                     Ok(markets) => {
-                        let markets_data = markets.data.into_iter().map(|market| {
-                            let token_price = |outcome: &str| {
-                                market.tokens
-                                    .iter()
-                                    .find(|token| token.outcome.eq_ignore_ascii_case(outcome))
-                                    .and_then(|token| token.price.to_string().parse::<f64>().ok())
-                                    .map(|price| price * 100.0)
-                                    .unwrap_or_default()
-                            };
-                            let yes_market_price = token_price("Yes");
-                            let no_market_price = token_price("No");
-
-                            Market {
-                                title: market.question,
-                                slug: market.market_slug,
-                                bookmarked: false,
-                                yes_market_price,
-                                no_market_price,
-                                volume24h: 0.0,
-                                movement: 0.0,
-                                spread: 0.0,
-                            }
-                        });
-                        let next_cursor = markets.next_cursor.clone();
                         _ = sender.send(
                             TopPageAction::MarketsRequestFinished(
-                                Ok(MarketLoadResult { markets: markets_data.collect(), next_cursor, session: current_session } )
+                                Ok(MarketLoadResult { markets: markets, session: current_session } )
                             ).into()
                         );
                     },
@@ -189,8 +132,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             match result {
                 Ok(load_result) => {
                     if let Some(ref session) = top_page.markets_load_session && load_result.session.eq(session) {
-                        top_page.markets_pane.markets = mem::take(&mut load_result.markets);
-                        top_page.markets_next_cursor = Some(mem::take(&mut load_result.next_cursor));
+                        top_page.markets_pane.markets_data = mem::take(&mut load_result.markets);
                     }
                 },
                 Err(_) => {
@@ -226,9 +168,9 @@ impl TopPage {
             },
             KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
                 let selected_idx = self.markets_pane.table_state.selected().unwrap_or(0);
-                if x == 'j' && self.markets_pane.markets.len() > selected_idx + 1 {
+                if x == 'j' && self.markets_pane.markets_data.markets.len() > selected_idx + 1 {
                     self.markets_pane.table_state.select_next();
-                    let count = self.markets_pane.markets.len();
+                    let count = self.markets_pane.markets_data.markets.len();
                     if self.markets_pane.table_state.selected().map_or(false, |idx| idx >= count - 1) {
                         _ = env.sender.send(TopPageAction::MarketsLoadRequested.into());
                     }
@@ -261,7 +203,7 @@ impl TopPage {
             markets_pane: MarketsPane {
                 title: "Top Markets",
                 filter: "all".into(),
-                markets: vec![
+                markets_data: vec![
                     Market {
                         title: "Will BTC hit 100k in 2026?".to_owned(),
                         slug: "btc-100k-2026".into(),
@@ -402,7 +344,6 @@ impl TopPage {
                 mode: "NORMAL".into(),
             },
             error_msg: None,
-            markets_next_cursor: None,
             markets_load_session: None,
             is_loading: false,
         }
