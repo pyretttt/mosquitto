@@ -99,7 +99,7 @@ PVC for now
 
 ### Security
 
-- [ ] Move `adminPassword` out of values into a Secret
+- [x] Move `adminPassword` out of values into a Secret
       (`grafana.admin.existingSecret`). Generate it; never commit it.
 - [ ] Set `grafana.ini` security flags: `cookie_secure`, `disable_gravatar`,
       `[users] allow_sign_up = false`, and a real `root_url`.
