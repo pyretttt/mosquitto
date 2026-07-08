@@ -167,9 +167,18 @@ kube-prometheus-stack:
         label: grafana_alert
         labelValue: "1"
 
+    extraSecretMounts:
+        - name: grafana-tls
+          secretName: grafana-tls
+          mountPath: /cert
+          readOnly: true
+
     grafana.ini:
       server:
         root_url: "%(protocol)s://%(domain)s/"
+        # protocol: https
+        # cert_file: /cert/tls.crt
+        # cert_key: /cert/tls.key
       security:
         # TODO(you): set cookie_secure true behind TLS, and a real secret.
         disable_gravatar: true

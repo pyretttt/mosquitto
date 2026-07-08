@@ -29,9 +29,25 @@ REGISTRY_PORT = 50001
 description = "creates grafana admin secret out of band"
 run = """
 PASSWORD=$(openssl rand -base64 32)
+kubectl get namespace $NS_MONITORING >/dev/null 2>&1 || kubectl create namespace $NS_MONITORING
 kubectl create secret -n $NS_MONITORING generic grafana-admin-secret \
   --from-literal=password="$PASSWORD" \
   --from-literal=user="admin"
+"""
+
+[tasks.grafana-tls]
+description = "creates grafana admin secret out of band"
+run = """
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key \
+  -out tls.crt \
+  -subj "/CN=my-app.local" && \
+kubectl get namespace $NS_MONITORING >/dev/null 2>&1 || kubectl create namespace $NS_MONITORING
+kubectl create secret tls -n $NS_MONITORING grafana-tls \
+  --key=tls.key \
+  --cert=tls.crt
+
+rm tls.crt tls.key
 """
 
 [tasks.grafana-creds]
@@ -49,6 +65,7 @@ run = [
   { task = "deps" },
   { task = "update-model-server" },
   { task = "grafana-secret" },
+  { task = "grafana-tls" },
   { task = "up-local" },
 ]
 
