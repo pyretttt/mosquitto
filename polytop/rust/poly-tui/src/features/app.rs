@@ -83,7 +83,7 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             if let Page::LoadingPage(ref mut loading) = app_state.page {
                 loading_page_reducer(loading, action, env);
             } else {
-                assert!(false, "Action dispatched to non-loading page");
+                assert!(false, "Action dispatched to non-loading page {:?}", action);
             }
         },
         Action::OpenTopPage(page) => {
@@ -96,7 +96,7 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             if let Page::Top(ref mut top_page) = app_state.page {
                 top_page_reducer(top_page, &mut action.clone(), env);
             } else {
-                assert!(false, "Action dispatched to non-loading page");
+                assert!(false, "Action dispatched to non-loading page {:?}", action);
             }
         }
     }

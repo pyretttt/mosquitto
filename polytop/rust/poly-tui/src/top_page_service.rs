@@ -1,11 +1,12 @@
 use poly_core::client::{PolymarketClient, PolyError};
 
-const MARKETS_PER_PAGE: i32 = 20;
+const MARKETS_PER_PAGE: i32 = 1000;
 
 pub trait TopPageSvc: Send + Sync + Clone {
     fn load_markets(
         &self,
-        next_cursor: i32
+        next_cursor: i32,
+        prepend_markets: &[Market]
     ) -> impl Future<Output = Result<MarketsData, PolyError>> + Send;
 }
 
@@ -25,7 +26,8 @@ impl TopPageService {
 impl TopPageSvc for TopPageService {
     async fn load_markets(
         &self,
-        next_cursor: i32
+        next_cursor: i32,
+        prepend_markets: &[Market]
     ) -> Result<MarketsData, PolyError> {
         let markets = self.client.markets(MARKETS_PER_PAGE, next_cursor).await?;
         let markets_data = markets.into_iter().filter_map(|market| {
@@ -49,8 +51,9 @@ impl TopPageSvc for TopPageService {
                 spread: market.spread?.as_f64(),
             })
         });
+        let markets = prepend_markets.iter().cloned().chain(markets_data).collect::<Vec<_>>();
         Ok(MarketsData {
-            markets: markets_data.collect(),
+            markets: markets,
             next_cursor: next_cursor + MARKETS_PER_PAGE,
         })
     }

@@ -86,7 +86,7 @@ pub struct MarketLoadResult {
 pub enum TopPageAction {
     SelectPane(u32),
     MarketsLoadRequested,
-    MarketsRequestFinished(Result<MarketLoadResult, TopPageError>),
+    MarketsRegularRequestFinished(Result<MarketLoadResult, TopPageError>),
     HideErrorMsg { token: String },
 }
 
@@ -115,27 +115,28 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             let top_page_svc = env.top_page_svc.clone();
             let markets_next_cursor = top_page.markets_pane.markets_data.next_cursor.clone();
             env.fire_and_forget(async move {
-                match top_page_svc.load_markets(markets_next_cursor).await {
+                match top_page_svc.load_markets(markets_next_cursor, &[]).await {
                     Ok(markets) => {
                         _ = sender.send(
-                            TopPageAction::MarketsRequestFinished(
+                            TopPageAction::MarketsRegularRequestFinished(
                                 Ok(MarketLoadResult { markets_data: markets, session: current_session } )
                             ).into()
                         );
                     },
                     Err(err) => {
                         log::error!(target: "app", "[TopPage] MarketsRequestFailed: {:?}", err);
-                        _ = sender.send(TopPageAction::MarketsRequestFinished(Err(TopPageError::MarketsRequestFailed)).into());
+                        _ = sender.send(TopPageAction::MarketsRegularRequestFinished(Err(TopPageError::MarketsRequestFailed)).into());
                     }
                 }
             });
         },
-        TopPageAction::MarketsRequestFinished(result) => {
+        TopPageAction::MarketsRegularRequestFinished(result) => {
             match result {
                 Ok(load_result) => {
                     if let Some(ref session) = top_page.markets_load_session && load_result.session.eq(session) {
-                        load_result.markets_data.markets = load_result.markets_data.markets.
-                        top_page.markets_pane.markets_data = mem::take(&mut load_result.markets_data);
+                        top_page.markets_pane.markets_data.markets.append(&mut load_result.markets_data.markets);
+                        top_page.markets_pane.markets_data.next_cursor = load_result.markets_data.next_cursor;
+                        // top_page.markets_pane.markets_data = mem::take(&mut load_result.markets_data);
                     }
                 },
                 Err(_) => {
@@ -194,7 +195,7 @@ impl TopPage {
 // ================================================
 impl TopPage {
     pub fn mock_data() -> Self {
-        Self {
+        let mut data = Self {
             left_title: TOP_PAGE_TITLE,
             right_title: String::new(),
             current_pane: 1,
@@ -358,7 +359,10 @@ impl TopPage {
             error_msg: None,
             markets_load_session: None,
             is_loading: false,
-        }
+        };
+
+        data.markets_pane.markets_data.markets.reserve(100_000);
+        data
     }
 }
 
