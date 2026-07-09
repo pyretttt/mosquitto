@@ -1,6 +1,6 @@
 {
   "annotations": { "list": [] },
-  "editable": true,
+  "editable": false,
   "graphTooltip": 0,
   "title": "Model Server",
   "uid": "model-server",

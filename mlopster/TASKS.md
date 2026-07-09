@@ -101,10 +101,10 @@ PVC for now
 
 - [x] Move `adminPassword` out of values into a Secret
       (`grafana.admin.existingSecret`). Generate it; never commit it.
-- [ ] Set `grafana.ini` security flags: `cookie_secure`, `disable_gravatar`,
+- [x] Set `grafana.ini` security flags: `cookie_secure`, `disable_gravatar`,
       `[users] allow_sign_up = false`, and a real `root_url`.
 - [ ] Decide auth: keep local admin for now; note OAuth/OIDC for "real cluster".
-- [ ] Mark provisioned datasources `editable: false` so the UI can't drift
+- [x] Mark provisioned datasources `editable: false` so the UI can't drift
       from git.
 
 ### Provisioning (files in `grafana/`)
