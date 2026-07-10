@@ -15,7 +15,7 @@ ruff:
 helm-lint:
   stage: lint
   image:
-    name: alpine/helm:3.16.2  # TODO(you): pin to a helm version you trust
+    name: alpine/helm:3.21.2  # TODO(you): pin to a helm version you trust ✅
     entrypoint: [""]
   before_script:
     - helm repo add prometheus-community https://prometheus-community.github.io/helm-charts

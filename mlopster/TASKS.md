@@ -146,9 +146,9 @@ Targets the **free tier** with shared runners. Stages: lint → test → build �
 (optional) deploy. Build uses Kaniko (no privileged Docker needed on shared
 runners).
 
-- [~] `lint` stage: ruff + helm lint (scaffolded in `ci/lint.gitlab-ci.yml`).
-- [~] `test` stage: pytest for the model server (`ci/test.gitlab-ci.yml`).
-- [~] `build` stage: Kaniko builds + pushes the model-server image to the
+- [x] `lint` stage: ruff + helm lint (scaffolded in `ci/lint.gitlab-ci.yml`).
+- [x] `test` stage: pytest for the model server (`ci/test.gitlab-ci.yml`).
+- [x] `build` stage: Kaniko builds + pushes the model-server image to the
       GitLab Container Registry (`ci/build.gitlab-ci.yml`).
 - [ ] Set `CI_REGISTRY_*` usage and tag images with `$CI_COMMIT_SHORT_SHA`.
 - [ ] Add a `helm template`/`helm lint` job so chart errors fail the pipeline.
