@@ -1,0 +1,44 @@
+# Local overlay for the official HashiCorp Vault Helm chart.
+# Install: mise run vault-install
+#
+# Docs: https://developer.hashicorp.com/vault/docs/platform/k8s/helm
+#
+# WARNING: server.dev.enabled = true is for learning only (in-memory, unsealed,
+# root token often "root"). Never use this posture outside a disposable lab.
+
+# TODO(you): decide your learning mode — see TASKS.md §3
+#   A) Keep dev.enabled=true for fastest path (CLI + injector experiments).
+#   B) Set dev.enabled=false and use server.standalone with file/raft storage;
+#      then practice init + unseal in-cluster (harder, more realistic).
+
+global:
+  enabled: true
+  tlsDisable: true
+
+server:
+  # Lab default: Vault "dev server" inside the chart.
+  dev:
+    enabled: true
+    # Fixed token so scripts can use it; still never commit real prod tokens.
+    devRootToken: "root"
+
+  # TODO(you): when leaving -dev, configure something like:
+  # standalone:
+  #   enabled: true
+  #   config: |
+  #     ui = true
+  #     listener "tcp" { address = "[::]:8200" tls_disable = 1 }
+  #     storage "file" { path = "/vault/data" }
+  # dataStorage:
+  #   enabled: true
+  #   size: 1Gi
+
+  ui:
+    enabled: true
+    serviceType: "ClusterIP"
+
+# Injector: optional path to render secrets into pods via annotations.
+# TODO(you): enable and annotate demo-app as an alternative to in-app Vault API
+# — see docs/CONCEPTS.md §8
+injector:
+  enabled: false

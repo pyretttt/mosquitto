@@ -1,0 +1,143 @@
+# mise — tools + tasks for the Vault beginner lab
+#
+#   mise install          # install pinned CLIs
+#   mise tasks            # list tasks
+#   mise run vault-dev    # local Vault for CLI practice
+#
+# Paths are relative to this file (ops/vault_proj).
+
+[settings]
+env_shell_expand = true
+
+[tools]
+vault = "1.18.5"
+kubectl = "1.31.4"
+helm = "3.16.4"
+kind = "0.26.0"
+k3d = "5.7.5"
+
+[env]
+_.file = ".env"
+VAULT_ADDR = "http://127.0.0.1:8200"
+CLUSTER_NAME = "vault-lab"
+NS_VAULT = "vault"
+NS_APP = "demo"
+VAULT_HELM_RELEASE = "vault"
+APP_HELM_RELEASE = "demo-app"
+IMAGE_NAME = "demo-app"
+IMAGE_TAG = "local"
+
+# ---------------------------------------------------------------------------
+# Track A — local Vault (CLI)
+# ---------------------------------------------------------------------------
+
+[tasks.vault-dev]
+description = "Run Vault in -dev mode (auto-unseal, in-memory, lab only)"
+run = """
+echo "Vault -dev: remember the Root Token printed below."
+echo "In another shell: export VAULT_ADDR=$VAULT_ADDR VAULT_TOKEN=<root-token>"
+echo "Then: mise run local-kv-demo"
+vault server -dev -dev-root-token-id="${VAULT_DEV_ROOT_TOKEN:-root}" -dev-listen-address=127.0.0.1:8200
+"""
+
+[tasks.vault-file]
+description = "Run Vault with file storage (practice init/unseal)"
+run = """
+mkdir -p local/data
+if [ ! -f local/vault-config.hcl ]; then
+  cp local/vault-config.hcl.example local/vault-config.hcl
+  echo "Created local/vault-config.hcl — edit if needed, then re-run."
+fi
+echo "First time: vault operator init   then   vault operator unseal (x3)"
+echo "VAULT_ADDR=$VAULT_ADDR"
+vault server -config=local/vault-config.hcl
+"""
+
+[tasks.local-kv-demo]
+description = "Guided KV write/read + token policy demo against local Vault"
+run = "bash scripts/local-kv-demo.sh"
+
+# ---------------------------------------------------------------------------
+# Track B — local Kubernetes
+# ---------------------------------------------------------------------------
+
+[tasks.cluster-kind]
+description = "Create a local kind cluster"
+run = "kind create cluster --name $CLUSTER_NAME || kind get clusters | grep -q $CLUSTER_NAME"
+
+[tasks.cluster-k3d]
+description = "Create a local k3d cluster"
+run = "k3d cluster create $CLUSTER_NAME --agents 1 || k3d cluster list | grep -q $CLUSTER_NAME"
+
+[tasks.ns]
+description = "Create vault and demo namespaces"
+run = "kubectl apply -f k8s/namespace.yaml"
+
+[tasks.vault-repos]
+description = "Add HashiCorp Helm repo"
+run = """
+helm repo add hashicorp https://helm.releases.hashicorp.com
+helm repo update hashicorp
+"""
+
+[tasks.vault-install]
+description = "Install Vault via Helm using charts/vault-values/values-local.yaml"
+depends = ["ns", "vault-repos"]
+run = """
+helm upgrade --install $VAULT_HELM_RELEASE hashicorp/vault \
+  -n $NS_VAULT \
+  -f charts/vault-values/values-local.yaml
+echo ""
+echo "Wait for Vault: kubectl -n $NS_VAULT get pods -w"
+echo "Dev/server mode details: charts/vault-values/README.md"
+echo "Port-forward UI/API: kubectl -n $NS_VAULT port-forward svc/${VAULT_HELM_RELEASE}-0 8200:8200"
+echo "  (service name may vary — check: kubectl -n $NS_VAULT get svc)"
+"""
+
+[tasks.app-build]
+description = "Build demo-app image and load into kind/k3d"
+run = """
+docker build -t ${IMAGE_NAME}:${IMAGE_TAG} app/
+# kind
+if kind get clusters 2>/dev/null | grep -q "^${CLUSTER_NAME}$"; then
+  kind load docker-image ${IMAGE_NAME}:${IMAGE_TAG} --name $CLUSTER_NAME
+fi
+# k3d
+if k3d cluster list 2>/dev/null | grep -q "$CLUSTER_NAME"; then
+  k3d image import ${IMAGE_NAME}:${IMAGE_TAG} -c $CLUSTER_NAME
+fi
+echo "Image ${IMAGE_NAME}:${IMAGE_TAG} loaded (if a matching cluster exists)."
+"""
+
+[tasks.app-install]
+description = "Install demo-app Helm chart"
+depends = ["ns"]
+run = """
+helm upgrade --install $APP_HELM_RELEASE charts/demo-app \
+  -n $NS_APP \
+  -f charts/demo-app/values-local.yaml
+echo "Port-forward: kubectl -n $NS_APP port-forward svc/demo-app 8080:8080"
+"""
+
+[tasks.k8s-bootstrap]
+description = "Configure Vault K8s auth + sample secret (fill TODOs in script)"
+run = "bash scripts/k8s-bootstrap.sh"
+
+[tasks.up-local]
+description = "Cluster + Vault + app (happy path after TODOs are done)"
+depends = ["cluster-k3d", "vault-install", "app-build", "app-install"]
+run = "echo 'Stack installed. Finish TASKS.md §3 (auth + app Vault client) then mise run k8s-bootstrap.'"
+
+[tasks.down]
+description = "Uninstall Helm releases (keep cluster)"
+run = """
+helm -n $NS_APP uninstall $APP_HELM_RELEASE || true
+helm -n $NS_VAULT uninstall $VAULT_HELM_RELEASE || true
+"""
+
+[tasks.destroy-cluster]
+description = "Delete kind/k3d cluster named CLUSTER_NAME"
+run = """
+kind delete cluster --name $CLUSTER_NAME 2>/dev/null || true
+k3d cluster delete $CLUSTER_NAME 2>/dev/null || true
+"""

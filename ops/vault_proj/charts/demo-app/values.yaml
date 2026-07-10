@@ -1,0 +1,36 @@
+name: demo-app
+replicaCount: 1
+
+image:
+  repository: demo-app
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+# Vault connection — filled by values-local / TASKS
+vault:
+  addr: "http://vault.vault.svc:8200"
+  # Leave empty to force K8s auth path in the app (after you implement it).
+  token: ""
+  secretPath: "secret/data/demo/db"
+  k8sRole: "demo-app"
+
+serviceAccount:
+  create: true
+  name: demo-app
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# TODO(you): mount TLS secret from Vault PKI — TASKS.md §3d
+tls:
+  enabled: false
+  secretName: demo-app-tls

@@ -1,0 +1,21 @@
+# Example config for `mise run vault-file` (init + unseal practice).
+# Copy to vault-config.hcl (gitignored if you add local secrets later).
+#
+# Lab only — single node, file storage, TLS disabled.
+
+storage "file" {
+  path = "local/data"
+}
+
+listener "tcp" {
+  address     = "127.0.0.1:8200"
+  tls_disable = 1
+}
+
+# TODO(you): for a slightly more prod-shaped lab, enable ui and disable mlock
+# on macOS if needed — see TASKS.md §2a
+ui = true
+
+disable_mlock = true
+
+api_addr = "http://127.0.0.1:8200"

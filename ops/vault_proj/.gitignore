@@ -1,0 +1,11 @@
+.env
+local/vault-config.hcl
+local/data/
+local/policies/*.hcl
+!local/policies/.gitkeep
+*.pem
+*.key
+tls.key
+tls.crt
+unseal-keys.txt
+root-token.txt

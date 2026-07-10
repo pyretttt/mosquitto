@@ -1,0 +1,2 @@
+# Put your custom Vault policies here (TASKS.md §1).
+# Example: demo-read.hcl — do not commit tokens.

@@ -1,0 +1,21 @@
+# Local cluster overlay
+image:
+  repository: demo-app
+  tag: local
+  pullPolicy: Never
+
+vault:
+  # Default when Vault Helm release is named "vault" in namespace "vault".
+  # Dev mode service name is often vault — confirm with: kubectl -n vault get svc
+  addr: "http://vault.vault.svc:8200"
+  # Bootstrap only: set token "root" if you want /secret to work BEFORE K8s auth.
+  # TODO(you): clear this and finish Kubernetes auth — TASKS.md §3
+  token: "root"
+  secretPath: "secret/data/demo/db"
+  k8sRole: "demo-app"
+
+tls:
+  enabled: false
+  # TODO(you): after issuing a cert with Vault PKI, create secret demo-app-tls
+  # and set enabled: true — TASKS.md §3d
+  secretName: demo-app-tls
