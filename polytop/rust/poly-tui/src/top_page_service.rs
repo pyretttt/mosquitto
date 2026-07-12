@@ -1,6 +1,6 @@
 use poly_core::client::{PolymarketClient, PolyError};
 
-const MARKETS_PER_PAGE: i32 = 1000;
+const MARKETS_PER_PAGE: i32 = 30;
 
 pub trait TopPageSvc: Send + Sync + Clone {
     fn load_markets(
@@ -41,13 +41,13 @@ impl TopPageSvc for TopPageService {
                 return None;
             };
             Some(Market {
-                title: market.question?.clone(),
-                slug: market.slug?.clone(),
+                title: market.question.unwrap_or("N/A".to_owned()),
+                slug: market.slug.unwrap_or("N/A".to_owned()),
                 bookmarked: false,
                 yes_market_price: yes_market_price.as_f64(),
                 no_market_price: no_market_price.as_f64(),
-                volume24h: market.volume_24hr?.as_f64(),
-                movement24h: market.one_day_price_change?.as_f64(),
+                volume24h: market.volume_24hr.unwrap_or_default().as_f64(),
+                movement24h: market.one_day_price_change.unwrap_or_default().as_f64(),
                 spread: market.spread?.as_f64(),
             })
         });
