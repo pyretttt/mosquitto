@@ -40,20 +40,20 @@ impl TopPageSvc for TopPageService {
                 log::error!(target: "app", "Unexpected outcome: {:?} for market {:?}", market.outcomes, market.slug);
                 return None;
             };
-            Some(Market {
-                title: market.question.unwrap_or("N/A".to_owned()),
-                slug: market.slug.unwrap_or("N/A".to_owned()),
-                bookmarked: false,
-                yes_market_price: yes_market_price.as_f64(),
-                no_market_price: no_market_price.as_f64(),
-                volume24h: market.volume_24hr.unwrap_or_default().as_f64(),
-                movement24h: market.one_day_price_change.unwrap_or_default().as_f64(),
-                spread: market.spread?.as_f64(),
-            })
+            Some(Market::new(
+                market.question.unwrap_or_else(|| "N/A".to_owned()),
+                market.slug.unwrap_or_else(|| "N/A".to_owned()),
+                false,
+                yes_market_price.as_f64(),
+                no_market_price.as_f64(),
+                market.volume_24hr.unwrap_or_default().as_f64(),
+                market.one_day_price_change.unwrap_or_default().as_f64(),
+                market.spread?.as_f64(),
+            ))
         });
         let markets = prepend_markets.iter().cloned().chain(markets_data).collect::<Vec<_>>();
         Ok(MarketsData {
-            markets: markets,
+            markets,
             next_cursor: next_cursor + MARKETS_PER_PAGE,
         })
     }
@@ -83,6 +83,57 @@ pub struct Market {
     pub volume24h: f64,
     pub movement24h: f64,
     pub spread: f64,
+    pub rank_label: String,
+    pub bookmark_label: &'static str,
+    pub yes_label: String,
+    pub no_label: String,
+    pub volume_label: String,
+    pub movement_label: String,
+    pub movement_kind: ActivityKind,
+    pub spread_label: String,
+}
+
+impl Market {
+    pub fn new(
+        title: String,
+        slug: String,
+        bookmarked: bool,
+        yes_market_price: f64,
+        no_market_price: f64,
+        volume24h: f64,
+        movement24h: f64,
+        spread: f64,
+    ) -> Self {
+        let movement_label = format_movement(movement24h);
+        let movement_kind = movement_kind(movement24h);
+        Self {
+            title,
+            slug,
+            bookmarked,
+            yes_market_price,
+            no_market_price,
+            volume24h,
+            movement24h,
+            spread,
+            rank_label: String::new(),
+            bookmark_label: if bookmarked { "★" } else { "" },
+            yes_label: format_cents(yes_market_price),
+            no_label: format_cents(no_market_price),
+            volume_label: format_volume_compact(volume24h),
+            movement_label,
+            movement_kind,
+            spread_label: format_cents(spread),
+        }
+    }
+
+    pub fn set_rank(&mut self, rank: usize) {
+        self.rank_label = rank.to_string();
+    }
+
+    pub fn set_bookmarked(&mut self, bookmarked: bool) {
+        self.bookmarked = bookmarked;
+        self.bookmark_label = if bookmarked { "★" } else { "" };
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -99,6 +150,61 @@ pub struct SelectedMarket {
     pub liquidity: f64,
     pub open_interest: f64,
     pub end_date: String,
+    pub yes_label: String,
+    pub no_label: String,
+    pub yes_quotes_label: String,
+    pub no_quotes_label: String,
+    pub volume_label: String,
+    pub liquidity_label: String,
+    pub open_interest_label: String,
+}
+
+impl SelectedMarket {
+    pub fn new(
+        slug: String,
+        yes_market_price: f64,
+        no_market_price: f64,
+        yes_bid: f64,
+        yes_ask: f64,
+        no_bid: f64,
+        no_ask: f64,
+        spread: f64,
+        volume24h: f64,
+        liquidity: f64,
+        open_interest: f64,
+        end_date: String,
+    ) -> Self {
+        Self {
+            slug,
+            yes_market_price,
+            no_market_price,
+            yes_bid,
+            yes_ask,
+            no_bid,
+            no_ask,
+            spread,
+            volume24h,
+            liquidity,
+            open_interest,
+            end_date,
+            yes_label: format_cents(yes_market_price),
+            no_label: format_cents(no_market_price),
+            yes_quotes_label: format!(
+                "  bid {} / ask {}   spread {}",
+                format_cents(yes_bid),
+                format_cents(yes_ask),
+                format_cents(spread),
+            ),
+            no_quotes_label: format!(
+                "  bid {} / ask {}",
+                format_cents(no_bid),
+                format_cents(no_ask),
+            ),
+            volume_label: format_dollar_compact(volume24h),
+            liquidity_label: format_dollar_compact(liquidity),
+            open_interest_label: format_dollar_compact(open_interest),
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -124,4 +230,46 @@ pub enum ActivityKind {
     Negative,
     Accent,
     Warning,
+}
+
+fn format_cents(value: f64) -> String {
+    format!("{:.0}¢", value)
+}
+
+fn format_movement(value: f64) -> String {
+    if value >= 0.0 {
+        format!("+{:.0}¢", value)
+    } else {
+        format!("{:.0}¢", value)
+    }
+}
+
+fn movement_kind(value: f64) -> ActivityKind {
+    if value > 0.0 {
+        ActivityKind::Positive
+    } else if value < 0.0 {
+        ActivityKind::Negative
+    } else {
+        ActivityKind::Muted
+    }
+}
+
+fn format_volume_compact(value: f64) -> String {
+    if value >= 1_000_000.0 {
+        format!("{:.0}M", value / 1_000_000.0)
+    } else if value >= 1_000.0 {
+        format!("{:.0}k", value / 1_000.0)
+    } else {
+        format!("{:.0}", value)
+    }
+}
+
+fn format_dollar_compact(value: f64) -> String {
+    if value >= 1_000_000.0 {
+        format!("${:.1}M", value / 1_000_000.0)
+    } else if value >= 1_000.0 {
+        format!("${:.1}k", value / 1_000.0)
+    } else {
+        format!("${:.0}", value)
+    }
 }

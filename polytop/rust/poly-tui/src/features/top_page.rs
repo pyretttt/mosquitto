@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::fmt;
-use std::time::Instant;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::TableState;
@@ -15,7 +14,7 @@ use crate::top_page_service::{
     MarketsData, SelectedMarket, TopPageSvc,
 };
 
-static TOP_PAGE_TITLE: &str = "Polytop";
+static TOP_PAGE_TITLE: &str = " POLYTOP ";
 
 #[derive(Clone, Debug)]
 pub struct TopPage {
@@ -47,14 +46,37 @@ pub struct StatusPane {
     pub latency: u64,
     pub refresh_interval: u64,
     pub mode: String,
+    pub latency_label: String,
+    pub refresh_label: String,
+    pub mode_label: String,
+}
+
+impl StatusPane {
+    pub fn refresh_labels(&mut self) {
+        self.latency_label = format!("   latency {}ms", self.latency);
+        self.refresh_label = format!("   refresh {}ms", self.refresh_interval);
+        self.mode_label = format!("   mode {}", self.mode);
+    }
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct MarketsPane {
     pub title: &'static str,
     pub filter: String,
+    pub title_label: String,
+    pub footer_label: String,
     pub markets_data: MarketsData,
     pub table_state: TableState,
+}
+
+impl MarketsPane {
+    pub fn refresh_labels(&mut self) {
+        self.title_label = format!(" [1] - {}: {} ", self.title, self.filter);
+        self.footer_label = format!(
+            " {} markets | j/k move | b bookmarks/all | w bookmark ",
+            self.markets_data.markets.len(),
+        );
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -66,6 +88,7 @@ pub struct MarketSummary {
 #[derive(Clone, Debug, Default)]
 pub struct ChartActivityPane {
     pub title: &'static str,
+    pub title_label: String,
     pub chart_activity: ChartActivity,
 }
 
@@ -74,6 +97,16 @@ pub struct CommandPopup {
     pub filter: String,
     pub sort: String,
     pub mode: String,
+    pub status_label: String,
+}
+
+impl CommandPopup {
+    pub fn refresh_labels(&mut self) {
+        self.status_label = format!(
+            "Filter: {} sort:{}                               {}",
+            self.filter, self.sort, self.mode,
+        );
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -134,9 +167,14 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             match result {
                 Ok(load_result) => {
                     if let Some(ref session) = top_page.markets_load_session && load_result.session.eq(session) {
-                        top_page.markets_pane.markets_data.markets.append(&mut load_result.markets_data.markets);
+                        let markets = &mut top_page.markets_pane.markets_data.markets;
+                        let start_rank = markets.len() + 1;
+                        for (offset, market) in load_result.markets_data.markets.iter_mut().enumerate() {
+                            market.set_rank(start_rank + offset);
+                        }
+                        markets.append(&mut load_result.markets_data.markets);
                         top_page.markets_pane.markets_data.next_cursor = load_result.markets_data.next_cursor;
-                        // top_page.markets_pane.markets_data = mem::take(&mut load_result.markets_data);
+                        top_page.markets_pane.refresh_labels();
                     }
                 },
                 Err(_) => {
@@ -205,117 +243,41 @@ impl TopPage {
                 latency: 42,
                 refresh_interval: 500,
                 mode: "observe".into(),
+                latency_label: String::new(),
+                refresh_label: String::new(),
+                mode_label: String::new(),
             },
             markets_pane: MarketsPane {
                 title: "Top Markets",
                 filter: "all".into(),
+                title_label: String::new(),
+                footer_label: String::new(),
                 markets_data: MarketsData {
                     markets: vec![],
-                    // markets: vec![
-                    //     Market {
-                    //         title: "Will BTC hit 100k in 2026?".to_owned(),
-                    //         slug: "btc-100k-2026".into(),
-                    //         bookmarked: true,
-                    //         yes_market_price: 63.0,
-                    //         no_market_price: 38.0,
-                    //         volume24h: 842_000.0,
-                    //         movement24h: 4.0,
-                    //         spread: 2.0,
-                    //     },
-                    //     Market {
-                    //         title: "Fed cuts rates by Sep?".to_owned(),
-                    //         slug: "fed-cuts-sep".into(),
-                    //         bookmarked: false,
-                    //         yes_market_price: 41.0,
-                    //         no_market_price: 60.0,
-                    //         volume24h: 611_000.0,
-                    //         movement24h: -2.0,
-                    //         spread: 3.0,
-                    //     },
-                    //     Market {
-                    //         title: "Lakers win tonight?".to_owned(),
-                    //         slug: "lakers-win-tonight".into(),
-                    //         bookmarked: false,
-                    //         yes_market_price: 55.0,
-                    //         no_market_price: 46.0,
-                    //         volume24h: 570_000.0,
-                    //         movement24h: 1.0,
-                    //         spread: 2.0,
-                    //     },
-                    //     Market {
-                    //         title: "ETH ETF inflows above $1B?".to_owned(),
-                    //         slug: "eth-etf-inflows-1b".into(),
-                    //         bookmarked: false,
-                    //         yes_market_price: 72.0,
-                    //         no_market_price: 29.0,
-                    //         volume24h: 510_000.0,
-                    //         movement24h: 6.0,
-                    //         spread: 4.0,
-                    //     },
-                    //     Market {
-                    //         title: "Trump wins popular vote?".to_owned(),
-                    //         slug: "trump-popular-vote".into(),
-                    //         bookmarked: true,
-                    //         yes_market_price: 49.0,
-                    //         no_market_price: 52.0,
-                    //         volume24h: 421_000.0,
-                    //         movement24h: -1.0,
-                    //         spread: 2.0,
-                    //     },
-                    //     Market {
-                    //         title: "CPI below forecast?".to_owned(),
-                    //         slug: "cpi-below-forecast".into(),
-                    //         bookmarked: false,
-                    //         yes_market_price: 36.0,
-                    //         no_market_price: 65.0,
-                    //         volume24h: 390_000.0,
-                    //         movement24h: -5.0,
-                    //         spread: 5.0,
-                    //     },
-                    //     Market {
-                    //         title: "SpaceX launch this week?".to_owned(),
-                    //         slug: "spacex-launch-week".into(),
-                    //         bookmarked: false,
-                    //         yes_market_price: 83.0,
-                    //         no_market_price: 18.0,
-                    //         volume24h: 311_000.0,
-                    //         movement24h: 8.0,
-                    //         spread: 3.0,
-                    //     },
-                    //     Market {
-                    //         title: "Oil closes above $90?".to_owned(),
-                    //         slug: "oil-above-90".into(),
-                    //         bookmarked: false,
-                    //         yes_market_price: 22.0,
-                    //         no_market_price: 79.0,
-                    //         volume24h: 280_000.0,
-                    //         movement24h: -3.0,
-                    //         spread: 4.0,
-                    //     },
-                    // ],
                     next_cursor: 0,
                 },
                 table_state: TableState::default().with_selected(Some(0)),
             },
             selected_market_pane: MarketSummary {
                 title: "Will BTC hit 100k in 2026?",
-                selected_market: SelectedMarket {
-                    slug: "btc-100k-2026".into(),
-                    yes_market_price: 63.0,
-                    no_market_price: 38.0,
-                    yes_bid: 62.0,
-                    yes_ask: 64.0,
-                    no_bid: 37.0,
-                    no_ask: 39.0,
-                    spread: 2.0,
-                    volume24h: 842_100.0,
-                    liquidity: 184_300.0,
-                    open_interest: 2_400_000.0,
-                    end_date: "2026-12-31".into(),
-                },
+                selected_market: SelectedMarket::new(
+                    "btc-100k-2026".into(),
+                    63.0,
+                    38.0,
+                    62.0,
+                    64.0,
+                    37.0,
+                    39.0,
+                    2.0,
+                    842_100.0,
+                    184_300.0,
+                    2_400_000.0,
+                    "2026-12-31".into(),
+                ),
             },
             chart_activity_pane: ChartActivityPane {
                 title: "Chart + Activity",
+                title_label: " [3] - Chart + Activity ".into(),
                 chart_activity: ChartActivity {
                     chart_lines: vec![
                         " 70¢ ┤                     ╭╮".into(),
@@ -356,6 +318,7 @@ impl TopPage {
                 filter: "politics volume>100k".into(),
                 sort: "move".into(),
                 mode: "NORMAL".into(),
+                status_label: String::new(),
             },
             error_msg: None,
             markets_load_session: None,
@@ -363,6 +326,9 @@ impl TopPage {
         };
 
         data.markets_pane.markets_data.markets.reserve(50);
+        data.markets_pane.refresh_labels();
+        data.command_popup.refresh_labels();
+        data.status_pane.refresh_labels();
         data
     }
 }

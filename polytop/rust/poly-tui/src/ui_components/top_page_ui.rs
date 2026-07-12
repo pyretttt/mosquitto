@@ -2,10 +2,9 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table};
+use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table, TableState};
 
 use crate::env::Env;
-use crate::features::app::AppState;
 use crate::features::top_page::{Market, TopPage};
 use crate::top_page_service::ActivityKind;
 
@@ -18,9 +17,10 @@ const WARNING: Color = Color::Rgb(0xF5, 0x9E, 0x0B);
 const MUTED: Color = Color::DarkGray;
 const HEADER: Color = Color::Yellow;
 
+static SPACE: &'static str = " ";
+
 pub fn top_page_ui(
     frame: &mut Frame,
-    _app_state: &AppState,
     top_page: &TopPage,
     _env: &Env,
 ) {
@@ -28,7 +28,7 @@ pub fn top_page_ui(
         .borders(Borders::TOP)
         .border_style(Style::default().fg(BORDER).bg(BG))
         .style(Style::default().bg(BG))
-        .title_top(Line::from(format!(" {} ", top_page.left_title.to_uppercase())).left_aligned())
+        .title_top(Line::from(top_page.left_title).left_aligned())
         .title_top(Line::from("").right_aligned());
 
     let dashboard = outer.inner(frame.area());
@@ -81,15 +81,15 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             Span::styled(online_label, Style::default().fg(Color::Gray)),
             Span::styled(ws_label, Style::default().fg(ws_color)),
             Span::styled(
-                format!("   latency {}ms", status.latency),
+                status.latency_label.as_str(),
                 Style::default().fg(Color::White),
             ),
             Span::styled(
-                format!("   refresh {}ms", status.refresh_interval),
+                status.refresh_label.as_str(),
                 Style::default().fg(Color::Gray),
             ),
             Span::styled(
-                format!("   mode {}", status.mode),
+                status.mode_label.as_str(),
                 Style::default().fg(Color::Gray),
             ),
         ])).alignment(HorizontalAlignment::Right),
@@ -109,24 +109,19 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         header_cell("Spread"),
     ]);
 
-    let selected_index = top_page.markets_pane.table_state.selected();
-    let rows = top_page.markets_pane
-        .markets_data
-        .markets
+    let render_height = area.height.saturating_sub(3).max(1) as usize;
+
+    let selected_index = top_page.markets_pane.table_state.selected().unwrap_or(0);
+
+    let rows = top_page.markets_pane.markets_data.markets
         .iter()
         .enumerate()
         .map(|(index, market)|
             market_row(
-                index + 1, market,
-                selected_index.map_or(false, |val| val == index)
+                market,
+                selected_index == index
             )
         );
-
-    let market_count = top_page.markets_pane.markets_data.markets.len();
-    let pane_title = format!(
-        " [1] - {}: {} ",
-        top_page.markets_pane.title, top_page.markets_pane.filter
-    );
 
     let table = Table::new(
         rows,
@@ -143,11 +138,9 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     )
     .header(header)
     .block(
-        pane_block(&pane_title, Borders::ALL, top_page.current_pane == 1)
+        pane_block(&top_page.markets_pane.title_label, Borders::ALL, top_page.current_pane == 1)
             .title_bottom(
-                Line::from(format!(
-                    " {market_count} markets | j/k move | b bookmarks/all | w bookmark "
-                ))
+                Line::from(top_page.markets_pane.footer_label.as_str())
                 .centered(),
             ),
     )
@@ -165,51 +158,43 @@ fn render_lower_panes(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 }
 
 fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
+    let market = &top_page.selected_market_pane.selected_market;
     let lines = [
         Line::styled(top_page.selected_market_pane.title, Style::default().fg(Color::White).bg(BG)),
         Line::from(""),
         Line::from_iter([
             Span::styled("yes  ", Style::default().fg(POSITIVE).bg(BG)),
             Span::styled(
-                format_cents(top_page.selected_market_pane.selected_market.yes_market_price),
+                market.yes_label.as_str(),
                 Style::default()
                     .fg(POSITIVE)
                     .bg(BG)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                format!(
-                    "  bid {} / ask {}   spread {}",
-                    format_cents(top_page.selected_market_pane.selected_market.yes_bid),
-                    format_cents(top_page.selected_market_pane.selected_market.yes_ask),
-                    format_cents(top_page.selected_market_pane.selected_market.spread)
-                ),
+                market.yes_quotes_label.as_str(),
                 Style::default().fg(MUTED).bg(BG),
             ),
         ]),
         Line::from_iter([
             Span::styled("no   ", Style::default().fg(NEGATIVE).bg(BG)),
             Span::styled(
-                format_cents(top_page.selected_market_pane.selected_market.no_market_price),
+                market.no_label.as_str(),
                 Style::default()
                     .fg(NEGATIVE)
                     .bg(BG)
                     .add_modifier(Modifier::BOLD),
             ),
             Span::styled(
-                format!(
-                    "  bid {} / ask {}",
-                    format_cents(top_page.selected_market_pane.selected_market.no_bid),
-                    format_cents(top_page.selected_market_pane.selected_market.no_ask)
-                ),
+                market.no_quotes_label.as_str(),
                 Style::default().fg(MUTED).bg(BG),
             ),
         ]),
         Line::from(""),
-        metric_line("volume 24h", &format_dollar_compact(top_page.selected_market_pane.selected_market.volume24h)),
-        metric_line("liquidity", &format_dollar_compact(top_page.selected_market_pane.selected_market.liquidity)),
-        metric_line("open interest", &format_dollar_compact(top_page.selected_market_pane.selected_market.open_interest)),
-        metric_line("end date", &top_page.selected_market_pane.selected_market.end_date),
+        metric_line("volume 24h    ", &market.volume_label),
+        metric_line("liquidity     ", &market.liquidity_label),
+        metric_line("open interest ", &market.open_interest_label),
+        metric_line("end date      ", &market.end_date),
     ];
 
     frame.render_widget(
@@ -246,11 +231,10 @@ fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         ));
     }
 
-    let pane_title = format!(" [3] - {} ", chart.title);
     frame.render_widget(
         Paragraph::new(lines)
             .block(pane_block(
-                &pane_title,
+                &chart.title_label,
                 Borders::ALL,
                 top_page.current_pane == 3,
             ))
@@ -275,32 +259,26 @@ fn render_command_popup(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         shortcuts_area,
     );
     frame.render_widget(
-        Paragraph::new(format!(
-            "Filter: {} sort:{}                               {}",
-            popup.filter, popup.sort, popup.mode
-        ))
-        .style(Style::default().fg(MUTED).bg(BG)),
+        Paragraph::new(popup.status_label.as_str())
+            .style(Style::default().fg(MUTED).bg(BG)),
         status_area,
     );
 }
 
-fn market_row<'a>(rank: usize, market: &'a Market, is_selected: bool) -> Row<'a> {
-    let bookmark = if market.bookmarked { "★" } else { "" };
-    let movement = format_movement(market.movement24h);
-    let move_color = movement_color(&movement);
-
+fn market_row<'a>(market: &'a Market, is_selected: bool) -> Row<'a> {
     Row::new([
-        Cell::from(rank.to_string()).style(Style::default().fg(if is_selected { WARNING } else { MUTED })),
-        Cell::from(bookmark).style(Style::default().fg(WARNING)),
+        Cell::from(market.rank_label.as_str()).style(Style::default().fg(if is_selected { WARNING } else { MUTED })),
+        Cell::from(market.bookmark_label).style(Style::default().fg(WARNING)),
         Cell::from(market.title.as_str()).style(Style::default().fg(if is_selected { WARNING } else { Color::White })),
-        Cell::from(format_cents(market.yes_market_price))
+        Cell::from(market.yes_label.as_str())
             .style(Style::default().fg(POSITIVE)),
-        Cell::from(format_cents(market.no_market_price))
+        Cell::from(market.no_label.as_str())
             .style(Style::default().fg(NEGATIVE)),
-        Cell::from(format_volume_compact(market.volume24h))
+        Cell::from(market.volume_label.as_str())
             .style(Style::default().fg(Color::White)),
-        Cell::from(movement).style(Style::default().fg(move_color)),
-        Cell::from(format_cents(market.spread))
+        Cell::from(market.movement_label.as_str())
+            .style(Style::default().fg(activity_kind_color(market.movement_kind))),
+        Cell::from(market.spread_label.as_str())
             .style(Style::default().fg(MUTED)),
     ])
 }
@@ -314,32 +292,31 @@ fn header_cell(label: &'static str) -> Cell<'static> {
     )
 }
 
-fn metric_line(label: &str, value: &str) -> Line<'static> {
+fn metric_line<'a>(label: &'static str, value: &'a str) -> Line<'a> {
     Line::from_iter([
-        Span::styled(format!("{label:<14}"), Style::default().fg(MUTED).bg(BG)),
-        Span::styled(value.to_string(), Style::default().fg(Color::White).bg(BG)),
+        Span::styled(label, Style::default().fg(MUTED).bg(BG)),
+        Span::styled(value, Style::default().fg(Color::White).bg(BG)),
     ])
 }
 
-fn activity_line(time: &str, label: &str, value: &str, value_color: Color) -> Line<'static> {
+fn activity_line<'a>(time: &'a str, label: &'a str, value: &'a str, value_color: Color) -> Line<'a> {
     Line::from_iter([
-        Span::styled(time.to_string(), Style::default().fg(MUTED).bg(BG)),
-        Span::styled(
-            format!(" {label:<8} "),
-            Style::default().fg(Color::White).bg(BG),
-        ),
-        Span::styled(value.to_string(), Style::default().fg(value_color).bg(BG)),
+        Span::styled(time, Style::default().fg(MUTED).bg(BG)),
+        Span::raw(SPACE),
+        Span::styled(label, Style::default().fg(Color::White).bg(BG)),
+        Span::raw(SPACE),
+        Span::styled(value, Style::default().fg(value_color).bg(BG)),
     ])
 }
 
-fn pane_block(title: &str, borders: Borders, focused: bool) -> Block<'static> {
+fn pane_block<'a>(title: &'a str, borders: Borders, focused: bool) -> Block<'a> {
     let border_color = if focused { ACCENT } else { BORDER };
 
     Block::default()
         .borders(borders)
         .border_type(BorderType::Rounded)
         .border_style(Style::default().fg(border_color))
-        .title_top(Line::from(title.to_string()).left_aligned())
+        .title_top(Line::from(title).left_aligned())
 }
 
 fn activity_kind_color(kind: ActivityKind) -> Color {
@@ -349,47 +326,5 @@ fn activity_kind_color(kind: ActivityKind) -> Color {
         ActivityKind::Accent => ACCENT,
         ActivityKind::Warning => WARNING,
         ActivityKind::Muted => MUTED,
-    }
-}
-
-fn movement_color(movement: &str) -> Color {
-    if movement.starts_with('+') {
-        POSITIVE
-    } else if movement.starts_with('-') {
-        NEGATIVE
-    } else {
-        MUTED
-    }
-}
-
-fn format_cents(value: f64) -> String {
-    format!("{:.0}¢", value)
-}
-
-fn format_movement(value: f64) -> String {
-    if value >= 0.0 {
-        format!("+{:.0}¢", value)
-    } else {
-        format!("{:.0}¢", value)
-    }
-}
-
-fn format_volume_compact(value: f64) -> String {
-    if value >= 1_000_000.0 {
-        format!("{:.0}M", value / 1_000_000.0)
-    } else if value >= 1_000.0 {
-        format!("{:.0}k", value / 1_000.0)
-    } else {
-        format!("{:.0}", value)
-    }
-}
-
-fn format_dollar_compact(value: f64) -> String {
-    if value >= 1_000_000.0 {
-        format!("${:.1}M", value / 1_000_000.0)
-    } else if value >= 1_000.0 {
-        format!("${:.1}k", value / 1_000.0)
-    } else {
-        format!("${:.0}", value)
     }
 }
