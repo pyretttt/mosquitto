@@ -69,6 +69,11 @@ class Segment:
     def to_bytes(self) -> bytes:
         return struct.pack('!HHHHHH', self.header.src_port, self.header.dst_port, self.header.length, self.header.checksum, self.header.seq_num, self.header.flags) + self.data
 
+# Usage:
+# for chunk in chunks:
+#    sender.send(host, port, chunk)
+# sender.flush(host, port)
+
 class Sender:
     def __init__(self, host: str, port: int):
         self.host = host
@@ -80,48 +85,50 @@ class Sender:
         self.sock.settimeout(0.2)
         self.retry_buffer = [None] * WINDOW_SIZE
 
-    def is_next_seq_num_in_current_window(self, next_seq_num: int) -> bool:
+    def is_in_current_window(self, next_seq_num: int) -> bool:
         if (self.base + WINDOW_SIZE) % SEQ_NUMBERS < self.base:
             return next_seq_num in range(self.base, SEQ_NUMBERS) or next_seq_num in range(0, (self.base + WINDOW_SIZE) % SEQ_NUMBERS)
         else:
             return next_seq_num in range(self.base, (self.base + WINDOW_SIZE) % SEQ_NUMBERS)
 
-    def send(self, dst_addr: str, dst_port: int, data: bytes, retry_seq_num: int | None = None, retry_count: int = 15):
-        if retry_count <= 0:
-            raise RuntimeError("Timeout sending data")
-        current_seq_num = retry_seq_num if retry_seq_num is not None else self.next_seq_num
-        if not self.is_next_seq_num_in_current_window(current_seq_num):
-            raise RuntimeError("Buffer is full")
-        segment_bytes = self.retry_buffer[(current_seq_num - self.base) % SEQ_NUMBERS] if retry_seq_num is not None else Segment.make(data, self.port, dst_port, current_seq_num).to_bytes()
-        self.retry_buffer[(current_seq_num - self.base) % SEQ_NUMBERS] = segment_bytes
+    def send(self, dst_addr, dst_port, data: bytes):
+        while not self.is_in_current_window(self.next_seq_num):
+            self._recv_ack_or_retransmit(dst_addr, dst_port)
 
-        if retry_seq_num is None:
-            self.next_seq_num = (current_seq_num + 1) % SEQ_NUMBERS
+        seq = self.next_seq_num
+        seg = Segment.make(data, self.port, dst_port, seq).to_bytes()
+        self.retry_buffer[(seq - self.base) % SEQ_NUMBERS] = seg
+        self.next_seq_num = (seq + 1) % SEQ_NUMBERS
+        self.sock.sendto(seg, (dst_addr, dst_port))
 
-        self.sock.sendto(segment_bytes, (dst_addr, dst_port))
+    def _recv_ack_or_retransmit(self, dst_addr: str, dst_port: int):
+        # All are none, so we dont wait for responses
+        if not any(self.retry_buffer):
+            return
         try:
-            segment_bytes, (address, port) = self.sock.recvfrom(2 ** 16)
+            raw, _ = self.sock.recvfrom(2 ** 16)
         except TimeoutError:
-            self.send(dst_addr, dst_port, bytes(), current_seq_num, retry_count - 1)
+            if isinstance(self.retry_buffer[0], bytes):
+                self.sock.sendto(self.retry_buffer[0], (dst_addr, dst_port))
             return
 
-        io = BytesIO(segment_bytes)
+        io = BytesIO(raw)
         header = Segment.Header.from_bytes(io.read(Segment.Header.HEADER_LENGTH))
         segment = Segment(header=header, data=io.read(header.length - Segment.Header.HEADER_LENGTH))
-        if segment.not_corrupted() and header.flags == 0x01 and header.seq_num == current_seq_num:
+        if segment.not_corrupted() and header.flags == 0x01 and self.is_in_current_window(header.seq_num):
             idx = (header.seq_num - self.base) % SEQ_NUMBERS
-            if idx < WINDOW_SIZE:
-                self.retry_buffer[idx] = SPECIAL_VALUE
+            self.retry_buffer[idx] = SPECIAL_VALUE
 
-            while self.retry_buffer and self.retry_buffer[0] == SPECIAL_VALUE:
+            while self.retry_buffer[0] == SPECIAL_VALUE:
                 self.retry_buffer = self.retry_buffer[1:]
                 self.base = (self.base + 1) % SEQ_NUMBERS
             self.retry_buffer += [None] * WINDOW_SIZE
             self.retry_buffer = self.retry_buffer[:WINDOW_SIZE]
 
-        else:
-            self.send(dst_addr, dst_port, bytes(), current_seq_num, retry_count - 1)
-            return
+    def flush(self, dst_addr: str, dst_port: int, retry_count: int = 15):
+        while retry_count and self.base != self.next_seq_num:
+            self._recv_ack_or_retransmit(dst_addr, dst_port)
+            retry_count -= 1
 
 
 class Receiver:

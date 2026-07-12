@@ -41,10 +41,10 @@ revoke, and a simple rotation path.
 
 ## 0. Bootstrap
 
-- [ ] Install tools: `mise install` from `ops/vault_proj`.
-- [ ] Copy `.env.example` → `.env` and skim the variables (no real secrets needed for `-dev`).
-- [ ] **Verify:** `vault version`, `kubectl version --client`, `helm version`.
-- [ ] Skim `README.md` (problem statement + mental model) and `docs/CONCEPTS.md` §1–2.
+- [x] Install tools: `mise install` from `ops/vault_proj`.
+- [x] Copy `.env.example` → `.env` and skim the variables (no real secrets needed for `-dev`).
+- [x] **Verify:** `vault version`, `kubectl version --client`, `helm version`.
+- [x] Skim `README.md` (problem statement + mental model) and `docs/CONCEPTS.md` §1–2.
 
 ---
 
