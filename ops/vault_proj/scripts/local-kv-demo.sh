@@ -36,7 +36,7 @@ vault policy write demo-read "$POLICY_FILE"
 
 echo "==> Create child token with demo-read (30m TTL)"
 # TODO(you): change -ttl, try -renewable=true, then vault token renew / revoke
-# — see TASKS.md §1 and §2b
+# — see TASKS.md §1 and §2b ✅
 CHILD_TOKEN=$(vault token create -policy=demo-read -ttl=30m -field=token)
 echo "Child token (keep private): $CHILD_TOKEN"
 

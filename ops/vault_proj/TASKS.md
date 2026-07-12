@@ -53,25 +53,25 @@ revoke, and a simple rotation path.
 Vault’s `-dev` mode auto-unseals, prints a root token, and stores data in memory.
 Perfect for learning the CLI — **never** use `-dev` in production.
 
-- [~] **Task:** start Vault: `mise run vault-dev`. Note the root token and
+- [x] **Task:** start Vault: `mise run vault-dev`. Note the root token and
       `VAULT_ADDR` (usually `http://127.0.0.1:8200`).
-- [ ] Export in your shell: `export VAULT_ADDR=http://127.0.0.1:8200` and
+- [x] Export in your shell: `export VAULT_ADDR=http://127.0.0.1:8200` and
       `export VAULT_TOKEN=<root-token-from-dev-output>`.
-- [ ] **Verify:** `vault status` shows `Sealed: false` and `HA Enabled: false`.
-- [~] Run the guided script: `mise run local-kv-demo` (or step through
+- [x] **Verify:** `vault status` shows `Sealed: false` and `HA Enabled: false`.
+- [x] Run the guided script: `mise run local-kv-demo` (or step through
       `scripts/local-kv-demo.sh` yourself).
-- [ ] **Task:** enable KV v2 yourself if the script did not:
+- [x] **Task:** enable KV v2 yourself if the script did not:
       `vault secrets enable -path=secret kv-v2`
-- [ ] **Task:** write and read a secret:
+- [x] **Task:** write and read a secret:
       ```bash
       vault kv put secret/demo/db username=app password=s3cret
       vault kv get secret/demo/db
       vault kv get -field=password secret/demo/db
       ```
-- [ ] **Task:** create a **policy** file that only allows `read` on
+- [x] **Task:** create a **policy** file that only allows `read` on
       `secret/data/demo/*`, then create a child token with that policy.
       See `TODO(you)` in `scripts/local-kv-demo.sh` and CONCEPTS § Authentication / Tokens.
-- [ ] **Verify:** with the child token, `vault kv get secret/demo/db` works;
+- [x] **Verify:** with the child token, `vault kv get secret/demo/db` works;
       writing should fail.
 
 ---
