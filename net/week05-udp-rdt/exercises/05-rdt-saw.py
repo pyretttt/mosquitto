@@ -92,7 +92,7 @@ class Sender:
         segment = Segment.make(data, self.port, dst_port, self.seq_num)
         self.sock.sendto(segment.to_bytes(), (dst_addr, dst_port))
         try:
-            segment_bytes, (address, port) = self.sock.recvfrom(2 ** 16)
+            segment_bytes, _ = self.sock.recvfrom(2 ** 16)
             io = BytesIO(segment_bytes)
             header = Segment.Header.from_bytes(io.read(Segment.Header.HEADER_LENGTH))
 
@@ -102,11 +102,13 @@ class Sender:
                 data = bytes()
             received_segment = Segment(header=header, data=data)
         except TimeoutError:
+            print(f"Timeout waiting for ACK")
             raise TimeoutError("Timeout waiting for ACK")
 
         if header.flags & 0x01 and received_segment.not_corrupted() and header.seq_num == self.seq_num:
             self.seq_num = (self.seq_num + 1) % WINDOW_SIZE
         else:
+            print(f"Invalid ACK: {header.flags}, {received_segment.not_corrupted()}, {header.seq_num == self.seq_num}")
             raise RuntimeError("Invalid ACK")
 
 
@@ -160,3 +162,19 @@ class Receiver:
                     (dst_addr, dst_port)
                 )
                 print(f"Received data: {segment.data}")
+
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sender", action="store_true")
+    parser.add_argument("--receiver", action="store_true")
+    args = parser.parse_args()
+
+    if args.sender:
+        sender = Sender("10.0.0.1", 12345)
+        for chunk in range(10):
+            sender.send("10.0.0.2", 12346, b"Hello, world " + str(chunk).encode())
+    elif args.receiver:
+        receiver = Receiver("10.0.0.2", 12346)
+        receiver.recv()

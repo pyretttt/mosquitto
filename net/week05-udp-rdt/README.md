@@ -68,7 +68,7 @@ This week is about *first principles* of transport: how do you build reliability
 ## Useful one-liners
 
 ```bash
-sudo tc qdisc add dev veth-h2 root netem loss 10%
+sudo ip netns exec h1 tc qdisc add dev veth-h2 root netem loss 10%
 sudo tc qdisc change dev veth-h2 root netem loss 10% delay 100ms
 sudo tc qdisc del dev veth-h2 root
 

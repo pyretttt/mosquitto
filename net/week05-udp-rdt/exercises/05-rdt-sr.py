@@ -100,6 +100,7 @@ class Sender:
         self.retry_buffer[(seq - self.base) % SEQ_NUMBERS] = seg
         self.next_seq_num = (seq + 1) % SEQ_NUMBERS
         self.sock.sendto(seg, (dst_addr, dst_port))
+        print(f"Sent data segment: {seq}")
 
     def _recv_ack_or_retransmit(self, dst_addr: str, dst_port: int):
         # All are none, so we dont wait for responses
@@ -108,6 +109,7 @@ class Sender:
         try:
             raw, _ = self.sock.recvfrom(2 ** 16)
         except TimeoutError:
+            print(f"Timeout waiting for ACK")
             if isinstance(self.retry_buffer[0], bytes):
                 self.sock.sendto(self.retry_buffer[0], (dst_addr, dst_port))
             return
@@ -116,14 +118,17 @@ class Sender:
         header = Segment.Header.from_bytes(io.read(Segment.Header.HEADER_LENGTH))
         segment = Segment(header=header, data=io.read(header.length - Segment.Header.HEADER_LENGTH))
         if segment.not_corrupted() and header.flags == 0x01 and self.is_in_current_window(header.seq_num):
+            print(f"Received ACK for segment: {header.seq_num}")
             idx = (header.seq_num - self.base) % SEQ_NUMBERS
             self.retry_buffer[idx] = SPECIAL_VALUE
 
-            while self.retry_buffer[0] == SPECIAL_VALUE:
+            while len(self.retry_buffer) > 0 and self.retry_buffer[0] == SPECIAL_VALUE:
                 self.retry_buffer = self.retry_buffer[1:]
                 self.base = (self.base + 1) % SEQ_NUMBERS
             self.retry_buffer += [None] * WINDOW_SIZE
             self.retry_buffer = self.retry_buffer[:WINDOW_SIZE]
+        else:
+            print(f"Invalid ACK: {header.flags}, {segment.not_corrupted()}, {header.seq_num == self.next_seq_num}")
 
     def flush(self, dst_addr: str, dst_port: int, retry_count: int = 15):
         while retry_count and self.base != self.next_seq_num:
@@ -177,8 +182,24 @@ class Receiver:
                     Segment.make(bytes(), self.port, dst_port, header.seq_num, flags=0x01).to_bytes(),
                     (dst_addr, dst_port)
                 )
-                print(f"Received data segment: {segment.header.seq_num}")
+                print(f"Received data segment: {segment.header.seq_num}, data: {segment.data.decode()}")
 
                 for segment in segments_to_flush:
                     io = BytesIO(segment)
                     print(f"Flushed segment to upper layer: {Segment.Header.from_bytes(io.read(Segment.Header.HEADER_LENGTH)).seq_num}")
+
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--sender", action="store_true")
+    parser.add_argument("--receiver", action="store_true")
+    args = parser.parse_args()
+
+    if args.sender:
+        sender = Sender("10.0.0.1", 12345)
+        for chunk in range(10):
+            sender.send("10.0.0.2", 12346, b"Hello, world " + str(chunk).encode())
+        sender.flush("10.0.0.2", 12346)
+    elif args.receiver:
+        receiver = Receiver("10.0.0.2", 12346)
+        receiver.recv()
