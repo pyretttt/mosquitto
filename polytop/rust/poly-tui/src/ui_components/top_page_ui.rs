@@ -23,7 +23,7 @@ static TOP_TABLE_PAYLOAD_HEIGHT_ADDEND: u16 = 3;
 pub fn top_page_ui(
     frame: &mut Frame,
     top_page: &TopPage,
-    env: &Env,
+    _env: &Env,
 ) {
     let outer = Block::default()
         .borders(Borders::TOP)
@@ -37,7 +37,7 @@ pub fn top_page_ui(
 
     let [status_area, markets_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
-        Constraint::Max(env.top_markets_window_size() as u16 + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND),
+        Constraint::Max(top_page.markets_pane.window_size as u16 + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND),
         Constraint::Fill(2),
         Constraint::Length(3),
     ])

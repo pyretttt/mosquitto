@@ -3,6 +3,7 @@ use std::fmt;
 
 use crossterm::event::{KeyCode, KeyEvent};
 use ratatui::widgets::TableState;
+use ratatui::prelude::Size;
 
 use crate::pair::Pair;
 use crate::features::app::Action;
@@ -31,11 +32,19 @@ pub struct TopPage {
     pub command_popup: CommandPopup,
     pub markets_load_session: Option<String>,
     pub is_loading: bool,
+    pub ui_window_size: Size,
+}
+
+impl TopPage {
+    pub fn update_window_size(&mut self, new_size: Size) {
+        self.ui_window_size = new_size;
+        self.markets_pane.window_size = SizeExt(new_size).get_top_page_window_size();
+    }
 }
 
 impl Default for TopPage {
     fn default() -> Self {
-        Self::mock_data()
+        Self::mock_data(Size::default())
     }
 }
 
@@ -68,7 +77,7 @@ pub struct MarketsPane {
     pub markets_data: MarketsData,
     pub table_state: TableState,
 
-    top_markets_count: usize,
+    pub window_size: usize,
     offset: usize
 }
 
@@ -83,7 +92,7 @@ impl MarketsPane {
 
     pub fn market_slice(&self) -> &[Market] {
         let offset = self.offset;
-        let end = offset.saturating_add(self.top_markets_count).min(self.markets_data.markets.len());
+        let end = offset.saturating_add(self.window_size).min(self.markets_data.markets.len());
         &self.markets_data.markets[offset..end]
     }
 }
@@ -130,6 +139,7 @@ pub enum TopPageAction {
     MarketsLoadRequested,
     MarketsRegularRequestFinished(Result<MarketLoadResult, TopPageError>),
     HideErrorMsg { token: String },
+    Resize(Size),
 }
 
 impl Into<Event> for TopPageAction {
@@ -208,6 +218,9 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                 top_page.error_msg = None;
             }
         },
+        TopPageAction::Resize(size) => {
+            top_page.update_window_size(*size);
+        }
     }
 }
 
@@ -229,7 +242,7 @@ impl TopPage {
                         log::info!(target: "app", "TopPage: Loading more markets");
                         _ = env.sender.send(TopPageAction::MarketsLoadRequested.into());
                     } else {
-                        if selected_idx_in_window != self.markets_pane.top_markets_count - 1 {
+                        if selected_idx_in_window != self.markets_pane.window_size - 1 {
                             self.markets_pane.table_state.select_next();
                         } else {
                             self.markets_pane.offset = self.markets_pane.offset.saturating_add(1);
@@ -253,8 +266,9 @@ impl TopPage {
 // === Mock data
 // ================================================
 impl TopPage {
-    pub fn mock_data() -> Self {
+    pub fn mock_data(ui_window_size: Size) -> Self {
         let mut data = Self {
+            ui_window_size: ui_window_size,
             left_title: TOP_PAGE_TITLE,
             right_title: String::new(),
             current_pane: 1,
@@ -278,8 +292,8 @@ impl TopPage {
                     next_cursor: 0,
                 },
                 table_state: TableState::default().with_selected(Some(0)),
-                top_markets_count: 30,
                 offset: 0,
+                window_size: SizeExt(ui_window_size).get_top_page_window_size(),
             },
             selected_market_pane: MarketSummary {
                 title: "Will BTC hit 100k in 2026?",
@@ -363,3 +377,13 @@ impl fmt::Display for TopPageError {
 }
 
 impl Error for TopPageError {}
+
+struct SizeExt(Size);
+
+impl SizeExt {
+    pub fn get_top_page_window_size(&self) -> usize {
+        let window_height = self.0.height;
+        log::info!(target: "app", "TopPage: window_height: {:?}", window_height);
+        (window_height as f32 * 0.4).max(10.0).min(35.0) as usize
+    }
+}

@@ -1,13 +1,14 @@
 use std::ops::Range;
 use std::future::Future;
 use std::time::Duration;
+use std::sync::Arc;
 
 use tokio::task::JoinHandle;
 use tokio::sync::mpsc;
 use uuid::Uuid;
 use rand::RngExt;
-use poly_core::client::PolymarketClient;
 use ratatui::prelude::Size;
+use poly_core::client::PolymarketClient;
 
 use crate::event::Event;
 use crate::config::{get_config, Config};
@@ -37,12 +38,11 @@ pub struct Env {
     pub polymarket_client: PolymarketClient,
     pub sleep: SleepFn,
     pub top_page_svc: TopPageService,
-
-    top_markets_window_size: usize,
+    pub ui_window_size: Arc<dyn Fn() -> Size + 'static + Send + Sync>,
 }
 
 impl Env {
-    pub fn new() -> Self {
+    pub fn new(ui_window_size: impl Fn() -> Size + 'static + Send + Sync) -> Self {
         let (sender, receiver) = mpsc::unbounded_channel::<Event>();
 
         let polymarket_client = PolymarketClient::default();
@@ -55,16 +55,12 @@ impl Env {
             polymarket_client: PolymarketClient::default(),
             sleep: SleepFn::default(),
             top_page_svc: TopPageService::new(polymarket_client),
-            top_markets_window_size: 24,
+            ui_window_size: Arc::new(ui_window_size),
         }
     }
 
     pub fn fire_and_forget<F: Future + Send + 'static>(&self, future: F) -> JoinHandle<F::Output>
         where F::Output: Send + 'static {
         tokio::spawn(future)
-    }
-
-    pub fn top_markets_window_size(&self) -> usize {
-        self.top_markets_window_size
     }
 }

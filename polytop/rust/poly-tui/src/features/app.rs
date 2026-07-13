@@ -9,6 +9,7 @@ use crate::features::loading_page::{LoadingPage, LoadingPageAction, loading_page
 use crate::features::command::{CommandPallette, Command};
 use crate::features::top_page::{TopPage, TopPageAction, top_page_reducer};
 use crate::features::log_page::{LogPage};
+use ratatui::prelude::Size;
 
 #[derive(Clone, Debug)]
 pub struct AppState {
@@ -110,48 +111,60 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
             }
         }
         Event::Crossterm(crossterm_event) => {
-            if let crossterm::event::Event::Key(key_event) = crossterm_event {
-                match &mut app_state.page {
-                    Page::Log(log_page) => {
-                        if log_page.key_input_middleware(key_event, env) {
-                            return;
-                        }
-                    },
-                    Page::Top(top_page) => {
-                        if top_page.key_input_middleware(key_event, env) {
-                            return;
-                        }
-                    }
-                    _ => ()
-                }
-                if let Some(command_pallette) = &mut app_state.command_pallette {
-                    if command_pallette.command_pallete_key_input_middleware(key_event, env) {
-                        return;
-                    }
-                }
-                if key_event.kind == KeyEventKind::Press {
-                    match key_event.code {
-                        KeyCode::Esc | KeyCode::Char('q') => app_state.running = false,
-                        KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
-                            app_state.running = false
-                        }
-                        KeyCode::Enter => {
-                            // Debounce example
-                            let token = (env.gen_token)();
-                            app_state.increment_token = Some(token.clone());
-                            let sender = env.sender.clone();
-                            env.fire_and_forget(async move {
-                                tokio::time::sleep(Duration::from_secs(1)).await;
-                                _ = sender.send(Action::LoadingPage(LoadingPageAction::Finished).into());
-                                _ = sender.send(Action::Next(token).into());
-                            });
+            match crossterm_event {
+                crossterm::event::Event::Key(key_event) => {
+                    match &mut app_state.page {
+                        Page::Log(log_page) => {
+                            if log_page.key_input_middleware(key_event, env) {
+                                return;
+                            }
                         },
-                        KeyCode::Char('/') => {
-                            app_state.command_pallette = Some(CommandPallette::new());
+                        Page::Top(top_page) => {
+                            if top_page.key_input_middleware(key_event, env) {
+                                return;
+                            }
                         }
-                        _ => {}
+                        _ => ()
+                    }
+                    if let Some(command_pallette) = &mut app_state.command_pallette {
+                        if command_pallette.command_pallete_key_input_middleware(key_event, env) {
+                            return;
+                        }
+                    }
+                    if key_event.kind == KeyEventKind::Press {
+                        match key_event.code {
+                            KeyCode::Esc | KeyCode::Char('q') => app_state.running = false,
+                            KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
+                                app_state.running = false
+                            }
+                            KeyCode::Enter => {
+                                // Debounce example
+                                let token = (env.gen_token)();
+                                app_state.increment_token = Some(token.clone());
+                                let sender = env.sender.clone();
+                                env.fire_and_forget(async move {
+                                    tokio::time::sleep(Duration::from_secs(1)).await;
+                                    _ = sender.send(Action::LoadingPage(LoadingPageAction::Finished).into());
+                                    _ = sender.send(Action::Next(token).into());
+                                });
+                            },
+                            KeyCode::Char('/') => {
+                                app_state.command_pallette = Some(CommandPallette::new());
+                            }
+                            _ => {}
+                        }
                     }
                 }
+                crossterm::event::Event::Resize(width, height) => {
+                    log::info!(target: "app", "App: Resize: {:?}, {:?}", width, height);
+                    match &mut app_state.page {
+                        Page::Top(top_page) => {
+                            top_page.ui_window_size = Size::new(*width, *height);
+                        }
+                        _ => ()
+                    }
+                },
+                _ => ()
             }
         }
         Event::App(action) => app_state_reduce(app_state, action, env),
@@ -164,7 +177,7 @@ impl Default for AppState {
             page: Page::LoadingPage(LoadingPage::default()),
             running: true,
             increment_token: None,
-            command_pallette: None,
+            command_pallette: None
         }
     }
 }

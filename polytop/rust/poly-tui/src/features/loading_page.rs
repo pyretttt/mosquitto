@@ -76,11 +76,11 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
             state.is_finished = true;
             state.progress = 1.0;
             let sender = env.sender.clone();
+            let un_window_size = env.ui_window_size.clone();
             tokio::spawn(async move {
-                tokio::time::sleep(Duration::from_millis(300)).await;
                 _ = sender.send(
                     Action::OpenTopPage(
-                        TopPage::mock_data()
+                        TopPage::mock_data(un_window_size())
                     ).into()
                 );
                 _ = sender.send(

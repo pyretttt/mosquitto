@@ -21,8 +21,9 @@ async fn main() -> color_eyre::Result<()> {
     setup_logging();
 
     color_eyre::install()?;
-    let mut terminal = ratatui::init();
-    let mut env = Env::new();
+    let mut terminal = Box::leak(Box::new(ratatui::init()));
+    let ui_window_size = || terminal.size().unwrap_or_default();
+    let mut env = Env::new(ui_window_size);
 
     env.fire_and_forget(sidecar_event_loop(env.sender.clone()));
 
