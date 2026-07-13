@@ -7,6 +7,7 @@ use tokio::sync::mpsc;
 use uuid::Uuid;
 use rand::RngExt;
 use poly_core::client::PolymarketClient;
+use ratatui::prelude::Size;
 
 use crate::event::Event;
 use crate::config::{get_config, Config};
@@ -37,7 +38,7 @@ pub struct Env {
     pub sleep: SleepFn,
     pub top_page_svc: TopPageService,
 
-    top_markets_count: usize,
+    top_markets_window_size: usize,
 }
 
 impl Env {
@@ -54,7 +55,7 @@ impl Env {
             polymarket_client: PolymarketClient::default(),
             sleep: SleepFn::default(),
             top_page_svc: TopPageService::new(polymarket_client),
-            top_markets_count: 30,
+            top_markets_window_size: 24,
         }
     }
 
@@ -63,7 +64,7 @@ impl Env {
         tokio::spawn(future)
     }
 
-    pub fn top_markets_count(&self) -> usize {
-        self.top_markets_count
+    pub fn top_markets_window_size(&self) -> usize {
+        self.top_markets_window_size
     }
 }

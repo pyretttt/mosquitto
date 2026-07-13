@@ -18,6 +18,7 @@ const MUTED: Color = Color::DarkGray;
 const HEADER: Color = Color::Yellow;
 
 static SPACE: &'static str = " ";
+static TOP_TABLE_PAYLOAD_HEIGHT_ADDEND: u16 = 3;
 
 pub fn top_page_ui(
     frame: &mut Frame,
@@ -36,7 +37,7 @@ pub fn top_page_ui(
 
     let [status_area, markets_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
-        Constraint::Max(env.top_markets_count() as u16),
+        Constraint::Max(env.top_markets_window_size() as u16 + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND),
         Constraint::Fill(2),
         Constraint::Length(3),
     ])

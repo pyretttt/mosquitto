@@ -219,11 +219,12 @@ impl TopPage {
                 true
             },
             KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
-                let selected_idx_in_window = self.markets_pane.table_state.selected().unwrap_or(0);
                 let total_markets_count = self.markets_pane.markets_data.markets.len();
+                if total_markets_count == 0 { return true; }
+                let selected_idx_in_window = self.markets_pane.table_state.selected().unwrap_or(0);
 
                 if x == 'j' {
-                    if selected_idx_in_window + self.markets_pane.offset == total_markets_count - 1 {
+                    if selected_idx_in_window.saturating_add(self.markets_pane.offset) == total_markets_count - 1 {
                         if self.is_loading { return true; }
                         log::info!(target: "app", "TopPage: Loading more markets");
                         _ = env.sender.send(TopPageAction::MarketsLoadRequested.into());
@@ -235,27 +236,12 @@ impl TopPage {
                         }
                     }
                 } else if x == 'k' {
-                    if selected_idx_in_window == self.markets_pane.top_markets_count - 1 {
-                        self.markets_pane.offset = self.markets_pane.offset.saturating_sub(1);
-                    } else {
+                    if selected_idx_in_window != 0 {
                         self.markets_pane.table_state.select_previous();
+                    } else {
+                        self.markets_pane.offset = self.markets_pane.offset.saturating_sub(1);
                     }
                 }
-                // if x == 'j' && count > selected_idx + 1 {
-                //     if selected_idx != self.markets_pane.top_markets_count - 1 {
-                //         self.markets_pane.table_state.select_next();
-                //     }
-                //     self.markets_pane.offset = self.markets_pane.offset.saturating_add(1).min(
-                //         count.saturating_sub(self.markets_pane.top_markets_count)
-                //     );
-                //     if self.markets_pane.table_state.selected().map_or(false, |idx| idx >= count - 1) {
-                //         log::info!(target: "app", "TopPage: Loading more markets");
-                //         _ = env.sender.send(TopPageAction::MarketsLoadRequested.into());
-                //     }
-                // } else if x == 'k' && selected_idx > 0 {
-                //     self.markets_pane.table_state.select_previous();
-                //     *self.markets_pane.table_state.offset_mut() = self.markets_pane.table_state.offset().saturating_sub(1);
-                // }
                 true
             }
             _ => false,
