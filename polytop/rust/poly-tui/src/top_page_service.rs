@@ -115,7 +115,7 @@ impl Market {
             volume24h,
             movement24h,
             spread,
-            rank_label: String::new(),
+            rank_label: String::default(),
             bookmark_label: if bookmarked { "★" } else { "" },
             yes_label: format_cents(yes_market_price),
             no_label: format_cents(no_market_price),

@@ -36,6 +36,8 @@ pub struct Env {
     pub polymarket_client: PolymarketClient,
     pub sleep: SleepFn,
     pub top_page_svc: TopPageService,
+
+    top_markets_count: usize,
 }
 
 impl Env {
@@ -52,11 +54,16 @@ impl Env {
             polymarket_client: PolymarketClient::default(),
             sleep: SleepFn::default(),
             top_page_svc: TopPageService::new(polymarket_client),
+            top_markets_count: 30,
         }
     }
 
     pub fn fire_and_forget<F: Future + Send + 'static>(&self, future: F) -> JoinHandle<F::Output>
         where F::Output: Send + 'static {
         tokio::spawn(future)
+    }
+
+    pub fn top_markets_count(&self) -> usize {
+        self.top_markets_count
     }
 }

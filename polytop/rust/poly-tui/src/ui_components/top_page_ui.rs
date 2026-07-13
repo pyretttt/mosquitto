@@ -2,7 +2,7 @@ use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table, TableState};
+use ratatui::widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table};
 
 use crate::env::Env;
 use crate::features::top_page::{Market, TopPage};
@@ -22,7 +22,7 @@ static SPACE: &'static str = " ";
 pub fn top_page_ui(
     frame: &mut Frame,
     top_page: &TopPage,
-    _env: &Env,
+    env: &Env,
 ) {
     let outer = Block::default()
         .borders(Borders::TOP)
@@ -36,7 +36,7 @@ pub fn top_page_ui(
 
     let [status_area, markets_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
-        Constraint::Fill(3),
+        Constraint::Max(env.top_markets_count() as u16),
         Constraint::Fill(2),
         Constraint::Length(3),
     ])
@@ -109,11 +109,9 @@ fn render_top_markets(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         header_cell("Spread"),
     ]);
 
-    let render_height = area.height.saturating_sub(3).max(1) as usize;
-
     let selected_index = top_page.markets_pane.table_state.selected().unwrap_or(0);
 
-    let rows = top_page.markets_pane.markets_data.markets
+    let rows = top_page.markets_pane.market_slice()
         .iter()
         .enumerate()
         .map(|(index, market)|
