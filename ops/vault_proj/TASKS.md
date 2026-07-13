@@ -82,22 +82,22 @@ Work through `docs/CONCEPTS.md` while doing the CLI checks below.
 
 ### 2a. Seal / unseal
 
-- [ ] **Read:** CONCEPTS — Seal & unseal.
-- [ ] **Task:** with `-dev`, run `vault operator seal`, then `vault status`.
-- [ ] **Task:** unseal is different in `-dev` (often restart is easiest). Then try
+- [x] **Read:** CONCEPTS — Seal & unseal.
+- [x] **Task:** with `-dev`, run `vault operator seal`, then `vault status`.
+- [x] **Task:** unseal is different in `-dev` (often restart is easiest). Then try
       the **file storage** path: copy `local/vault-config.hcl.example` →
       `local/vault-config.hcl`, run `mise run vault-file`, go through
       `vault operator init` and `vault operator unseal` (3 of 5 keys by default).
-- [ ] **Verify:** after sealing, API reads fail until unsealed; after unseal,
+- [x] **Verify:** after sealing, API reads fail until unsealed; after unseal,
       `vault status` shows `Sealed: false`.
 
 ### 2b. Authentication & tokens
 
-- [ ] **Read:** CONCEPTS — Auth methods & tokens.
-- [ ] **Task:** `vault token lookup` on your root token — note `ttl`, `renewable`, `policies`.
-- [ ] **Task:** create a periodic or renewable token with your limited policy;
+- [x] **Read:** CONCEPTS — Auth methods & tokens.
+- [x] **Task:** `vault token lookup` on your root token — note `ttl`, `renewable`, `policies`.
+- [x] **Task:** create a periodic or renewable token with your limited policy;
       `vault token renew`; `vault token revoke`.
-- [ ] **Verify:** after revoke, that token can no longer read secrets.
+- [x] **Verify:** after revoke, that token can no longer read secrets.
 
 ### 2c. Leases — renew & revoke
 
