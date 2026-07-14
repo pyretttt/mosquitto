@@ -71,8 +71,10 @@ BBR on the other hand is statistical model which computes statistics in window t
 
 2. **Practical - cwnd graph.** Run `iperf3 -c h2 -t 30 -i 1` under both CUBIC and BBR on the same lossy link. Capture cwnd via `ss -ti` sampled every 100ms. Plot the two curves (matplotlib or a quick gnuplot). Save as `exercises/06-cwnd.png`. Comment in `notes.md` on the difference.
 
+Captured measures, plotted cwnd. Reno vs Cubic, cubic has higher cwnd on average
 
 3. **Practical - retransmit forensics.** Force a high loss rate (`tc netem loss 10%`) and capture a flow. In Wireshark, find a *fast retransmit* (3 dup ACKs). Identify it by hand and write down the sequence numbers in `notes.md`.
+
 
 
 4. **Stretch - QUIC inspection.** Use `curl --http3 -v https://cloudflare-quic.com/` and capture with `tcpdump -i any -w quic.pcap udp port 443`. Open in Wireshark - QUIC frames are visible up to the encrypted parts. Use `SSLKEYLOGFILE` + `--http3` to dump session keys, then point Wireshark at the keylog file to decrypt.
