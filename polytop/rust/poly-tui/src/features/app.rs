@@ -157,9 +157,11 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                 }
                 crossterm::event::Event::Resize(width, height) => {
                     log::info!(target: "app", "App: Resize: {:?}, {:?}", width, height);
+                    let new_size = Size::new(*width, *height);
+                    env.ui.window_size = new_size;
                     match &mut app_state.page {
                         Page::Top(top_page) => {
-                            top_page.ui_window_size = Size::new(*width, *height);
+                            top_page_reducer(top_page, &mut TopPageAction::Resize(new_size).into(), env);
                         }
                         _ => ()
                     }

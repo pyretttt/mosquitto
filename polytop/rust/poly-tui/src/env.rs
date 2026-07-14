@@ -38,11 +38,15 @@ pub struct Env {
     pub polymarket_client: PolymarketClient,
     pub sleep: SleepFn,
     pub top_page_svc: TopPageService,
-    pub ui_window_size: Arc<dyn Fn() -> Size + 'static + Send + Sync>,
+    pub ui: UI,
+}
+
+pub struct UI {
+    pub window_size: Size,
 }
 
 impl Env {
-    pub fn new(ui_window_size: impl Fn() -> Size + 'static + Send + Sync) -> Self {
+    pub fn new(window_size: Size) -> Self {
         let (sender, receiver) = mpsc::unbounded_channel::<Event>();
 
         let polymarket_client = PolymarketClient::default();
@@ -55,7 +59,9 @@ impl Env {
             polymarket_client: PolymarketClient::default(),
             sleep: SleepFn::default(),
             top_page_svc: TopPageService::new(polymarket_client),
-            ui_window_size: Arc::new(ui_window_size),
+            ui: UI {
+                window_size: window_size,
+            },
         }
     }
 

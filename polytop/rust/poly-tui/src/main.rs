@@ -22,8 +22,7 @@ async fn main() -> color_eyre::Result<()> {
 
     color_eyre::install()?;
     let mut terminal = Box::leak(Box::new(ratatui::init()));
-    let ui_window_size = || terminal.size().unwrap_or_default();
-    let mut env = Env::new(ui_window_size);
+    let mut env = Env::new(terminal.size().unwrap_or_default());
 
     env.fire_and_forget(sidecar_event_loop(env.sender.clone()));
 

@@ -1,3 +1,5 @@
+use std::{ops::DerefMut, sync::Arc};
+
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Layout, Offset},
