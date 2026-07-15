@@ -15,7 +15,7 @@ use crate::top_page_service::{
     MarketsData, SelectedMarket, TopPageSvc,
 };
 
-static TOP_PAGE_TITLE: &str = " POLYTOP ";
+static TOP_PAGE_TITLE: &str = " POLYWHALE ";
 
 #[derive(Clone, Debug)]
 pub struct TopPage {

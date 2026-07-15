@@ -22,14 +22,33 @@ use crate::ui_components::command_popup::draw_command_popup;
 use crate::ui_components::top_page_ui::top_page_ui;
 use crate::ui_components::log_page_ui::draw_log_page;
 
-const POLYTOP_LOGO: [&str; 6] = [
-    "██████╗  ██████╗ ██╗  ██╗   ██╗████████╗ ██████╗ ██████╗ ",
-    "██╔══██╗██╔═══██╗██║  ╚██╗ ██╔╝╚══██╔══╝██╔═══██╗██╔══██╗",
-    "██████╔╝██║   ██║██║   ╚████╔╝    ██║   ██║   ██║██████╔╝",
-    "██╔═══╝ ██║   ██║██║    ╚██╔╝     ██║   ██║   ██║██╔═══╝ ",
-    "██║     ╚██████╔╝███████╗██║      ██║   ╚██████╔╝██║     ",
-    "╚═╝      ╚═════╝ ╚══════╝╚═╝      ╚═╝    ╚═════╝ ╚═╝     ",
+const WHALE_ART: [&str; 6] = [
+    "     .-'               ",
+    "'--./ /     _.---.     ",
+    "'-,  (__..-`       \\  ",
+    "   \\          .     | ",
+    "    `,.__.   ,__.--/   ",
+    "      '._/_.'___.-`    ",
 ];
+
+const POLYWHALE_LOGO: [&str; 6] = [
+    "██████╗  ██████╗ ██╗  ██╗   ██╗██╗    ██╗██╗  ██╗ █████╗ ██╗     ███████╗",
+    "██╔══██╗██╔═══██╗██║  ╚██╗ ██╔╝██║    ██║██║  ██║██╔══██╗██║     ██╔════╝",
+    "██████╔╝██║   ██║██║   ╚████╔╝ ██║ █╗ ██║███████║███████║██║     █████╗  ",
+    "██╔═══╝ ██║   ██║██║    ╚██╔╝  ██║███╗██║██╔══██║██╔══██║██║     ██╔══╝  ",
+    "██║     ╚██████╔╝███████╗██║   ╚███╔███╔╝██║  ██║██║  ██║███████╗███████╗",
+    "╚═╝      ╚═════╝ ╚══════╝╚═╝    ╚══╝╚══╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚══════╝",
+];
+
+const LOGO_GAP_LINES: u16 = 1;
+
+fn loading_logo_text() -> String {
+    [WHALE_ART.join("\n"), POLYWHALE_LOGO.join("\n")].join("\n\n")
+}
+
+fn loading_logo_height() -> u16 {
+    WHALE_ART.len() as u16 + LOGO_GAP_LINES + POLYWHALE_LOGO.len() as u16
+}
 
 const PUBU_LOGO_COLORS: [Color; 16] = [
     Color::Rgb(255, 247, 251),
@@ -111,7 +130,7 @@ fn draw_intro_page(frame: &mut Frame, _intro: &IntroPage) {
 
 pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
     let [logo_area, throbber_area, fill_area, gauge_area, tip_area] = Layout::vertical([
-        Constraint::Length(POLYTOP_LOGO.len() as u16),
+        Constraint::Length(loading_logo_height()),
         Constraint::Length(3),
         Constraint::Fill(1),
         Constraint::Length(3),
@@ -121,7 +140,7 @@ pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
     .areas(frame.area());
 
     frame.render_widget(
-        Paragraph::new(POLYTOP_LOGO.join("\n"))
+        Paragraph::new(loading_logo_text())
             .alignment(Alignment::Center)
             .style(
                 Style::default()
