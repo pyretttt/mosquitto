@@ -15,11 +15,11 @@ ACK ------>
 
 - Explain `seq`, `ack`, sliding window, fast retransmit, fast recovery, RTO.
 
-* `seq` field of tcp segment is used to specialize sequence number of the first bit inside TCP segment _(and correspondingly IP datagram)_
+* `seq` field of tcp segment is used to specialize sequence number of the first byte inside TCP segment _(and correspondingly IP datagram)_
 
-* `ack` is used to inform other side of tcp connection, what bit is expected to be received next
+* `ack` is used to inform other side of tcp connection, what bytes is expected to be received next
 
-* The TCP sliding window does not restrict a range of bits. It restricts the amount (range of bytes) of data that can be sent without receiving an acknowledgment.
+* The TCP sliding window does not restrict a range of bytes. It restricts the amount (range of bytes) of data that can be sent without receiving an acknowledgment.
 
 * fast retransmit happens when three duplicate acks are received, it means that succeding acked one is lost.
 
@@ -33,7 +33,7 @@ ACK ------>
 
 * Congestion avoidance happens when congestion was met, `cwnd` is now about half of `cwnd` when congestion was met. TCP now increases `cwnd` by a single `MTT` per `RTT`
 
-* Since `sshtresh` is half of `cwnd` when congestion was last detected it might be a bit reckless to keep doubling `cwnd` when it reaches or surpasses the value of `sshtresh`. Thus when, value of `cwnd` equals `sshtresh`, slow start ends and TCP transitions into Congestion-Avoidanc mode.
+* Since `sshtresh` is half of `cwnd` when congestion was last detected it might be a bytes reckless to keep doubling `cwnd` when it reaches or surpasses the value of `sshtresh`. Thus when, value of `cwnd` equals `sshtresh`, slow start ends and TCP transitions into Congestion-Avoidanc mode.
 
 
 - Compare CUBIC (default Linux) vs BBR. Know what each one's "mental model" is (loss-based vs model-based).
@@ -45,7 +45,7 @@ BBR on the other hand is statistical model which computes statistics in window t
 
 - Articulate what QUIC adds over TCP+TLS+HTTP/2: faster handshake, no head-of-line across streams, stream multiplexing native, connection migration.
 
-* QUIC allows for 0 RTT before first bit of data is sent
+* QUIC allows for 0 RTT before first byte of data is sent
 
 * QUIC streams are independent, they do not block each other
 
@@ -99,7 +99,7 @@ Done but supplying SSLKEYLOGFILE didn't reveal all protected payloads. Only part
 
 `seq` represents sequence number of the first byte in TCP segments payload w.r.t. tcp connection. `ack` represents next expected sequence number in the next received segment.
 
-If receiver already ACKed bytes 0-99, then last ack was 100, next seq number will be `100`. Sender sends bytes 100-100 with `seq=100` and receiver acks with `ack=200`
+If receiver already ACKed bytes 0-99, then last ack was 100, next seq number will be `100`. Sender sends bytes 100-199 with `seq=100` and receiver acks with `ack=200`
 
 - What's the difference between RTO and RTT?
 
