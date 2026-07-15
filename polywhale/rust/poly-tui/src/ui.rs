@@ -21,6 +21,7 @@ use crate::env::Env;
 use crate::ui_components::command_popup::draw_command_popup;
 use crate::ui_components::top_page_ui::top_page_ui;
 use crate::ui_components::log_page_ui::draw_log_page;
+use crate::ui_components::window_size_ui::draw_window_size;
 
 const WHALE_ART: [&str; 6] = [
     "     .-'               ",
@@ -77,6 +78,7 @@ fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
         Page::Help(_) => (),
         Page::Log(log) => draw_log_page(frame, log),
+        Page::WindowSize(window_size) => draw_window_size(frame, window_size),
     }
 
     if let Some(command_pallette) = &state.command_pallette {

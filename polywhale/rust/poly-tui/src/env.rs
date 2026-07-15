@@ -42,6 +42,7 @@ pub struct Env {
 
 pub struct UI {
     pub window_size: Size,
+    pub required_window_size: Size,
 }
 
 impl Env {
@@ -60,6 +61,7 @@ impl Env {
             top_page_svc: TopPageService::new(polymarket_client),
             ui: UI {
                 window_size: window_size,
+                required_window_size: Size::new(120, 40)
             },
         }
     }

@@ -9,6 +9,7 @@ use crate::features::loading_page::{LoadingPage, LoadingPageAction, loading_page
 use crate::features::command::{CommandPallette, Command};
 use crate::features::top_page::{TopPage, TopPageAction, top_page_reducer};
 use crate::features::log_page::{LogPage};
+use crate::features::window_size::{WindowSize, window_size_reducer, WindowSizeAction};
 use ratatui::prelude::Size;
 
 #[derive(Clone, Debug)]
@@ -26,6 +27,7 @@ pub enum Page {
     Top(TopPage),
     Help(HelpPage),
     Log(LogPage),
+    WindowSize(WindowSize),
 }
 
 #[derive(Clone, Debug)]
@@ -45,6 +47,7 @@ pub enum Action {
     LoadingPage(LoadingPageAction),
     TopPage(TopPageAction),
     OpenTopPage(TopPage),
+    WindowSize(WindowSizeAction),
     OpenLogPage,
     Quit,
 }
@@ -99,7 +102,14 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             } else {
                 assert!(false, "Action dispatched to non-loading page {:?}", action);
             }
-        }
+        },
+        Action::WindowSize(action) => {
+            if let Page::WindowSize(ref mut window_size) = app_state.page {
+                window_size_reducer(window_size, action, env);
+            } else {
+                assert!(false, "Action dispatched to non-window size page {:?}", action);
+            }
+        },
     }
 }
 
@@ -159,6 +169,12 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                     log::info!(target: "app", "App: Resize: {:?}, {:?}", width, height);
                     let new_size = Size::new(*width, *height);
                     env.ui.window_size = new_size;
+
+                    if new_size.width < env.ui.required_window_size.width || new_size.height < env.ui.required_window_size.height {
+                        _ = env.sender.send(Action::WindowSize(WindowSizeAction::Resize(env.ui.required_window_size)).into());
+                        return;
+                    }
+
                     match &mut app_state.page {
                         Page::Top(top_page) => {
                             top_page_reducer(top_page, &mut TopPageAction::Resize(new_size).into(), env);
