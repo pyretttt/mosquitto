@@ -1,4 +1,4 @@
-# Polytop — Rust
+# PolyWhale — Rust
 
 ratatui + tokio TUI scaffold for monitoring Polymarket.
 

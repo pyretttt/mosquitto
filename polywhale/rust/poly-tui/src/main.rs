@@ -40,7 +40,7 @@ fn setup_logging() {
     tui_logger::set_default_level(log::LevelFilter::Trace);
 
     let mut dir = std::env::temp_dir();
-    dir.push("polytop.log");
+    dir.push("polywhale.log");
 
     // Simple log rotation by file size
     if std::fs::metadata(&dir).map(|meta| meta.len()).unwrap_or(0) >= LOG_FILE_MAX_SIZE_BYTES {

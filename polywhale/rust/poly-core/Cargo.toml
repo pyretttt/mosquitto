@@ -2,7 +2,7 @@
 name = "poly-core"
 version.workspace = true
 edition.workspace = true
-description = "Shared Polymarket data types and API client for polytop"
+description = "Shared Polymarket data types and API client for PolyWhale"
 
 [dependencies]
 polymarket_client_sdk_v2 = { version = "0.6.0", features = ["clob", "gamma"] }

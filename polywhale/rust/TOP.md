@@ -1,6 +1,6 @@
-# Polytop Terminal UI Concept
+# PolyWhale Terminal UI Concept
 
-Polytop should feel closer to `btop` than classic `top`: dense, keyboard-first,
+PolyWhale should feel closer to `btop` than classic `top`: dense, keyboard-first,
 pane-based, colorful, and always alive. The main screen should make it possible
 to monitor easily available Polymarket market data, not just a list of rows.
 
@@ -44,7 +44,7 @@ The bottom command popup is permanently reserved. The main dashboard should neve
 draw under it.
 
 ```text
-╭─ POLYTOP ───────────────────────────────────────────────────────────── 17:42:31 ─╮
+╭─ POLYWHALE ─────────────────────────────────────────────────────────── 17:42:31 ─╮
 │ ✓  net online   ws live   latency 42ms   refresh 500ms   mode observe            │
 ├─ [1] - Top Markets: all ─────────────────────────────────────────────────────────┤
 │▶ #  ★  Market                                      Yes   No   24h    Move Spread │
