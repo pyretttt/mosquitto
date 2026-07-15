@@ -101,8 +101,8 @@ Work through `docs/CONCEPTS.md` while doing the CLI checks below.
 
 ### 2c. Leases — renew & revoke
 
-- [ ] **Read:** CONCEPTS — Leases.
-- [ ] **Task:** enable the `transit` or use a dynamic-ish path. Easiest beginner
+- [x] **Read:** CONCEPTS — Leases.
+- [x] **Task:** enable the `transit` or use a dynamic-ish path. Easiest beginner
       path: create a token with a short TTL (`-ttl=60s`), watch it expire, and
       practice `vault lease` / `vault token renew` before expiry.
 - [ ] Optional stretch: enable the **database** secrets engine against a local
