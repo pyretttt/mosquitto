@@ -1,7 +1,6 @@
 use polymarket_client_sdk_v2::clob::{
     Client as ClobClient,
     Config,
-    types::response::{MarketResponse, Page}
 };
 use polymarket_client_sdk_v2::gamma::{Client as GammaClient};
 use polymarket_client_sdk_v2::error::Error;

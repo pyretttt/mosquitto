@@ -1,5 +1,3 @@
-use std::{ops::DerefMut, sync::Arc};
-
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Layout, Offset},
@@ -78,7 +76,10 @@ fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
         Page::Help(_) => (),
         Page::Log(log) => draw_log_page(frame, log),
-        Page::WindowSize(window_size) => draw_window_size(frame, window_size),
+    }
+
+    if let Some(window_size) = &state.window_size {
+        draw_window_size(frame, window_size);
     }
 
     if let Some(command_pallette) = &state.command_pallette {

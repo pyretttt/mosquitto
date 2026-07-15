@@ -18,6 +18,7 @@ pub struct AppState {
     pub running: bool,
     pub increment_token: Option<String>,
     pub command_pallette: Option<CommandPallette>,
+    pub window_size: Option<WindowSize>,
 }
 
 #[derive(Clone, Debug)]
@@ -27,7 +28,6 @@ pub enum Page {
     Top(TopPage),
     Help(HelpPage),
     Log(LogPage),
-    WindowSize(WindowSize),
 }
 
 #[derive(Clone, Debug)]
@@ -104,10 +104,10 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             }
         },
         Action::WindowSize(action) => {
-            if let Page::WindowSize(ref mut window_size) = app_state.page {
+            if let Some(ref mut window_size) = app_state.window_size {
                 window_size_reducer(window_size, action, env);
             } else {
-                assert!(false, "Action dispatched to non-window size page {:?}", action);
+                assert!(false, "Action dispatched with no window size overlay {:?}", action);
             }
         },
     }
@@ -170,9 +170,25 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                     let new_size = Size::new(*width, *height);
                     env.ui.window_size = new_size;
 
-                    if new_size.width < env.ui.required_window_size.width || new_size.height < env.ui.required_window_size.height {
-                        _ = env.sender.send(Action::WindowSize(WindowSizeAction::Resize(env.ui.required_window_size)).into());
-                        return;
+                    let invalid_size = new_size.width < env.ui.required_window_size.width || new_size.height < env.ui.required_window_size.height;
+                    match &mut app_state.window_size {
+                        Some(window_size) => {
+                            if invalid_size {
+                                window_size_reducer(
+                                    window_size,
+                                    &WindowSizeAction::Resize(new_size),
+                                    env,
+                                );
+                            } else {
+                                app_state.window_size = None;
+                            }
+                        }
+                        None if invalid_size => {
+                            let mut window_size = WindowSize::new(env.ui.required_window_size);
+                            window_size.current_size = new_size;
+                            app_state.window_size = Some(window_size);
+                        },
+                        _ => (),
                     }
 
                     match &mut app_state.page {
@@ -195,7 +211,8 @@ impl Default for AppState {
             page: Page::LoadingPage(LoadingPage::default()),
             running: true,
             increment_token: None,
-            command_pallette: None
+            command_pallette: None,
+            window_size: None,
         }
     }
 }
