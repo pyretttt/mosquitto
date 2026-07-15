@@ -5,6 +5,7 @@ use tui_logger::*;
 use crossterm::event::{KeyCode};
 
 use crate::env::Env;
+use crate::features::app::Action;
 
 #[derive(Clone)]
 pub struct LogWidgetState(pub Rc<TuiWidgetState>);
@@ -58,7 +59,7 @@ impl LogPage {
     pub fn key_input_middleware(
         &mut self,
         key_event: &mut crossterm::event::KeyEvent,
-        _env: &Env,
+        env: &Env,
     ) -> bool{
         match key_event.code {
             KeyCode::Tab => (),
@@ -74,6 +75,9 @@ impl LogPage {
             KeyCode::Char('-') => self.logs_state.0.transition(TuiWidgetEvent::MinusKey),
             KeyCode::Char('h') => self.logs_state.0.transition(TuiWidgetEvent::HideKey),
             KeyCode::Char('f') => self.logs_state.0.transition(TuiWidgetEvent::FocusKey),
+            KeyCode::Char('q') => {
+                _ = env.sender.send(Action::CloseOverlay.into());
+            },
             KeyCode::Char('s') => {
                 self.applied_app_logs_filter = !self.applied_app_logs_filter;
                 match Rc::get_mut(&mut self.logs_state.0) {

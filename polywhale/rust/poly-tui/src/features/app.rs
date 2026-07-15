@@ -55,6 +55,7 @@ pub enum Action {
     WindowSize(WindowSizeAction),
     OpenLogPage,
     Quit,
+    CloseOverlay,
 }
 
 impl Into<Event> for Action {
@@ -114,6 +115,9 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             } else {
                 assert!(false, "Action dispatched with no window size overlay {:?}", action);
             }
+        },
+        Action::CloseOverlay => {
+            app_state.overlay = None;
         },
     }
 }
