@@ -75,9 +75,23 @@ Captured measures, plotted cwnd. Reno vs Cubic, cubic has higher cwnd on average
 
 3. **Practical - retransmit forensics.** Force a high loss rate (`tc netem loss 10%`) and capture a flow. In Wireshark, find a *fast retransmit* (3 dup ACKs). Identify it by hand and write down the sequence numbers in `notes.md`.
 
+Add wireshark image. It looks a little bit strange
 
+1. 47	10:20:04.481397	10.0.1.1	10.0.0.1	TCP	72	5201 → 34016 [ACK] Seq=1 Ack=88366 Win=181504 Len=0 TSval=1868982083 TSecr=3594017934
+2. 48	10:20:04.694628	10.0.0.1	10.0.1.1	TCP	1520	[TCP Spurious Retransmission] 34016 → 5201 [ACK] Seq=69542 Ack=1 Win=64256 Len=1448 TSval=3594018147 TSecr=1868982083
+3. 49	10:20:04.694639	10.0.1.1	10.0.0.1	TCP	84	[TCP Dup ACK 47#1] 5201 → 34016 [ACK] Seq=1 Ack=88366 Win=181504 Len=0 TSval=1868982296 TSecr=3594017934 SLE=69542 SRE=70990
+4. 50	10:20:04.694676	10.0.0.1	10.0.1.1	TCP	8760	[TCP Previous segment not captured] 34016 → 5201 [PSH, ACK] Seq=89814 Ack=1 Win=64256 Len=8688 TSval=3594018148 TSecr=1868982296
+5. 51	10:20:04.694682	10.0.1.1	10.0.0.1	TCP	84	[TCP Dup ACK 47#2] 5201 → 34016 [ACK] Seq=1 Ack=88366 Win=198912 Len=0 TSval=1868982297 TSecr=3594017934 SLE=89814 SRE=98502
+6. 52	10:20:04.694684	10.0.0.1	10.0.1.1	TCP	8760	34016 → 5201 [PSH, ACK] Seq=98502 Ack=1 Win=64256 Len=8688 TSval=3594018148 TSecr=1868982296
+7. 53	10:20:04.694687	10.0.1.1	10.0.0.1	TCP	84	[TCP Dup ACK 47#3] 5201 → 34016 [ACK] Seq=1 Ack=88366 Win=216192 Len=0 TSval=1868982297 TSecr=3594017934 SLE=89814 SRE=107190
+8. 54	10:20:04.694713	10.0.0.1	10.0.1.1	TCP	1520	[TCP Fast Retransmission] 34016 → 5201 [ACK] Seq=88366 Ack=1 Win=64256 Len=1448 TSval=3594018148 TSecr=1868982297
+
+(1) Receiver expects next seq num to be 88366, (2) sender spuriously retransmits `seq=69542` what results in (3) first duplicate Ack=88366. (4) Then wireshark reports previous segment was lost (probably at router) and sender send `Seq=89814`. (5) What resulted in second duplicate `Ack=88366`. (6) Sender kept sending further data `Seq=98502`. (7) and third duplicate ack `Ack=88366`. (7) Finally fast retranssmit `Seq=88366`
 
 4. **Stretch - QUIC inspection.** Use `curl --http3 -v https://cloudflare-quic.com/` and capture with `tcpdump -i any -w quic.pcap udp port 443`. Open in Wireshark - QUIC frames are visible up to the encrypted parts. Use `SSLKEYLOGFILE` + `--http3` to dump session keys, then point Wireshark at the keylog file to decrypt.
+
+Done but supplying SSLKEYLOGFILE didn't reveal all protected payloads. Only partly also one request ended up in awfully many (221) captures.
+
 
 ## Self-check
 
@@ -95,6 +109,25 @@ RTO - Retransmission timeout, it measured from `estimatedRTT` and `estimatedDev`
 
 - What does `ss -ti` show that `tcpdump` doesn't, and vice versa?
 
+`ss -ti` reads the kernel's internal TCP socket state directly, so it exposes things tcpdump has no visibility into because they're not on the wire:
+
+- RTT estimates (rtt, rttvar) — the kernel's smoothed round-trip time calculation
+- Congestion control state — cwnd (congestion window), ssthresh, algorithm in use (cubic, bbr, etc.)
+- Retransmission counters — total retransmits for the connection (retrans), not individual packets
+- Send/receive window sizes as currently tracked by the kernel
+- MSS in effect
+- Pacing rate (with BBR or fq)
+- Socket-level state — ESTABLISHED, TIME_WAIT, etc., and which process/PID owns the socket (with -p)
+- Aggregate, per-connection summary — one line of "current health" per socket rather than a stream of events
+
+What `tcpdump` shows that `ss -ti` doesn't. `tcpdump` captures actual packets off the wire (or loopback/interface), so it shows:
+
+- Every individual packet — headers, flags (SYN/ACK/FIN/RST), sequence/ack numbers, actual payload
+- Packet timing — exact timestamps between packets, letting you compute your own RTT or spot delays
+- Traffic you're not a socket endpoint for — e.g., promiscuous capture of other hosts' traffic, or non-TCP protocols entirely (ARP, ICMP, UDP, etc.)
+- The actual byte content — payloads, TLS handshake details, DNS queries, HTTP headers, etc.
+- Packet loss/reordering evidence — you can see duplicate ACKs, out-of-order segments, actual retransmitted packets (vs. just a retransmit count)
+- Historical/replayable data — you can write to a .pcap file and analyze later in Wireshark
 
 
 - Why is BBR more aggressive than CUBIC on a lossy fiber link?

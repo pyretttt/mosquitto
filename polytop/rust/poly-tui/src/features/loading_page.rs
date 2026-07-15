@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::features::app::{Action};
 use crate::features::top_page::TopPage;
 use crate::env::Env;
