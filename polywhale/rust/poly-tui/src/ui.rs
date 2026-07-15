@@ -10,6 +10,7 @@ use throbber_widgets_tui::{Throbber, BRAILLE_EIGHT, WhichUse};
 
 use crate::features::app::{
     AppState,
+    Overlay,
     Page,
     app_reducer,
     IntroPage,
@@ -75,11 +76,12 @@ fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
         Page::Top(top) => top_page_ui(frame, top, env),
         Page::LoadingPage(loading) => draw_loading_page(frame, loading),
         Page::Help(_) => (),
-        Page::Log(log) => draw_log_page(frame, log),
     }
 
-    if let Some(window_size) = &state.window_size {
-        draw_window_size(frame, window_size);
+    match &state.overlay {
+        Some(Overlay::Log(log)) => draw_log_page(frame, log),
+        Some(Overlay::WindowSize(window_size)) => draw_window_size(frame, window_size),
+        None => (),
     }
 
     if let Some(command_pallette) = &state.command_pallette {

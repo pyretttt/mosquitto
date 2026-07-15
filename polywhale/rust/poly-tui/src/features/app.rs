@@ -18,7 +18,13 @@ pub struct AppState {
     pub running: bool,
     pub increment_token: Option<String>,
     pub command_pallette: Option<CommandPallette>,
-    pub window_size: Option<WindowSize>,
+    pub overlay: Option<Overlay>,
+}
+
+#[derive(Clone, Debug)]
+pub enum Overlay {
+    Log(LogPage),
+    WindowSize(WindowSize),
 }
 
 #[derive(Clone, Debug)]
@@ -27,7 +33,6 @@ pub enum Page {
     LoadingPage(LoadingPage),
     Top(TopPage),
     Help(HelpPage),
-    Log(LogPage),
 }
 
 #[derive(Clone, Debug)]
@@ -76,7 +81,7 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
                     app_state.page = Page::Intro(IntroPage {});
                 },
                 Command::Log => {
-                    app_state.page = Page::Log(LogPage::new());
+                    app_state.overlay = Some(Overlay::Log(LogPage::new()));
                 },
             }
             app_state.command_pallette = None;
@@ -94,7 +99,7 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             app_state.page = Page::Top(std::mem::take(page));
         },
         Action::OpenLogPage => {
-            app_state.page = Page::Log(LogPage::new());
+            app_state.overlay = Some(Overlay::Log(LogPage::new()));
         },
         Action::TopPage(action) => {
             if let Page::Top(ref mut top_page) = app_state.page {
@@ -104,7 +109,7 @@ pub fn app_state_reduce(app_state: &mut AppState, action: &mut Action, env: &Env
             }
         },
         Action::WindowSize(action) => {
-            if let Some(ref mut window_size) = app_state.window_size {
+            if let Some(Overlay::WindowSize(ref mut window_size)) = app_state.overlay {
                 window_size_reducer(window_size, action, env);
             } else {
                 assert!(false, "Action dispatched with no window size overlay {:?}", action);
@@ -123,12 +128,23 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
         Event::Crossterm(crossterm_event) => {
             match crossterm_event {
                 crossterm::event::Event::Key(key_event) => {
-                    match &mut app_state.page {
-                        Page::Log(log_page) => {
+                    if let Some(command_pallette) = &mut app_state.command_pallette {
+                        if command_pallette.command_pallete_key_input_middleware(key_event, env) {
+                            return;
+                        }
+                    }
+
+                    match &mut app_state.overlay {
+                        Some(Overlay::Log(log_page)) => {
                             if log_page.key_input_middleware(key_event, env) {
                                 return;
                             }
-                        },
+                        }
+                        Some(Overlay::WindowSize(_)) => (),
+                        _ => (),
+                    }
+
+                    match &mut app_state.page {
                         Page::Top(top_page) => {
                             if top_page.key_input_middleware(key_event, env) {
                                 return;
@@ -136,11 +152,7 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                         }
                         _ => ()
                     }
-                    if let Some(command_pallette) = &mut app_state.command_pallette {
-                        if command_pallette.command_pallete_key_input_middleware(key_event, env) {
-                            return;
-                        }
-                    }
+
                     if key_event.kind == KeyEventKind::Press {
                         match key_event.code {
                             KeyCode::Esc | KeyCode::Char('q') => app_state.running = false,
@@ -171,8 +183,8 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                     env.ui.window_size = new_size;
 
                     let invalid_size = new_size.width < env.ui.required_window_size.width || new_size.height < env.ui.required_window_size.height;
-                    match &mut app_state.window_size {
-                        Some(window_size) => {
+                    match &mut app_state.overlay {
+                        Some(Overlay::WindowSize(window_size)) => {
                             if invalid_size {
                                 window_size_reducer(
                                     window_size,
@@ -180,13 +192,13 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                                     env,
                                 );
                             } else {
-                                app_state.window_size = None;
+                                app_state.overlay = None;
                             }
                         }
-                        None if invalid_size => {
+                        _ if invalid_size => {
                             let mut window_size = WindowSize::new(env.ui.required_window_size);
                             window_size.current_size = new_size;
-                            app_state.window_size = Some(window_size);
+                            app_state.overlay = Some(Overlay::WindowSize(window_size));
                         },
                         _ => (),
                     }
@@ -212,7 +224,7 @@ impl Default for AppState {
             running: true,
             increment_token: None,
             command_pallette: None,
-            window_size: None,
+            overlay: None,
         }
     }
 }
