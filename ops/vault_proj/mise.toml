@@ -57,6 +57,10 @@ vault server -config=local/vault-config.hcl
 description = "Guided KV write/read + token policy demo against local Vault"
 run = "bash scripts/local-kv-demo.sh"
 
+[tasks.local-db-lease-demo]
+description = "Postgres in Docker + Vault dynamic DB creds (lease renew/revoke)"
+run = "bash scripts/local-db-lease-demo.sh"
+
 # ---------------------------------------------------------------------------
 # Track B — local Kubernetes
 # ---------------------------------------------------------------------------

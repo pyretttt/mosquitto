@@ -105,19 +105,24 @@ Work through `docs/CONCEPTS.md` while doing the CLI checks below.
 - [x] **Task:** enable the `transit` or use a dynamic-ish path. Easiest beginner
       path: create a token with a short TTL (`-ttl=60s`), watch it expire, and
       practice `vault lease` / `vault token renew` before expiry.
-- [ ] Optional stretch: enable the **database** secrets engine against a local
+- [x] Optional stretch: enable the **database** secrets engine against a local
       Postgres and issue a dynamic role credential; `vault lease renew` /
       `vault lease revoke` on the lease id.
-- [ ] **Verify:** after revoke/expiry, the credential no longer works.
+      Run: `mise run local-db-lease-demo` (or step through
+      `scripts/local-db-lease-demo.sh`). Needs Docker + Vault `-dev`.
+- [x] **Verify:** after revoke/expiry, the credential no longer works.
 
 ### 2d. Namespaces (lock / unlock)
 
 Open-source Vault does **not** include namespaces (Enterprise / HCP feature).
 Still learn the model — it shows up in real jobs.
 
-- [ ] **Read:** CONCEPTS — Namespaces.
-- [ ] **Task (theory):** explain in your own words what a namespace isolates and
+- [x] **Read:** CONCEPTS — Namespaces.
+- [x] **Task (theory):** explain in your own words what a namespace isolates and
       what “namespace lock” does to API access inside that namespace.
+
+It isolates API between teams, whole server API can handle request, when namespace can be locked and no request handled in namespace. Teams do not collide with each other.
+
 - [ ] **Task (practice substitute on OSS):** use **separate mount paths + policies**
       to simulate two teams (`secret/team-a/...` vs `secret/team-b/...`) so each
       token can only see its path. Document the mapping in a short note under
@@ -199,6 +204,7 @@ hardcoded string). TLS via Vault PKI is in §3d.
 | `mise run vault-dev` | Local Vault `-dev` on :8200 |
 | `mise run vault-file` | Local Vault with file storage (init/unseal practice) |
 | `mise run local-kv-demo` | Guided KV + token demo script |
+| `mise run local-db-lease-demo` | Postgres + dynamic DB creds / leases |
 | `mise run cluster-k3d` / `cluster-kind` | Local Kubernetes |
 | `mise run vault-install` | Helm install Vault |
 | `mise run app-build` | Build/load demo image |
