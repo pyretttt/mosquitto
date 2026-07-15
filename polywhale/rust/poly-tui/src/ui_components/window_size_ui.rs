@@ -8,6 +8,8 @@ use ratatui::{
 
 use crate::features::window_size::WindowSize;
 
+static EMPTY: &str = "";
+
 pub fn draw_window_size(frame: &mut Frame, state: &WindowSize) {
     let area = frame.area();
     frame.render_widget(Clear, area);
@@ -36,7 +38,7 @@ pub fn draw_window_size(frame: &mut Frame, state: &WindowSize) {
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         )),
-        Line::from(""),
+        Line::from(EMPTY),
         Line::from(vec![
             Span::styled("Current:  ", Style::default().fg(Color::DarkGray)),
             Span::styled(current, Style::default().fg(Color::Red)),
