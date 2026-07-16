@@ -71,7 +71,7 @@ impl StatusPane {
 #[derive(Clone, Debug, Default)]
 pub struct MarketsPane {
     pub title: &'static str,
-    pub filter: String,
+    pub filter: Option<Filter>,
     pub title_label: String,
     pub footer_label: String,
     pub markets_data: MarketsData,
@@ -81,9 +81,14 @@ pub struct MarketsPane {
     offset: usize
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct Filter {
+    pub search_term: String,
+}
+
 impl MarketsPane {
     pub fn refresh_labels(&mut self) {
-        self.title_label = format!(" [1] - {}: {} ", self.title, self.filter);
+        self.title_label = format!(" [1] - {}: {} ", self.title, self.filter.as_ref().map_or("all", |f| &f.search_term));
         self.footer_label = format!(
             " {} markets | j/k move | b bookmarks/all | w bookmark ",
             self.markets_data.markets.len(),
@@ -256,7 +261,10 @@ impl TopPage {
                     }
                 }
                 true
-            }
+            },
+            KeyCode::Char('f') => {
+                true
+            },
             _ => false,
         }
     }
@@ -284,7 +292,9 @@ impl TopPage {
             },
             markets_pane: MarketsPane {
                 title: "Top Markets",
-                filter: "all".into(),
+                filter: Some(Filter {
+                    search_term: "".into(),
+                }),
                 title_label: String::new(),
                 footer_label: String::new(),
                 markets_data: MarketsData {

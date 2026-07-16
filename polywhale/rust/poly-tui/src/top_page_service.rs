@@ -1,13 +1,12 @@
 use poly_core::client::{PolymarketClient, PolyError};
 
-const MARKETS_PER_PAGE: i32 = 30;
+const EVENTS_PER_PAGE: i32 = 30;
 
 pub trait TopPageSvc: Send + Sync + Clone {
-    fn load_markets(
+    fn load_events(
         &self,
         next_cursor: i32,
-        prepend_markets: &[Market]
-    ) -> impl Future<Output = Result<MarketsData, PolyError>> + Send;
+    ) -> impl Future<Output = Result<EventsData, PolyError>> + Send;
 }
 
 #[derive(Clone, Debug)]
@@ -24,53 +23,125 @@ impl TopPageService {
 }
 
 impl TopPageSvc for TopPageService {
-    async fn load_markets(
-        &self,
-        next_cursor: i32,
-        prepend_markets: &[Market]
-    ) -> Result<MarketsData, PolyError> {
-        let markets = self.client.markets(MARKETS_PER_PAGE, next_cursor).await?;
-        let markets_data = markets.into_iter().filter_map(|market| {
-            let prices = market.outcome_prices?.clone();
-            let (yes_market_price, no_market_price) = if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "yes" {
-                (prices.get(0)?, prices.get(1)?)
-            } else if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "no" {
-                (prices.get(1)?, prices.get(0)?)
-            } else {
-                log::error!(target: "app", "Unexpected outcome: {:?} for market {:?}", market.outcomes, market.slug);
-                return None;
-            };
-            Some(Market::new(
-                market.question.unwrap_or_else(|| "N/A".to_owned()),
-                market.slug.unwrap_or_else(|| "N/A".to_owned()),
-                false,
-                yes_market_price.as_f64(),
-                no_market_price.as_f64(),
-                market.volume_24hr.unwrap_or_default().as_f64(),
-                market.one_day_price_change.unwrap_or_default().as_f64(),
-                market.spread?.as_f64(),
-            ))
-        });
-        let markets = prepend_markets.iter().cloned().chain(markets_data).collect::<Vec<_>>();
-        Ok(MarketsData {
-            markets,
-            next_cursor: next_cursor + MARKETS_PER_PAGE,
+    async fn load_events(&self, next_cursor: i32) -> Result<EventsData, PolyError> {
+        let events = self.client.events(EVENTS_PER_PAGE, next_cursor).await?;
+        let events = events
+            .into_iter()
+            .map(|event| {
+                let markets = event
+                    .markets
+                    .unwrap_or_default()
+                    .into_iter()
+                    .filter_map(|market| {
+                        let prices = market.outcome_prices?.clone();
+                        let (yes_market_price, no_market_price) =
+                            if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "yes" {
+                                (prices.get(0)?, prices.get(1)?)
+                            } else if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "no" {
+                                (prices.get(1)?, prices.get(0)?)
+                            } else {
+                                log::error!(
+                                    target: "app",
+                                    "Unexpected outcome: {:?} for market {:?}",
+                                    market.outcomes,
+                                    market.slug
+                                );
+                                return None;
+                            };
+                        Some(Market::new(
+                            market.question.unwrap_or_else(|| "N/A".to_owned()),
+                            market.slug.unwrap_or_else(|| "N/A".to_owned()),
+                            false,
+                            yes_market_price.as_f64(),
+                            no_market_price.as_f64(),
+                            market.volume_24hr.unwrap_or_default().as_f64(),
+                            market.one_day_price_change.unwrap_or_default().as_f64(),
+                            market.spread?.as_f64(),
+                        ))
+                    })
+                    .collect::<Vec<_>>();
+                let markets_count = markets.len();
+                let volume24h = event.volume_24hr.unwrap_or_default().as_f64();
+                Event::new(
+                    event.id,
+                    event.title.unwrap_or_else(|| "N/A".to_owned()),
+                    event.slug.unwrap_or_else(|| "N/A".to_owned()),
+                    false,
+                    volume24h,
+                    markets,
+                    markets_count,
+                )
+            })
+            .collect::<Vec<_>>();
+        Ok(EventsData {
+            events,
+            next_cursor: next_cursor + EVENTS_PER_PAGE,
         })
     }
 }
 
 #[derive(Clone, Debug, Default)]
 pub struct State {
-    pub markets_data: MarketsData,
+    pub events_data: EventsData,
     pub selected_market: u32,
     pub selected_market_summary: SelectedMarket,
     pub chart_activity: ChartActivity,
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct MarketsData {
-    pub markets: Vec<Market>,
+pub struct EventsData {
+    pub events: Vec<Event>,
     pub next_cursor: i32,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Event {
+    pub id: String,
+    pub title: String,
+    pub slug: String,
+    pub bookmarked: bool,
+    pub volume24h: f64,
+    pub markets: Vec<Market>,
+    pub markets_count: usize,
+    pub rank_label: String,
+    pub bookmark_label: &'static str,
+    pub volume_label: String,
+    pub markets_count_label: String,
+}
+
+impl Event {
+    pub fn new(
+        id: String,
+        title: String,
+        slug: String,
+        bookmarked: bool,
+        volume24h: f64,
+        markets: Vec<Market>,
+        markets_count: usize,
+    ) -> Self {
+        Self {
+            id,
+            title,
+            slug,
+            bookmarked,
+            volume24h,
+            markets,
+            markets_count,
+            rank_label: String::default(),
+            bookmark_label: if bookmarked { "★" } else { "" },
+            volume_label: format_volume_compact(volume24h),
+            markets_count_label: format!("{}mkt", markets_count),
+        }
+    }
+
+    pub fn set_rank(&mut self, rank: usize) {
+        self.rank_label = rank.to_string();
+    }
+
+    pub fn set_bookmarked(&mut self, bookmarked: bool) {
+        self.bookmarked = bookmarked;
+        self.bookmark_label = if bookmarked { "★" } else { "" };
+    }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -211,7 +282,6 @@ impl SelectedMarket {
 pub struct ChartActivity {
     pub chart_lines: Vec<String>,
     pub activities: Vec<ActivityEntry>,
-
 }
 
 #[derive(Clone, Debug, Default)]

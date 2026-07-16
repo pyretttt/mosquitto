@@ -5,8 +5,9 @@ use polymarket_client_sdk_v2::clob::{
 use polymarket_client_sdk_v2::gamma::{Client as GammaClient};
 use polymarket_client_sdk_v2::error::Error;
 use polymarket_client_sdk_v2::gamma::types::request::{
-    MarketsRequest
+    EventsRequest, MarketsRequest, EventByIdRequest,
 };
+use polymarket_client_sdk_v2::gamma::types::response::{Event, Market};
 
 #[derive(Debug, Clone)]
 pub struct PolymarketClient {
@@ -33,7 +34,7 @@ impl PolymarketClient {
         &self,
         limit: i32,
         offset: i32
-    ) -> Result<Vec<polymarket_client_sdk_v2::gamma::types::response::Market>, PolyError> {
+    ) -> Result<Vec<Market>, PolyError> {
         self.gamma_client.markets(
             &MarketsRequest::builder()
             .offset(offset)
@@ -42,5 +43,30 @@ impl PolymarketClient {
             .build()
         ).await
         .map_err(PolyError)
+    }
+
+    pub async fn events(
+        &self,
+        limit: i32,
+        offset: i32,
+    ) -> Result<Vec<Event>, PolyError> {
+        self.gamma_client.events(
+            &EventsRequest::builder()
+                .active(true)
+                .closed(false)
+                .offset(offset)
+                .limit(limit)
+                .ascending(false)
+                .build(),
+        )
+        .await
+        .map_err(PolyError)
+    }
+
+    pub async fn event_by_id(&self, id: &str) -> Result<Event, PolyError> {
+        self.gamma_client
+            .event_by_id(&EventByIdRequest::builder().id(id).build())
+            .await
+            .map_err(PolyError)
     }
 }
