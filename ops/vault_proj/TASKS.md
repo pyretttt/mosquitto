@@ -127,9 +127,6 @@ It isolates API between teams, whole server API can handle request, when namespa
       to simulate two teams (`secret/team-a/...` vs `secret/team-b/...`) so each
       token can only see its path. Document the mapping in a short note under
       `docs/` (optional `docs/namespaces-oss-lab.md`).
-
-
-
 - [ ] If you have access to HCP Vault / Enterprise later: practice
       `vault namespace lock` / `unlock` and confirm clients get errors while locked.
 
@@ -140,11 +137,11 @@ It isolates API between teams, whole server API can handle request, when namespa
 Goal: the demo API in `app/` obtains a backend secret from Vault (not from a
 hardcoded string). TLS via Vault PKI is in §3d.
 
-- [ ] Create a local cluster: `mise run cluster-k3d` (or `cluster-kind`).
-- [ ] **Verify:** `kubectl get nodes` is Ready.
-- [~] Install Vault with the local values overlay:
+- [x] Create a local cluster: `mise run cluster-k3d` (or `cluster-kind`).
+- [x] **Verify:** `kubectl get nodes` is Ready.
+- [x] Install Vault with the local values overlay:
       `mise run vault-install` (uses `charts/vault-values/values-local.yaml`).
-- [ ] **Verify:** Vault pod(s) Running; port-forward or use the chart’s service;
+- [x] **Verify:** Vault pod(s) Running; port-forward or use the chart’s service;
       `vault status` against the in-cluster address (see mise task output).
 - [ ] **Task:** complete `TODO(you)` in `charts/vault-values/values-local.yaml`
       (dev vs standalone, UI, injector/agent notes).

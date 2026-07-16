@@ -71,7 +71,7 @@ run = "kind create cluster --name $CLUSTER_NAME || kind get clusters | grep -q $
 
 [tasks.cluster-k3d]
 description = "Create a local k3d cluster"
-run = "k3d cluster create $CLUSTER_NAME --agents 1 || k3d cluster list | grep -q $CLUSTER_NAME"
+run = "k3d cluster create $CLUSTER_NAME --agents 1 --registry-create registry:50001 || k3d cluster list | grep -q $CLUSTER_NAME"
 
 [tasks.ns]
 description = "Create vault and demo namespaces"
