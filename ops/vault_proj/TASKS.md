@@ -123,10 +123,13 @@ Still learn the model — it shows up in real jobs.
 
 It isolates API between teams, whole server API can handle request, when namespace can be locked and no request handled in namespace. Teams do not collide with each other.
 
-- [ ] **Task (practice substitute on OSS):** use **separate mount paths + policies**
+- [x] **Task (practice substitute on OSS):** use **separate mount paths + policies**
       to simulate two teams (`secret/team-a/...` vs `secret/team-b/...`) so each
       token can only see its path. Document the mapping in a short note under
       `docs/` (optional `docs/namespaces-oss-lab.md`).
+
+
+
 - [ ] If you have access to HCP Vault / Enterprise later: practice
       `vault namespace lock` / `unlock` and confirm clients get errors while locked.
 
