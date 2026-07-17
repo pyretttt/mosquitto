@@ -31,19 +31,30 @@ vault policy write demo-app "$POLICY_FILE"
 echo "==> Enable Kubernetes auth"
 vault auth enable kubernetes 2>/dev/null || true
 
+
+vault write auth/kubernetes/config \
+       kubernetes_host=https://kubernetes.default.svc:443 \
+       token_reviewer_jwt="" \
+       kubernetes_ca_cert=""
+
+vault write auth/kubernetes/role/demo-app \
+       bound_service_account_names=$SA_NAME \
+       bound_service_account_namespaces=$NS_APP \
+       policies=demo-app \
+       ttl=1h
 # TODO(you): complete Kubernetes auth configuration — see TASKS.md §3
 # Hints:
 #   1. Get the SA JWT issuer / JWKS or use the legacy service account token review path.
-#   2. vault write auth/kubernetes/config \
-#        kubernetes_host=https://kubernetes.default.svc:443 \
-#        token_reviewer_jwt=... \
-#        kubernetes_ca_cert=...
-#   3. vault write auth/kubernetes/role/demo-app \
-#        bound_service_account_names=$SA_NAME \
-#        bound_service_account_namespaces=$NS_APP \
-#        policies=demo-app \
-#        ttl=1h
-#
+  # 2. vault write auth/kubernetes/config \
+  #      kubernetes_host=https://kubernetes.default.svc:443 \
+  #      token_reviewer_jwt="" \
+  #      kubernetes_ca_cert=""
+  # 3. vault write auth/kubernetes/role/demo-app \
+  #      bound_service_account_names=$SA_NAME \
+  #      bound_service_account_namespaces=$NS_APP \
+  #      policies=demo-app \
+  #      ttl=1h ✅
+
 # Modern Vault + K8s often use:
 #   vault write auth/kubernetes/config kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443"
 # when configuring FROM a pod; from your laptop you need the cluster API URL + CA.

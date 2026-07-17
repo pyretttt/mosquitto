@@ -145,11 +145,11 @@ hardcoded string). TLS via Vault PKI is in §3d.
       `vault status` against the in-cluster address (see mise task output).
 - [x] **Task:** complete `TODO(you)` in `charts/vault-values/values-local.yaml`
       (dev vs standalone, UI, injector/agent notes).
-- [ ] Enable KV in the cluster Vault and write `secret/demo/db` (same shape as local).
-- [ ] Configure **Kubernetes auth** (or AppRole) so the demo-app ServiceAccount
+- [x] Enable KV in the cluster Vault and write `secret/demo/db` (same shape as local).
+- [x] Configure **Kubernetes auth** (or AppRole) so the demo-app ServiceAccount
       can read that path. Fill `TODO(you)` in `scripts/k8s-bootstrap.sh`.
-- [ ] Build & load the app image: `mise run app-build`.
-- [ ] Install the chart: `mise run app-install`.
+- [x] Build & load the app image: `mise run app-build`.
+- [x] Install the chart: `mise run app-install`.
 - [ ] **Task:** finish `TODO(you)` in `app/main.py` so `/secret` (or `/health`’s
       dependency) reads from Vault using the pod’s auth method — not a hardcoded password.
 - [ ] **Verify:** `kubectl port-forward svc/demo-app 8080:8080` then

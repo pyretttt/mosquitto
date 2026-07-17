@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import os
 from typing import Any
+from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, HTTPException
@@ -57,6 +58,14 @@ def get_vault_client_token() -> str:
     if VAULT_TOKEN:
         return VAULT_TOKEN
     return vault_token_via_kubernetes()
+
+def read_injected_db(path: str = "/vault/secrets/db") -> dict[str, str]:
+    out: dict[str, str] = {}
+    for line in Path(path).read_text().splitlines():
+        if "=" in line:
+            k, v = line.split("=", 1)
+            out[k.strip()] = v.strip()
+    return out
 
 
 def read_kv_secret(token: str) -> dict[str, Any]:
