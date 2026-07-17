@@ -16,9 +16,9 @@ spec:
       # TODO(you): if you enable the Vault Agent Injector, add annotations here
       # instead of (or in addition to) in-app Vault API — docs/CONCEPTS.md §8
       # annotations:
-      #   vault.hashicorp.com/agent-inject: "true"
-      #   vault.hashicorp.com/role: "demo-app"
-      #   vault.hashicorp.com/agent-inject-secret-db: "secret/data/demo/db"
+        vault.hashicorp.com/agent-inject: "true"
+        vault.hashicorp.com/role: "demo-app"
+        vault.hashicorp.com/agent-inject-secret-db: "secret/data/demo/db"
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       securityContext:

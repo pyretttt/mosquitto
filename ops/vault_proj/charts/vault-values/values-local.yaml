@@ -9,7 +9,7 @@
 # TODO(you): decide your learning mode — see TASKS.md §3
 #   A) Keep dev.enabled=true for fastest path (CLI + injector experiments).
 #   B) Set dev.enabled=false and use server.standalone with file/raft storage;
-#      then practice init + unseal in-cluster (harder, more realistic).
+#      then practice init + unseal in-cluster (harder, more realistic). ✅
 
 global:
   enabled: true
@@ -18,20 +18,20 @@ global:
 server:
   # Lab default: Vault "dev server" inside the chart.
   dev:
-    enabled: true
+    enabled: false
     # Fixed token so scripts can use it; still never commit real prod tokens.
     devRootToken: "root"
 
   # TODO(you): when leaving -dev, configure something like:
-  # standalone:
-  #   enabled: true
-  #   config: |
-  #     ui = true
-  #     listener "tcp" { address = "[::]:8200" tls_disable = 1 }
-  #     storage "file" { path = "/vault/data" }
-  # dataStorage:
-  #   enabled: true
-  #   size: 1Gi
+  standalone:
+    enabled: true
+    config: |
+      ui = true
+      listener "tcp" { address = "[::]:8200" tls_disable = 1 }
+      storage "file" { path = "/vault/data" }
+  dataStorage:
+    enabled: true
+    size: 1Gi
 
   ui:
     enabled: true
@@ -41,4 +41,4 @@ server:
 # TODO(you): enable and annotate demo-app as an alternative to in-app Vault API
 # — see docs/CONCEPTS.md §8
 injector:
-  enabled: false
+  enabled: true

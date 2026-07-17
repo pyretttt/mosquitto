@@ -143,7 +143,7 @@ hardcoded string). TLS via Vault PKI is in §3d.
       `mise run vault-install` (uses `charts/vault-values/values-local.yaml`).
 - [x] **Verify:** Vault pod(s) Running; port-forward or use the chart’s service;
       `vault status` against the in-cluster address (see mise task output).
-- [ ] **Task:** complete `TODO(you)` in `charts/vault-values/values-local.yaml`
+- [x] **Task:** complete `TODO(you)` in `charts/vault-values/values-local.yaml`
       (dev vs standalone, UI, injector/agent notes).
 - [ ] Enable KV in the cluster Vault and write `secret/demo/db` (same shape as local).
 - [ ] Configure **Kubernetes auth** (or AppRole) so the demo-app ServiceAccount
