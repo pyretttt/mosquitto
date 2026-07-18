@@ -59,6 +59,7 @@ def get_vault_client_token() -> str:
         return VAULT_TOKEN
     return vault_token_via_kubernetes()
 
+
 def read_injected_db(path: str = "/vault/secrets/db") -> dict[str, str]:
     out: dict[str, str] = {}
     for line in Path(path).read_text().splitlines():
@@ -88,6 +89,11 @@ def read_kv_secret(token: str) -> dict[str, Any]:
 
 @app.get("/health")
 def health() -> dict[str, str]:
+    secret_data = read_injected_db()
+    if not secret_data.get("username"):
+        raise HTTPException(status_code=503, detail="username not found")
+    if not secret_data.get("password"):
+        raise HTTPException(status_code=503, detail="password not found")
     return {"status": "ok"}
 
 
@@ -98,8 +104,9 @@ def secret() -> dict[str, Any]:
     Never log the raw password.
     """
     try:
-        token = get_vault_client_token()
-        data = read_kv_secret(token)
+        # token = get_vault_client_token()
+        # data = read_kv_secret(token)
+        secret_data = read_injected_db()
     except NotImplementedError as exc:
         # Scaffold fallback so the chart can start before you finish auth.
         return {
@@ -115,8 +122,8 @@ def secret() -> dict[str, Any]:
     # Vault metadata so you can see cut-over between KV versions.
     return {
         "source": "vault",
-        "username": data.get("username"),
-        "password_present": bool(data.get("password")),
+        "username": secret_data.get("username"),
+        "password_present": bool(secret_data.get("password")),
     }
 
 

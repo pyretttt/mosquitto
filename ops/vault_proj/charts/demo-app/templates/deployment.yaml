@@ -19,11 +19,12 @@ spec:
         vault.hashicorp.com/agent-inject: "true"
         vault.hashicorp.com/role: "demo-app"
         vault.hashicorp.com/agent-inject-secret-db: "secret/data/demo/db"
+        # Agent template is Vault/consul-template syntax; quote for Helm with backticks.
         vault.hashicorp.com/agent-inject-template-db: |
-          {{- with secret "secret/data/demo/db" -}}
-          username={{ .Data.data.username }}
-          password={{ .Data.data.password }}
-          {{- end -}}
+{{ `{{- with secret "secret/data/demo/db" -}}
+username={{ .Data.data.username }}
+password={{ .Data.data.password }}
+{{- end -}}` | indent 10 }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       securityContext:

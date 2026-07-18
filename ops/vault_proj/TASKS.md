@@ -150,9 +150,9 @@ hardcoded string). TLS via Vault PKI is in §3d.
       can read that path. Fill `TODO(you)` in `scripts/k8s-bootstrap.sh`.
 - [x] Build & load the app image: `mise run app-build`.
 - [x] Install the chart: `mise run app-install`.
-- [ ] **Task:** finish `TODO(you)` in `app/main.py` so `/secret` (or `/health`’s
+- [x] **Task:** finish `TODO(you)` in `app/main.py` so `/secret` (or `/health`’s
       dependency) reads from Vault using the pod’s auth method — not a hardcoded password.
-- [ ] **Verify:** `kubectl port-forward svc/demo-app 8080:8080` then
+- [x] **Verify:** `kubectl port-forward svc/demo-app 8080:8080` then
       `curl -s localhost:8080/health` and `curl -s localhost:8080/secret` show
       success without printing the raw password in logs if you can avoid it.
 
