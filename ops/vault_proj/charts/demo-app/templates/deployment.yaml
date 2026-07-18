@@ -25,6 +25,12 @@ spec:
 username={{ .Data.data.username }}
 password={{ .Data.data.password }}
 {{- end -}}` | indent 10 }}
+        vault.hashicorp.com/agent-inject-secret-tls.pem: "pki/issue/demo-app"
+        vault.hashicorp.com/agent-inject-template-tls.pem: |
+{{ `{{- with secret "pki/issue/demo-app" "common_name=demo-app.demo.svc" "ttl=24h" -}}
+{{ .Data.certificate }}
+{{ .Data.private_key }}
+{{- end -}}` | indent 10 }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       securityContext:
@@ -53,12 +59,14 @@ password={{ .Data.data.password }}
             httpGet:
               path: /health
               port: http
+              scheme: HTTPS
             initialDelaySeconds: 5
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /health
               port: http
+              scheme: HTTPS
             initialDelaySeconds: 3
             periodSeconds: 5
           resources:

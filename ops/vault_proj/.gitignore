@@ -9,3 +9,4 @@ tls.key
 tls.crt
 unseal-keys.txt
 root-token.txt
+lab-ca.crt

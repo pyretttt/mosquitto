@@ -158,13 +158,13 @@ hardcoded string). TLS via Vault PKI is in §3d.
 
 ### 3d. TLS with Vault PKI (no paid CA)
 
-- [ ] **Read:** CONCEPTS — PKI.
-- [ ] **Task:** enable `pki` secrets engine; generate a root (or intermediate) CA;
+- [x] **Read:** CONCEPTS — PKI.
+- [x] **Task:** enable `pki` secrets engine; generate a root (or intermediate) CA;
       create a role for `demo-app.local`.
-- [ ] **Task:** issue a cert; create a Kubernetes TLS secret (or use Vault Agent /
+- [x] **Task:** issue a cert; create a Kubernetes TLS secret (or use Vault Agent /
       CSI — your choice). Wire `charts/demo-app` to serve HTTPS or mount the cert.
       See `TODO(you)` in `charts/demo-app/templates/` and `values-local.yaml`.
-- [ ] **Verify:** `curl -k https://…` works; inspect the cert issuer — it should
+- [x] **Verify:** `curl -k https://…` works; inspect the cert issuer — it should
       be your Vault CA, not a public CA.
 
 ---
