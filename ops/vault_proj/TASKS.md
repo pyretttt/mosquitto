@@ -171,8 +171,12 @@ hardcoded string). TLS via Vault PKI is in §3d.
 
 ## 4. Expiration, rotation, renew, revoke
 
-- [ ] Set a short TTL on a KV v2 custom metadata or on a token/dynamic secret
+- [~] Set a short TTL on a KV v2 custom metadata or on a token/dynamic secret
       you use for the demo (`ttl` / `max_ttl` on roles).
+      Run: `mise run ttl-lab` (script: `scripts/ttl-lab.sh`) — sets
+      `custom_metadata` + `delete-version-after` on `secret/demo/db`, shortens
+      kubernetes role `demo-app` to `ttl=2m` / `max_ttl=10m`, and mints a renewable
+      CLI token for the next renew/revoke step.
 - [ ] **Task:** demonstrate **renew** before expiry and **revoke** mid-life;
       show the app or CLI failing after revoke.
 - [ ] **Task:** implement a simple **rotation** runbook (manual is fine):

@@ -18,6 +18,13 @@ vault secrets enable -path=secret kv-v2 2>/dev/null || true
 
 echo "==> Write app secret"
 vault kv put secret/demo/db username=app password="k8s-lab-only-rotate-me"
+# §4 TTL lab: custom_metadata is labels; delete-version-after auto-expires versions.
+# For a tighter expiry demo later: mise run ttl-lab
+vault kv metadata put \
+  -custom-metadata=owner=demo-app \
+  -custom-metadata=rotation_hint=2m \
+  -delete-version-after=168h \
+  secret/demo/db 2>/dev/null || true
 
 POLICY_FILE="$(mktemp)"
 trap 'rm -f "$POLICY_FILE"' EXIT

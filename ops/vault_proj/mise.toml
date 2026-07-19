@@ -127,10 +127,18 @@ echo "Port-forward: kubectl -n $NS_APP port-forward svc/demo-app 8080:8080"
 description = "Configure Vault K8s auth + sample secret (fill TODOs in script)"
 run = "bash scripts/k8s-bootstrap.sh"
 
+[tasks.ttl-lab]
+description = "§4: short KV metadata + role/token TTLs for renew/revoke practice"
+run = "bash scripts/ttl-lab.sh"
+
 [tasks.up-local]
 description = "Cluster + Vault + app (happy path after TODOs are done)"
-depends = ["cluster-k3d", "vault-install", "app-build", "app-install"]
-run = "echo 'Stack installed. Finish TASKS.md §3 (auth + app Vault client) then mise run k8s-bootstrap.'"
+run = [
+  { task = "cluster-k3d" },
+  { task = "vault-install" },
+  { task = "app-build" },
+  { task = "app-install" },
+]
 
 [tasks.down]
 description = "Uninstall Helm releases (keep cluster)"
