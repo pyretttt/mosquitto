@@ -1,7 +1,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::text::{Line, Span, Text};
+use ratatui::style::{Color, Modifier, Style};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, Cell, HighlightSpacing, Padding, Paragraph, Row, Table,
 };
@@ -26,7 +26,6 @@ mod constants {
     pub static INTERMEDIATE_BAR: &'static str = "┃";
     pub static TOP_BAR: &'static str = "┳";
     pub static BOTTOM_BAR: &'static str = "┻";
-    pub static TOP_TABLE_PAYLOAD_HEIGHT_ADDEND: u16 = 3;
 }
 
 pub fn top_page_ui(
@@ -44,7 +43,7 @@ pub fn top_page_ui(
     let dashboard = outer.inner(frame.area());
     frame.render_widget(outer, frame.area());
 
-    let events_max_height = top_page.table_payload_height() + constants::TOP_TABLE_PAYLOAD_HEIGHT_ADDEND;
+    let events_max_height = top_page.table_height();
 
     let [status_area, events_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
@@ -211,7 +210,13 @@ fn render_markets_table(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     }
 
     let rows = event.markets.iter().enumerate().map(|(index, market)| {
-        let bar = if index == 0 { constants::TOP_BAR } else if index == event.markets.len() - 1 { constants::BOTTOM_BAR } else { constants::INTERMEDIATE_BAR };
+        let bar = match (event.markets.len() == 1, index) {
+            (true, 0) => constants::INTERMEDIATE_BAR,
+            (false, 0) => constants::TOP_BAR,
+            (false, idx) if event.markets.len() - 1 == idx => constants::BOTTOM_BAR,
+            (false, _) => constants::INTERMEDIATE_BAR,
+            (_, _) => constants::EMPTY,
+        };
         market_row(market, bar)
     });
     let table = Table::new(rows, events_column_constraints())

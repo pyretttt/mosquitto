@@ -40,18 +40,17 @@ pub struct TopPage {
 impl TopPage {
     pub fn update_window_size(&mut self, new_size: Size) {
         self.ui_window_size = new_size;
-        self.events_pane.window_size = SizeExt(new_size).get_events_window_size();
+        self.events_pane.events_window_size = SizeExt(new_size).get_events_window_size();
     }
 
-    pub fn table_payload_height(&self) -> u16 {
+    pub fn table_height(&self) -> u16 {
+        static TOP_TABLE_PAYLOAD_HEIGHT_ADDEND: u16 = 3;
         let events_h = self
             .events_pane
             .event_slice()
             .len()
-            .min(self.events_pane.window_size) as u16;
-        // Reserve space for the markets table so it stays visible (incl. when the
-        // last event in the window is selected).
-        (events_h + self.events_pane.markets_table_height()).max(1)
+            .min(self.events_pane.events_window_size) as u16;
+        (events_h + self.events_pane.markets_table_height()).max(1) + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND
     }
 }
 
@@ -92,7 +91,7 @@ pub struct EventsPane {
     pub markets_table_state: TableState,
     pub markets_focused: bool,
 
-    pub window_size: usize,
+    pub events_window_size: usize,
     pub offset: usize,
 }
 
@@ -135,7 +134,7 @@ impl EventsPane {
         if self.offset >= self.events_data.events.len() {
             return &[];
         }
-        let end = self.offset.saturating_add(self.window_size).min(self.events_data.events.len());
+        let end = self.offset.saturating_add(self.events_window_size).min(self.events_data.events.len());
         &self.events_data.events[self.offset..end]
     }
 
@@ -314,7 +313,7 @@ impl TopPage {
                 _ = env.sender.send(TopPageAction::EventsLoadRequested.into());
                 return;
             }
-            if selected_in_window < self.events_pane.window_size - 1 {
+            if selected_in_window < self.events_pane.events_window_size - 1 {
                 self.events_pane.table_state.select_next();
             } else {
                 self.events_pane.offset = self.events_pane.offset.saturating_add(1);
@@ -446,7 +445,7 @@ impl TopPage {
                 markets_table_state: TableState::default(),
                 markets_focused: false,
                 offset: 0,
-                window_size: SizeExt(ui_window_size).get_events_window_size(),
+                events_window_size: SizeExt(ui_window_size).get_events_window_size(),
             },
             selected_market_pane: MarketSummary {
                 title: "Will BTC hit 100k in 2026?",
@@ -535,8 +534,6 @@ struct SizeExt(Size);
 
 impl SizeExt {
     pub fn get_events_window_size(&self) -> usize {
-        let window_height = self.0.height;
-        log::info!(target: "app", "TopPage: window_height: {:?}", window_height);
-        (window_height as f32 * 0.4).max(10.0).min(45.0) as usize
+        (self.0.height as f32 * 0.4).max(10.0).min(45.0) as usize
     }
 }
