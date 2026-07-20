@@ -1,7 +1,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
-use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
+use ratatui::style::{Color, Modifier, Style, Stylize};
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
     Block, BorderType, Borders, Cell, HighlightSpacing, Padding, Paragraph, Row, Table,
 };
@@ -19,8 +19,15 @@ const WARNING: Color = Color::Rgb(0xF5, 0x9E, 0x0B);
 const MUTED: Color = Color::DarkGray;
 const HEADER: Color = Color::Yellow;
 
-static SPACE: &'static str = " ";
-static TOP_TABLE_PAYLOAD_HEIGHT_ADDEND: u16 = 3;
+mod constants {
+    pub static SPACE: &'static str = " ";
+    pub static DOUBLE_SPACE: &'static str = "  ";
+    pub static EMPTY: &'static str = "";
+    pub static INTERMEDIATE_BAR: &'static str = "┃";
+    pub static TOP_BAR: &'static str = "┳";
+    pub static BOTTOM_BAR: &'static str = "┻";
+    pub static TOP_TABLE_PAYLOAD_HEIGHT_ADDEND: u16 = 3;
+}
 
 pub fn top_page_ui(
     frame: &mut Frame,
@@ -37,7 +44,7 @@ pub fn top_page_ui(
     let dashboard = outer.inner(frame.area());
     frame.render_widget(outer, frame.area());
 
-    let events_max_height = top_page.table_payload_height() + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND;
+    let events_max_height = top_page.table_payload_height() + constants::TOP_TABLE_PAYLOAD_HEIGHT_ADDEND;
 
     let [status_area, events_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
@@ -50,7 +57,7 @@ pub fn top_page_ui(
     render_status_bar(frame, status_area, top_page);
     render_top_events(frame, events_area, top_page);
     render_lower_panes(frame, lower_area, top_page);
-    render_command_popup(frame, cmd_area, top_page);
+    key_bindings(frame, cmd_area, top_page);
 }
 
 fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
@@ -102,8 +109,6 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     );
 }
 
-const HIGHLIGHT_SYMBOL: &str = "▶ ";
-
 const fn events_column_constraints() -> [Constraint; 8] {
     [
         Constraint::Length(3),
@@ -153,9 +158,7 @@ fn render_top_events(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             header_cell("24h"),
             header_cell("Move"),
             header_cell("Spread"),
-        ]))
-        .highlight_symbol(HIGHLIGHT_SYMBOL)
-        .highlight_spacing(HighlightSpacing::Always);
+        ]));
 
     frame.render_stateful_widget(
         table,
@@ -207,9 +210,11 @@ fn render_markets_table(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         return;
     }
 
-    let rows = event.markets.iter().map(market_row);
+    let rows = event.markets.iter().enumerate().map(|(index, market)| {
+        let bar = if index == 0 { constants::TOP_BAR } else if index == event.markets.len() - 1 { constants::BOTTOM_BAR } else { constants::INTERMEDIATE_BAR };
+        market_row(market, bar)
+    });
     let table = Table::new(rows, events_column_constraints())
-        .highlight_symbol(HIGHLIGHT_SYMBOL)
         .highlight_spacing(HighlightSpacing::Always)
         .row_highlight_style(
             Style::default()
@@ -315,9 +320,9 @@ fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     );
 }
 
-fn render_command_popup(frame: &mut Frame, area: Rect, top_page: &TopPage) {
+fn key_bindings(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let popup = &top_page.command_popup;
-    let block = pane_block("Command Popup", Borders::ALL, false);
+    let block = pane_block("Keybindings: ", Borders::ALL, false);
     let inner = block.inner(area);
 
     frame.render_widget(block, area);
@@ -346,17 +351,18 @@ fn event_row<'a>(event: &'a PolyEvent, is_selected: bool, markets_h: u16) -> Row
         Cell::from("—").style(Style::default().fg(MUTED)),
         Cell::from(event.volume_label.as_str()).style(Style::default().fg(Color::White)),
         Cell::from(event.markets_count_label.as_str()).style(Style::default().fg(MUTED)),
-        Cell::from("").style(Style::default().fg(MUTED)),
+        Cell::from(constants::EMPTY).style(Style::default().fg(MUTED)),
     ])
     .height(1 + markets_h)
 }
 
-fn market_row<'a>(market: &'a Market) -> Row<'a> {
+fn market_row<'a>(market: &'a Market, market_bar: &'static str) -> Row<'a> {
     Row::new([
-        Cell::from("").style(Style::default().fg(MUTED)),
+        Cell::from(constants::EMPTY).style(Style::default().fg(MUTED)),
         Cell::from(market.bookmark_label).style(Style::default().fg(WARNING)),
-        Cell::from(Line::from(vec![
-            Span::styled("└ ", Style::default().fg(MUTED)),
+        Cell::from(Line::from_iter([
+            Span::styled(market_bar, Style::default().fg(MUTED)),
+            Span::raw(constants::DOUBLE_SPACE),
             Span::styled(market.title.as_str(), Style::default().fg(Color::Gray)),
         ])),
         Cell::from(market.yes_label.as_str()).style(Style::default().fg(POSITIVE)),
@@ -387,9 +393,9 @@ fn metric_line<'a>(label: &'static str, value: &'a str) -> Line<'a> {
 fn activity_line<'a>(time: &'a str, label: &'a str, value: &'a str, value_color: Color) -> Line<'a> {
     Line::from_iter([
         Span::styled(time, Style::default().fg(MUTED).bg(BG)),
-        Span::raw(SPACE),
+        Span::raw(constants::SPACE),
         Span::styled(label, Style::default().fg(Color::White).bg(BG)),
-        Span::raw(SPACE),
+        Span::raw(constants::SPACE),
         Span::styled(value, Style::default().fg(value_color).bg(BG)),
     ])
 }
