@@ -36,6 +36,10 @@ IMAGE_TAG = "local"
 description = "Create a basic kind cluster (no encryption-at-rest)"
 run = "kind create cluster --name $CLUSTER_NAME || kind get clusters | grep -qx $CLUSTER_NAME"
 
+[tasks.delete-kind]
+description = "Create a basic kind cluster (no encryption-at-rest)"
+run = "kind delete cluster --name $CLUSTER_NAME"
+
 [tasks.cluster-kind-encrypt]
 description = "Create kind cluster with Secrets encryption-at-rest"
 run = "bash scripts/kind-with-encryption.sh"

@@ -42,14 +42,14 @@ without leaking raw tokens in `/secret-status`.
 
 ## 0. Bootstrap
 
-- [ ] Copy `.env.example` → `.env` and set `DEMO_API_TOKEN` to a lab-only value.
-- [ ] `mise install` from `ops/secret_management`.
-- [ ] **Verify:** `kubectl version --client`, `helm version`, `kind version`,
+- [x] Copy `.env.example` → `.env` and set `DEMO_API_TOKEN` to a lab-only value.
+- [x] `mise install` from `ops/secret_management`.
+- [x] **Verify:** `kubectl version --client`, `helm version`, `kind version`,
       `sops --version`, `age --version`, `kubeseal --version`.
-- [ ] Create a cluster: `mise run cluster-kind` (plain cluster for §1; you may
+- [x] Create a cluster: `mise run cluster-kind` (plain cluster for §1; you may
       recreate with encryption in §2).
-- [ ] `mise run ns` and `mise run configmap`.
-- [ ] Skim `README.md` and `docs/CONCEPTS.md` §1.
+- [x] `mise run ns` and `mise run configmap`.
+- [x] Skim `README.md` and `docs/CONCEPTS.md` §1.
 
 ---
 
@@ -59,13 +59,13 @@ Kubernetes Secrets feel “safer” than ConfigMaps, but the API stores Secret
 `.data` as **base64**. That is encoding for transport/binary safety — not
 confidentiality.
 
-- [ ] **Task:** read `k8s/01-configmap.yaml` and `k8s/02-secret.yaml.example`.
-- [ ] **Task:** create the Opaque Secret: export `DEMO_API_TOKEN` then
+- [x] **Task:** read `k8s/01-configmap.yaml` and `k8s/02-secret.yaml.example`.
+- [x] **Task:** create the Opaque Secret: export `DEMO_API_TOKEN` then
       `mise run secret-create` (or finish the example file as
       `*.plain.yaml` and apply — keep plaintext out of git).
-- [ ] **Task:** run `mise run inspect-cm-secret`. Decode the Secret field by
+- [x] **Task:** run `mise run inspect-cm-secret`. Decode the Secret field by
       hand with `base64 -d`.
-- [ ] **Task:** build and deploy the app:
+- [x] **Task:** build and deploy the app:
       ```bash
       mise run build-load
       mise run deploy-app
@@ -73,9 +73,9 @@ confidentiality.
       ```
       In another shell: `curl -s localhost:8080/config` and
       `curl -s localhost:8080/secret-status`.
-- [ ] **Verify:** `/config` shows ConfigMap values; `/secret-status` shows
+- [x] **Verify:** `/config` shows ConfigMap values; `/secret-status` shows
       `token_present: true` and a **masked** token (not the raw value).
-- [ ] **Reflect:** who in your RBAC model can `get secrets` in `demo`? Why is
+- [x] **Reflect:** who in your RBAC model can `get secrets` in `demo`? Why is
       that more sensitive than `get configmaps`?
 
 ---
