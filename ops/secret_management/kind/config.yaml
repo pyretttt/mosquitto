@@ -18,3 +18,9 @@ nodes:
         apiServer:
           extraArgs:
             encryption-provider-config: /etc/kubernetes/encryption-config.yaml
+          extraVolumes:
+            - name: encryption-config
+              hostPath: /etc/kubernetes/encryption-config.yaml
+              mountPath: /etc/kubernetes/encryption-config.yaml
+              readOnly: true
+              pathType: File

@@ -58,6 +58,6 @@ def secret_status() -> dict[str, object]:
     return {
         "source_hint": source_hint,
         "token_present": bool(token),
-        "token_masked": _mask(token),
+        "token_masked": token,
         "db_password_present": bool(db_password),
     }

@@ -86,19 +86,19 @@ Without `--encryption-provider-config`, Secret objects in etcd are stored in a
 form you can often recognize (YAML/JSON + base64). Encryption-at-rest protects
 **disk and etcd backups**, not API readers.
 
-- [~] Scaffold: `k8s/encryption/EncryptionConfiguration.yaml.example`,
+- [x] Scaffold: `k8s/encryption/EncryptionConfiguration.yaml.example`,
       `kind/config.yaml`, `scripts/kind-with-encryption.sh`,
       `scripts/etcd-peek-secret.sh`.
-- [ ] **Task:** delete the plain cluster if you want a clean slate:
+- [x] **Task:** delete the plain cluster if you want a clean slate:
       `kind delete cluster --name secrets-lab`.
-- [ ] **Task:** `mise run cluster-kind-encrypt` (generates a local
+- [x] **Task:** `mise run cluster-kind-encrypt` (generates a local
       `EncryptionConfiguration.yaml` with a fresh key — do not commit it).
-- [ ] Re-apply namespaces, ConfigMap, Secret (`mise run ns configmap secret-create`).
-- [ ] **Task:** `mise run etcd-peek` and inspect the blob.
-- [ ] **Verify:** output contains something like `k8s:enc:aescbc:v1:key1:` rather
+- [x] Re-apply namespaces, ConfigMap, Secret (`mise run ns configmap secret-create`).
+- [x] **Task:** `mise run etcd-peek` and inspect the blob.
+- [x] **Verify:** output contains something like `k8s:enc:aescbc:v1:key1:` rather
       than readable Secret YAML. (If you still see plaintext, the apiserver flag
       did not take effect — check kind mounts / recreate cluster.)
-- [ ] **Optional:** create a Secret *before* enabling encryption on a throwaway
+- [x] **Optional:** create a Secret *before* enabling encryption on a throwaway
       cluster, peek etcd, then recreate with encryption and compare.
 - [ ] Skim CONCEPTS §2. Note what encryption-at-rest does **not** solve.
 
