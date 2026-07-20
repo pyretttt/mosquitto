@@ -1,0 +1,20 @@
+# EncryptionConfiguration for kube-apiserver (kind / custom control plane).
+# Enables encryption-at-rest for Secrets (and optionally ConfigMaps).
+#
+# TODO(you): wire this into kind — see TASKS.md §2 and kind/config.yaml
+# Docs: https://kubernetes.io/docs/tasks/administer-cluster/encrypt-data/
+apiVersion: apiserver.config.k8s.io/v1
+kind: EncryptionConfiguration
+resources:
+  - resources:
+      - secrets
+    providers:
+      # AES-CBC with a static key — fine for a lab, not for production KMS.
+      - aescbc:
+          keys:
+            - name: key1
+              # 32-byte key, base64-encoded. Generate with:
+              #   head -c 32 /dev/urandom | base64
+              # TODO(you): replace with your own key (never commit a prod key)
+              secret: REPLACE_WITH_BASE64_32_BYTE_KEY
+      - identity: {} # fallback: unencrypted read of old objects during migration

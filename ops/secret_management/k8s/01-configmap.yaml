@@ -1,0 +1,14 @@
+# Public, non-sensitive config for the demo app.
+# Contrast with Secret objects in 02-secret.yaml.example
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-app-config
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: demo-app
+data:
+  APP_MODE: "lab"
+  LOG_LEVEL: "info"
+  # Safe to commit: no credentials here
+  WELCOME_MESSAGE: "hello from ConfigMap"

@@ -1,0 +1,12 @@
+.env
+*.pem
+*.key
+age-key.txt
+keys.txt
+# Plain / local crypto material — never commit
+k8s/encryption/EncryptionConfiguration.yaml
+k8s/secrets/*.plain.yaml
+secrets/*.plain.yaml
+!secrets/.gitkeep
+local/age/
+.DS_Store

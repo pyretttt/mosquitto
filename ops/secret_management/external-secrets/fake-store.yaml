@@ -1,0 +1,42 @@
+# ClusterSecretStore using ESO's Fake provider — lab-only, no cloud account.
+# For a more realistic path, swap to the Kubernetes provider (another Secret)
+# or a cloud backend. Do NOT use Vault here (covered in vault_proj).
+#
+# TODO(you): install ESO, apply this store, then the ExternalSecret — TASKS.md §5
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: fake-lab-store
+spec:
+  provider:
+    fake:
+      data:
+        - key: /demo/api-token
+          value: "fake-provider-token-change-me"
+        - key: /demo/db-password
+          value: "fake-provider-db-pass-change-me"
+---
+# Syncs Fake provider keys into a native Kubernetes Secret for the demo app.
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: demo-app-eso
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: demo-app
+    secrets-lab.example/managed-by: external-secrets
+spec:
+  refreshInterval: 1m
+  secretStoreRef:
+    name: fake-lab-store
+    kind: ClusterSecretStore
+  target:
+    name: demo-app-eso
+    creationPolicy: Owner
+  data:
+    - secretKey: API_TOKEN
+      remoteRef:
+        key: /demo/api-token
+    - secretKey: DB_PASSWORD
+      remoteRef:
+        key: /demo/db-password

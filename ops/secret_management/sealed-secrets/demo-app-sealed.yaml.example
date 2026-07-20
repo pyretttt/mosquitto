@@ -1,0 +1,27 @@
+# SealedSecret stub — produced by `kubeseal` against a running sealed-secrets controller.
+# The controller decrypts into a normal Secret named demo-app-sealed.
+#
+# TODO(you): generate a real SealedSecret — TASKS.md §4
+#   kubectl create secret generic demo-app-sealed \
+#     --from-literal=API_TOKEN=... --dry-run=client -o yaml \
+#     | kubeseal -o yaml > sealed-secrets/demo-app-sealed.yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: demo-app-sealed
+  namespace: demo
+  labels:
+    app.kubernetes.io/name: demo-app
+    secrets-lab.example/managed-by: sealed-secrets
+spec:
+  encryptedData:
+    # Placeholder — kubeseal will replace these with ciphertext
+    API_TOKEN: REPLACE_WITH_KUBESEAL_CIPHERTEXT
+    DB_PASSWORD: REPLACE_WITH_KUBESEAL_CIPHERTEXT
+  template:
+    metadata:
+      name: demo-app-sealed
+      namespace: demo
+      labels:
+        app.kubernetes.io/name: demo-app
+    type: Opaque

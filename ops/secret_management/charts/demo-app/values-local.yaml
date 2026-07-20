@@ -1,0 +1,10 @@
+# Local kind/k3d overrides
+image:
+  repository: demo-app
+  tag: local
+  pullPolicy: Never
+
+# TODO(you): point at the Secret created by your current track — TASKS.md
+secret:
+  name: demo-app-secret
+  sourceHint: "plain-k8s-secret"

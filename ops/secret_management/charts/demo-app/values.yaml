@@ -1,0 +1,33 @@
+name: demo-app
+replicaCount: 1
+
+image:
+  repository: demo-app
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  create: true
+  name: demo-app
+
+# Which Secret object to mount as env — switch as you progress through TASKS.
+# Options after each track: demo-app-secret | demo-app-sops | demo-app-sealed | demo-app-eso
+secret:
+  name: demo-app-secret
+  # Label for /secret-status source_hint
+  sourceHint: "plain-k8s-secret"
+
+configMap:
+  name: demo-app-config
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

@@ -1,0 +1,162 @@
+# mise — tools + tasks for the Kubernetes secrets lab
+#
+#   mise install
+#   mise tasks
+#   mise run cluster-kind
+#
+# Paths are relative to this file (ops/secret_management).
+
+[settings]
+env_shell_expand = true
+
+[tools]
+kubectl = "1.31.4"
+helm = "3.16.4"
+kind = "0.26.0"
+# kubeseal CLI (sealed-secrets)
+kubeseal = "0.27.3"
+sops = "3.9.3"
+age = "1.2.1"
+
+[env]
+_.file = ".env"
+CLUSTER_NAME = "secrets-lab"
+NS_APP = "demo"
+NS_SEALED = "sealed-secrets"
+NS_ESO = "external-secrets"
+APP_HELM_RELEASE = "demo-app"
+IMAGE_NAME = "demo-app"
+IMAGE_TAG = "local"
+
+# ---------------------------------------------------------------------------
+# 0. Bootstrap
+# ---------------------------------------------------------------------------
+
+[tasks.cluster-kind]
+description = "Create a basic kind cluster (no encryption-at-rest)"
+run = "kind create cluster --name $CLUSTER_NAME || kind get clusters | grep -qx $CLUSTER_NAME"
+
+[tasks.cluster-kind-encrypt]
+description = "Create kind cluster with Secrets encryption-at-rest"
+run = "bash scripts/kind-with-encryption.sh"
+
+[tasks.ns]
+description = "Create lab namespaces"
+run = "kubectl apply -f k8s/namespace.yaml"
+
+[tasks.configmap]
+description = "Apply demo ConfigMap"
+run = "kubectl apply -f k8s/01-configmap.yaml"
+
+[tasks.secret-create]
+description = "Create plain Opaque Secret from DEMO_API_TOKEN"
+run = "bash scripts/create-plain-secret.sh"
+
+[tasks.inspect-cm-secret]
+description = "Show ConfigMap plaintext vs Secret base64"
+run = "bash scripts/inspect-cm-vs-secret.sh"
+
+[tasks.etcd-peek]
+description = "Peek Secret bytes in kind etcd (encryption check)"
+run = "bash scripts/etcd-peek-secret.sh"
+
+[tasks.build-load]
+description = "Build demo-app image and load into kind"
+run = "bash scripts/build-load.sh"
+
+[tasks.deploy-app]
+description = "Helm install/upgrade demo-app"
+run = """
+helm upgrade --install $APP_HELM_RELEASE charts/demo-app \
+  -n $NS_APP \
+  -f charts/demo-app/values.yaml \
+  -f charts/demo-app/values-local.yaml
+"""
+
+[tasks.port-forward]
+description = "Port-forward demo-app to localhost:8080"
+run = "kubectl -n $NS_APP port-forward svc/demo-app 8080:8080"
+
+# ---------------------------------------------------------------------------
+# SOPS
+# ---------------------------------------------------------------------------
+
+[tasks.sops-age-init]
+description = "Generate local age key for SOPS"
+run = "bash scripts/sops-age-init.sh"
+
+[tasks.sops-encrypt]
+description = "Encrypt secrets/demo-app.plain.yaml → demo-app.enc.yaml"
+run = """
+test -f secrets/demo-app.plain.yaml || {
+  echo "Create secrets/demo-app.plain.yaml first (see TASKS.md §3)"
+  exit 1
+}
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$PWD/local/age/key.txt}"
+sops -e secrets/demo-app.plain.yaml > secrets/demo-app.enc.yaml
+echo "Wrote secrets/demo-app.enc.yaml — commit the .enc.yaml, not the .plain.yaml"
+"""
+
+[tasks.sops-decrypt-apply]
+description = "Decrypt SOPS secret and apply to cluster"
+run = """
+export SOPS_AGE_KEY_FILE="${SOPS_AGE_KEY_FILE:-$PWD/local/age/key.txt}"
+sops -d secrets/demo-app.enc.yaml | kubectl apply -f -
+"""
+
+# ---------------------------------------------------------------------------
+# Sealed Secrets
+# ---------------------------------------------------------------------------
+
+[tasks.sealed-install]
+description = "Install sealed-secrets controller (Helm)"
+run = """
+helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets || true
+helm repo update sealed-secrets
+helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
+  -n $NS_SEALED --create-namespace \
+  --set-string fullnameOverride=sealed-secrets-controller
+"""
+
+[tasks.sealed-seal]
+description = "Seal a dry-run Secret into sealed-secrets/demo-app-sealed.yaml"
+run = """
+TOKEN="${DEMO_API_TOKEN:?set DEMO_API_TOKEN}"
+PASS="${DEMO_DB_PASSWORD:-lab-db-pass}"
+kubectl -n $NS_APP create secret generic demo-app-sealed \
+  --from-literal=API_TOKEN="$TOKEN" \
+  --from-literal=DB_PASSWORD="$PASS" \
+  --dry-run=client -o yaml \
+  | kubeseal -o yaml --controller-name=sealed-secrets-controller --controller-namespace=$NS_SEALED \
+  > sealed-secrets/demo-app-sealed.yaml
+echo "Wrote sealed-secrets/demo-app-sealed.yaml — safe to commit"
+"""
+
+[tasks.sealed-apply]
+description = "Apply SealedSecret CR"
+run = "kubectl apply -f sealed-secrets/demo-app-sealed.yaml"
+
+# ---------------------------------------------------------------------------
+# External Secrets
+# ---------------------------------------------------------------------------
+
+[tasks.eso-install]
+description = "Install External Secrets Operator (Helm)"
+run = """
+helm repo add external-secrets https://charts.external-secrets.io || true
+helm repo update external-secrets
+helm upgrade --install external-secrets external-secrets/external-secrets \
+  -n $NS_ESO --create-namespace \
+  --set installCRDs=true
+"""
+
+[tasks.eso-fake-apply]
+description = "Apply Fake ClusterSecretStore + ExternalSecret"
+run = "kubectl apply -f external-secrets/fake-store.yaml"
+
+[tasks.status]
+description = "Quick cluster status for the lab"
+run = """
+kubectl get ns demo sealed-secrets external-secrets 2>/dev/null || true
+kubectl -n $NS_APP get cm,secret,deploy,pods,externalsecret,sealedsecret 2>/dev/null || true
+"""

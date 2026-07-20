@@ -1,0 +1,43 @@
+# Optional: pull from a Kubernetes Secret in another namespace (still no Vault).
+# Useful after §5 Fake provider — practice a "source of truth" Secret + sync.
+#
+# TODO(you): before applying — TASKS.md §5
+#   1. kubectl create ns secret-source
+#   2. create Secret source-credentials with keys API_TOKEN, DB_PASSWORD
+#   3. create SA eso-k8s-reader in external-secrets + Role/RoleBinding in
+#      secret-source allowing get/list/watch on that Secret
+apiVersion: external-secrets.io/v1beta1
+kind: ClusterSecretStore
+metadata:
+  name: k8s-lab-store
+spec:
+  provider:
+    kubernetes:
+      remoteNamespace: secret-source
+      auth:
+        serviceAccount:
+          name: eso-k8s-reader
+          namespace: external-secrets
+---
+apiVersion: external-secrets.io/v1beta1
+kind: ExternalSecret
+metadata:
+  name: demo-app-eso-k8s
+  namespace: demo
+spec:
+  refreshInterval: 30s
+  secretStoreRef:
+    name: k8s-lab-store
+    kind: ClusterSecretStore
+  target:
+    name: demo-app-eso-k8s
+    creationPolicy: Owner
+  data:
+    - secretKey: API_TOKEN
+      remoteRef:
+        key: source-credentials
+        property: API_TOKEN
+    - secretKey: DB_PASSWORD
+      remoteRef:
+        key: source-credentials
+        property: DB_PASSWORD

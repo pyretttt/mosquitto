@@ -1,0 +1,9 @@
+# SOPS creation rules — encrypt Kubernetes Secret manifests with age.
+#
+# TODO(you): generate an age keypair, put the public key below, keep the private
+# key in local/age/ (gitignored). See TASKS.md §3.
+creation_rules:
+  - path_regex: secrets/.*\.yaml$
+    encrypted_regex: ^(data|stringData)$
+    # Replace with: age1...
+    age: REPLACE_WITH_AGE_PUBLIC_KEY
