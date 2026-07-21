@@ -6,4 +6,4 @@ creation_rules:
   - path_regex: secrets/.*\.yaml$
     encrypted_regex: ^(data|stringData)$
     # Replace with: age1...
-    age: REPLACE_WITH_AGE_PUBLIC_KEY
+    age: age1xzzuwhkv7qed8cx4tchalznj5m3glxfalhjg52l8wju7gr47vaxqft856a

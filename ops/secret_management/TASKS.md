@@ -109,21 +109,21 @@ form you can often recognize (YAML/JSON + base64). Encryption-at-rest protects
 SOPS encrypts selected YAML fields so the ciphertext can live in git. Decrypt
 with a private age key (lab) or cloud KMS (production shape).
 
-- [~] Scaffold: `.sops.yaml`, `secrets/demo-app.enc.yaml.example`,
+- [x] Scaffold: `.sops.yaml`, `secrets/demo-app.enc.yaml.example`,
       `mise run sops-age-init|sops-encrypt|sops-decrypt-apply`.
-- [ ] **Task:** `mise run sops-age-init`. Put the **public** key into
+- [x] **Task:** `mise run sops-age-init`. Put the **public** key into
       `.sops.yaml` (`age: age1...`). Keep `local/age/key.txt` private.
-- [ ] **Task:** create `secrets/demo-app.plain.yaml` (copy from
+- [x] **Task:** create `secrets/demo-app.plain.yaml` (copy from
       `k8s/02-secret.yaml.example`, rename metadata.name to `demo-app-sops`,
       set real lab values). Ensure `*.plain.yaml` stays gitignored.
-- [ ] **Task:** `mise run sops-encrypt` → produces `secrets/demo-app.enc.yaml`.
-- [ ] **Verify:** open the `.enc.yaml` — `stringData`/`data` values should be
+- [x] **Task:** `mise run sops-encrypt` → produces `secrets/demo-app.enc.yaml`.
+- [x] **Verify:** open the `.enc.yaml` — `stringData`/`data` values should be
       `ENC[AES256_GCM,...]` ciphertext. Commit the encrypted file only.
-- [ ] **Task:** `mise run sops-decrypt-apply`.
-- [ ] Point the chart at it: set `secret.name: demo-app-sops` and
+- [x] **Task:** `mise run sops-decrypt-apply`.
+- [x] Point the chart at it: set `secret.name: demo-app-sops` and
       `secret.sourceHint: sops` in `charts/demo-app/values-local.yaml`, then
       `mise run deploy-app` and curl `/secret-status`.
-- [ ] **Verify:** `source_hint` is `sops` and token is present.
+- [x] **Verify:** `source_hint` is `sops` and token is present.
 
 ---
 
