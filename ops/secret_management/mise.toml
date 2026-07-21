@@ -115,7 +115,7 @@ sops -d secrets/demo-app.enc.yaml | kubectl apply -f -
 [tasks.sealed-install]
 description = "Install sealed-secrets controller (Helm)"
 run = """
-helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets || true
+helm repo add sealed-secrets https://bitnami.github.io/sealed-secrets
 helm repo update sealed-secrets
 helm upgrade --install sealed-secrets sealed-secrets/sealed-secrets \
   -n $NS_SEALED --create-namespace \

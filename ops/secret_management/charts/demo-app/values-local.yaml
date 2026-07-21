@@ -6,5 +6,5 @@ image:
 
 # TODO(you): point at the Secret created by your current track — TASKS.md
 secret:
-  name: demo-app-sops
-  sourceHint: "sops"
+  name: demo-app-sealed
+  sourceHint: "sealed"

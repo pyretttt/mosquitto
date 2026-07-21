@@ -135,14 +135,16 @@ the native Secret.
 
 - [~] Scaffold: `sealed-secrets/demo-app-sealed.yaml.example`,
       `mise run sealed-install|sealed-seal|sealed-apply`.
-- [ ] **Task:** `mise run sealed-install`. Wait until the controller pod is Ready.
-- [ ] **Task:** `mise run sealed-seal` (uses `DEMO_API_TOKEN`).
-- [ ] **Task:** `mise run sealed-apply`.
-- [ ] **Verify:** `kubectl -n demo get sealedsecret,secret demo-app-sealed`.
-- [ ] Point the chart: `secret.name: demo-app-sealed`,
+- [x] **Task:** `mise run sealed-install`. Wait until the controller pod is Ready.
+- [x] **Task:** `mise run sealed-seal` (uses `DEMO_API_TOKEN`).
+- [x] **Task:** `mise run sealed-apply`.
+- [x] **Verify:** `kubectl -n demo get sealedsecret,secret demo-app-sealed`.
+- [x] Point the chart: `secret.name: demo-app-sealed`,
       `sourceHint: sealed-secrets`, redeploy, curl `/secret-status`.
-- [ ] **Reflect:** what happens if you restore this `SealedSecret` onto a
+- [x] **Reflect:** what happens if you restore this `SealedSecret` onto a
       *different* cluster without restoring the sealing key?
+
+* It wont be restored correctly, decrypted secret wont match
 
 ---
 
