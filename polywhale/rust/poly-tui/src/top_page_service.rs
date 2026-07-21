@@ -1,3 +1,5 @@
+use std::fmt::{self, Display};
+
 use poly_core::client::{PolymarketClient, PolyError};
 
 const EVENTS_PER_PAGE: i32 = 30;
@@ -48,6 +50,10 @@ impl TopPageSvc for TopPageService {
                                 );
                                 return None;
                             };
+                        let resolution_status: Option<UmaResolutionStatus> = match &market.uma_resolution_status {
+                            Some(status) => status.try_into().map_or(None, |s| Some(s)),
+                            None => None,
+                        };
                         Some(Market::new(
                             market.question.unwrap_or_else(|| "N/A".to_owned()),
                             market.slug.unwrap_or_else(|| "N/A".to_owned()),
@@ -57,6 +63,7 @@ impl TopPageSvc for TopPageService {
                             market.volume_24hr.unwrap_or_default().as_f64(),
                             market.one_day_price_change.unwrap_or_default().as_f64(),
                             market.spread?.as_f64(),
+                            resolution_status
                         ))
                     })
                     .collect::<Vec<_>>();
@@ -162,6 +169,26 @@ pub struct Market {
     pub movement_label: String,
     pub movement_kind: ActivityKind,
     pub spread_label: String,
+    pub resolution_status: Option<UmaResolutionStatus>,
+}
+
+#[derive(Clone, Debug)]
+pub enum UmaResolutionStatus {
+    Pending,
+    Resolved,
+    Failed,
+}
+
+impl TryFrom<&String> for UmaResolutionStatus {
+    type Error = String;
+    fn try_from(value: &String) -> Result<Self, String> {
+        match value.to_lowercase().as_str() {
+            "pending" => Ok(UmaResolutionStatus::Pending),
+            "resolved" => Ok(UmaResolutionStatus::Resolved),
+            "failed" => Ok(UmaResolutionStatus::Failed),
+            _ => Err("Failed to parse UmaResolutionStatus".to_owned()),
+        }
+    }
 }
 
 impl Market {
@@ -174,6 +201,7 @@ impl Market {
         volume24h: f64,
         movement24h: f64,
         spread: f64,
+        resolution_status: Option<UmaResolutionStatus>,
     ) -> Self {
         let movement_label = format_movement(movement24h);
         let movement_kind = movement_kind(movement24h);
@@ -194,6 +222,7 @@ impl Market {
             movement_label,
             movement_kind,
             spread_label: format_cents(spread),
+            resolution_status,
         }
     }
 
@@ -303,14 +332,14 @@ pub enum ActivityKind {
 }
 
 fn format_cents(value: f64) -> String {
-    format!("{:.0}¢", value)
+    format!("{:.3}¢", value)
 }
 
 fn format_movement(value: f64) -> String {
     if value >= 0.0 {
-        format!("+{:.0}¢", value)
+        format!("+{:.3}¢", value)
     } else {
-        format!("{:.0}¢", value)
+        format!("{:.3}¢", value)
     }
 }
 

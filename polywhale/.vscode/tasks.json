@@ -1,0 +1,24 @@
+{
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cargo_build",
+            "command": "mise",
+            "args": [
+                "exec",
+                "--",
+                "cargo",
+                "build"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/rust"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Runs cargo"
+        },
+    ],
+    "version": "2.0.0"
+}

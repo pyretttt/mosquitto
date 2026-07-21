@@ -8,7 +8,7 @@ use ratatui::widgets::{
 
 use crate::env::Env;
 use crate::features::top_page::TopPage;
-use crate::top_page_service::{ActivityKind, Event as PolyEvent, Market};
+use crate::top_page_service::{ActivityKind, Event as PolyEvent, Market, UmaResolutionStatus};
 
 const BG: Color = Color::Black;
 const BORDER: Color = Color::Rgb(0x33, 0x41, 0x55);
@@ -113,8 +113,8 @@ const fn events_column_constraints() -> [Constraint; 8] {
         Constraint::Length(3),
         Constraint::Length(3),
         Constraint::Min(28),
-        Constraint::Length(6),
-        Constraint::Length(6),
+        Constraint::Length(7),
+        Constraint::Length(7),
         Constraint::Length(7),
         Constraint::Length(7),
         Constraint::Length(7),
@@ -362,13 +362,23 @@ fn event_row<'a>(event: &'a PolyEvent, is_selected: bool, markets_h: u16) -> Row
 }
 
 fn market_row<'a>(market: &'a Market, market_bar: &'static str) -> Row<'a> {
+    let is_active_market = match market.resolution_status {
+        Some(UmaResolutionStatus::Pending) => true,
+        Some(UmaResolutionStatus::Resolved) => false,
+        Some(UmaResolutionStatus::Failed) => false,
+        None => true,
+    };
     Row::new([
         Cell::from(constants::EMPTY).style(Style::default().fg(MUTED)),
         Cell::from(market.bookmark_label).style(Style::default().fg(WARNING)),
         Cell::from(Line::from_iter([
             Span::styled(market_bar, Style::default().fg(MUTED)),
             Span::raw(constants::DOUBLE_SPACE),
-            Span::styled(market.title.as_str(), Style::default().fg(Color::Gray)),
+            Span::styled(
+                market.title.as_str(),
+                Style::default()
+                    .fg(if is_active_market { Color::Gray } else { Color::DarkGray })
+            )
         ])),
         Cell::from(market.yes_label.as_str()).style(Style::default().fg(POSITIVE)),
         Cell::from(market.no_label.as_str()).style(Style::default().fg(NEGATIVE)),
