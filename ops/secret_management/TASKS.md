@@ -157,25 +157,25 @@ you already covered it in `vault_proj`.
 - [~] Scaffold: `external-secrets/fake-store.yaml`,
       `external-secrets/kubernetes-store.yaml.example`,
       `mise run eso-install|eso-fake-apply`.
-- [ ] **Task:** `mise run eso-install`. Wait for CRDs and controller Ready.
-- [ ] **Task:** edit Fake values in `external-secrets/fake-store.yaml` if you
+- [x] **Task:** `mise run eso-install`. Wait for CRDs and controller Ready.
+- [x] **Task:** edit Fake values in `external-secrets/fake-store.yaml` if you
       want distinct tokens, then `mise run eso-fake-apply`.
-- [ ] **Verify:** `kubectl -n demo get externalsecret demo-app-eso` shows
+- [x] **Verify:** `kubectl -n demo get externalsecret demo-app-eso` shows
       `SecretSynced` / Ready; `kubectl -n demo get secret demo-app-eso` exists.
-- [ ] Point the chart: `secret.name: demo-app-eso`, `sourceHint: external-secrets`,
+- [x] Point the chart: `secret.name: demo-app-eso`, `sourceHint: external-secrets`,
       redeploy, curl `/secret-status`.
 - [ ] **Optional:** implement the Kubernetes provider path
       (`kubernetes-store.yaml.example`): create a source Secret in another
       namespace + RBAC for ESO’s ServiceAccount, then sync into `demo`.
-- [ ] Skim CONCEPTS §3 table — when would you pick SOPS vs Sealed vs ESO?
+- [x] Skim CONCEPTS §3 table — when would you pick SOPS vs Sealed vs ESO?
 
 ---
 
 ## 6. Hardening & extras (optional)
 
-- [ ] **RBAC:** create a Role that can `get/list` ConfigMaps but **not** Secrets;
+- [x] **RBAC:** create a Role that can `get/list` ConfigMaps but **not** Secrets;
       bind a test ServiceAccount; show `kubectl auth can-i`.
-- [ ] **Immutable Secret:** set `immutable: true` on a Secret; try to patch it;
+- [x] **Immutable Secret:** set `immutable: true` on a Secret; try to patch it;
       observe the failure; create a new object instead.
 - [ ] **Volume mount vs env:** change the Deployment to mount the Secret as a
       file under `/var/run/secrets/demo` and read it from the app (small code
@@ -185,7 +185,7 @@ you already covered it in `vault_proj`.
       checksum annotation via Helm.
 - [ ] **CSI (read-only):** skim Secrets Store CSI Driver docs; write 5 lines in
       CONCEPTS on how it differs from ESO (mount vs synced Secret object).
-- [ ] **Never in images:** grep your Dockerfile history mentally — confirm no
+- [x] **Never in images:** grep your Dockerfile history mentally — confirm no
       secret `ENV` / `COPY` of plaintext credentials.
 
 ---

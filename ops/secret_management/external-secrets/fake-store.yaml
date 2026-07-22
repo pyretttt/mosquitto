@@ -3,7 +3,7 @@
 # or a cloud backend. Do NOT use Vault here (covered in vault_proj).
 #
 # TODO(you): install ESO, apply this store, then the ExternalSecret — TASKS.md §5
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ClusterSecretStore
 metadata:
   name: fake-lab-store
@@ -17,7 +17,7 @@ spec:
           value: "fake-provider-db-pass-change-me"
 ---
 # Syncs Fake provider keys into a native Kubernetes Secret for the demo app.
-apiVersion: external-secrets.io/v1beta1
+apiVersion: external-secrets.io/v1
 kind: ExternalSecret
 metadata:
   name: demo-app-eso

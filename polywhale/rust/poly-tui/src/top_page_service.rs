@@ -1,5 +1,3 @@
-use std::fmt::{self, Display};
-
 use poly_core::client::{PolymarketClient, PolyError};
 
 const EVENTS_PER_PAGE: i32 = 30;
