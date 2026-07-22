@@ -336,7 +336,7 @@ fn key_bindings(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         Layout::vertical([Constraint::Length(1), Constraint::Length(1)]).areas(inner);
 
     frame.render_widget(
-        Paragraph::new("f find   1-3 focus   j/k move   →/enter markets   ←/esc events   ? help")
+        Paragraph::new("s search   1-3 focus   j/k move   →/enter markets   ←/esc events   ? help")
             .style(Style::default().fg(MUTED).bg(BG)),
         shortcuts_area,
     );

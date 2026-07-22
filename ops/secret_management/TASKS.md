@@ -177,7 +177,7 @@ you already covered it in `vault_proj`.
       bind a test ServiceAccount; show `kubectl auth can-i`.
 - [x] **Immutable Secret:** set `immutable: true` on a Secret; try to patch it;
       observe the failure; create a new object instead.
-- [ ] **Volume mount vs env:** change the Deployment to mount the Secret as a
+- [x] **Volume mount vs env:** change the Deployment to mount the Secret as a
       file under `/var/run/secrets/demo` and read it from the app (small code
       change) — CONCEPTS §4.
 - [ ] **Secret change / restart:** update a Secret value and note the pod still

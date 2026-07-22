@@ -98,6 +98,7 @@ pub struct EventsPane {
 #[derive(Clone, Debug, Default)]
 pub struct Filter {
     pub search_term: String,
+    pub placeholder: String,
 }
 
 impl EventsPane {
@@ -210,6 +211,14 @@ pub enum TopPageAction {
     EventsRegularRequestFinished(Result<EventLoadResult, TopPageError>),
     HideErrorMsg { token: String },
     Resize(Size),
+    Filter(FilterAction)
+}
+
+#[derive(Clone, Debug)]
+pub enum FilterAction {
+    Open,
+    Close,
+    Input(char),
 }
 
 impl Into<Event> for TopPageAction {
@@ -294,6 +303,19 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
         },
         TopPageAction::Resize(size) => {
             top_page.update_window_size(*size);
+        },
+        TopPageAction::Filter(filter_action) => {
+            match filter_action {
+                FilterAction::Open => {
+                    top_page.events_pane.filter = Some(
+                        Filter {
+                            search_term: "".to_owned(),
+                            placeholder: "search by slug/tags/id".to_owned(),
+                        }
+                    );
+                },
+                _ => (),
+            }
         }
     }
 }
@@ -350,6 +372,13 @@ impl TopPage {
                     false
                 }
             },
+            KeyCode::Char('s') => {
+                let sender = env.sender.clone();
+                env.fire_and_forget(async move {
+                    _ = sender.send(TopPageAction::Filter(FilterAction::Open).into());
+                });
+                true
+            }
             KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
                 if self.events_pane.events_data.events.len() == 0 { return false; }
 
@@ -402,9 +431,6 @@ impl TopPage {
                 }
                 true
             },
-            KeyCode::Char('f') => {
-                true
-            },
             _ => false,
         }
     }
@@ -432,9 +458,7 @@ impl TopPage {
             },
             events_pane: EventsPane {
                 title: "Top Events",
-                filter: Some(Filter {
-                    search_term: "".into(),
-                }),
+                filter: None,
                 title_label: String::new(),
                 footer_label: String::new(),
                 events_data: EventsData {
