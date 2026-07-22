@@ -36,6 +36,13 @@ def config() -> dict[str, str | None]:
         "welcome": os.getenv("WELCOME_MESSAGE"),
     }
 
+def get_secrets():
+    res = dict()
+    with open("/etc/secret-volume/API_TOKEN") as token:
+        res["token"] = token.read()
+    with open("/etc/secret-volume/DB_PASSWORD") as db_password:
+        res["db_password"] = db_password.read()
+    return res
 
 @app.get("/secret-status")
 def secret_status() -> dict[str, object]:

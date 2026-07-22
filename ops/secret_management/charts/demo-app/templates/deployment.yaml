@@ -22,6 +22,10 @@ spec:
         runAsNonRoot: true
         runAsUser: 10001
         fsGroup: 10001
+      volumes:
+        - name: secret-volume
+          secret:
+            secretName: {{ .Values.secret.name }}
       containers:
         - name: demo-app
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -29,6 +33,10 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.service.port }}
+          volumeMounts:
+            - name: secret-volume
+              readOnly: true
+              mountPath: "/etc/secret-volume"
           env:
             - name: SECRET_SOURCE
               value: {{ .Values.secret.sourceHint | quote }}
