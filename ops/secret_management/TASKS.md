@@ -180,10 +180,10 @@ you already covered it in `vault_proj`.
 - [x] **Volume mount vs env:** change the Deployment to mount the Secret as a
       file under `/var/run/secrets/demo` and read it from the app (small code
       change) — CONCEPTS §4.
-- [ ] **Secret change / restart:** update a Secret value and note the pod still
+- [x] **Secret change / restart:** update a Secret value and note the pod still
       has the old env until restart; add a reloader annotation or bump a
       checksum annotation via Helm.
-- [ ] **CSI (read-only):** skim Secrets Store CSI Driver docs; write 5 lines in
+- [x] **CSI (read-only):** skim Secrets Store CSI Driver docs; write 5 lines in
       CONCEPTS on how it differs from ESO (mount vs synced Secret object).
 - [x] **Never in images:** grep your Dockerfile history mentally — confirm no
       secret `ENV` / `COPY` of plaintext credentials.

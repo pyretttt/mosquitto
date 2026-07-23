@@ -16,6 +16,7 @@ spec:
       annotations:
         # Bump when Secret contents change so pods restart
         secrets-lab.example/secret-name: {{ .Values.secret.name | quote }}
+        checksum/secret: {{ .Files.Get "secrets/demo-app.plain.yaml" | sha256sum }}
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
       securityContext:
