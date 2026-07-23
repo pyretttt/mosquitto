@@ -1,0 +1,80 @@
+# mise — tools + tasks for the htop / process management lab
+#
+#   mise install
+#   mise tasks
+#   mise run workloads-start
+#
+# Paths are relative to this file (ops/htop).
+# htop itself is a system package (brew/apt) — see README prerequisites.
+
+[settings]
+env_shell_expand = true
+
+[tools]
+python = "3.12.8"
+
+[env]
+LAB_TAG = "htop-lab"
+WORKLOAD_DIR = "{{config_root}}/workloads"
+SCRIPTS_DIR = "{{config_root}}/scripts"
+RUN_DIR = "{{config_root}}/.run"
+DATA_DIR = "{{config_root}}/.data"
+
+# ---------------------------------------------------------------------------
+# 0. Bootstrap
+# ---------------------------------------------------------------------------
+
+[tasks.bootstrap]
+description = "Create run/data dirs and check htop is on PATH"
+run = "bash scripts/bootstrap.sh"
+
+[tasks.verify-tools]
+description = "Print versions of lab tools"
+run = """
+echo "python: $(python --version)"
+command -v htop >/dev/null && htop --version || echo "htop: MISSING (brew install htop / apt install htop)"
+command -v ps >/dev/null && echo "ps: ok" || echo "ps: MISSING"
+command -v pgrep >/dev/null && echo "pgrep: ok" || echo "pgrep: MISSING"
+command -v lsof >/dev/null && echo "lsof: ok" || echo "lsof: MISSING"
+command -v renice >/dev/null && echo "renice: ok" || echo "renice: MISSING"
+"""
+
+# ---------------------------------------------------------------------------
+# Workloads — synthetic noise for htop practice
+# ---------------------------------------------------------------------------
+
+[tasks.workloads-start]
+description = "Start all demo workloads (cpu, mem, io, fork, hung)"
+run = "bash scripts/workloads.sh start"
+
+[tasks.workloads-stop]
+description = "Stop all demo workloads tagged for this lab"
+run = "bash scripts/workloads.sh stop"
+
+[tasks.workloads-status]
+description = "List lab-tagged processes"
+run = "bash scripts/workloads.sh status"
+
+[tasks.cpu-start]
+description = "Start CPU burner only"
+run = "bash scripts/workloads.sh start cpu"
+
+[tasks.mem-start]
+description = "Start memory hog only"
+run = "bash scripts/workloads.sh start mem"
+
+[tasks.io-start]
+description = "Start IO churn only"
+run = "bash scripts/workloads.sh start io"
+
+[tasks.fork-start]
+description = "Start fork tree only"
+run = "bash scripts/workloads.sh start fork"
+
+[tasks.hung-start]
+description = "Start hung worker only"
+run = "bash scripts/workloads.sh start hung"
+
+[tasks.htop]
+description = "Launch htop filtered to lab processes (if filter supported)"
+run = "bash scripts/launch-htop.sh"

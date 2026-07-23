@@ -1,0 +1,6 @@
+.run/
+.data/
+__pycache__/
+*.pyc
+.Python
+.DS_Store
