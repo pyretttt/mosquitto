@@ -41,11 +41,11 @@ runbook note in `docs/notes.md`.
 
 ## 0. Bootstrap
 
-- [ ] Install mise if needed; from `ops/htop` run `mise install`.
-- [ ] Install htop (`brew install htop` or `sudo apt install htop`).
-- [ ] `mise run bootstrap` and `mise run verify-tools`.
-- [ ] **Verify:** `htop --version` and `python --version` print without errors.
-- [ ] Skim `README.md` and `docs/CONCEPTS.md` §1–2.
+- [x] Install mise if needed; from `ops/htop` run `mise install`.
+- [x] Install htop (`brew install htop` or `sudo apt install htop`).
+- [x] `mise run bootstrap` and `mise run verify-tools`.
+- [x] **Verify:** `htop --version` and `python --version` print without errors.
+- [x] Skim `README.md` and `docs/CONCEPTS.md` §1–2.
 
 ---
 
