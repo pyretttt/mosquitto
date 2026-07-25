@@ -53,15 +53,15 @@ runbook note in `docs/notes.md`.
 
 Get comfortable before the machine gets noisy.
 
-- [ ] **Task:** run `mise run htop` (or plain `htop`). Open setup (`F2`): note
+- [x] **Task:** run `mise run htop` (or plain `htop`). Open setup (`F2`): note
       which CPU/memory meters you have. Enable or confirm columns:
       `PID`, `USER`, `PRI`, `NI`, `S`, `CPU%`, `MEM%`, `TIME+`, `Command`.
-- [ ] **Task:** practice filter (`F4`) and search (`F3`). Sort by CPU, then by MEM.
-- [ ] **Task:** toggle tree view (`F5` / `t`) and hide userland threads (`H`) —
+- [x] **Task:** practice filter (`F4`) and search (`F3`). Sort by CPU, then by MEM.
+- [x] **Task:** toggle tree view (`F5` / `t`) and hide userland threads (`H`) —
       notice how Python thread noise changes.
-- [ ] **Task:** record your preferred setup in `docs/notes.md`
+- [x] **Task:** record your preferred setup in `docs/notes.md`
       (`TODO(you)` there and in `scripts/launch-htop.sh`).
-- [ ] **Verify:** you can find your shell’s PID in htop within ~10 seconds.
+- [x] **Verify:** you can find your shell’s PID in htop within ~10 seconds.
 
 ---
 
