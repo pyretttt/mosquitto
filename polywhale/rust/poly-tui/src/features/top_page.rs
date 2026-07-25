@@ -9,12 +9,15 @@ use crate::pair::Pair;
 use crate::features::app::Action;
 use crate::event::Event;
 use crate::env::Env;
-pub use crate::top_page_service::{Event as PolyEvent, Market};
+pub use crate::top_page_service::{Event as PolyEvent, EventsFilter, Market};
 use crate::top_page_service::{
-    ActivityEntry, ActivityKind, ChartActivity, EventsData, SelectedMarket, TopPageSvc,
+    ActivityEntry, ActivityKind, ChartActivity, EventsData, SelectedMarket,
+    TopPageSvc,
 };
 
 static TOP_PAGE_TITLE: &str = " POLYWHALE ";
+static SEARCH_PLACEHOLDER: &str = "search by slug/tags/id";
+static EMPTY: &str = "";
 
 /// Max visible rows in the markets table (scrolls when there are more).
 pub const MAX_MARKETS_TABLE_HEIGHT: usize = 6;
@@ -52,6 +55,28 @@ impl TopPage {
             .min(self.events_pane.events_window_size) as u16;
         (events_h + self.events_pane.markets_table_height()).max(1) + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND
     }
+
+    pub fn set_events_loading_session(&mut self, token: Option<String>) {
+        if let Some(token) = token {
+            self.events_load_session = Some(token);
+            self.is_loading = true;
+        } else {
+            self.events_load_session = None;
+            self.is_loading = false;
+        }
+    }
+
+    pub fn set_search(&mut self, search: Option<Search>) {
+        self.events_pane.events_data = EventsData::default();
+        self.events_pane.offset = 0;
+        self.events_pane.table_state = TableState::default();
+        self.events_pane.markets_table_state = TableState::default();
+        self.events_pane.clear_market_focus();
+        if search.is_none() {
+            self.events_pane.set_search(None);
+        }
+        self.set_events_loading_session(None);
+    }
 }
 
 impl Default for TopPage {
@@ -83,7 +108,7 @@ impl StatusPane {
 #[derive(Clone, Debug, Default)]
 pub struct EventsPane {
     pub title: &'static str,
-    pub filter: Option<Filter>,
+    pub search: Option<Search>,
     pub title_label: String,
     pub footer_label: String,
     pub events_data: EventsData,
@@ -96,14 +121,27 @@ pub struct EventsPane {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct Filter {
+pub struct Search {
     pub search_term: String,
-    pub placeholder: String,
+    pub placeholder: &'static str,
+    pub focused: bool,
+    pub page: usize,
+}
+
+impl Search {
+    pub fn empty() -> Self {
+        Self {
+            search_term: EMPTY.to_owned(),
+            placeholder: SEARCH_PLACEHOLDER,
+            focused: true,
+            page: 1,
+        }
+    }
 }
 
 impl EventsPane {
     pub fn refresh_labels(&mut self) {
-        self.title_label = format!(" [1] - {}: {} ", self.title, self.filter.as_ref().map_or("all", |f| &f.search_term));
+        self.title_label = format!(" [1] - {}: {} ", self.title, self.search.as_ref().map_or("all", |f| &f.search_term));
         self.footer_label = if self.markets_focused {
             format!(
                 " {} events | j/k markets | ←/esc events | enter focus ",
@@ -115,6 +153,11 @@ impl EventsPane {
                 self.events_data.events.len(),
             )
         };
+    }
+
+    pub fn set_search(&mut self, search: Option<Search>) {
+        self.search = search;
+        self.refresh_labels();
     }
 
     pub fn selected_event_idx(&self) -> Option<usize> {
@@ -207,18 +250,20 @@ pub struct EventLoadResult {
 #[derive(Clone, Debug)]
 pub enum TopPageAction {
     SelectPane(u32),
-    EventsLoadRequested,
+    EventsLoadRequested { token: String },
     EventsRegularRequestFinished(Result<EventLoadResult, TopPageError>),
     HideErrorMsg { token: String },
     Resize(Size),
-    Filter(FilterAction)
+    Search(SearchAction)
 }
 
 #[derive(Clone, Debug)]
-pub enum FilterAction {
+pub enum SearchAction {
     Open,
     Close,
     Input(char),
+    Backspace,
+    Apply,
 }
 
 impl Into<Event> for TopPageAction {
@@ -237,16 +282,21 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
         TopPageAction::SelectPane(pane) => {
             top_page.current_pane = *pane;
         },
-        TopPageAction::EventsLoadRequested => {
+        TopPageAction::EventsLoadRequested { token } => {
             if top_page.events_load_session.is_some() { return; }
-            let this_session = (env.gen_token)();
-            top_page.is_loading = true;
-            top_page.events_load_session = Some(this_session.clone());
+
+            let this_session = token.clone();
+            top_page.set_events_loading_session(Some(this_session.clone()));
+
             let sender = env.sender.clone();
             let top_page_svc = env.top_page_svc.clone();
             let events_next_cursor = top_page.events_pane.events_data.next_cursor;
+            let filter = top_page.events_pane.search.as_ref().map(|s| EventsFilter {
+                query: s.search_term.clone(),
+                page: s.page as i32,
+            });
             env.fire_and_forget(async move {
-                match top_page_svc.load_events(events_next_cursor).await {
+                match top_page_svc.load_events(events_next_cursor, filter).await {
                     Ok(events_data) => {
                         _ = sender.send(
                             TopPageAction::EventsRegularRequestFinished(
@@ -287,14 +337,13 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                         current_token.clone()
                     ));
                     let sleep_fn = env.sleep.clone();
-                    _ = env.fire_and_forget(async move {
+                    env.fire_and_forget(async move {
                         sleep_fn.sleep(3000).await;
                         _ = sender.send(TopPageAction::HideErrorMsg { token: current_token }.into());
                     });
                 }
             }
-            top_page.events_load_session = None;
-            top_page.is_loading = false;
+            top_page.set_events_loading_session(None);
         },
         TopPageAction::HideErrorMsg { token } => {
             if top_page.error_msg.as_ref().map_or(false,|e| e.right.eq(token)) {
@@ -304,17 +353,43 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
         TopPageAction::Resize(size) => {
             top_page.update_window_size(*size);
         },
-        TopPageAction::Filter(filter_action) => {
+        TopPageAction::Search(filter_action) => {
             match filter_action {
-                FilterAction::Open => {
-                    top_page.events_pane.filter = Some(
-                        Filter {
-                            search_term: "".to_owned(),
-                            placeholder: "search by slug/tags/id".to_owned(),
-                        }
-                    );
+                SearchAction::Open => {
+                    if let Some(search) = top_page.events_pane.search.as_mut() {
+                        search.focused = true;
+                    } else {
+                        top_page.events_pane.set_search(Some(Search::empty()));
+                    }
                 },
-                _ => (),
+                SearchAction::Close => {
+                    top_page.set_search(None);
+                    _ = env.sender.send(TopPageAction::EventsLoadRequested { token: (env.gen_token)() }.into());
+                },
+                SearchAction::Input(ch) => {
+                    let Some(search) = top_page.events_pane.search.as_mut() else {
+                        assert!(false, "Impossible branch");
+                        return;
+                    };
+                    search.search_term.push(*ch);
+                },
+                SearchAction::Backspace => {
+                    let Some(search) = top_page.events_pane.search.as_mut() else {
+                        return;
+                    };
+                    search.search_term.pop();
+                },
+                SearchAction::Apply => {
+                    {
+                        let Some(search) = top_page.events_pane.search.as_mut() else {
+                            return;
+                        };
+                        search.focused = false;
+                    }
+                    let applied = top_page.events_pane.search.clone();
+                    top_page.set_search(applied);
+                    _ = env.sender.send(TopPageAction::EventsLoadRequested { token: (env.gen_token)() }.into());
+                },
             }
         }
     }
@@ -332,7 +407,10 @@ impl TopPage {
                     return;
                 }
                 log::info!(target: "app", "TopPage: Loading more events");
-                _ = env.sender.send(TopPageAction::EventsLoadRequested.into());
+                if let Some(search) = self.events_pane.search.as_mut() {
+                    search.page = search.page.saturating_add(1);
+                }
+                _ = env.sender.send(TopPageAction::EventsLoadRequested { token: (env.gen_token)() }.into());
                 return;
             }
             if selected_in_window < self.events_pane.events_window_size - 1 {
@@ -355,6 +433,10 @@ impl TopPage {
     }
 
     pub fn key_input_middleware(&mut self, key_event: &KeyEvent, env: &Env) -> bool {
+        if self.events_pane.search.as_ref().map_or(false, |s| s.focused) {
+            return self.search_key_input_middleware(key_event, env);
+        }
+
         match key_event.code {
             KeyCode::Char(x) if ['1', '2', '3'].contains(&x) => {
                 self.current_pane = x.to_digit(10).unwrap_or(1);
@@ -375,7 +457,7 @@ impl TopPage {
             KeyCode::Char('s') => {
                 let sender = env.sender.clone();
                 env.fire_and_forget(async move {
-                    _ = sender.send(TopPageAction::Filter(FilterAction::Open).into());
+                    _ = sender.send(TopPageAction::Search(SearchAction::Open).into());
                 });
                 true
             }
@@ -434,6 +516,28 @@ impl TopPage {
             _ => false,
         }
     }
+
+    fn search_key_input_middleware(&mut self, key_event: &KeyEvent, env: &Env) -> bool {
+        match key_event.code {
+            KeyCode::Esc => {
+                _ = env.sender.send(TopPageAction::Search(SearchAction::Close).into());
+                true
+            },
+            KeyCode::Enter => {
+                _ = env.sender.send(TopPageAction::Search(SearchAction::Apply).into());
+                true
+            },
+            KeyCode::Backspace => {
+                _ = env.sender.send(TopPageAction::Search(SearchAction::Backspace).into());
+                true
+            },
+            KeyCode::Char(ch) if !ch.is_control() => {
+                _ = env.sender.send(TopPageAction::Search(SearchAction::Input(ch)).into());
+                true
+            },
+            _ => true,
+        }
+    }
 }
 
 // ================================================
@@ -458,7 +562,7 @@ impl TopPage {
             },
             events_pane: EventsPane {
                 title: "Top Events",
-                filter: None,
+                search: None,
                 title_label: String::new(),
                 footer_label: String::new(),
                 events_data: EventsData {

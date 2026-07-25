@@ -2,10 +2,17 @@ use poly_core::client::{PolymarketClient, PolyError};
 
 const EVENTS_PER_PAGE: i32 = 30;
 
+#[derive(Clone, Debug, Default)]
+pub struct EventsFilter {
+    pub query: String,
+    pub page: i32,
+}
+
 pub trait TopPageSvc: Send + Sync + Clone {
     fn load_events(
         &self,
         next_cursor: i32,
+        filter: Option<EventsFilter>,
     ) -> impl Future<Output = Result<EventsData, PolyError>> + Send;
 }
 
@@ -23,8 +30,17 @@ impl TopPageService {
 }
 
 impl TopPageSvc for TopPageService {
-    async fn load_events(&self, next_cursor: i32) -> Result<EventsData, PolyError> {
-        let events = self.client.events(EVENTS_PER_PAGE, next_cursor).await?;
+    async fn load_events(
+        &self,
+        next_cursor: i32,
+        filter: Option<EventsFilter>,
+    ) -> Result<EventsData, PolyError> {
+        let events =if let Some(filter) = filter {
+            self.client.events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page).await?
+        } else {
+            self.client.events(EVENTS_PER_PAGE, next_cursor).await?
+        };
+
         let events = events
             .into_iter()
             .map(|event| {

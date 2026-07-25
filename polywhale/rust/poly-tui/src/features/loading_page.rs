@@ -75,6 +75,7 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
             state.progress = 1.0;
             let sender = env.sender.clone();
             let ui_window_size = env.ui.window_size;
+            let token = (env.gen_token)();
             tokio::spawn(async move {
                 _ = sender.send(
                     Action::OpenTopPage(
@@ -82,7 +83,7 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
                     ).into()
                 );
                 _ = sender.send(
-                    TopPageAction::EventsLoadRequested.into()
+                    TopPageAction::EventsLoadRequested { token: token }.into()
                 );
 
             });

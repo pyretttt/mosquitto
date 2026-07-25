@@ -7,7 +7,7 @@ use ratatui::widgets::{
 };
 
 use crate::env::Env;
-use crate::features::top_page::TopPage;
+use crate::features::top_page::{Search, TopPage};
 use crate::top_page_service::{ActivityKind, Event as PolyEvent, Market, UmaResolutionStatus};
 
 const BG: Color = Color::Black;
@@ -45,8 +45,10 @@ pub fn top_page_ui(
 
     let events_max_height = top_page.table_height();
 
-    let [status_area, events_area, lower_area, cmd_area] = Layout::vertical([
+    let search_focused = top_page.events_pane.search.as_ref().map_or(false, |s| s.focused);
+    let [status_area, search_area, events_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
+        Constraint::Length(if search_focused { 3 } else { 0 }),
         Constraint::Max(events_max_height),
         Constraint::Fill(2),
         Constraint::Length(3),
@@ -54,6 +56,9 @@ pub fn top_page_ui(
     .areas(dashboard);
 
     render_status_bar(frame, status_area, top_page);
+    if let Some(search) = top_page.events_pane.search.as_ref().filter(|s| s.focused) {
+        render_search_input(frame, search_area, search);
+    }
     render_top_events(frame, events_area, top_page);
     render_lower_panes(frame, lower_area, top_page);
     key_bindings(frame, cmd_area, top_page);
@@ -108,6 +113,32 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     );
 }
 
+fn render_search_input(frame: &mut Frame, area: Rect, search: &Search) {
+    let block = pane_block("Search: ", Borders::ALL, WARNING)
+        .title_bottom(
+            Line::from("press enter to apply search").centered(),
+        );
+    let inner = block.inner(area);
+    frame.render_widget(block, area);
+
+    let line = if search.search_term.is_empty() {
+        Line::from(Span::styled(
+            search.placeholder,
+            Style::default().fg(Color::DarkGray),
+        ))
+    } else {
+        Line::from(Span::styled(
+            search.search_term.as_str(),
+            Style::default().fg(Color::White),
+        ))
+    };
+
+    frame.render_widget(
+        Paragraph::new(line).style(Style::default().bg(BG)),
+        inner.inner(Margin::new(1, 0)),
+    );
+}
+
 const fn events_column_constraints() -> [Constraint; 8] {
     [
         Constraint::Length(3),
@@ -122,10 +153,13 @@ const fn events_column_constraints() -> [Constraint; 8] {
 }
 
 fn render_top_events(frame: &mut Frame, area: Rect, top_page: &TopPage) {
-    let block = pane_block(&top_page.events_pane.title_label, Borders::ALL, top_page.current_pane == 1)
-        .title_bottom(
-            Line::from(top_page.events_pane.footer_label.as_str()).centered(),
-        );
+    let block = pane_block(
+        &top_page.events_pane.title_label,
+        Borders::ALL,
+        if top_page.current_pane == 1 { ACCENT } else { BORDER }
+    ).title_bottom(
+        Line::from(top_page.events_pane.footer_label.as_str()).centered(),
+    );
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -285,7 +319,7 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
                 pane_block(
                     " [2] - Selected Market: summary ",
                     Borders::ALL,
-                    top_page.current_pane == 2,
+                    if top_page.current_pane == 2 { ACCENT } else { BORDER },
                 )
                 .padding(Padding::horizontal(1)),
             )
@@ -318,7 +352,7 @@ fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             .block(pane_block(
                 &chart.title_label,
                 Borders::ALL,
-                top_page.current_pane == 3,
+                if top_page.current_pane == 3 { ACCENT } else { BORDER },
             ))
             .style(Style::default().bg(BG)),
         area,
@@ -327,7 +361,7 @@ fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 
 fn key_bindings(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let popup = &top_page.command_popup;
-    let block = pane_block("Keybindings: ", Borders::ALL, false);
+    let block = pane_block("Keybindings: ", Borders::ALL, BORDER);
     let inner = block.inner(area);
 
     frame.render_widget(block, area);
@@ -415,9 +449,7 @@ fn activity_line<'a>(time: &'a str, label: &'a str, value: &'a str, value_color:
     ])
 }
 
-fn pane_block<'a>(title: &'a str, borders: Borders, focused: bool) -> Block<'a> {
-    let border_color = if focused { ACCENT } else { BORDER };
-
+fn pane_block<'a>(title: &'a str, borders: Borders, border_color: Color) -> Block<'a> {
     Block::default()
         .borders(borders)
         .border_type(BorderType::Rounded)
