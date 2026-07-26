@@ -69,40 +69,40 @@ Get comfortable before the machine gets noisy.
 
 Training loops and busy scrapers look like this.
 
-- [ ] **Task:** `mise run cpu-start` then `mise run htop` (filter `cpu_burn`).
-- [ ] **Task:** watch per-core meters and the process `CPU%`. How many cores does
+- [x] **Task:** `mise run cpu-start` then `mise run htop` (filter `cpu_burn`).
+- [x] **Task:** watch per-core meters and the process `CPU%`. How many cores does
       one single-threaded burner consume?
-- [ ] **Task:** from another terminal, confirm with:
+- [x] **Task:** from another terminal, confirm with:
       ```bash
       pgrep -af cpu_burn
       ps -o pid,ni,state,pcpu,pmem,command -p "$(pgrep -f cpu_burn.py | head -1)"
       ```
-- [ ] **Task:** in htop, renice the burner to `+10` (`r`). Does `CPU%` drop when
+- [x] **Task:** in htop, renice the burner to `+10` (`r`). Does `CPU%` drop when
       something else competes? (Optional: start a second `cpu-start` after
       editing the script to allow two — or run `python workloads/cpu_burn.py &`
       manually.)
-- [ ] **Verify:** you can explain user vs system vs nice time at a high level
+- [x] **Verify:** you can explain user vs system vs nice time at a high level
       (see `docs/CONCEPTS.md` §2–3).
-- [ ] Stop when done: `mise run workloads-stop` (or leave running for §3).
+- [x] Stop when done: `mise run workloads-stop` (or leave running for §3).
 
 ---
 
 ## 3. Memory pressure & IO wait
 
-- [ ] **Task:** `mise run mem-start`. In htop, watch `RES` climb in steps. Compare
+- [x] **Task:** `mise run mem-start`. In htop, watch `RES` climb in steps. Compare
       `VIRT` vs `RES` — why can VIRT be large while RES tracks the hog?
-- [ ] **Task:** optionally raise pressure: `MEM_TARGET_MB=512 mise run mem-start`
+- [x] **Task:** optionally raise pressure: `MEM_TARGET_MB=512 mise run mem-start`
       (stop first). Stay inside your machine’s free RAM — do **not** aim to OOM
       your desktop session.
-- [ ] **Task:** `mise run io-start`. Look for IO-wait in the header (if shown)
+- [x] **Task:** `mise run io-start`. Look for IO-wait in the header (if shown)
       and state `D` flashes. Tail `.run/io.log` while watching htop.
-- [ ] **Task:** list open files for the IO process:
+- [x] **Task:** list open files for the IO process:
       ```bash
       lsof -p "$(pgrep -f io_churn.py | head -1)" | head
       ```
-- [ ] **Verify:** write 2–3 lines in `docs/notes.md` distinguishing “CPU pegged”
+- [x] **Verify:** write 2–3 lines in `docs/notes.md` distinguishing “CPU pegged”
       vs “RAM climbing” vs “disk busy / IO wait”.
-- [ ] `mise run workloads-stop`.
+- [x] `mise run workloads-stop`.
 
 ---
 
@@ -111,20 +111,20 @@ Training loops and busy scrapers look like this.
 MLOps jobs often spawn loaders / workers; orphaned children and zombies hide in
 flat lists.
 
-- [ ] **Task:** `mise run fork-start`. Enable **tree** view. Find the parent
+- [x] **Task:** `mise run fork-start`. Enable **tree** view. Find the parent
       `fork_tree.py` and its children. Note PPIDs with:
       ```bash
       ps -o pid,ppid,state,command -p "$(pgrep -f fork_tree.py | tr '\n' ',' | sed 's/,$//')"
       ```
       (or inspect each PID from htop).
-- [ ] **Task:** stop workloads, then start a zombie case:
+- [x] **Task:** stop workloads, then start a zombie case:
       ```bash
       MAKE_ZOMBIE=1 mise run fork-start
       ```
       Find state `Z` in htop. Who is the parent? Why is the child still listed?
-- [ ] **Task:** `mise run workloads-stop`. Confirm zombies/children are gone
+- [x] **Task:** `mise run workloads-stop`. Confirm zombies/children are gone
       (`mise run workloads-status` / `pgrep`).
-- [ ] **Verify:** you can say out loud what a zombie is (exited child, not yet
+- [x] **Verify:** you can say out loud what a zombie is (exited child, not yet
       `wait()`ed) and that killing the zombie itself does nothing useful — fix
       or kill the parent.
 
@@ -132,19 +132,19 @@ flat lists.
 
 ## 5. Hung worker, signals, and safe intervention
 
-- [ ] **Task:** `mise run hung-start`. Filter to `hung_worker`. Note state `S`
+- [x] **Task:** `mise run hung-start`. Filter to `hung_worker`. Note state `S`
       and near-zero CPU.
-- [ ] **Task:** confirm the held lock file:
+- [x] **Task:** confirm the held lock file:
       ```bash
       lsof -p "$(pgrep -f hung_worker.py | head -1)"
       ls -la .data/
       ```
-- [ ] **Task:** from htop send `SIGTERM` (`k`, choose 15). Confirm the process
+- [x] **Task:** from htop send `SIGTERM` (`k`, choose 15). Confirm the process
       exits and `.data/hung-*.lock` behavior (file may remain — optional cleanup).
-- [ ] **Task:** edit `scripts/workloads.sh` so `start_one` launches via `nice -n 10`
+- [x] **Task:** edit `scripts/workloads.sh` so `start_one` launches via `nice -n 10`
       (`TODO(you)` in that file). Restart cpu burner and confirm `NI` is `10` in
       htop.
-- [ ] **Verify:** `mise run workloads-stop` leaves `workloads-status` clean.
+- [x] **Verify:** `mise run workloads-stop` leaves `workloads-status` clean.
 
 ---
 
@@ -152,15 +152,15 @@ flat lists.
 
 No cluster required — mental model only, plus a tiny write-up.
 
-- [ ] **Task:** pick one real scenario you have seen (stuck training job, noisy
+- [x] **Task:** pick one real scenario you have seen (stuck training job, noisy
       CI runner, “pod is Running but app hung”). Map which htop cues you would
       seek **on the node**, and what the K8s-level analogue would be
       (`kubectl top`, container PID namespaces, throttling).
-- [ ] **Task:** add a half-page “host triage” runbook to `docs/notes.md`:
+- [x] **Task:** add a half-page “host triage” runbook to `docs/notes.md`:
       filter → sort → tree → `lsof`/`ps` → TERM → escalate.
-- [ ] **Optional:** compare `htop` vs `top` vs (if installed) `glances` for the
+- [x] **Optional:** compare `htop` vs `top` vs (if installed) `glances` for the
       same `cpu_burn` — what is faster for interactive triage?
-- [ ] **Verify:** a teammate could follow your runbook without reading TASKS.md.
+- [x] **Verify:** a teammate could follow your runbook without reading TASKS.md.
 
 ---
 

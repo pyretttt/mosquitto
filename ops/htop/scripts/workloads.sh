@@ -39,7 +39,7 @@ start_one() {
 
   # TODO(you): start with lower priority via nice — see TASKS.md §5
   nohup env LAB_TAG="$LAB_TAG" DATA_DIR="$DATA_DIR" HTOP_LAB_ROLE="$name" \
-    "$python" "$ROOT/workloads/$script" >"$logfile" 2>&1 &
+    nice -n 10 "$python" "$ROOT/workloads/$script" >"$logfile" 2>&1 &
   echo $! >"$pidfile"
   echo "started $name pid=$(cat "$pidfile") (log: $logfile)"
 }
