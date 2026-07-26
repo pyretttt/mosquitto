@@ -1,0 +1,20 @@
+# TODO(you): allow ingress-nginx → records-api — TASKS.md §4
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-api
+  namespace: records
+spec:
+  podSelector:
+    matchLabels:
+      db-lab.example/tier: api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080

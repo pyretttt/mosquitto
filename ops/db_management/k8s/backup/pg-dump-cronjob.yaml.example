@@ -1,0 +1,52 @@
+# TODO(you): after the one-shot Job works, schedule it — TASKS.md §3
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-dump
+  namespace: records
+  labels:
+    app.kubernetes.io/part-of: db-lab
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            db-lab.example/tier: backup
+            app.kubernetes.io/part-of: db-lab
+        spec:
+          serviceAccountName: pg-backup
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: bitnami/postgresql:17
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: records-pg-postgresql
+                      key: password
+                - name: PGHOST
+                  value: records-pg-postgresql
+                - name: PGUSER
+                  value: records
+                - name: PGDATABASE
+                  value: records
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  # TODO(you): same pg_dump body as the one-shot Job
+                  echo "Implement scheduled pg_dump — TASKS.md §3"
+                  exit 1
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: pg-backups

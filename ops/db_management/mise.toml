@@ -1,0 +1,128 @@
+# mise — tools + tasks for the db_management lab
+#
+#   cp .env.example .env
+#   mise install
+#   mise tasks
+#   mise run cluster-up
+#
+# Paths are relative to this file (ops/db_management).
+
+[settings]
+env_shell_expand = true
+
+[tools]
+kubectl = "1.31.4"
+helm = "3.16.4"
+kind = "0.26.0"
+# openssl is a system package (brew/apt)
+
+[env]
+_.file = ".env"
+CLUSTER_NAME = "db-lab"
+NS_APP = "records"
+NS_DB = "records"
+APP_HELM_RELEASE = "records-api"
+PG_HELM_RELEASE = "records-pg"
+IMAGE_NAME = "records-api"
+IMAGE_TAG = "local"
+INGRESS_HOST = "records.localtest.me"
+
+# ---------------------------------------------------------------------------
+# 0. Bootstrap
+# ---------------------------------------------------------------------------
+
+[tasks.verify-tools]
+description = "Print versions of lab tools"
+run = """
+echo "kubectl: $(kubectl version --client -o yaml 2>/dev/null | head -5 || true)"
+echo "helm:    $(helm version --short)"
+echo "kind:    $(kind version)"
+echo "docker:  $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo MISSING)"
+echo "openssl: $(openssl version 2>/dev/null || echo MISSING)"
+"""
+
+[tasks.cluster-up]
+description = "Create kind cluster (Ingress ports 80/443)"
+run = "bash scripts/kind-up.sh"
+
+[tasks.cluster-delete]
+description = "Delete kind cluster"
+run = "kind delete cluster --name $CLUSTER_NAME"
+
+[tasks.ns]
+description = "Create lab namespace"
+run = "kubectl apply -f k8s/namespace.yaml"
+
+[tasks.ingress-install]
+description = "Install ingress-nginx for kind"
+run = "bash scripts/install-ingress.sh"
+
+[tasks.gen-certs]
+description = "Self-signed TLS cert + Secret records-tls"
+run = "bash scripts/gen-certs.sh"
+
+[tasks.deploy-postgres]
+description = "Helm install Bitnami PostgreSQL"
+run = "bash scripts/deploy-postgres.sh"
+
+[tasks.build-load]
+description = "Build records-api image and load into kind"
+run = "bash scripts/build-load.sh"
+
+[tasks.deploy-app]
+description = "Helm install/upgrade records-api"
+run = "bash scripts/deploy-app.sh"
+
+[tasks.port-forward]
+description = "Port-forward records-api to localhost:8080"
+run = "kubectl -n $NS_APP port-forward svc/records-api 8080:8080"
+
+[tasks.status]
+description = "Quick cluster status"
+run = "bash scripts/status.sh"
+
+# ---------------------------------------------------------------------------
+# Backup / restore (host helpers — Job track is in TASKS.md §3)
+# ---------------------------------------------------------------------------
+
+[tasks.backup-pg]
+description = "pg_dump via kubectl exec → ./backups/"
+run = "bash scripts/backup-pg.sh"
+
+[tasks.restore-pg]
+description = "pg_restore from FILE=... into lab Postgres"
+run = "bash scripts/restore-pg.sh"
+
+# ---------------------------------------------------------------------------
+# Student apply helpers (after editing .example → real manifests)
+# ---------------------------------------------------------------------------
+
+[tasks.apply-ingress]
+description = "Apply k8s/ingress.yaml (you create it from .example)"
+run = """
+test -f k8s/ingress.yaml || {
+  echo "Copy k8s/ingress.yaml.example → k8s/ingress.yaml and edit — TASKS.md §2"
+  exit 1
+}
+kubectl apply -f k8s/ingress.yaml
+"""
+
+[tasks.apply-netpol]
+description = "Apply all NetworkPolicies under k8s/networkpolicy/*.yaml"
+run = """
+if ! ls k8s/networkpolicy/*.yaml >/dev/null 2>&1; then
+  echo "No *.yaml yet — copy from *.yaml.example — TASKS.md §4"
+  exit 1
+fi
+kubectl apply -f k8s/networkpolicy/
+"""
+
+[tasks.apply-backup-rbac]
+description = "Apply backup ServiceAccount/Role from k8s/rbac/"
+run = """
+test -f k8s/rbac/backup-sa.yaml || {
+  echo "Copy k8s/rbac/backup-sa.yaml.example → backup-sa.yaml — TASKS.md §3"
+  exit 1
+}
+kubectl apply -f k8s/rbac/backup-sa.yaml
+"""

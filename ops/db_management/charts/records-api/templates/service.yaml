@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "records-api.name" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "records-api.name" . }}
+    app.kubernetes.io/part-of: db-lab
+    db-lab.example/tier: api
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "records-api.name" . }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http

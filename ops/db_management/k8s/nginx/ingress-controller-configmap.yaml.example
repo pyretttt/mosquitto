@@ -1,0 +1,15 @@
+# TODO(you): patch the ingress-nginx controller ConfigMap — TASKS.md §5
+# Typical location after helm install:
+#   kubectl -n ingress-nginx get cm
+#
+# Example knobs (verify names against your installed chart version):
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ingress-nginx-controller
+  namespace: ingress-nginx
+data:
+  # TODO(you): set at least two of: proxy-body-size, use-forwarded-headers,
+  # keep-alive, log-format-upstream — then restart/reload and verify.
+  proxy-body-size: "1m"
+  use-forwarded-headers: "true"

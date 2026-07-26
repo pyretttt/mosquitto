@@ -1,0 +1,35 @@
+name: records-api
+replicaCount: 1
+
+image:
+  repository: records-api
+  tag: local
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+serviceAccount:
+  create: true
+  name: records-api
+
+# Postgres connection — Secret keys must exist (see values-local / deploy-postgres).
+postgres:
+  host: records-pg-postgresql
+  port: "5432"
+  secretName: records-pg-postgresql
+  userKey: postgres-username
+  passwordKey: postgres-password
+  databaseKey: postgres-database
+  # Fallback literals when Bitnami secret key names differ — TASKS.md §1
+  database: records
+  user: records
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi

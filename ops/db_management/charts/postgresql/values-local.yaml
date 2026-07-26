@@ -1,0 +1,32 @@
+# Bitnami PostgreSQL values for kind (lab-sized).
+# Installed by scripts/deploy-postgres.sh — TASKS.md §1
+#
+# Chart: oci://registry-1.docker.io/bitnamicharts/postgresql
+
+architecture: standalone
+
+auth:
+  username: records
+  database: records
+  # password comes from --set / existingSecret in the deploy script — never commit it
+  enablePostgresUser: true
+
+primary:
+  persistence:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  # Labels used by NetworkPolicy selectors — TASKS.md §4
+  podLabels:
+    app.kubernetes.io/part-of: db-lab
+    db-lab.example/tier: database
+
+# NetworkPolicy in chart is off — you write policies under k8s/networkpolicy/
+networkPolicy:
+  enabled: false

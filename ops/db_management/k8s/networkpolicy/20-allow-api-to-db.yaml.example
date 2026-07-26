@@ -1,0 +1,41 @@
+# TODO(you): only records-api pods may talk to Postgres on 5432 — TASKS.md §4
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-to-db
+  namespace: records
+spec:
+  podSelector:
+    matchLabels:
+      db-lab.example/tier: database
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              db-lab.example/tier: api
+      ports:
+        - protocol: TCP
+          port: 5432
+---
+# Egress from API → DB (needed if you also deny egress by default)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-api-egress-to-db
+  namespace: records
+spec:
+  podSelector:
+    matchLabels:
+      db-lab.example/tier: api
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              db-lab.example/tier: database
+      ports:
+        - protocol: TCP
+          port: 5432

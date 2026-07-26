@@ -1,0 +1,27 @@
+# TODO(you): copy to ingress.yaml, create TLS Secret, apply — TASKS.md §2
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: records-api
+  namespace: records
+  annotations:
+    # ingress-nginx on kind
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # TODO(you): add proxy-body-size / rate-limit annotations — TASKS.md §5
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - records.localtest.me
+      secretName: records-tls
+  rules:
+    - host: records.localtest.me
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: records-api
+                port:
+                  number: 8080

@@ -1,0 +1,10 @@
+# Local kind overrides
+image:
+  repository: records-api
+  tag: local
+  pullPolicy: Never
+
+postgres:
+  # Bitnami postgresql release name → Service + Secret
+  host: records-pg-postgresql
+  secretName: records-pg-postgresql
