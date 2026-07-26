@@ -1,7 +1,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span};
+use ratatui::text::{Line, Span, Text};
 use ratatui::widgets::{
     Block, BorderType, Borders, Cell, HighlightSpacing, Padding, Paragraph, Row, Table,
 };
@@ -114,13 +114,10 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 }
 
 fn render_search_input(frame: &mut Frame, area: Rect, search: &Search) {
-    let block = pane_block("Search: ", Borders::ALL, WARNING)
-        .title_bottom(
-            Line::from("press enter to apply search").centered(),
-        );
+    let block = pane_block("Press enter to apply search: ", Borders::ALL, WARNING)
+        .title_bottom(Line::from("Tab to switch search type - ".to_owned() + search.search_type.as_str()).centered());
     let inner = block.inner(area);
     frame.render_widget(block, area);
-
     let line = if search.search_term.is_empty() {
         Line::from(Span::styled(
             search.placeholder,

@@ -12,7 +12,7 @@ use crate::env::Env;
 pub use crate::top_page_service::{Event as PolyEvent, EventsFilter, Market};
 use crate::top_page_service::{
     ActivityEntry, ActivityKind, ChartActivity, EventsData, SelectedMarket,
-    TopPageSvc,
+    TopPageSvc, SearchType,
 };
 
 static TOP_PAGE_TITLE: &str = " POLYWHALE ";
@@ -120,12 +120,32 @@ pub struct EventsPane {
     pub offset: usize,
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct Search {
     pub search_term: String,
     pub placeholder: &'static str,
     pub focused: bool,
     pub page: usize,
+    pub search_type: SearchType,
+}
+
+impl SearchType {
+
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            SearchType::Query => "query",
+            SearchType::Tag => "tag",
+            SearchType::Id => "id",
+        }
+    }
+
+    pub fn next(&self) -> Self {
+        match self {
+            SearchType::Query => SearchType::Tag,
+            SearchType::Tag => SearchType::Id,
+            SearchType::Id => SearchType::Query,
+        }
+    }
 }
 
 impl Search {
@@ -135,6 +155,7 @@ impl Search {
             placeholder: SEARCH_PLACEHOLDER,
             focused: true,
             page: 1,
+            search_type: SearchType::Query,
         }
     }
 }
@@ -292,6 +313,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             let top_page_svc = env.top_page_svc.clone();
             let events_next_cursor = top_page.events_pane.events_data.next_cursor;
             let filter = top_page.events_pane.search.as_ref().map(|s| EventsFilter {
+                search_type: s.search_type.clone(),
                 query: s.search_term.clone(),
                 page: s.page as i32,
             });
@@ -519,6 +541,15 @@ impl TopPage {
 
     fn search_key_input_middleware(&mut self, key_event: &KeyEvent, env: &Env) -> bool {
         match key_event.code {
+            KeyCode::Tab => {
+                if let Some(search) = self.events_pane.search.as_mut() {
+                    search.search_type = search.search_type.next();
+                    true
+                } else {
+                    assert!(false, "Impossible branch");
+                    false
+                }
+            }
             KeyCode::Esc => {
                 _ = env.sender.send(TopPageAction::Search(SearchAction::Close).into());
                 true

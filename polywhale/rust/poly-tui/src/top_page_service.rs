@@ -2,8 +2,9 @@ use poly_core::client::{PolymarketClient, PolyError};
 
 const EVENTS_PER_PAGE: i32 = 30;
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug)]
 pub struct EventsFilter {
+    pub search_type: SearchType,
     pub query: String,
     pub page: i32,
 }
@@ -29,14 +30,27 @@ impl TopPageService {
     }
 }
 
+#[derive(Clone, Debug)]
+#[repr(u32)]
+pub enum SearchType {
+    Query,
+    Tag,
+    Id,
+}
+
 impl TopPageSvc for TopPageService {
     async fn load_events(
         &self,
         next_cursor: i32,
         filter: Option<EventsFilter>,
     ) -> Result<EventsData, PolyError> {
-        let events =if let Some(filter) = filter {
-            self.client.events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page).await?
+        let events = if let Some(filter) = filter {
+            match filter.search_type {
+                SearchType::Query => self.client.events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page).await?,
+                // TODO: Implement tag search
+                SearchType::Tag => self.client.events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page).await?,
+                SearchType::Id => vec![self.client.event_by_id(&filter.query).await?],
+            }
         } else {
             self.client.events(EVENTS_PER_PAGE, next_cursor).await?
         };
@@ -83,6 +97,11 @@ impl TopPageSvc for TopPageService {
                     .collect::<Vec<_>>();
                 let markets_count = markets.len();
                 let volume24h = event.volume_24hr.unwrap_or_default().as_f64();
+                log::info!(
+                    target: "app",
+                    "Event Id: {:?}",
+                    event.id
+                );
                 Event::new(
                     event.id,
                     event.title.unwrap_or_else(|| "N/A".to_owned()),
