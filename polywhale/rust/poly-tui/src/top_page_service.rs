@@ -1,4 +1,4 @@
-use poly_core::client::{PolymarketClient, PolyError};
+use poly_core::client::{PolyError, PolymarketClient};
 
 const EVENTS_PER_PAGE: i32 = 30;
 
@@ -24,9 +24,7 @@ pub struct TopPageService {
 
 impl TopPageService {
     pub fn new(client: PolymarketClient) -> Self {
-        Self {
-            client,
-        }
+        Self { client }
     }
 }
 
@@ -46,9 +44,17 @@ impl TopPageSvc for TopPageService {
     ) -> Result<EventsData, PolyError> {
         let events = if let Some(filter) = filter {
             match filter.search_type {
-                SearchType::Query => self.client.events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page).await?,
+                SearchType::Query => {
+                    self.client
+                        .events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page)
+                        .await?
+                }
                 // TODO: Implement tag search
-                SearchType::Tag => self.client.events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page).await?,
+                SearchType::Tag => {
+                    self.client
+                        .events_filtered(EVENTS_PER_PAGE, &filter.query, filter.page)
+                        .await?
+                }
                 SearchType::Id => vec![self.client.event_by_id(&filter.query).await?],
             }
         } else {
@@ -78,10 +84,11 @@ impl TopPageSvc for TopPageService {
                                 );
                                 return None;
                             };
-                        let resolution_status: Option<UmaResolutionStatus> = match &market.uma_resolution_status {
-                            Some(status) => status.try_into().ok(),
-                            None => None,
-                        };
+                        let resolution_status: Option<UmaResolutionStatus> =
+                            match &market.uma_resolution_status {
+                                Some(status) => status.try_into().ok(),
+                                None => None,
+                            };
                         Some(Market::new(
                             market.question.unwrap_or_else(|| "N/A".to_owned()),
                             market.slug.unwrap_or_else(|| "N/A".to_owned()),
@@ -91,7 +98,7 @@ impl TopPageSvc for TopPageService {
                             market.volume_24hr.unwrap_or_default().as_f64(),
                             market.one_day_price_change.unwrap_or_default().as_f64(),
                             market.spread?.as_f64(),
-                            resolution_status
+                            resolution_status,
                         ))
                     })
                     .collect::<Vec<_>>();

@@ -1,4 +1,3 @@
-
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Pair<L, R> {
     pub left: L,

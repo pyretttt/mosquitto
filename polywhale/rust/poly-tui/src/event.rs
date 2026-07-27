@@ -3,8 +3,8 @@ use futures::{FutureExt, StreamExt};
 use std::time::Duration;
 use tokio::sync::mpsc;
 
-use crate::features::app::Action;
 use crate::config::get_config;
+use crate::features::app::Action;
 
 /// Representation of all possible events.
 #[derive(Clone, Debug)]

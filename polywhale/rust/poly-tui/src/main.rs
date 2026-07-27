@@ -2,16 +2,15 @@ pub mod config;
 pub mod env;
 pub mod event;
 pub mod features;
-pub mod ui;
-pub mod ui_components;
 pub mod pair;
 pub mod top_page_service;
+pub mod ui;
+pub mod ui_components;
 
 use env::Env;
-use features::app::{AppState};
-use ui::run;
 use event::sidecar_event_loop;
-
+use features::app::AppState;
+use ui::run;
 
 const LOG_FILE_MAX_SIZE_BYTES: u64 = 1024 * 1024;
 
@@ -25,11 +24,7 @@ async fn main() -> color_eyre::Result<()> {
 
     env.fire_and_forget(sidecar_event_loop(env.sender.clone()));
 
-    run(
-        &mut AppState::default(),
-        &mut env,
-        terminal
-    ).await?;
+    run(&mut AppState::default(), &mut env, terminal).await?;
     ratatui::restore();
     Ok(())
 }

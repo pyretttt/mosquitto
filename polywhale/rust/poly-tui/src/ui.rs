@@ -1,3 +1,4 @@
+use ratatui::DefaultTerminal;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Layout, Offset},
@@ -5,21 +6,14 @@ use ratatui::{
     text::{Line, Span},
     widgets::{Block, Gauge, Paragraph},
 };
-use ratatui::DefaultTerminal;
-use throbber_widgets_tui::{Throbber, BRAILLE_EIGHT, WhichUse};
+use throbber_widgets_tui::{BRAILLE_EIGHT, Throbber, WhichUse};
 
-use crate::features::app::{
-    AppState,
-    Overlay,
-    Page,
-    app_reducer,
-    IntroPage,
-};
-use crate::features::loading_page::LoadingPage;
 use crate::env::Env;
+use crate::features::app::{AppState, IntroPage, Overlay, Page, app_reducer};
+use crate::features::loading_page::LoadingPage;
 use crate::ui_components::command_popup::draw_command_popup;
-use crate::ui_components::top_page_ui::top_page_ui;
 use crate::ui_components::log_page_ui::draw_log_page;
+use crate::ui_components::top_page_ui::top_page_ui;
 use crate::ui_components::window_size_ui::draw_window_size;
 
 const WHALE_ART: [&str; 6] = [
@@ -70,7 +64,10 @@ const PUBU_LOGO_COLORS: [Color; 16] = [
 ];
 
 fn draw_app(frame: &mut Frame, state: &AppState, env: &Env) {
-    frame.render_widget(Block::new().style(Style::default().bg(Color::Black)), frame.area());
+    frame.render_widget(
+        Block::new().style(Style::default().bg(Color::Black)),
+        frame.area(),
+    );
     match &state.page {
         Page::Intro(intro) => draw_intro_page(frame, intro),
         Page::Top(top) => top_page_ui(frame, top, env),
@@ -119,10 +116,7 @@ fn draw_intro_page(frame: &mut Frame, _intro: &IntroPage) {
 
     frame.render_widget(Paragraph::new("intro.text.as_str()"), text_area);
 
-    frame.render_widget(
-        Paragraph::new(format!("counter: {}", 0)),
-        counter_area,
-    );
+    frame.render_widget(Paragraph::new(format!("counter: {}", 0)), counter_area);
 
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
@@ -149,9 +143,7 @@ pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
             .alignment(Alignment::Center)
             .style(
                 Style::default()
-                    .fg(
-                        pubu_logo_color(loading.logo_color_index)
-                    )
+                    .fg(pubu_logo_color(loading.logo_color_index))
                     .add_modifier(Modifier::BOLD),
             ),
         logo_area,
@@ -170,7 +162,10 @@ pub fn draw_loading_page(frame: &mut Frame, loading: &LoadingPage) {
         throbber_area.offset(Offset::new(0, 1)),
     );
 
-    frame.render_widget(Block::new().style(Style::default().fg(Color::Black)), fill_area);
+    frame.render_widget(
+        Block::new().style(Style::default().fg(Color::Black)),
+        fill_area,
+    );
 
     let progress = loading.progress.clamp(0.0, 1.0) as f64;
     frame.render_widget(
@@ -199,7 +194,8 @@ pub async fn run(
 ) -> color_eyre::Result<()> {
     while app_state.running {
         terminal.draw(|frame| draw_app(frame, &*app_state, env))?;
-        let mut event = env.receiver
+        let mut event = env
+            .receiver
             .recv()
             .await
             .ok_or(color_eyre::eyre::eyre!("Event receiver closed"))?;

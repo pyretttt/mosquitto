@@ -1,11 +1,8 @@
-use polymarket_client_sdk_v2::clob::{
-    Client as ClobClient,
-    Config,
-};
-use polymarket_client_sdk_v2::gamma::{Client as GammaClient};
+use polymarket_client_sdk_v2::clob::{Client as ClobClient, Config};
 use polymarket_client_sdk_v2::error::Error;
+use polymarket_client_sdk_v2::gamma::Client as GammaClient;
 use polymarket_client_sdk_v2::gamma::types::request::{
-    EventsRequest, MarketsRequest, EventByIdRequest, SearchRequest
+    EventByIdRequest, EventsRequest, MarketsRequest, SearchRequest,
 };
 use polymarket_client_sdk_v2::gamma::types::response::{Event, Market};
 
@@ -18,38 +15,32 @@ pub struct PolymarketClient {
 #[derive(Debug)]
 pub struct PolyError(pub Error);
 
-
 impl Default for PolymarketClient {
     fn default() -> Self {
         Self {
             // By default crate uses unresolvable endpoint
-            clob_client: ClobClient::new("https://clob.polymarket.com", Config::default()).expect("Failed to create ClobClient"),
+            clob_client: ClobClient::new("https://clob.polymarket.com", Config::default())
+                .expect("Failed to create ClobClient"),
             gamma_client: GammaClient::default(),
         }
     }
 }
 
 impl PolymarketClient {
-    pub async fn markets(
-        &self,
-        limit: i32,
-        offset: i32
-    ) -> Result<Vec<Market>, PolyError> {
-        self.gamma_client.markets(
-            &MarketsRequest::builder()
-            .offset(offset)
-            .limit(limit)
-            .ascending(false)
-            .build()
-        ).await
-        .map_err(PolyError)
+    pub async fn markets(&self, limit: i32, offset: i32) -> Result<Vec<Market>, PolyError> {
+        self.gamma_client
+            .markets(
+                &MarketsRequest::builder()
+                    .offset(offset)
+                    .limit(limit)
+                    .ascending(false)
+                    .build(),
+            )
+            .await
+            .map_err(PolyError)
     }
 
-    pub async fn events(
-        &self,
-        limit: i32,
-        offset: i32,
-    ) -> Result<Vec<Event>, PolyError> {
+    pub async fn events(&self, limit: i32, offset: i32) -> Result<Vec<Event>, PolyError> {
         self.gamma_client
             .events(
                 &EventsRequest::builder()
@@ -77,7 +68,7 @@ impl PolymarketClient {
                     .q(query)
                     .page(page)
                     .ascending(false)
-                    .build()
+                    .build(),
             )
             .await
             .map_err(PolyError)

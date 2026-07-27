@@ -2,18 +2,17 @@ use std::error::Error;
 use std::fmt;
 
 use crossterm::event::{KeyCode, KeyEvent};
-use ratatui::widgets::TableState;
 use ratatui::prelude::Size;
+use ratatui::widgets::TableState;
 
-use crate::pair::Pair;
-use crate::features::app::Action;
-use crate::event::Event;
 use crate::env::Env;
-pub use crate::top_page_service::{Event as PolyEvent, EventsFilter, Market};
+use crate::event::Event;
+use crate::features::app::Action;
+use crate::pair::Pair;
 use crate::top_page_service::{
-    ActivityEntry, ActivityKind, ChartActivity, EventsData, SelectedMarket,
-    TopPageSvc, SearchType,
+    ActivityEntry, ActivityKind, ChartActivity, EventsData, SearchType, SelectedMarket, TopPageSvc,
 };
+pub use crate::top_page_service::{Event as PolyEvent, EventsFilter, Market};
 
 static TOP_PAGE_TITLE: &str = " POLYWHALE ";
 static SEARCH_PLACEHOLDER: &str = "search by slug/tags/id";
@@ -53,7 +52,8 @@ impl TopPage {
             .event_slice()
             .len()
             .min(self.events_pane.events_window_size) as u16;
-        (events_h + self.events_pane.markets_table_height()).max(1) + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND
+        (events_h + self.events_pane.markets_table_height()).max(1)
+            + TOP_TABLE_PAYLOAD_HEIGHT_ADDEND
     }
 
     pub fn set_events_loading_session(&mut self, token: Option<String>) {
@@ -130,7 +130,6 @@ pub struct Search {
 }
 
 impl SearchType {
-
     pub fn as_str(&self) -> &'static str {
         match self {
             SearchType::Query => "query",
@@ -162,7 +161,11 @@ impl Search {
 
 impl EventsPane {
     pub fn refresh_labels(&mut self) {
-        self.title_label = format!(" [1] - {}: {} ", self.title, self.search.as_ref().map_or("all", |f| &f.search_term));
+        self.title_label = format!(
+            " [1] - {}: {} ",
+            self.title,
+            self.search.as_ref().map_or("all", |f| &f.search_term)
+        );
         self.footer_label = if self.markets_focused {
             format!(
                 " {} events | j/k markets | ←/esc events | enter focus ",
@@ -199,7 +202,10 @@ impl EventsPane {
         if self.offset >= self.events_data.events.len() {
             return &[];
         }
-        let end = self.offset.saturating_add(self.events_window_size).min(self.events_data.events.len());
+        let end = self
+            .offset
+            .saturating_add(self.events_window_size)
+            .min(self.events_data.events.len());
         &self.events_data.events[self.offset..end]
     }
 
@@ -217,7 +223,9 @@ impl EventsPane {
     }
 
     pub fn enter_market_focus(&mut self) -> bool {
-        if self.markets_focused { return true; }
+        if self.markets_focused {
+            return true;
+        }
         let Some(event) = self.selected_event() else {
             assert!(false, "Impossible branch");
             return false;
@@ -275,7 +283,7 @@ pub enum TopPageAction {
     EventsRegularRequestFinished(Result<EventLoadResult, TopPageError>),
     HideErrorMsg { token: String },
     Resize(Size),
-    Search(SearchAction)
+    Search(SearchAction),
 }
 
 #[derive(Clone, Debug)]
@@ -302,9 +310,11 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
     match action {
         TopPageAction::SelectPane(pane) => {
             top_page.current_pane = *pane;
-        },
+        }
         TopPageAction::EventsLoadRequested { token } => {
-            if top_page.events_load_session.is_some() { return; }
+            if top_page.events_load_session.is_some() {
+                return;
+            }
 
             let this_session = token.clone();
             top_page.set_events_loading_session(Some(this_session.clone()));
@@ -321,99 +331,127 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
                 match top_page_svc.load_events(events_next_cursor, filter).await {
                     Ok(events_data) => {
                         _ = sender.send(
-                            TopPageAction::EventsRegularRequestFinished(
-                                Ok(EventLoadResult { events_data, session: this_session } )
-                            ).into()
+                            TopPageAction::EventsRegularRequestFinished(Ok(EventLoadResult {
+                                events_data,
+                                session: this_session,
+                            }))
+                            .into(),
                         );
-                    },
+                    }
                     Err(err) => {
                         log::error!(target: "app", "[TopPage] EventsRequestFailed: {:?}", err);
-                        _ = sender.send(TopPageAction::EventsRegularRequestFinished(Err(TopPageError::EventsRequestFailed)).into());
+                        _ = sender.send(
+                            TopPageAction::EventsRegularRequestFinished(Err(
+                                TopPageError::EventsRequestFailed,
+                            ))
+                            .into(),
+                        );
                     }
                 }
             });
-        },
+        }
         TopPageAction::EventsRegularRequestFinished(result) => {
             match result {
                 Ok(load_result) => {
-                    if let Some(ref session) = top_page.events_load_session && load_result.session.eq(session) {
+                    if let Some(ref session) = top_page.events_load_session
+                        && load_result.session.eq(session)
+                    {
                         let events = &mut top_page.events_pane.events_data.events;
                         let start_rank = events.len() + 1;
                         let was_empty = events.is_empty();
-                        for (offset, event) in load_result.events_data.events.iter_mut().enumerate() {
+                        for (offset, event) in load_result.events_data.events.iter_mut().enumerate()
+                        {
                             event.set_rank(start_rank + offset);
                         }
                         events.append(&mut load_result.events_data.events);
-                        top_page.events_pane.events_data.next_cursor = load_result.events_data.next_cursor;
+                        top_page.events_pane.events_data.next_cursor =
+                            load_result.events_data.next_cursor;
                         top_page.events_pane.refresh_labels();
                         if was_empty && !top_page.events_pane.events_data.events.is_empty() {
                             top_page.events_pane.table_state.select(Some(0));
                         }
                     }
-                },
+                }
                 Err(_) => {
                     let current_token = (env.gen_token)();
                     let sender = env.sender.clone();
                     top_page.error_msg = Some(Pair::new(
                         "Failed to load events data, press `R` to retry".to_owned(),
-                        current_token.clone()
+                        current_token.clone(),
                     ));
                     let sleep_fn = env.sleep.clone();
                     env.fire_and_forget(async move {
                         sleep_fn.sleep(3000).await;
-                        _ = sender.send(TopPageAction::HideErrorMsg { token: current_token }.into());
+                        _ = sender.send(
+                            TopPageAction::HideErrorMsg {
+                                token: current_token,
+                            }
+                            .into(),
+                        );
                     });
                 }
             }
             top_page.set_events_loading_session(None);
-        },
+        }
         TopPageAction::HideErrorMsg { token } => {
-            if top_page.error_msg.as_ref().is_some_and(|e| e.right.eq(token)) {
+            if top_page
+                .error_msg
+                .as_ref()
+                .is_some_and(|e| e.right.eq(token))
+            {
                 top_page.error_msg = None;
             }
-        },
+        }
         TopPageAction::Resize(size) => {
             top_page.update_window_size(*size);
-        },
-        TopPageAction::Search(filter_action) => {
-            match filter_action {
-                SearchAction::Open => {
-                    if let Some(search) = top_page.events_pane.search.as_mut() {
-                        search.focused = true;
-                    } else {
-                        top_page.events_pane.set_search(Some(Search::empty()));
-                    }
-                },
-                SearchAction::Close => {
-                    top_page.set_search(None);
-                    _ = env.sender.send(TopPageAction::EventsLoadRequested { token: (env.gen_token)() }.into());
-                },
-                SearchAction::Input(ch) => {
-                    let Some(search) = top_page.events_pane.search.as_mut() else {
-                        assert!(false, "Impossible branch");
-                        return;
-                    };
-                    search.search_term.push(*ch);
-                },
-                SearchAction::Backspace => {
-                    let Some(search) = top_page.events_pane.search.as_mut() else {
-                        return;
-                    };
-                    search.search_term.pop();
-                },
-                SearchAction::Apply => {
-                    {
-                        let Some(search) = top_page.events_pane.search.as_mut() else {
-                            return;
-                        };
-                        search.focused = false;
-                    }
-                    let applied = top_page.events_pane.search.clone();
-                    top_page.set_search(applied);
-                    _ = env.sender.send(TopPageAction::EventsLoadRequested { token: (env.gen_token)() }.into());
-                },
-            }
         }
+        TopPageAction::Search(filter_action) => match filter_action {
+            SearchAction::Open => {
+                if let Some(search) = top_page.events_pane.search.as_mut() {
+                    search.focused = true;
+                } else {
+                    top_page.events_pane.set_search(Some(Search::empty()));
+                }
+            }
+            SearchAction::Close => {
+                top_page.set_search(None);
+                _ = env.sender.send(
+                    TopPageAction::EventsLoadRequested {
+                        token: (env.gen_token)(),
+                    }
+                    .into(),
+                );
+            }
+            SearchAction::Input(ch) => {
+                let Some(search) = top_page.events_pane.search.as_mut() else {
+                    assert!(false, "Impossible branch");
+                    return;
+                };
+                search.search_term.push(*ch);
+            }
+            SearchAction::Backspace => {
+                let Some(search) = top_page.events_pane.search.as_mut() else {
+                    return;
+                };
+                search.search_term.pop();
+            }
+            SearchAction::Apply => {
+                {
+                    let Some(search) = top_page.events_pane.search.as_mut() else {
+                        return;
+                    };
+                    search.focused = false;
+                }
+                let applied = top_page.events_pane.search.clone();
+                top_page.set_search(applied);
+                _ = env.sender.send(
+                    TopPageAction::EventsLoadRequested {
+                        token: (env.gen_token)(),
+                    }
+                    .into(),
+                );
+            }
+        },
     }
 }
 
@@ -432,7 +470,12 @@ impl TopPage {
                 if let Some(search) = self.events_pane.search.as_mut() {
                     search.page = search.page.saturating_add(1);
                 }
-                _ = env.sender.send(TopPageAction::EventsLoadRequested { token: (env.gen_token)() }.into());
+                _ = env.sender.send(
+                    TopPageAction::EventsLoadRequested {
+                        token: (env.gen_token)(),
+                    }
+                    .into(),
+                );
                 return;
             }
             if selected_in_window < self.events_pane.events_window_size - 1 {
@@ -463,11 +506,11 @@ impl TopPage {
             KeyCode::Char(x) if ['1', '2', '3'].contains(&x) => {
                 self.current_pane = x.to_digit(10).unwrap_or(1);
                 true
-            },
+            }
             KeyCode::Enter | KeyCode::Right => {
                 self.events_pane.enter_market_focus();
                 true
-            },
+            }
             KeyCode::Left | KeyCode::Esc => {
                 if self.events_pane.markets_focused {
                     self.events_pane.clear_market_focus();
@@ -475,7 +518,7 @@ impl TopPage {
                 } else {
                     false
                 }
-            },
+            }
             KeyCode::Char('s') => {
                 let sender = env.sender.clone();
                 env.fire_and_forget(async move {
@@ -484,7 +527,9 @@ impl TopPage {
                 true
             }
             KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
-                if self.events_pane.events_data.events.is_empty() { return false; }
+                if self.events_pane.events_data.events.is_empty() {
+                    return false;
+                }
 
                 match self.events_pane.markets_focused {
                     true => {
@@ -494,11 +539,8 @@ impl TopPage {
                             .map(|e| e.markets.len())
                             .unwrap_or(0);
                         assert!(market_count != 0, "Impossible branch");
-                        let market_idx = self
-                            .events_pane
-                            .markets_table_state
-                            .selected()
-                            .unwrap_or(0);
+                        let market_idx =
+                            self.events_pane.markets_table_state.selected().unwrap_or(0);
 
                         match x {
                             'j' => {
@@ -507,34 +549,36 @@ impl TopPage {
                                     self.events_pane.clear_market_focus();
                                     self.move_event_selection(true, env);
                                 } else {
-                                    self.events_pane.markets_table_state.select(Some(market_idx + 1));
+                                    self.events_pane
+                                        .markets_table_state
+                                        .select(Some(market_idx + 1));
                                 }
-                            },
+                            }
                             'k' => {
                                 if market_idx == 0 {
                                     self.events_pane.clear_market_focus();
                                     self.move_event_selection(false, env);
                                 } else {
-                                    self.events_pane.markets_table_state.select(Some(market_idx - 1));
+                                    self.events_pane
+                                        .markets_table_state
+                                        .select(Some(market_idx - 1));
                                 }
                             }
                             _ => assert!(false, "Impossible branch"),
                         }
-                    },
-                    false => {
-                        match x {
-                            'j' => {
-                                self.move_event_selection(true, env);
-                            },
-                            'k' => {
-                                self.move_event_selection(false, env);
-                            },
-                            _ => assert!(false, "Impossible branch"),
-                        }
                     }
+                    false => match x {
+                        'j' => {
+                            self.move_event_selection(true, env);
+                        }
+                        'k' => {
+                            self.move_event_selection(false, env);
+                        }
+                        _ => assert!(false, "Impossible branch"),
+                    },
                 }
                 true
-            },
+            }
             _ => false,
         }
     }
@@ -551,21 +595,29 @@ impl TopPage {
                 }
             }
             KeyCode::Esc => {
-                _ = env.sender.send(TopPageAction::Search(SearchAction::Close).into());
+                _ = env
+                    .sender
+                    .send(TopPageAction::Search(SearchAction::Close).into());
                 true
-            },
+            }
             KeyCode::Enter => {
-                _ = env.sender.send(TopPageAction::Search(SearchAction::Apply).into());
+                _ = env
+                    .sender
+                    .send(TopPageAction::Search(SearchAction::Apply).into());
                 true
-            },
+            }
             KeyCode::Backspace => {
-                _ = env.sender.send(TopPageAction::Search(SearchAction::Backspace).into());
+                _ = env
+                    .sender
+                    .send(TopPageAction::Search(SearchAction::Backspace).into());
                 true
-            },
+            }
             KeyCode::Char(ch) if !ch.is_control() => {
-                _ = env.sender.send(TopPageAction::Search(SearchAction::Input(ch)).into());
+                _ = env
+                    .sender
+                    .send(TopPageAction::Search(SearchAction::Input(ch)).into());
                 true
-            },
+            }
             _ => true,
         }
     }

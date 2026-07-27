@@ -1,15 +1,10 @@
 use crossterm::event::{KeyCode, KeyModifiers};
 
 use crate::env::Env;
-use crate::features::app::{Action};
+use crate::features::app::Action;
 use ratatui::widgets::TableState;
 
-static COMMANDS: &[Command] = &[
-    Command::Help,
-    Command::Quit,
-    Command::Intro,
-    Command::Log,
-];
+static COMMANDS: &[Command] = &[Command::Help, Command::Quit, Command::Intro, Command::Log];
 
 #[derive(Clone, Debug)]
 pub struct CommandPallette {
@@ -64,8 +59,11 @@ impl CommandPallette {
             return None;
         }
 
-        self.available_commands()
-            .find(|command| command.name().starts_with(self.text_area_state.text.as_str()))
+        self.available_commands().find(|command| {
+            command
+                .name()
+                .starts_with(self.text_area_state.text.as_str())
+        })
     }
 }
 
@@ -74,7 +72,7 @@ pub enum Command {
     Help,
     Quit,
     Intro,
-    Log
+    Log,
 }
 
 impl Command {
@@ -118,9 +116,7 @@ impl CommandPallette {
         env: &Env,
     ) -> bool {
         match key_event.code {
-            KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => {
-                false
-            },
+            KeyCode::Char('c' | 'C') if key_event.modifiers == KeyModifiers::CONTROL => false,
             KeyCode::Char('w' | 'W') if key_event.modifiers == KeyModifiers::CONTROL => {
                 let mut words = self.text_area_state.text.split(' ').collect::<Vec<&str>>();
                 if words.pop().is_some() {
@@ -128,25 +124,25 @@ impl CommandPallette {
                     self.change_text(|text| *text = words);
                 }
                 true
-            },
+            }
             KeyCode::Backspace => {
                 self.change_text(|text| {
                     text.pop();
                 });
                 true
-            },
+            }
             KeyCode::Up => {
                 self.table_state.select_previous();
                 true
-            },
+            }
             KeyCode::Down => {
                 self.table_state.select_next();
                 true
-            },
+            }
             KeyCode::Esc => {
                 _ = env.sender.send(Action::CommandClose.into());
                 true
-            },
+            }
             KeyCode::Tab => {
                 if let Some(command) = self.command_to_complete() {
                     self.text_area_state.text = command.name().to_string();
@@ -158,16 +154,17 @@ impl CommandPallette {
                     _ = env.sender.send(Action::CommandClose.into());
                     _ = env.sender.send(Action::CommandSent(command).into());
                 } else if self.text_area_state.text.is_empty()
-                    && let Some(command) = self.selected_command() {
-                        self.text_area_state.text = command.name().to_owned();
-                    }
+                    && let Some(command) = self.selected_command()
+                {
+                    self.text_area_state.text = command.name().to_owned();
+                }
                 true
-            },
+            }
             KeyCode::Char(char) if !char.is_control() => {
                 self.change_text(|text| text.push(char));
                 true
-            },
-            _ => false
+            }
+            _ => false,
         }
     }
 }

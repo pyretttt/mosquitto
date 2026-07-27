@@ -1,8 +1,8 @@
 use std::fmt::{self, Debug};
 use std::rc::Rc;
 
+use crossterm::event::KeyCode;
 use tui_logger::*;
-use crossterm::event::{KeyCode};
 
 use crate::env::Env;
 use crate::features::app::Action;
@@ -15,7 +15,6 @@ impl Debug for LogWidgetState {
         write!(f, "LogWidgetState({:p})", self.0)
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub struct LogPage {
@@ -33,10 +32,9 @@ impl LogPage {
                 "Q: Quit | Tab: Switch state | ↑/↓: Select target | f: Focus target | s: Switch app logs filter",
                 "←/→: Display level | +/-: Filter level | Space: Toggle hidden targets",
                 "h: Hide target selector | j/k: Scroll | Esc: Cancel scroll",
-            ]
+            ],
         }
     }
-
 }
 
 impl Default for LogPage {
@@ -46,19 +44,16 @@ impl Default for LogPage {
 }
 
 #[derive(Clone, Debug)]
-pub enum LogPageAction {
-}
+pub enum LogPageAction {}
 
-pub fn log_page_reducer(_state: &mut LogPage, _action: &LogPageAction, _env: &Env) {
-    
-}
+pub fn log_page_reducer(_state: &mut LogPage, _action: &LogPageAction, _env: &Env) {}
 
 impl LogPage {
     pub fn key_input_middleware(
         &mut self,
         key_event: &mut crossterm::event::KeyEvent,
         env: &Env,
-    ) -> bool{
+    ) -> bool {
         match key_event.code {
             KeyCode::Tab => (),
             KeyCode::Char(' ') => self.logs_state.0.transition(TuiWidgetEvent::SpaceKey),
@@ -75,7 +70,7 @@ impl LogPage {
             KeyCode::Char('f') => self.logs_state.0.transition(TuiWidgetEvent::FocusKey),
             KeyCode::Char('q') => {
                 _ = env.sender.send(Action::CloseOverlay.into());
-            },
+            }
             KeyCode::Char('s') => {
                 self.applied_app_logs_filter = !self.applied_app_logs_filter;
                 match Rc::get_mut(&mut self.logs_state.0) {
@@ -87,11 +82,12 @@ impl LogPage {
                         } else {
                             *state = TuiWidgetState::default();
                         }
-                    },
-                    None => log::error!(target: "app", "[LogPage] Failed to get logs state, during switching filter"),
+                    }
+                    None => {
+                        log::error!(target: "app", "[LogPage] Failed to get logs state, during switching filter")
+                    }
                 }
-
-            },
+            }
             _ => return false,
         }
         true

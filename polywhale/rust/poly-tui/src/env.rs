@@ -1,16 +1,16 @@
-use std::ops::Range;
 use std::future::Future;
+use std::ops::Range;
 use std::time::Duration;
 
-use tokio::task::JoinHandle;
-use tokio::sync::mpsc;
-use uuid::Uuid;
+use poly_core::client::PolymarketClient;
 use rand::RngExt;
 use ratatui::prelude::Size;
-use poly_core::client::PolymarketClient;
+use tokio::sync::mpsc;
+use tokio::task::JoinHandle;
+use uuid::Uuid;
 
+use crate::config::{Config, get_config};
 use crate::event::Event;
-use crate::config::{get_config, Config};
 use crate::top_page_service::TopPageService;
 
 #[derive(Clone, Debug, Default)]
@@ -21,7 +21,6 @@ impl SleepFn {
         tokio::time::sleep(Duration::from_millis(milliseconds)).await;
     }
 }
-
 
 pub struct Env {
     pub sender: mpsc::UnboundedSender<Event>,
@@ -55,14 +54,16 @@ impl Env {
             sleep: SleepFn::default(),
             top_page_svc: TopPageService::new(polymarket_client),
             ui: UI {
-                window_size,
-                required_window_size: Size::new(120, 40)
+                window_size: window_size,
+                required_window_size: Size::new(120, 40),
             },
         }
     }
 
     pub fn fire_and_forget<F: Future + Send + 'static>(&self, future: F) -> JoinHandle<F::Output>
-        where F::Output: Send + 'static {
+    where
+        F::Output: Send + 'static,
+    {
         tokio::spawn(future)
     }
 }

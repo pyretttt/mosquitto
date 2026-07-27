@@ -1,7 +1,7 @@
-use crate::features::app::{Action};
-use crate::features::top_page::TopPage;
-use crate::env::Env;
 use crate::config::get_config;
+use crate::env::Env;
+use crate::features::app::Action;
+use crate::features::top_page::TopPage;
 use crate::features::top_page::TopPageAction;
 
 static LOADING_TIPS: [&str; 4] = [
@@ -46,7 +46,10 @@ impl LoadingPage {
             self.throbbler_state.calc_next();
             self.logo_color_index = self.logo_color_index.wrapping_add(1);
         }
-        if self.tick.is_multiple_of((get_config().tick_rate * 2.0) as u16) {
+        if self
+            .tick
+            .is_multiple_of((get_config().tick_rate * 2.0) as u16)
+        {
             self.loading_tip_index = (self.loading_tip_index + 1) % LOADING_TIPS.len();
             self.loading_tip = LOADING_TIPS[self.loading_tip_index];
         }
@@ -77,15 +80,8 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
             let ui_window_size = env.ui.window_size;
             let token = (env.gen_token)();
             tokio::spawn(async move {
-                _ = sender.send(
-                    Action::OpenTopPage(
-                        TopPage::mock_data(ui_window_size)
-                    ).into()
-                );
-                _ = sender.send(
-                    TopPageAction::EventsLoadRequested { token }.into()
-                );
-
+                _ = sender.send(Action::OpenTopPage(TopPage::mock_data(ui_window_size)).into());
+                _ = sender.send(TopPageAction::EventsLoadRequested { token }.into());
             });
         }
     }

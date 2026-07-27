@@ -12,7 +12,8 @@ impl WindowSize {
     pub fn update_labels(&mut self, current_size: Size) {
         self.current_size = current_size;
         self.labels.current_size = format!("{}x{}", current_size.width, current_size.height);
-        self.labels.required_size = format!("{}x{}", self.required_size.width, self.required_size.height);
+        self.labels.required_size =
+            format!("{}x{}", self.required_size.width, self.required_size.height);
     }
 }
 

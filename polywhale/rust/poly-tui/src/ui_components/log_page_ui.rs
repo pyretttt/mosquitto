@@ -1,22 +1,23 @@
 use ratatui::{
     Frame,
+    layout::{Constraint, Layout},
     style::{Color, Style},
-    layout::{Layout, Constraint},
-    text::{Text},
-    widgets::{Widget, Clear, Block},
+    text::Text,
+    widgets::{Block, Clear, Widget},
 };
 use tui_logger::*;
 
-use crate::features::log_page::{LogPage};
+use crate::features::log_page::LogPage;
 
 pub fn draw_log_page(frame: &mut Frame, log_page: &LogPage) {
     frame.render_widget(Clear, frame.area());
-    frame.render_widget(Block::new().style(Style::default().bg(Color::Black)), frame.area());
+    frame.render_widget(
+        Block::new().style(Style::default().bg(Color::Black)),
+        frame.area(),
+    );
 
-
-    let [log_area, help_area] = Layout::vertical(
-        [Constraint::Fill(1), Constraint::Length(4)]
-    ).areas(frame.area());
+    let [log_area, help_area] =
+        Layout::vertical([Constraint::Fill(1), Constraint::Length(4)]).areas(frame.area());
 
     TuiLoggerSmartWidget::default()
         .style_error(Style::default().fg(Color::Red))
@@ -35,8 +36,8 @@ pub fn draw_log_page(frame: &mut Frame, log_page: &LogPage) {
 
     frame.render_widget(
         Text::from(log_page.help.as_slice())
-        .style(Color::Gray)
-        .centered(),
-        help_area
+            .style(Color::Gray)
+            .centered(),
+        help_area,
     );
 }

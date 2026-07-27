@@ -22,10 +22,7 @@ pub fn draw_window_size(frame: &mut Frame, state: &WindowSize) {
     ])
     .areas(area);
 
-    let current = format!(
-        "{}x{}",
-        state.current_size.width, state.current_size.height
-    );
+    let current = format!("{}x{}", state.current_size.width, state.current_size.height);
     let required = format!(
         "{}x{}",
         state.required_size.width, state.required_size.height

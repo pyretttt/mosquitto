@@ -1,9 +1,9 @@
 use ratatui::{
     Frame,
-    layout::{Constraint, Layout, Rect, Margin},
+    layout::{Constraint, Layout, Margin, Rect},
     style::{Color, Modifier, Style},
-    text::{Span, Text, Line},
-    widgets::{Block, Cell, Clear, Row, Table, Paragraph, Borders, BorderType},
+    text::{Line, Span, Text},
+    widgets::{Block, BorderType, Borders, Cell, Clear, Paragraph, Row, Table},
 };
 
 use crate::features::command::{Command, CommandPallette, TextAreaState};
@@ -26,17 +26,14 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
     );
 
     let command_rows = command_rows(command_pallette.available_commands());
-    let table = Table::new(
-        command_rows,
-        [Constraint::Length(12), Constraint::Fill(1)],
-    )
-    .column_spacing(2)
-    .style(Style::default().fg(Color::Gray))
-    .row_highlight_style(
-        Style::default()
-            .fg(FOCUS_COLOR)
-            .add_modifier(Modifier::BOLD),
-    );
+    let table = Table::new(command_rows, [Constraint::Length(12), Constraint::Fill(1)])
+        .column_spacing(2)
+        .style(Style::default().fg(Color::Gray))
+        .row_highlight_style(
+            Style::default()
+                .fg(FOCUS_COLOR)
+                .add_modifier(Modifier::BOLD),
+        );
 
     frame.render_stateful_widget(
         table,
@@ -49,15 +46,13 @@ pub fn draw_command_popup(frame: &mut Frame, command_pallette: &CommandPallette)
 
     frame.render_widget(
         Paragraph::new(
-            command_pallette.text_area_state.ui(
-                command_pallette
-                    .command_to_complete()
-                    .map(|command| command.name())
-            )
+            command_pallette.text_area_state.ui(command_pallette
+                .command_to_complete()
+                .map(|command| command.name())),
         )
         .block(
             Block::default()
-            .borders(Borders::TOP)
+                .borders(Borders::TOP)
                 .border_style(Style::default().fg(Color::Gray)),
         ),
         input_area.inner(Margin {

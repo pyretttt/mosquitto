@@ -1,5 +1,5 @@
 use ratatui::Frame;
-use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
+use ratatui::layout::{Constraint, HorizontalAlignment, Layout, Margin, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{
@@ -28,11 +28,7 @@ mod constants {
     pub static BOTTOM_BAR: &str = "┻";
 }
 
-pub fn top_page_ui(
-    frame: &mut Frame,
-    top_page: &TopPage,
-    _env: &Env,
-) {
+pub fn top_page_ui(frame: &mut Frame, top_page: &TopPage, _env: &Env) {
     let outer = Block::default()
         .borders(Borders::TOP)
         .border_style(Style::default().fg(BORDER).bg(BG))
@@ -45,7 +41,11 @@ pub fn top_page_ui(
 
     let events_max_height = top_page.table_height();
 
-    let search_focused = top_page.events_pane.search.as_ref().is_some_and(|s| s.focused);
+    let search_focused = top_page
+        .events_pane
+        .search
+        .as_ref()
+        .is_some_and(|s| s.focused);
     let [status_area, search_area, events_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(if search_focused { 3 } else { 0 }),
@@ -68,24 +68,28 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let status = &top_page.status_pane;
     let online_icon = if status.is_online { " ✓ " } else { " ✗ " };
     let online_color = if status.is_online { POSITIVE } else { NEGATIVE };
-    let online_label = if status.is_online { "net online" } else { "net offline" };
-    let ws_label = if status.ws_live { "   ws live" } else { "   ws down" };
+    let online_label = if status.is_online {
+        "net online"
+    } else {
+        "net offline"
+    };
+    let ws_label = if status.ws_live {
+        "   ws live"
+    } else {
+        "   ws down"
+    };
     let ws_color = if status.ws_live { ACCENT } else { NEGATIVE };
 
-    let [left_area, right_area] = Layout::horizontal([
-        Constraint::Fill(1),
-        Constraint::Fill(1),
-    ]).areas(area.inner(Margin::new(1, 0)));
+    let [left_area, right_area] = Layout::horizontal([Constraint::Fill(1), Constraint::Fill(1)])
+        .areas(area.inner(Margin::new(1, 0)));
 
     if let Some(error_msg) = top_page.error_msg.as_ref().map(|err| &err.left) {
         frame.render_widget(
-            Paragraph::new(
-                Line::from_iter([
-                    Span::styled("⚠️ Error: ", Style::default().fg(WARNING)),
-                    Span::styled(error_msg, Style::default().fg(NEGATIVE)),
-                ])
-            ),
-            left_area
+            Paragraph::new(Line::from_iter([
+                Span::styled("⚠️ Error: ", Style::default().fg(WARNING)),
+                Span::styled(error_msg, Style::default().fg(NEGATIVE)),
+            ])),
+            left_area,
         );
     } else {
         frame.render_widget(Block::default().style(Style::default().bg(BG)), left_area);
@@ -104,18 +108,18 @@ fn render_status_bar(frame: &mut Frame, area: Rect, top_page: &TopPage) {
                 status.refresh_label.as_str(),
                 Style::default().fg(Color::Gray),
             ),
-            Span::styled(
-                status.mode_label.as_str(),
-                Style::default().fg(Color::Gray),
-            ),
-        ])).alignment(HorizontalAlignment::Right),
+            Span::styled(status.mode_label.as_str(), Style::default().fg(Color::Gray)),
+        ]))
+        .alignment(HorizontalAlignment::Right),
         right_area,
     );
 }
 
 fn render_search_input(frame: &mut Frame, area: Rect, search: &Search) {
-    let block = pane_block("Press enter to apply search: ", Borders::ALL, WARNING)
-        .title_bottom(Line::from("Tab to switch search type - ".to_owned() + search.search_type.as_str()).centered());
+    let block = pane_block("Press enter to apply search: ", Borders::ALL, WARNING).title_bottom(
+        Line::from("Tab to switch search type - ".to_owned() + search.search_type.as_str())
+            .centered(),
+    );
     let inner = block.inner(area);
     frame.render_widget(block, area);
     let line = if search.search_term.is_empty() {
@@ -153,10 +157,13 @@ fn render_top_events(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let block = pane_block(
         &top_page.events_pane.title_label,
         Borders::ALL,
-        if top_page.current_pane == 1 { ACCENT } else { BORDER }
-    ).title_bottom(
-        Line::from(top_page.events_pane.footer_label.as_str()).centered(),
-    );
+        if top_page.current_pane == 1 {
+            ACCENT
+        } else {
+            BORDER
+        },
+    )
+    .title_bottom(Line::from(top_page.events_pane.footer_label.as_str()).centered());
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
@@ -171,37 +178,30 @@ fn render_top_events(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 
     let rows = events.iter().enumerate().map(|(index, event)| {
         let is_selected = index == selected;
-        event_row(
-            event,
-            is_selected,
-            if is_selected { markets_h } else { 0 },
-        )
+        event_row(event, is_selected, if is_selected { markets_h } else { 0 })
     });
 
-    let table = Table::new(rows, events_column_constraints())
-        .header(Row::new([
-            header_cell("#"),
-            header_cell("★"),
-            header_cell("Event"),
-            header_cell("Yes"),
-            header_cell("No"),
-            header_cell("24h"),
-            header_cell("Move"),
-            header_cell("Spread"),
-        ]));
+    let table = Table::new(rows, events_column_constraints()).header(Row::new([
+        header_cell("#"),
+        header_cell("★"),
+        header_cell("Event"),
+        header_cell("Yes"),
+        header_cell("No"),
+        header_cell("24h"),
+        header_cell("Move"),
+        header_cell("Spread"),
+    ]));
 
-    frame.render_stateful_widget(
-        table,
-        inner,
-        &mut top_page.events_pane.table_state.clone(),
-    );
+    frame.render_stateful_widget(table, inner, &mut top_page.events_pane.table_state.clone());
 
     // Paint the markets table inside the expanded selected event row (below the
     // event title line). Pane height already grows by up to 6 when needed.
-    if markets_h > 0 && !events.is_empty()
-        && let Some(markets_area) = markets_table_area(inner, selected as u16, markets_h) {
-            render_markets_table(frame, markets_area, top_page);
-        }
+    if markets_h > 0
+        && !events.is_empty()
+        && let Some(markets_area) = markets_table_area(inner, selected as u16, markets_h)
+    {
+        render_markets_table(frame, markets_area, top_page);
+    }
 }
 
 /// Area inside the selected event row reserved for the nested markets table.
@@ -251,11 +251,7 @@ fn render_markets_table(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     });
     let table = Table::new(rows, events_column_constraints())
         .highlight_spacing(HighlightSpacing::Always)
-        .row_highlight_style(
-            Style::default()
-                .fg(WARNING)
-                .add_modifier(Modifier::BOLD),
-        );
+        .row_highlight_style(Style::default().fg(WARNING).add_modifier(Modifier::BOLD));
 
     let mut state = top_page.events_pane.markets_table_state;
     frame.render_stateful_widget(table, area, &mut state);
@@ -272,7 +268,10 @@ fn render_lower_panes(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
     let market = &top_page.selected_market_pane.selected_market;
     let lines = [
-        Line::styled(top_page.selected_market_pane.title, Style::default().fg(Color::White).bg(BG)),
+        Line::styled(
+            top_page.selected_market_pane.title,
+            Style::default().fg(Color::White).bg(BG),
+        ),
         Line::from(""),
         Line::from_iter([
             Span::styled("yes  ", Style::default().fg(POSITIVE).bg(BG)),
@@ -315,7 +314,11 @@ fn render_selected_market(frame: &mut Frame, area: Rect, top_page: &TopPage) {
                 pane_block(
                     " [2] - Selected Market: summary ",
                     Borders::ALL,
-                    if top_page.current_pane == 2 { ACCENT } else { BORDER },
+                    if top_page.current_pane == 2 {
+                        ACCENT
+                    } else {
+                        BORDER
+                    },
                 )
                 .padding(Padding::horizontal(1)),
             )
@@ -348,7 +351,11 @@ fn render_chart_activity(frame: &mut Frame, area: Rect, top_page: &TopPage) {
             .block(pane_block(
                 &chart.title_label,
                 Borders::ALL,
-                if top_page.current_pane == 3 { ACCENT } else { BORDER },
+                if top_page.current_pane == 3 {
+                    ACCENT
+                } else {
+                    BORDER
+                },
             ))
             .style(Style::default().bg(BG)),
         area,
@@ -371,17 +378,24 @@ fn key_bindings(frame: &mut Frame, area: Rect, top_page: &TopPage) {
         shortcuts_area,
     );
     frame.render_widget(
-        Paragraph::new(popup.status_label.as_str())
-            .style(Style::default().fg(MUTED).bg(BG)),
+        Paragraph::new(popup.status_label.as_str()).style(Style::default().fg(MUTED).bg(BG)),
         status_area,
     );
 }
 
 fn event_row<'a>(event: &'a PolyEvent, is_selected: bool, markets_h: u16) -> Row<'a> {
     Row::new([
-        Cell::from(event.rank_label.as_str()).style(Style::default().fg(if is_selected { WARNING } else { MUTED })),
+        Cell::from(event.rank_label.as_str()).style(Style::default().fg(if is_selected {
+            WARNING
+        } else {
+            MUTED
+        })),
         Cell::from(event.bookmark_label).style(Style::default().fg(WARNING)),
-        Cell::from(event.title.as_str()).style(Style::default().fg(if is_selected { WARNING } else { Color::White })),
+        Cell::from(event.title.as_str()).style(Style::default().fg(if is_selected {
+            WARNING
+        } else {
+            Color::White
+        })),
         Cell::from("—").style(Style::default().fg(MUTED)),
         Cell::from("—").style(Style::default().fg(MUTED)),
         Cell::from(event.volume_label.as_str()).style(Style::default().fg(Color::White)),
@@ -406,9 +420,12 @@ fn market_row<'a>(market: &'a Market, market_bar: &'static str) -> Row<'a> {
             Span::raw(constants::DOUBLE_SPACE),
             Span::styled(
                 market.title.as_str(),
-                Style::default()
-                    .fg(if is_active_market { Color::Gray } else { Color::DarkGray })
-            )
+                Style::default().fg(if is_active_market {
+                    Color::Gray
+                } else {
+                    Color::DarkGray
+                }),
+            ),
         ])),
         Cell::from(market.yes_label.as_str()).style(Style::default().fg(POSITIVE)),
         Cell::from(market.no_label.as_str()).style(Style::default().fg(NEGATIVE)),
@@ -435,7 +452,12 @@ fn metric_line<'a>(label: &'static str, value: &'a str) -> Line<'a> {
     ])
 }
 
-fn activity_line<'a>(time: &'a str, label: &'a str, value: &'a str, value_color: Color) -> Line<'a> {
+fn activity_line<'a>(
+    time: &'a str,
+    label: &'a str,
+    value: &'a str,
+    value_color: Color,
+) -> Line<'a> {
     Line::from_iter([
         Span::styled(time, Style::default().fg(MUTED).bg(BG)),
         Span::raw(constants::SPACE),
