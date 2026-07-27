@@ -37,7 +37,7 @@ run = """
 echo "kubectl: $(kubectl version --client -o yaml 2>/dev/null | head -5 || true)"
 echo "helm:    $(helm version --short)"
 echo "kind:    $(kind version)"
-echo "docker:  $(docker version --format '{{.Server.Version}}' 2>/dev/null || echo MISSING)"
+echo "docker:  $(docker version --format \"{.Server.Version}\" 2>/dev/null || echo MISSING)"
 echo "openssl: $(openssl version 2>/dev/null || echo MISSING)"
 """
 

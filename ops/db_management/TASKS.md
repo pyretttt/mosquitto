@@ -40,12 +40,12 @@ ingress-nginx settings (ConfigMap + annotation) with a verify step for each.
 
 ## 0. Bootstrap
 
-- [~] Copy `.env.example` → `.env` and set a lab `POSTGRES_PASSWORD`.
-- [ ] Install mise if needed; from `ops/db_management` run `mise install`.
-- [ ] `mise run verify-tools` (kubectl, helm, kind, docker, openssl).
-- [ ] `mise run cluster-up` then `mise run ns`.
-- [ ] `mise run ingress-install` and wait until the controller is Available.
-- [ ] **Verify:** `kubectl get nodes` and
+- [x] Copy `.env.example` → `.env` and set a lab `POSTGRES_PASSWORD`.
+- [x] Install mise if needed; from `ops/db_management` run `mise install`.
+- [x] `mise run verify-tools` (kubectl, helm, kind, docker, openssl).
+- [x] `mise run cluster-up` then `mise run ns`.
+- [x] `mise run ingress-install` and wait until the controller is Available.
+- [x] **Verify:** `kubectl get nodes` and
       `kubectl -n ingress-nginx get pods` show Ready.
 
 ---
@@ -54,14 +54,14 @@ ingress-nginx settings (ConfigMap + annotation) with a verify step for each.
 
 Bring up data and the app *before* TLS so failures are easier to see.
 
-- [~] **Task:** `mise run deploy-postgres`. Inspect the Bitnami Secret keys:
+- [x] **Task:** `mise run deploy-postgres`. Inspect the Bitnami Secret keys:
       ```bash
       kubectl -n records get secret records-pg-postgresql -o jsonpath='{.data}' | jq 'keys'
       ```
       Confirm `charts/records-api` password key matches (script auto-detects
       common names).
-- [~] **Task:** `mise run build-load` then `mise run deploy-app`.
-- [ ] **Task:** `mise run port-forward` and hit the API:
+- [x] **Task:** `mise run build-load` then `mise run deploy-app`.
+- [x] **Task:** `mise run port-forward` and hit the API:
       ```bash
       curl -s localhost:8080/health
       curl -s localhost:8080/records
@@ -69,9 +69,9 @@ Bring up data and the app *before* TLS so failures are easier to see.
         -H 'content-type: application/json' \
         -d '{"name":"delta","note":"before backup"}'
       ```
-- [ ] **Task (optional):** replace the startup seed in `app/main.py` with an
+- [x] **Task (optional):** replace the startup seed in `app/main.py` with an
       init Job or migration — leave a note in `docs/notes.md`.
-- [ ] **Verify:** `/records` returns at least the seeded rows plus your POST.
+- [x] **Verify:** `/records` returns at least the seeded rows plus your POST.
 
 ---
 
@@ -79,14 +79,14 @@ Bring up data and the app *before* TLS so failures are easier to see.
 
 Self-signed cert, Secret, Ingress object. See `docs/CONCEPTS.md` §1.
 
-- [~] **Task:** `mise run gen-certs` (writes `certs/` and Secret `records-tls`).
-- [ ] **Task:** copy `k8s/ingress.yaml.example` → `k8s/ingress.yaml`, adjust
+- [x] **Task:** `mise run gen-certs` (writes `certs/` and Secret `records-tls`).
+- [x] **Task:** copy `k8s/ingress.yaml.example` → `k8s/ingress.yaml`, adjust
       host if you changed `INGRESS_HOST`, then `mise run apply-ingress`.
-- [ ] **Task:** confirm the Ingress address / CLASS:
+- [x] **Task:** confirm the Ingress address / CLASS:
       ```bash
       kubectl -n records get ingress records-api -o wide
       ```
-- [ ] **Verify:**
+- [x] **Verify:**
       ```bash
       curl -s --cacert certs/ca.crt https://records.localtest.me/health
       curl -s --cacert certs/ca.crt https://records.localtest.me/records
@@ -100,8 +100,8 @@ Self-signed cert, Secret, Ingress object. See `docs/CONCEPTS.md` §1.
 
 First use the host helper, then graduate to an in-cluster Job + SA.
 
-- [~] **Task:** `mise run backup-pg`. Confirm a file under `backups/*.dump`.
-- [ ] **Task:** insert another row via the API, then restore the *previous*
+- [x] **Task:** `mise run backup-pg`. Confirm a file under `backups/*.dump`.
+- [x] **Task:** insert another row via the API, then restore the *previous*
       dump:
       ```bash
       mise run restore-pg FILE=backups/<your-file>.dump
