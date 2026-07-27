@@ -33,23 +33,33 @@ You drop down a layer. This week is "what does a router actually do, and what's 
    sudo ip netns exec h1 ping -c 3 10.0.1.1
    sudo ip netns exec h1 traceroute -n 10.0.1.1
    ```
-3. Force fragmentation. Lower the MTU on r's outbound:
+3. Force fragmentation. Lower the MTU on the r↔h2 link (both ends — a veth
+   drops frames above the *peer's* MTU, so if only `veth-rh2` is 800, h2's
+   1428-byte echo reply never makes it back):
    ```bash
-   sudo ip netns exec r ip link set veth-rh2 mtu 800
-   sudo ip netns exec h1 ping -c 1 -s 1400 10.0.1.1            # OK, fragments
-   sudo ip netns exec h1 ping -c 1 -s 1400 -M do 10.0.1.1      # fails: needs frag, DF set
+   sudo ip netns exec r  ip link set veth-rh2 mtu 800
+   sudo ip netns exec h2 ip link set veth-h2  mtu 800
+   sudo ip netns exec h1 ping -c 1 -s 1400 -M dont 10.0.1.1   # OK, fragments
+   sudo ip netns exec h1 ping -c 1 -s 1400 -M do   10.0.1.1   # fails: needs frag, DF set
    ```
+   Modern `ping` defaults to DF/`want`, so you need `-M dont` to allow
+   fragmentation. With DF clear, r fragments the request toward h2; h2
+   fragments the reply locally because its own MTU is also 800.
 4. Capture and inspect:
    ```bash
    sudo ip netns exec r tcpdump -ni any -w /tmp/frag.pcap -e icmp or 'ip[6] & 0x1f != 0'
    ```
-5. Reproduce the **PMTUD black hole**: drop ICMP "Frag Needed" on the router:
+5. Reproduce the **PMTUD black hole**: drop ICMP "Frag Needed" on the router.
+   A fresh netns has no nftables tables — create `inet filter` + a `forward`
+   chain first (the "No such file or directory" error means the chain is missing):
    ```bash
+   sudo ip netns exec r nft add table inet filter
+   sudo ip netns exec r nft 'add chain inet filter forward { type filter hook forward priority filter; policy accept; }'
    sudo ip netns exec r nft add rule inet filter forward icmp type destination-unreachable drop
    sudo ip netns exec h1 curl -s -o /dev/null --max-time 5 http://10.0.1.1   # if there's a server, will hang
    ```
    The TCP handshake completes (small SYN packets) but the first big response packet from the server gets silently dropped; PMTUD never works because the ICMP is filtered.
-6. **Fix it** with MSS clamping:
+6. **Fix it** with MSS clamping (same table/chain from step 5):
    ```bash
    sudo ip netns exec r nft add rule inet filter forward tcp flags syn tcp option maxseg size set rt mtu
    ```

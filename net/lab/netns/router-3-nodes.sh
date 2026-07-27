@@ -59,9 +59,11 @@ useful break-it experiments:
   sudo ip netns exec r sysctl -w net.ipv4.ip_forward=0
   # remove h2's default route -> ping works one way
   sudo ip netns exec h2 ip route del default
-  # set MTU low and try a big ping with DF
-  sudo ip netns exec r ip link set veth-rh2 mtu 800
-  sudo ip netns exec h1 ping -M do -s 1400 10.0.1.1
+  # set MTU low on both ends of the r<->h2 link, then big ping
+  sudo ip netns exec r  ip link set veth-rh2 mtu 800
+  sudo ip netns exec h2 ip link set veth-h2  mtu 800
+  sudo ip netns exec h1 ping -c 1 -s 1400 -M dont 10.0.1.1   # OK, fragments
+  sudo ip netns exec h1 ping -c 1 -s 1400 -M do   10.0.1.1   # Frag needed
 
 teardown:
   sudo bash teardown.sh
