@@ -4,7 +4,7 @@ use crate::env::Env;
 use crate::features::app::{Action};
 use ratatui::widgets::TableState;
 
-static COMMANDS: &'static [Command] = &[
+static COMMANDS: &[Command] = &[
     Command::Help,
     Command::Quit,
     Command::Intro,
@@ -22,6 +22,12 @@ pub struct TextAreaState {
     pub text: String,
     pub cursor_position: usize,
     pub input_placeholder: &'static str,
+}
+
+impl Default for CommandPallette {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl CommandPallette {
@@ -48,13 +54,13 @@ impl CommandPallette {
             .and_then(|index| self.available_commands().nth(index))
     }
 
-    pub fn change_text(&mut self, modify: impl FnOnce(&mut String) -> ()) {
+    pub fn change_text(&mut self, modify: impl FnOnce(&mut String)) {
         modify(&mut self.text_area_state.text);
         self.table_state.select_first();
     }
 
     pub fn command_to_complete(&self) -> Option<&Command> {
-        if self.text_area_state.text.len() == 0 {
+        if self.text_area_state.text.is_empty() {
             return None;
         }
 
@@ -151,11 +157,10 @@ impl CommandPallette {
                 if let Ok(command) = Command::try_from(self.text_area_state.text.as_str()) {
                     _ = env.sender.send(Action::CommandClose.into());
                     _ = env.sender.send(Action::CommandSent(command).into());
-                } else if self.text_area_state.text.is_empty() {
-                    if let Some(command) = self.selected_command() {
+                } else if self.text_area_state.text.is_empty()
+                    && let Some(command) = self.selected_command() {
                         self.text_area_state.text = command.name().to_owned();
                     }
-                }
                 true
             },
             KeyCode::Char(char) if !char.is_control() => {

@@ -65,10 +65,10 @@ impl TopPageSvc for TopPageService {
                     .filter_map(|market| {
                         let prices = market.outcome_prices?.clone();
                         let (yes_market_price, no_market_price) =
-                            if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "yes" {
-                                (prices.get(0)?, prices.get(1)?)
-                            } else if market.outcomes.as_ref()?.get(0)?.to_lowercase() == "no" {
-                                (prices.get(1)?, prices.get(0)?)
+                            if market.outcomes.as_ref()?.first()?.to_lowercase() == "yes" {
+                                (prices.first()?, prices.get(1)?)
+                            } else if market.outcomes.as_ref()?.first()?.to_lowercase() == "no" {
+                                (prices.get(1)?, prices.first()?)
                             } else {
                                 log::error!(
                                     target: "app",
@@ -79,7 +79,7 @@ impl TopPageSvc for TopPageService {
                                 return None;
                             };
                         let resolution_status: Option<UmaResolutionStatus> = match &market.uma_resolution_status {
-                            Some(status) => status.try_into().map_or(None, |s| Some(s)),
+                            Some(status) => status.try_into().ok(),
                             None => None,
                         };
                         Some(Market::new(

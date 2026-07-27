@@ -13,7 +13,7 @@ use crate::event::Event;
 use crate::config::{get_config, Config};
 use crate::top_page_service::TopPageService;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct SleepFn {}
 
 impl SleepFn {
@@ -22,11 +22,6 @@ impl SleepFn {
     }
 }
 
-impl Default for SleepFn {
-    fn default() -> Self {
-        Self {}
-    }
-}
 
 pub struct Env {
     pub sender: mpsc::UnboundedSender<Event>,
@@ -60,7 +55,7 @@ impl Env {
             sleep: SleepFn::default(),
             top_page_svc: TopPageService::new(polymarket_client),
             ui: UI {
-                window_size: window_size,
+                window_size,
                 required_window_size: Size::new(120, 40)
             },
         }

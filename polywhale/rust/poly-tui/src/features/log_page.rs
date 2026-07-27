@@ -49,10 +49,8 @@ impl Default for LogPage {
 pub enum LogPageAction {
 }
 
-pub fn log_page_reducer(_state: &mut LogPage, action: &LogPageAction, _env: &Env) {
-    match action {
-        _ => (),
-    }
+pub fn log_page_reducer(_state: &mut LogPage, _action: &LogPageAction, _env: &Env) {
+    
 }
 
 impl LogPage {

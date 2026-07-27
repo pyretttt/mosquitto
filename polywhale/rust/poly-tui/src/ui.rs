@@ -198,7 +198,7 @@ pub async fn run(
     terminal: &mut DefaultTerminal,
 ) -> color_eyre::Result<()> {
     while app_state.running {
-        terminal.draw(|frame| draw_app(frame, &mut *app_state, env))?;
+        terminal.draw(|frame| draw_app(frame, &*app_state, env))?;
         let mut event = env.receiver
             .recv()
             .await

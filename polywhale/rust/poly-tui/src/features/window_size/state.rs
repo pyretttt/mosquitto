@@ -30,7 +30,7 @@ impl WindowSize {
     pub fn new(required_size: Size) -> Self {
         Self {
             current_size: Size::default(),
-            required_size: required_size,
+            required_size,
             labels: Labels {
                 title: "Terminal too small",
                 current: "Current: ",

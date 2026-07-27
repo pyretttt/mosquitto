@@ -5,6 +5,12 @@ pub struct Config {
     pub tick_rate: f64,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Config {
     pub fn new() -> Self {
         Self {
@@ -18,5 +24,5 @@ impl Config {
 
 pub fn get_config() -> &'static Config {
     static CONFIG: OnceLock<Config> = OnceLock::new();
-    CONFIG.get_or_init(|| Config::new())
+    CONFIG.get_or_init(Config::new)
 }

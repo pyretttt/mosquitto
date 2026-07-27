@@ -12,7 +12,6 @@ use features::app::{AppState};
 use ui::run;
 use event::sidecar_event_loop;
 
-use tui_logger;
 
 const LOG_FILE_MAX_SIZE_BYTES: u64 = 1024 * 1024;
 
@@ -21,7 +20,7 @@ async fn main() -> color_eyre::Result<()> {
     setup_logging();
 
     color_eyre::install()?;
-    let mut terminal = Box::leak(Box::new(ratatui::init()));
+    let terminal = Box::leak(Box::new(ratatui::init()));
     let mut env = Env::new(terminal.size().unwrap_or_default());
 
     env.fire_and_forget(sidecar_event_loop(env.sender.clone()));
@@ -29,7 +28,7 @@ async fn main() -> color_eyre::Result<()> {
     run(
         &mut AppState::default(),
         &mut env,
-        &mut terminal
+        terminal
     ).await?;
     ratatui::restore();
     Ok(())

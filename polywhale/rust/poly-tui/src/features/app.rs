@@ -58,9 +58,9 @@ pub enum Action {
     CloseOverlay,
 }
 
-impl Into<Event> for Action {
-    fn into(self) -> Event {
-        Event::App(self)
+impl From<Action> for Event {
+    fn from(val: Action) -> Self {
+        Event::App(val)
     }
 }
 
@@ -132,11 +132,10 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
         Event::Crossterm(crossterm_event) => {
             match crossterm_event {
                 crossterm::event::Event::Key(key_event) => {
-                    if let Some(command_pallette) = &mut app_state.command_pallette {
-                        if command_pallette.command_pallete_key_input_middleware(key_event, env) {
+                    if let Some(command_pallette) = &mut app_state.command_pallette
+                        && command_pallette.command_pallete_key_input_middleware(key_event, env) {
                             return;
                         }
-                    }
 
                     match &mut app_state.overlay {
                         Some(Overlay::Log(log_page)) => {
@@ -148,14 +147,10 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                         _ => (),
                     }
 
-                    match &mut app_state.page {
-                        Page::Top(top_page) => {
-                            if top_page.key_input_middleware(key_event, env) {
-                                return;
-                            }
+                    if let Page::Top(top_page) = &mut app_state.page
+                        && top_page.key_input_middleware(key_event, env) {
+                            return;
                         }
-                        _ => ()
-                    }
 
                     if key_event.kind == KeyEventKind::Press {
                         match key_event.code {
@@ -207,11 +202,8 @@ pub fn app_reducer(app_state: &mut AppState, event: &mut Event, env: &mut Env) {
                         _ => (),
                     }
 
-                    match &mut app_state.page {
-                        Page::Top(top_page) => {
-                            top_page_reducer(top_page, &mut TopPageAction::Resize(new_size).into(), env);
-                        }
-                        _ => ()
+                    if let Page::Top(top_page) = &mut app_state.page {
+                        top_page_reducer(top_page, &mut TopPageAction::Resize(new_size), env);
                     }
                 },
                 _ => ()

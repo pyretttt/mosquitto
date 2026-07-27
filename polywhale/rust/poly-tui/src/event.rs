@@ -22,10 +22,10 @@ pub async fn sidecar_event_loop(sender: mpsc::UnboundedSender<Event>) -> color_e
     loop {
         tokio::select! {
             _ = tick.tick() => {
-                let _ = sender.send(Event::Tick)?;
+                sender.send(Event::Tick)?;
             }
             Some(Ok(evt)) = reader.next().fuse() => {
-                let _ = sender.send(Event::Crossterm(evt))?;
+                sender.send(Event::Crossterm(evt))?;
             }
             _ = sender.closed() => {
                 break;

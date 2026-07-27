@@ -287,9 +287,9 @@ pub enum SearchAction {
     Apply,
 }
 
-impl Into<Event> for TopPageAction {
-    fn into(self) -> Event {
-        Event::App(Action::TopPage(self))
+impl From<TopPageAction> for Event {
+    fn from(val: TopPageAction) -> Self {
+        Event::App(Action::TopPage(val))
     }
 }
 
@@ -368,7 +368,7 @@ pub fn top_page_reducer(top_page: &mut TopPage, action: &mut TopPageAction, env:
             top_page.set_events_loading_session(None);
         },
         TopPageAction::HideErrorMsg { token } => {
-            if top_page.error_msg.as_ref().map_or(false,|e| e.right.eq(token)) {
+            if top_page.error_msg.as_ref().is_some_and(|e| e.right.eq(token)) {
                 top_page.error_msg = None;
             }
         },
@@ -455,7 +455,7 @@ impl TopPage {
     }
 
     pub fn key_input_middleware(&mut self, key_event: &KeyEvent, env: &Env) -> bool {
-        if self.events_pane.search.as_ref().map_or(false, |s| s.focused) {
+        if self.events_pane.search.as_ref().is_some_and(|s| s.focused) {
             return self.search_key_input_middleware(key_event, env);
         }
 
@@ -484,7 +484,7 @@ impl TopPage {
                 true
             }
             KeyCode::Char(x) if ['j', 'k'].contains(&x) => {
-                if self.events_pane.events_data.events.len() == 0 { return false; }
+                if self.events_pane.events_data.events.is_empty() { return false; }
 
                 match self.events_pane.markets_focused {
                     true => {
@@ -577,7 +577,7 @@ impl TopPage {
 impl TopPage {
     pub fn mock_data(ui_window_size: Size) -> Self {
         let mut data = Self {
-            ui_window_size: ui_window_size,
+            ui_window_size,
             left_title: TOP_PAGE_TITLE,
             right_title: String::new(),
             current_pane: 1,

@@ -1,7 +1,7 @@
 use ratatui::Frame;
 use ratatui::layout::{Constraint, Layout, Rect, HorizontalAlignment, Margin};
 use ratatui::style::{Color, Modifier, Style};
-use ratatui::text::{Line, Span, Text};
+use ratatui::text::{Line, Span};
 use ratatui::widgets::{
     Block, BorderType, Borders, Cell, HighlightSpacing, Padding, Paragraph, Row, Table,
 };
@@ -20,12 +20,12 @@ const MUTED: Color = Color::DarkGray;
 const HEADER: Color = Color::Yellow;
 
 mod constants {
-    pub static SPACE: &'static str = " ";
-    pub static DOUBLE_SPACE: &'static str = "  ";
-    pub static EMPTY: &'static str = "";
-    pub static INTERMEDIATE_BAR: &'static str = "┃";
-    pub static TOP_BAR: &'static str = "┳";
-    pub static BOTTOM_BAR: &'static str = "┻";
+    pub static SPACE: &str = " ";
+    pub static DOUBLE_SPACE: &str = "  ";
+    pub static EMPTY: &str = "";
+    pub static INTERMEDIATE_BAR: &str = "┃";
+    pub static TOP_BAR: &str = "┳";
+    pub static BOTTOM_BAR: &str = "┻";
 }
 
 pub fn top_page_ui(
@@ -45,7 +45,7 @@ pub fn top_page_ui(
 
     let events_max_height = top_page.table_height();
 
-    let search_focused = top_page.events_pane.search.as_ref().map_or(false, |s| s.focused);
+    let search_focused = top_page.events_pane.search.as_ref().is_some_and(|s| s.focused);
     let [status_area, search_area, events_area, lower_area, cmd_area] = Layout::vertical([
         Constraint::Length(1),
         Constraint::Length(if search_focused { 3 } else { 0 }),
@@ -198,11 +198,10 @@ fn render_top_events(frame: &mut Frame, area: Rect, top_page: &TopPage) {
 
     // Paint the markets table inside the expanded selected event row (below the
     // event title line). Pane height already grows by up to 6 when needed.
-    if markets_h > 0 && !events.is_empty() {
-        if let Some(markets_area) = markets_table_area(inner, selected as u16, markets_h) {
+    if markets_h > 0 && !events.is_empty()
+        && let Some(markets_area) = markets_table_area(inner, selected as u16, markets_h) {
             render_markets_table(frame, markets_area, top_page);
         }
-    }
 }
 
 /// Area inside the selected event row reserved for the nested markets table.
@@ -258,7 +257,7 @@ fn render_markets_table(frame: &mut Frame, area: Rect, top_page: &TopPage) {
                 .add_modifier(Modifier::BOLD),
         );
 
-    let mut state = top_page.events_pane.markets_table_state.clone();
+    let mut state = top_page.events_pane.markets_table_state;
     frame.render_stateful_widget(table, area, &mut state);
 }
 

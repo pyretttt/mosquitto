@@ -111,15 +111,15 @@ impl TextAreaState {
     fn ui<'a>(&'a self, text_to_complete: Option<&'a str>) -> Text<'a> {
         let line = if self.text.is_empty() {
             let span = Span::styled(self.input_placeholder, Style::default().fg(Color::DarkGray));
-            Line::from_iter([span].into_iter())
+            Line::from_iter([span])
         } else {
             let span = Span::styled(self.text.as_str(), Style::default().fg(Color::White));
             if let Some(text_to_complete) = text_to_complete {
                 let suffix = &text_to_complete[self.text.len()..];
                 let cmd_span = Span::styled(suffix, Style::default().fg(Color::DarkGray));
-                Line::from_iter([span, cmd_span].into_iter())
+                Line::from_iter([span, cmd_span])
             } else {
-                Line::from_iter([span].into_iter())
+                Line::from_iter([span])
             }
         };
 

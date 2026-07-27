@@ -42,15 +42,15 @@ impl LoadingPage {
 
     pub fn tick(&mut self, env: &Env) {
         self.tick = self.tick.wrapping_add(1);
-        if self.tick % 3 == 0 {
+        if self.tick.is_multiple_of(3) {
             self.throbbler_state.calc_next();
             self.logo_color_index = self.logo_color_index.wrapping_add(1);
         }
-        if self.tick % (get_config().tick_rate * 2.0) as u16 == 0 {
+        if self.tick.is_multiple_of((get_config().tick_rate * 2.0) as u16) {
             self.loading_tip_index = (self.loading_tip_index + 1) % LOADING_TIPS.len();
             self.loading_tip = LOADING_TIPS[self.loading_tip_index];
         }
-        if !self.is_finished && self.tick % 10 == 0 {
+        if !self.is_finished && self.tick.is_multiple_of(10) {
             let rng = (env.rng)(Some(0.01..0.1));
             self.progress = (self.progress + rng).min(MAX_FAKE_PROGRESS);
         }
@@ -83,7 +83,7 @@ pub fn loading_page_reducer(state: &mut LoadingPage, action: &LoadingPageAction,
                     ).into()
                 );
                 _ = sender.send(
-                    TopPageAction::EventsLoadRequested { token: token }.into()
+                    TopPageAction::EventsLoadRequested { token }.into()
                 );
 
             });
