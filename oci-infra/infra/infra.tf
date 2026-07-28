@@ -163,7 +163,7 @@ resource "oci_core_subnet" "vcn_public_subnet" {
 # Kubernetes Cluster
 resource "oci_containerengine_cluster" "k8s_cluster" {
   compartment_id     = var.compartment_id
-  kubernetes_version = "v1.34.2"
+  kubernetes_version = "v1.36.1"
   name               = "k8s-cluster"
   vcn_id             = module.vcn.vcn_id
   endpoint_config {
