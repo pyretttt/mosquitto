@@ -50,18 +50,33 @@ You drop down a layer. This week is "what does a router actually do, and what's 
    sudo ip netns exec r tcpdump -ni any -w /tmp/frag.pcap -e icmp or 'ip[6] & 0x1f != 0'
    ```
 5. Reproduce the **PMTUD black hole**: drop ICMP "Frag Needed" on the router.
-   A fresh netns has no nftables tables — create `inet filter` + a `forward`
-   chain first (the "No such file or directory" error means the chain is missing):
+   Undo step 3's r↔h2 MTU first — if h2's NIC is 800, TCP already negotiates a
+   small MSS and you never hit the black hole. Put the bottleneck only on
+   `veth-rh1` so the hosts still believe the path is 1500. Frag Needed is
+   *locally generated* by r, so drop it on the `output` hook (not `forward`).
+   Also create `forward` here — step 6's MSS clamp needs it:
    ```bash
-   sudo ip netns exec r nft add table inet filter
-   sudo ip netns exec r nft 'add chain inet filter forward { type filter hook forward priority filter; policy accept; }'
-   sudo ip netns exec r nft add rule inet filter forward icmp type destination-unreachable drop
-   sudo ip netns exec h1 curl -s -o /dev/null --max-time 5 http://10.0.1.1   # if there's a server, will hang
+   # restore full MTU on the h2 side (undo step 3)
+   ip netns exec h2 ip link set veth-h2 mtu 1500
+   ip netns exec r  ip link set veth-rh2 mtu 1500
+   # hidden bottleneck: r → h1 only
+   ip netns exec r  ip link set veth-rh1 mtu 800
+
+   ip netns exec r nft add table inet filter
+   ip netns exec r nft 'add chain inet filter output { type filter hook output priority filter; policy accept; }'
+   ip netns exec r nft 'add chain inet filter forward { type filter hook forward priority filter; policy accept; }'
+   ip netns exec r nft add rule inet filter output icmp type destination-unreachable drop
+
+   ip netns exec h2 sh -c 'mkdir -p /tmp/www && dd if=/dev/zero of=/tmp/www/big.bin bs=1k count=8 status=none && cd /tmp/www && python3 -m http.server 80' &
+   ip netns exec h1 curl -s -o /dev/null --max-time 5 http://10.0.1.1/big.bin   # hangs / times out
    ```
-   The TCP handshake completes (small SYN packets) but the first big response packet from the server gets silently dropped; PMTUD never works because the ICMP is filtered.
-6. **Fix it** with MSS clamping (same table/chain from step 5):
+   The TCP handshake completes (small SYN packets) but the first big response
+   packet from the server gets silently dropped; PMTUD never works because the
+   ICMP is filtered. A small `/` listing may still succeed — use `/big.bin`.
+6. **Fix it** with MSS clamping (uses the `forward` chain from step 5):
    ```bash
-   sudo ip netns exec r nft add rule inet filter forward tcp flags syn tcp option maxseg size set rt mtu
+   ip netns exec r nft add rule inet filter forward tcp flags syn tcp option maxseg size set rt mtu
+   ip netns exec h1 curl -s -o /dev/null --max-time 5 http://10.0.1.1/big.bin   # succeeds
    ```
    (the equivalent of `iptables -t mangle ... --clamp-mss-to-pmtu`)
 

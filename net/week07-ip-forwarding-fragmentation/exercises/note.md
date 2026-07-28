@@ -4,13 +4,13 @@
    - Sketch the IPv4 header field by field. For each, say what changes hop-to-hop (TTL, checksum) vs end-to-end (src, dst, ID).
 
 ```
-version | header length | TOS | Datagram length (bytes)      |
-16 bit identifier             | flags | Fragmentation offset |
-TTL             | Upper Proto | Header checksum              |
-| Source IP address                                          |
-| Destination IP address                                     |
-| Options if any                                             |
-| payload                                                    |
+| version | header length | TOS | Datagram length (bytes)      |
+| 16 bit identifier             | flags | Fragmentation offset |
+| TTL             | Upper Proto | Header checksum              |
+| Source IP address                                            |
+| Destination IP address                                       |
+| Options if any                                               |
+| payload                                                      |
 ```
 
    - Why doesn't IPv6 do in-flight fragmentation? Where did that responsibility move to?
