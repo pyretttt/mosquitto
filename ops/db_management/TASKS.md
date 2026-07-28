@@ -129,7 +129,7 @@ Break open access, then reopen the minimum paths. See `docs/CONCEPTS.md` §3.
 `charts/postgresql/values-local.yaml`). API pods already have
 `db-lab.example/tier: api`.
 
-- [ ] **Task:** confirm labels:
+- [x] **Task:** confirm labels:
       ```bash
       kubectl -n records get pods -L db-lab.example/tier
       ```
