@@ -1,0 +1,68 @@
+# TODO(you): wire image, secret refs, PVC, and ServiceAccount — TASKS.md §3
+# Pattern: one-shot Job runs pg_dump, writes to a PVC (or streams out via kubectl).
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: pg-dump-cron
+  namespace: records
+  labels:
+    app.kubernetes.io/part-of: db-lab
+    db-lab.example/tier: backup
+spec:
+  schedule: "42 * * * *"
+  jobTemplate:
+    metadata:
+      name: pg-dump-once
+      namespace: records
+      labels:
+        app.kubernetes.io/part-of: db-lab
+        db-lab.example/tier: backup
+    spec:
+      ttlSecondsAfterFinished: 600
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/part-of: db-lab
+            db-lab.example/tier: backup
+        spec:
+          serviceAccountName: pg-backup
+          restartPolicy: OnFailure
+          containers:
+            - name: pg-dump
+              image: bitnami/postgresql:latest
+              env:
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: records-pg-postgresql
+                      key: postgres-password
+                - name: PGHOST
+                  value: records-pg-postgresql
+                - name: PGUSER
+                  value: records
+                - name: PGDATABASE
+                  value: records
+              command:
+                - /bin/bash
+                - -ec
+                - |
+                  pg_dump -Fc -f /backups/records-$(date +%Y%m%d%H%M%S).dump
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: pg-backups
+---
+# PVC for dump files (kind default StorageClass is fine)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pg-backups
+  namespace: records
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi

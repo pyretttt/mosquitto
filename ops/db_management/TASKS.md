@@ -108,15 +108,15 @@ First use the host helper, then graduate to an in-cluster Job + SA.
       ```
       **Verify:** the post-backup row is gone (or back to dump contents); API
       still healthy.
-- [ ] **Task:** copy `k8s/rbac/backup-sa.yaml.example` →
+- [x] **Task:** copy `k8s/rbac/backup-sa.yaml.example` →
       `k8s/rbac/backup-sa.yaml`, tighten the Role rules to what you need, apply
       with `mise run apply-backup-rbac`.
-- [ ] **Task:** copy `k8s/backup/pg-dump-job.yaml.example` → a real Job
+- [x] **Task:** copy `k8s/backup/pg-dump-job.yaml.example` → a real Job
       manifest; implement `pg_dump -Fc` to the PVC; set
       `serviceAccountName: pg-backup`. Apply and wait for Completed.
-- [ ] **Verify:** `kubectl -n records logs job/pg-dump-once` (or your Job name)
+- [x] **Verify:** `kubectl -n records logs job/pg-dump-once` (or your Job name)
       and list files on the backup PVC (exec a debug pod that mounts it).
-- [ ] **Stretch:** convert the Job into a `CronJob` (schedule every hour for the
+- [x] **Stretch:** convert the Job into a `CronJob` (schedule every hour for the
       lab) and document how you would offload dumps to object storage.
 
 ---
