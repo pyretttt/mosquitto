@@ -15,6 +15,7 @@ spec:
         - podSelector:
             matchLabels:
               db-lab.example/tier: api
+              db-lab.example/tier: backup
       ports:
         - protocol: TCP
           port: 5432
@@ -29,6 +30,7 @@ spec:
   podSelector:
     matchLabels:
       db-lab.example/tier: api
+      db-lab.example/tier: backup
   policyTypes:
     - Egress
   egress:

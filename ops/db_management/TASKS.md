@@ -135,16 +135,16 @@ Break open access, then reopen the minimum paths. See `docs/CONCEPTS.md` §3.
       ```
       If the DB pod lacks the label, restart/upgrade Postgres with the values
       file or `kubectl label` it for the lab.
-- [ ] **Task:** copy the four `k8s/networkpolicy/*.yaml.example` files to
+- [x] **Task:** copy the four `k8s/networkpolicy/*.yaml.example` files to
       `*.yaml` (start with default-deny + DNS, then API↔DB, then Ingress→API).
       Apply with `mise run apply-netpol` (or one file at a time).
-- [ ] **Break-then-fix:** after default-deny alone, show that
+- [x] **Break-then-fix:** after default-deny alone, show that
       `/health` fails (port-forward or Ingress). After allowing DNS + API→DB +
       Ingress→API, show it works again.
-- [ ] **Verify:** from a throwaway pod *without* the api label, `pg_isready` /
+- [x] **Verify:** from a throwaway pod *without* the api label, `pg_isready` /
       TCP to `records-pg-postgresql:5432` should fail; from the API pod it
       succeeds.
-- [ ] **Task:** ensure the backup Job still works — you may need a policy
+- [x] **Task:** ensure the backup Job still works — you may need a policy
       allowing `db-lab.example/tier: backup` → database:5432.
 
 ---
@@ -153,20 +153,20 @@ Break open access, then reopen the minimum paths. See `docs/CONCEPTS.md` §3.
 
 Controller-wide ConfigMap vs per-Ingress annotations. See `docs/CONCEPTS.md` §5.
 
-- [ ] **Task:** find the live controller ConfigMap:
+- [x] **Task:** find the live controller ConfigMap:
       ```bash
       kubectl -n ingress-nginx get cm
       ```
       Copy ideas from `k8s/nginx/ingress-controller-configmap.yaml.example`,
       patch the real ConfigMap (do not blindly apply a second object with the
       wrong name).
-- [ ] **Verify:** change `proxy-body-size` to `1m`, then try a POST body larger
+- [x] **Verify:** change `proxy-body-size` to `1m`, then try a POST body larger
       than 1m (expect 413). Raise it and retry.
-- [ ] **Task:** add an Ingress annotation (e.g. rate limit or
+- [x] **Task:** add an Ingress annotation (e.g. rate limit or
       `nginx.ingress.kubernetes.io/configuration-snippet` *only if* snippets are
       enabled — prefer documented annotations like
       `nginx.ingress.kubernetes.io/proxy-connect-timeout`).
-- [ ] **Verify:** `kubectl -n ingress-nginx logs deploy/ingress-nginx-controller`
+- [x] **Verify:** `kubectl -n ingress-nginx logs deploy/ingress-nginx-controller`
       shows a reload; your annotation affects only `records-api`.
 
 ---
@@ -175,12 +175,12 @@ Controller-wide ConfigMap vs per-Ingress annotations. See `docs/CONCEPTS.md` §5
 
 If §3 used a wide Role, tighten it now.
 
-- [ ] **Task:** remove unused verbs/resources from `pg-backup` Role. Prefer
+- [x] **Task:** remove unused verbs/resources from `pg-backup` Role. Prefer
       mounting the DB Secret into the Job over `pods/exec`.
-- [ ] **Task:** create a second SA that can *only* `get` the backup PVC / read
+- [x] **Task:** create a second SA that can *only* `get` the backup PVC / read
       dumps (restore operator) and prove the backup SA cannot delete unrelated
       Deployments.
-- [ ] **Verify:**
+- [x] **Verify:**
       ```bash
       kubectl -n records auth can-i create jobs --as=system:serviceaccount:records:pg-backup
       kubectl -n records auth can-i delete deployments --as=system:serviceaccount:records:pg-backup

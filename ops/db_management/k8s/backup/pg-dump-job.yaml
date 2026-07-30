@@ -9,7 +9,7 @@ metadata:
     app.kubernetes.io/part-of: db-lab
     db-lab.example/tier: backup
 spec:
-  schedule: "42 * * * *"
+  schedule: "0 * * * *"
   jobTemplate:
     metadata:
       name: pg-dump-once
