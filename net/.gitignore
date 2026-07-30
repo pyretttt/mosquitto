@@ -2,7 +2,6 @@
 **/notes.md
 
 # pcap captures (often big, sometimes contain secrets)
-*.pcap
 *.pcapng
 **/captures/*
 

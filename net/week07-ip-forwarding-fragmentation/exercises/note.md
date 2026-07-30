@@ -21,7 +21,7 @@ Primary concern is performance in-between nodes do not do fragmentation. It's go
 
 Done
 
-2. **Practical.** Reproduce the PMTUD black hole + MSS clamping fix end-to-end. Save the pcaps before/after as `captures/07-pmtud-black-hole.pcap` and `captures/07-pmtud-clamped.pcap`. Write a 1-page postmortem in `exercises/07-postmortem.md` as if it had hit production.
+2. **Practical.** Reproduce the PMTUD black hole + MSS clamping fix end-to-end. Save the pcaps before/after as `captures/07-pmtud-black-hole.pcap` and `captures/07-pmtud-clamped.pcap`. Write a 1-page postmortem in `exercises/07-postmortem.md` as if it had hit production. ✅
 3. **Stretch.** Set up a GRE tunnel between h1 and h2 over r and watch the encapsulated MTU shrink to 1476. Send a 1500-byte ping with DF and see exactly what breaks.
 
 ## Self-check
