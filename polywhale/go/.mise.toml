@@ -1,0 +1,34 @@
+[tools]
+go = "1.26"
+
+[env]
+# Ticks per second for the TUI event loop (same as the Rust version).
+TICK_RATE = "30"
+
+[tasks.build]
+description = "Build the polywhale TUI binary"
+run = "go build -o bin/polywhale ."
+
+[tasks.run]
+description = "Run the polywhale TUI"
+run = "go run ."
+
+[tasks.fmt]
+description = "Format Go sources"
+run = "gofmt -w ."
+
+[tasks.vet]
+description = "Static analysis"
+run = "go vet ./..."
+
+[tasks.tidy]
+description = "Sync go.mod/go.sum"
+run = "go mod tidy"
+
+[tasks.test]
+description = "Run tests"
+run = "go test ./..."
+
+[tasks.check]
+description = "Format, vet and build"
+depends = ["fmt", "vet", "build"]
