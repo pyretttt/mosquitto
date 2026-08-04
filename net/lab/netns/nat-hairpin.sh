@@ -60,12 +60,17 @@ ip -n public route add default via 198.51.100.254
 
 ip netns exec r sysctl -w net.ipv4.ip_forward=1 >/dev/null
 
-# TODO: Add DNAT rule for h1:8080
-
+# DNAT + MASQUERADE on the router. DNAT is intentionally unscoped (no iifname)
+# so hairpin from h3 also matches — that is the bug this lab reproduces.
+# This works because h1 -> h3 goes not directly but by the br-in bridge.
 ip netns exec r nft -f - <<'NFT'
 table inet nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat;
+        tcp dport 8080 dnat ip to 10.0.0.1:8080
+    }
     chain postrouting {
-        type nat hook postrouting priority 100;
+        type nat hook postrouting priority srcnat;
         oifname "veth-rout" masquerade
     }
 }
@@ -74,13 +79,23 @@ NFT
 cat <<EOF
 ready.
 
-  sudo ip netns exec h1     ping -c 3 198.51.100.1
-  sudo ip netns exec r      conntrack -L
-  sudo ip netns exec public tcpdump -ni veth-pub -e
+  # 1) Service on h1 (keep this running):
+  sudo ip netns exec h1 bash -c 'while true; do nc -l -p 8080; done'
 
-  # Run nc on public, connect from h1, watch source IP rewriting:
-  sudo ip netns exec public nc -lvnp 8080 &
-  sudo ip netns exec h1     bash -c 'echo hello | nc 198.51.100.1 8080'
+  # 2) Works from outside:
+  sudo ip netns exec public bash -c 'echo hello | nc -v 198.51.100.254 8080'
+
+  # 3) Fails from inside (hairpin) — hang/RST:
+  sudo ip netns exec h3 bash -c 'echo hello | nc -v 198.51.100.254 8080'
+
+  # Diagnostics while (3) is failing:
+  sudo ip netns exec h3 tcpdump -ni veth-h3 -e
+  sudo ip netns exec r  conntrack -E
+  sudo ip netns exec r  nft list ruleset
+
+  # Later fix (hairpin SNAT) — do NOT add until you have seen the failure:
+  # sudo ip netns exec r nft add rule inet nat postrouting \
+  #   ip saddr 10.0.0.0/24 ip daddr 10.0.0.1 tcp dport 8080 snat to 10.0.0.254
 
 teardown:
   sudo bash teardown.sh
