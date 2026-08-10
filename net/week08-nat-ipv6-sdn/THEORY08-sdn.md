@@ -1,13 +1,17 @@
-# Week 08 theory: SDN data plane, OpenFlow, Cilium
+# Week 08 theory: software-defined networking (SDN)
 
-Background reading for the SDN third of [README08.md](README08.md). Kurose & Ross 4.4 covers
-generalized forwarding and the match-action abstraction well, so this is the shortest of the three
-files. It fills in the parts K&R leaves as a sketch: what a flow entry contains beyond match and
-action, why real pipelines are multi-table, and how the model maps onto Kubernetes CNIs — where
-Cilium is the interesting case precisely because it *departs* from it.
+Background reading for the SDN third of [README08.md](README08.md). Kurose & Ross 4.4
+introduces *generalized forwarding* — the idea that a switch can match on many packet fields and
+run a small action, not only "look up the destination IP." This file starts earlier than that
+chapter: what problem SDN is trying to solve, what the words mean, and only then how OpenFlow and
+Cilium use the idea.
 
 This file contains **no answers** to the exercises. Each section ends with a pointer to the
 question it arms you for.
+
+You do **not** need prior SDN experience. You do need the usual networking basics (Ethernet, IP,
+ports) and, for the Cilium comparison near the end, the conntrack material from
+[THEORY08-nat.md](THEORY08-nat.md).
 
 ## Where to look for what
 
@@ -16,65 +20,122 @@ One of three files for this week: [NAT](THEORY08-nat.md), [IPv6](THEORY08-ipv6.m
 
 | README08 item | Section |
 | --- | --- |
-| Learning goal: sketch an OpenFlow match-action table | [Anatomy of a flow entry](#anatomy-of-a-flow-entry) |
-| Learning goal: why Kubernetes CNIs like the model | [Why CNIs like the model](#why-cnis-like-the-model) |
-| Exercise 4 (stretch): OVS and `ovs-ofctl` flow rules | [Anatomy of a flow entry](#anatomy-of-a-flow-entry), [Multi-table pipelines](#multi-table-pipelines) |
-| Self-check: data plane vs control plane, where Cilium fits | [Data plane, control plane, management plane](#data-plane-control-plane-management-plane), [Where Cilium actually sits](#where-cilium-actually-sits) |
+| Learning goal: sketch an OpenFlow match-action table | [Match-action in one picture](#match-action-in-one-picture), [What a flow entry contains](#what-a-flow-entry-contains) |
+| Learning goal: why Kubernetes CNIs like the model | [Why this model fits Kubernetes](#why-this-model-fits-kubernetes) |
+| Exercise 4 (stretch): OVS and `ovs-ofctl` flow rules | [What a flow entry contains](#what-a-flow-entry-contains), [Why more than one table](#why-more-than-one-table) |
+| Self-check: data plane vs control plane, where Cilium fits | [Three jobs inside a network box](#three-jobs-inside-a-network-box), [Where Cilium fits](#where-cilium-fits) |
 
-Everything else in README08 is NAT or IPv6: see [THEORY08-nat.md](THEORY08-nat.md) and
-[THEORY08-ipv6.md](THEORY08-ipv6.md). One direct dependency — the contrast between Cilium's
-socket-level load balancing and kube-proxy's per-packet DNAT assumes the conntrack material from
-the NAT file.
+Everything else in README08 is NAT or IPv6. See those two files for the rest.
 
 ---
 
-## Anatomy of a flow entry
+## The problem SDN is reacting to
 
-The K&R sketch is match + action. A real OpenFlow flow entry has six parts, and the four extra ones
-are where the operational behavior lives:
+Start with a normal router or switch — no new jargon yet.
+
+Each box does two very different jobs:
+
+1. **Move packets.** For every packet that arrives: look something up, decide an output port (or
+   drop, or rewrite a header), send it on. This must be fast. A busy link can carry millions of
+   packets per second.
+2. **Decide what the lookups should say.** When a cable fails, a route is withdrawn, or a policy
+   changes, something has to recompute the tables that step 1 consults. That happens far less
+   often — when *events* happen, not when *packets* arrive.
+
+On a traditional box, both jobs live on the same device. Every router runs its own routing
+protocol (OSPF, BGP, …), builds its own forwarding table, and cooperates with neighbors. The
+network as a whole has no single place that "knows the plan." Behavior emerges from many local
+conversations.
+
+That works, but it is awkward when you want something like:
+
+- "Block this tenant from talking to that tenant, everywhere, now."
+- "When a new workload appears, give it connectivity that matches this policy."
+- "Change forwarding for a whole datacenter from one control point."
+
+**Software-defined networking (SDN)** is the idea of separating those two jobs cleanly:
+
+- keep the fast per-packet work on the switch (the **data plane**);
+- move the "figure out the tables" work to software that can see the whole network (the **control
+  plane**);
+- talk between them with a clear interface.
+
+Historically the best-known interface was **OpenFlow**: the controller writes rules into the
+switch; the switch matches packets against those rules and runs the actions. You do not need
+OpenFlow to understand SDN — it is one concrete API for the split. Kubernetes networking uses the
+same *shape* of thinking even when the wire protocol is not OpenFlow.
+
+*Arms you for:* the self-check vocabulary (data plane / control plane), before the details.
+
+---
+
+## Three jobs inside a network box
+
+People often say "data plane vs control plane." A third piece belongs in the answer too.
+
+| Job | Informal name | Rate it runs at | What it does |
+| --- | --- | --- | --- |
+| Forward packets | **Data plane** (also: forwarding plane) | Per packet | Look up state, act. Must stay simple. |
+| Compute that state | **Control plane** | Per event (link down, pod start, route change) | Algorithms, policy, protocols. Can be slow and complex. |
+| Configure and observe | **Management plane** | Human / ops rate | CLI, APIs, metrics, config databases. |
+
+The important distinction is **rate**, not which process owns which file:
+
+- anything that must happen for *every packet* belongs in the data plane → lookups only;
+- anything that can wait for an *event* belongs in the control plane → algorithms allowed;
+- the tools you use to configure and debug sit in the management plane.
+
+**Traditional router:** control plane and data plane share a chassis. Each box computes its own
+tables.
+
+**SDN-style design:** the control plane is centralized (or at least logically centralized). It
+has a global view, compiles intent into per-switch state, and pushes that state down. The switch
+becomes a programmable pipeline of "if the packet matches X, do Y."
+
+OpenFlow is one **southbound** API — "southbound" only means "toward the switches," as opposed to
+northbound APIs that applications use to talk to the controller. You can forget the compass
+metaphor; remember the split.
+
+### Where the pieces sit in Open vSwitch (for exercise 4)
+
+[Open vSwitch](https://www.openvswitch.org/) (OVS) is a software switch you will install for the
+stretch exercise. Rough mapping:
+
+| Component | Plane |
+| --- | --- |
+| Kernel datapath (or a fast userspace path like DPDK) | Data plane — fast path |
+| `ovs-vswitchd` | Data plane slow path + OpenFlow table logic (and a bit of local "control" when it compiles tables into cache entries) |
+| `ovsdb-server` | Management — bridges, ports, interfaces |
+| External controller (optional: Faucet, ONOS, OVN, …) | Control plane |
+
+Real systems smear the neat textbook lines. Treat the three planes as a lens, not a rigid org
+chart.
+
+*Arms you for:* self-check — data plane vs control plane.
+
+---
+
+## Match-action in one picture
+
+Forget SDN branding for a moment. A **match-action** rule is just:
 
 ```
-+---------------+----------+----------+--------------+----------+--------+
-| match fields  | priority | counters | instructions | timeouts | cookie |
-+---------------+----------+----------+--------------+----------+--------+
+IF packet looks like THIS  →  DO that
 ```
 
-**Match fields.** OpenFlow 1.0 had a fixed 12-tuple. From 1.2 onward it is OXM, a TLV encoding, so
-the match set is extensible — which is how OVS added registers, tunnel metadata, and (relevant to
-last week's material) conntrack fields like `ct_state`, `ct_mark` and `ct_zone`. Every field can be
-matched exactly, with a bitmask, or wildcarded entirely. Fields have **prerequisites**: you cannot
-match `nw_dst` without also matching `dl_type=0x0800`, because the bytes at that offset are only an
-IPv4 destination if the frame is IPv4. `ovs-ofctl` will silently add the prerequisite for you when
-you use the `ip` shorthand, which is a frequent source of confusion when you then dump the flows
-and see a match you did not type.
+Examples in plain language:
 
-**Priority.** The highest-priority matching entry wins. The subtlety: **OpenFlow leaves ties
-undefined.** Two overlapping entries at the same priority means the switch may pick either, and
-different switches will pick differently. This is not a corner case — it is the single most common
-way a hand-written flow table behaves non-deterministically. `ovs-ofctl add-flow --check-overlap`
-refuses to install an entry that overlaps an existing one at the same priority, which is worth
-using while you are learning.
+```
+IF arrived on port 1 AND destination IP is 10.0.0.5  →  send out port 3
+IF it is ARP                                          →  flood to all ports
+IF nothing else matched                               →  drop
+```
 
-**Counters.** Per-entry packet count, byte count and duration. Their presence in the *entry* rather
-than in a separate telemetry system is a design decision worth noticing: the same table that
-forwards is the table you read statistics from, so the controller's model of "what rules exist"
-and "what traffic they matched" cannot drift apart.
+That is the whole abstraction Kurose & Ross call generalized forwarding. An **OpenFlow flow
+table** is a list of such rules, each with a priority so the switch knows which one wins when
+several could match.
 
-**Instructions.** See [below](#instructions-versus-actions) — this changed meaningfully between
-OpenFlow 1.0 and 1.1 and the distinction still trips people.
-
-**Timeouts.** `idle_timeout` removes the entry after N seconds with no matching packets;
-`hard_timeout` removes it N seconds after installation regardless of traffic. Zero means never.
-These exist so that a controller can install reactive, per-flow state without having to remember to
-clean it up — the table garbage-collects itself. A controller that installs only permanent entries
-is using the model proactively, which is what production deployments actually do.
-
-**Cookie.** An opaque 64-bit value the controller chooses. It never participates in matching. Its
-purpose is bulk operations: tag every entry belonging to one policy or one tenant with the same
-cookie, then modify or delete them in one message. If you have ever wondered how a controller
-cleanly removes "everything I installed for pod X", this is the mechanism.
-
-### A table you can actually read
+A tiny table you can actually read:
 
 ```
 priority  match                                            actions
@@ -87,234 +148,236 @@ priority  match                                            actions
      0    *                                                 drop            <- table-miss
 ```
 
-The last entry is the **table-miss** entry: priority 0, matching everything. In OpenFlow 1.0 an
-unmatched packet was sent to the controller by default. From 1.3 the default is to **drop**, and if
-you want packets punted to the controller you must install a table-miss entry that says so. This
-reversal was deliberate — the old default made a controller disconnect turn into a control-channel
-flood.
+Reading tips:
 
-For exercise 4:
+- Higher **priority** wins.
+- `ip` / `arp` are shorthands for "this Ethernet type," not magic protocols the switch invents.
+- The last line is the **table-miss** rule: priority 0, match anything. Modern OpenFlow defaults
+  unmatched packets to **drop**. Older OpenFlow 1.0 sent them to the controller instead — which
+  turned a dead controller into a flood of "what do I do with this packet?" messages. Install an
+  explicit miss rule when you care about the behavior.
+
+For exercise 4 you type rules like this:
 
 ```bash
 ovs-vsctl add-br br0
 ovs-ofctl add-flow br0 "table=0,priority=200,ip,nw_dst=10.0.0.5,actions=output:3"
 ovs-ofctl add-flow br0 "table=0,priority=0,actions=drop"
 ovs-ofctl dump-flows br0
-ovs-ofctl --check-overlap add-flow br0 "..."     # catch ambiguous priorities early
 ```
 
-and the dump gives you every field discussed above in one line:
+A dump line includes more than match and action — that is the next section:
 
 ```
  cookie=0x0, duration=12.345s, table=0, n_packets=17, n_bytes=1666, idle_timeout=60,
  priority=200,ip,nw_dst=10.0.0.5 actions=output:3
 ```
 
-The single most useful debugging tool is not `dump-flows` but the packet simulator, which walks a
-hypothetical packet through every table and shows each resubmit and action:
+The most useful debug tool walks a *hypothetical* packet through the tables:
 
 ```bash
 ovs-appctl ofproto/trace br0 in_port=1,dl_type=0x0800,nw_dst=10.0.0.5
 ```
 
-### Instructions versus actions
-
-OpenFlow 1.0 had a flat list of actions, executed immediately in order. OpenFlow 1.1 replaced that
-with **instructions**, which is what makes multi-table pipelines coherent:
-
-- `Apply-Actions` — execute these now, immediately, mutating the packet before the next table sees
-  it.
-- `Write-Actions` — do not execute; merge into the packet's **action set**, which accumulates
-  across tables and is executed once at the end of the pipeline.
-- `Clear-Actions` — empty the accumulated set.
-- `Write-Metadata` — set a 64-bit field that travels with the packet between tables and can be
-  matched on later.
-- `Goto-Table` — continue processing at a later table.
-- `Meter` — rate-limit.
-
-The action set is executed in an order fixed by the spec, not the order you wrote them: copy TTL
-inwards, pop, push/copy TTL outwards, decrement TTL, set fields, QoS, group, output. That
-determinism is the point — pipeline stages can each contribute an action without having to reason
-about what the other stages did.
-
-The practical difference: `Apply-Actions set_field` changes the packet that table 2 will match on;
-`Write-Actions set_field` does not, because it happens at the end. Getting these backwards produces
-a table that looks correct and behaves inexplicably.
-
-*Arms you for:* the learning goal on sketching a match-action table, and exercise 4.
+*Arms you for:* sketching a match-action table; starting exercise 4.
 
 ---
 
-## Multi-table pipelines
+## What a flow entry contains
 
-The reason real switches have many tables is combinatorial, and it is the argument worth being able
-to state.
-
-Suppose you want to apply an ACL with M rules and then a forwarding decision with N rules. In one
-table, every combination must be materialised as its own entry, because an entry has exactly one
-match and one action: **M × N** entries. Split it into two tables and the ACL table holds M
-entries, the forwarding table holds N, and the pipeline composes them at packet time: **M + N**.
-With three independent concerns it is M×N×P versus M+N+P. This is the entire argument for the
-multi-table pipeline, and it is the same argument as normalizing a database schema.
-
-`Goto-Table` may only jump **forward**, to a higher-numbered table. That restriction is what
-guarantees the pipeline terminates — you cannot build a loop. OVS adds a `resubmit` action that
-lifts the restriction (you can re-enter any table, including one you came from), which is more
-expressive and comes with the obligation not to write an infinite loop; OVS enforces a recursion
-limit rather than a structural guarantee.
-
-The OVS advanced tutorial builds a VLAN-aware learning switch as a worked example, and its stage
-breakdown is a good template for how people actually decompose a pipeline:
+Textbooks often say "match + action." A real OpenFlow **flow entry** has six parts. The extra
+four are where day-to-day behavior lives:
 
 ```
- table 0   admission control    drop bogus source MACs, STP BPDUs, then goto 1
- table 1   VLAN input           determine the VLAN from the port config,      goto 2
- table 2   learn source         install a flow matching this src MAC,          goto 3
- table 3   lookup destination   known unicast -> a port; unknown -> flood,     goto 4
- table 4   output processing    tag or untag per the egress port's VLAN config
++---------------+----------+----------+--------------+----------+--------+
+| match fields  | priority | counters | instructions | timeouts | cookie |
++---------------+----------+----------+--------------+----------+--------+
 ```
 
-Each table has one concern and one reason to change. Table 2's `learn` action is worth seeing
-because it is the data plane writing its own flow entries — a MAC-learning switch implemented with
-no controller involvement at all, which is a useful demonstration that "SDN" does not have to mean
-"a controller in the loop for every decision".
+**Match fields.** Which packet bits must look a certain way. Early OpenFlow had a fixed list of
+about a dozen fields. Newer versions use an extensible encoding (often called OXM — you can treat
+that as "typed TLVs for match fields"). OVS can match tunnel metadata, registers, and even
+conntrack-related fields such as `ct_state` — same family of ideas as [THEORY08-nat.md](THEORY08-nat.md).
 
-*Arms you for:* exercise 4, and the "why CNIs like the model" learning goal.
+You can match exactly, with a bitmask, or leave a field as a wildcard. Fields also have
+**prerequisites**: you cannot ask for an IPv4 destination (`nw_dst`) unless the frame is IPv4
+(`dl_type=0x0800`). `ovs-ofctl` often adds the prerequisite for you when you write `ip,...`. That
+is why a dump can show match fields you did not type.
 
----
+**Priority.** Highest matching priority wins. If two overlapping rules share the **same**
+priority, OpenFlow does **not** define which one wins — different switches may disagree. That is
+a common source of "my table looks fine but behaves randomly." While learning, prefer:
 
-## Data plane, control plane, management plane
+```bash
+ovs-ofctl --check-overlap add-flow br0 "..."
+```
 
-Stated precisely, because the self-check asks for it:
+**Counters.** Packet count, byte count, how long the entry has existed. Statistics live *on the
+rule*, so "what rules exist" and "what traffic hit them" stay coupled.
 
-- **Data plane** (forwarding plane). The per-packet path. For each packet: look up state, act. It
-  runs at line rate, so it must be simple and bounded. It contains no algorithms, only lookups.
-- **Control plane.** Computes the state the data plane consults. It runs at *event* rate — a link
-  goes down, a route is withdrawn, a pod is scheduled — which is many orders of magnitude slower
-  than packet rate, so it can afford to be complex: Dijkstra, BGP best-path selection, policy
-  compilation.
-- **Management plane.** Configuration, monitoring, telemetry. The one everyone forgets in the
-  answer, and the one you actually spend your day in: OVSDB, NETCONF, the CLI, the metrics
-  endpoint.
+**Instructions / actions.** What to do when the rule matches. See the next subsection — OpenFlow
+1.1 made this richer than a flat "do these things in order" list.
 
-The rate separation is the real content of the distinction. Anything that must happen per packet
-belongs in the data plane and must therefore be a lookup; anything that can happen per event
-belongs in the control plane and may therefore be an algorithm.
+**Timeouts.** `idle_timeout`: delete after N seconds with no hits. `hard_timeout`: delete N
+seconds after install no matter what. Zero means "keep forever." Timeouts let a controller install
+temporary per-flow state without remembering to clean up. Production systems usually install
+**permanent** rules ahead of time (**proactive**), rather than asking the controller about every
+new flow (**reactive**). Reactive was common in early demos; proactive is what clusters need.
 
-**Traditional router:** both planes live in the same chassis. Each box runs its own control plane
-and computes its own forwarding table using distributed protocols, so network-wide behavior is
-emergent from many local decisions and there is no single place that knows the whole state.
+**Cookie.** An opaque 64-bit tag chosen by the controller. It does **not** participate in
+matching. It is for bulk admin: "delete everything I installed for tenant X" by cookie, in one
+shot.
 
-**The SDN proposition:** move the control plane off the box and centralise it — physically or just
-logically — so it has a global view and network behavior can be *programmed* rather than coaxed out
-of protocol interactions. The switch degrades to a programmable match-action pipeline. OpenFlow is
-the southbound API between the two.
+### Instructions versus actions (only if multi-table confuses you)
 
-Where the boundary sits in OVS, since that is what you will run in exercise 4:
+OpenFlow 1.0: a flat list of actions, run immediately in order.
 
-| Component | Plane |
+OpenFlow 1.1+: **instructions**, which matter once you have several tables:
+
+| Instruction | Meaning |
 | --- | --- |
-| kernel datapath module (or DPDK/AF_XDP userspace datapath) | data plane, fast path — an exact-match "megaflow" cache |
-| `ovs-vswitchd` | data plane, slow path — first packet of a flow, plus the OpenFlow table logic |
-| `ovsdb-server` | management plane — bridge, port and interface configuration |
-| external controller (Faucet, ONOS, `ovn-controller`) | control plane |
+| `Apply-Actions` | Do these **now** (packet may change before the next table). |
+| `Write-Actions` | Merge into an **action set**; run the set **once at the end** of the pipeline. |
+| `Clear-Actions` | Empty that accumulated set. |
+| `Write-Metadata` | Attach a 64-bit value the next tables can match. |
+| `Goto-Table` | Continue at a later table. |
+| `Meter` | Rate-limit. |
 
-One honest complication for the answer: `ovs-vswitchd` contains a small control plane of its own,
-because it compiles the OpenFlow tables into the megaflow entries the kernel caches. The three-plane
-model is a lens, not a physical partition, and every real system smears the boundary somewhere.
+The action set runs in a **fixed** order defined by the spec (TTL tricks, header pushes/pops,
+field sets, output, …), not in the order stages happened to write them. That is deliberate so
+pipeline stages can each contribute without fighting over ordering.
 
-*Arms you for:* the self-check on data plane vs control plane.
+Practical gotcha: `Apply-Actions` that set a field change what the **next** table sees;
+`Write-Actions` that set a field do **not**, because the rewrite waits until the end.
+
+*Arms you for:* learning goal on sketching a table; exercise 4.
 
 ---
 
-## Why CNIs like the model
+## Why more than one table
 
-Kubernetes networking is, structurally, the SDN problem restated:
+One table can express anything — but the size explodes when concerns combine.
 
-1. **There is a single authoritative source of intent** — the API server, holding Pods, Services,
-   EndpointSlices and NetworkPolicies. That is the SDN controller's global view, handed to you for
-   free.
-2. **Forwarding state is a pure function of that intent.** Given the set of objects, the correct
-   forwarding tables are determined. This is exactly what an SDN controller does: compile declared
-   policy into per-device state.
-3. **The churn rate is enormous but is still event rate, not packet rate.** Pods come and go
-   constantly, so the tables must be rewritten constantly — but a rewrite is still an event, and it
-   is many orders of magnitude rarer than a packet. The clean split lets you absorb the churn in an
-   agent that can be slow and correct, while packets take a path that is fast and dumb.
-4. **The data plane must survive the control plane.** If the agent crashes or loses the API server,
-   packets have to keep flowing on whatever tables were last programmed. A design where every
-   forwarding decision needs the controller is unacceptable in a cluster; a design where the
-   controller only *programs* is exactly right. This is why proactive flow installation, not the
-   reactive controller-in-the-loop model of the original OpenFlow papers, is what production uses.
+Suppose you have an access-control list with **M** rules and a forwarding decision with **N**
+rules. In a **single** table you often need a separate entry for every combination: about
+**M × N** rules. Split into two tables — ACL then forward — and you store about **M + N** rules;
+the packet walks both tables. Three independent concerns: product versus sum. Same reason we
+normalize database schemas.
 
-Two CNIs take this literally: **OVN-Kubernetes** and **Antrea** both use Open vSwitch and program
-real OpenFlow tables, so exercise 4 is not an analogy for them — it is the actual mechanism, at a
-smaller scale.
+`Goto-Table` may only jump **forward** (to a higher table number). That forbids loops, so the
+pipeline always finishes. OVS also has `resubmit`, which *can* re-enter earlier tables; then you
+must avoid infinite loops yourself (OVS caps recursion).
 
-Cilium is the interesting one because it keeps the split and throws away the tables.
+A common teaching pipeline (from the OVS advanced tutorial) looks like:
 
-### Where Cilium departs from OpenFlow
+```
+ table 0   admission     drop nonsense, then goto 1
+ table 1   VLAN input    figure out VLAN from the port, goto 2
+ table 2   learn source  remember this source MAC → port, goto 3
+ table 3   find dest     known unicast → port; unknown → flood, goto 4
+ table 4   output        add/remove VLAN tags for the egress port
+```
 
-Both are match-action. The difference is the lookup structure, and it is a real engineering
-trade rather than a matter of taste.
+Each table has one job. Table 2's `learn` action can install new flow entries from the data plane
+itself — a MAC-learning switch with **no** controller in the path. SDN means "programmable split,"
+not "controller consulted on every packet."
+
+*Arms you for:* exercise 4; why CNIs like staged pipelines.
+
+---
+
+## Why this model fits Kubernetes
+
+A Kubernetes cluster has the same structure as the SDN story, whether or not OpenFlow is involved.
+
+1. **One place holds intent.** The API server stores Pods, Services, EndpointSlices,
+   NetworkPolicies. That is the global view a controller wants.
+2. **Forwarding state should follow from that intent.** Given the objects, you can compute what
+   each node's data path should do. "Compile policy into device state" is the SDN control-plane
+   job.
+3. **Churn is high, but still event-rate.** Pods appear and disappear constantly, so tables are
+   rewritten often — yet still vastly less often than packets arrive. Keep the smart, slower agent
+   off the per-packet path.
+4. **Packets must survive a dead control plane.** If the node agent crashes, existing programmed
+   state should keep forwarding. A design that asks a central brain about every packet does not
+   survive production. **Proactive** programming does.
+
+Two CNIs (Container Network Interfaces — plugins that provide pod networking) take this literally
+with Open vSwitch and real OpenFlow tables: **OVN-Kubernetes** and **Antrea**. Exercise 4 is a
+small version of their mechanism.
+
+**Cilium** keeps the *split* (smart agent vs fast path) but usually does **not** use OpenFlow
+tables. It programs the Linux kernel with **eBPF** instead. Same idea, different lookup machinery.
+
+### OpenFlow / OVS versus Cilium / eBPF
+
+Both are match-action. The engineering trade is how you store and look up state:
 
 | | OpenFlow / OVS | Cilium / eBPF |
 | --- | --- | --- |
-| State lives in | priority-ordered flow tables | typed eBPF maps: hash maps, LPM tries, arrays |
-| Lookup | find the highest-priority match among wildcard entries | direct hash or longest-prefix lookup on a key |
-| Cost as rules grow | grows; mitigated by a megaflow cache in front | O(1) for hash maps, independent of entry count |
-| Expressiveness | any combination of fields, wildcarded arbitrarily | whatever the program's author coded — fixed key shapes |
-| The "pipeline" | declarative tables, composed with goto/resubmit | imperative C compiled to bytecode, with tail calls between programs |
-| Where it runs | kernel datapath cache, with a userspace slow path | entirely in-kernel at XDP, tc ingress/egress, and cgroup socket hooks |
-| Cache invalidation | a real problem — table changes invalidate megaflows | none; there is no cache, the map *is* the state |
+| State lives in | Priority-ordered flow tables | Typed maps (hashes, longest-prefix tries, arrays) |
+| Lookup | Best (highest-priority) match among possibly wildcard rules | Direct hash or LPM on a fixed key shape |
+| Cost as rules grow | Can grow; OVS mitigates with a fast-path cache ("megaflow") | Hash maps stay about O(1) in entry count |
+| Flexibility | Arbitrary field combinations and wildcards | Whatever the program author coded |
+| "Pipeline" | Tables + goto / resubmit | C compiled to bytecode; programs chain with tail calls |
+| Where it runs | Kernel cache + userspace slow path for first packets | In-kernel hooks (XDP, tc, cgroup socket hooks) |
+| Cache invalidation | Table edits can bust the megaflow cache | Maps *are* the state — no separate cache layer |
 
-The shape is identical: extract fields from the packet, look up state keyed on those fields, act on
-the result. Cilium's Service handling is a hash-map lookup on `(destination IP, destination port,
-protocol)` yielding a backend slot, then a rewrite — that is match-action with a different index.
-What Cilium gives up is general wildcard matching over arbitrary field combinations. What it buys
-is constant-time lookup, no cache layer to invalidate, and no userspace slow path for the first
-packet of a flow.
+Shape is the same: pull fields from the packet → look up → act. Cilium Service load balancing is
+essentially a hash on `(destination IP, port, protocol)` to pick a backend, then rewrite. You lose
+fully general wildcard tables; you gain predictable lookup cost and no userspace first-packet slow
+path for that work.
 
-Two departures worth calling out because they go beyond "same idea, different data structure":
+Two Cilium ideas that matter beyond "different dictionary structure":
 
-**Identity-based policy.** Cilium does not match NetworkPolicy on IP addresses. It allocates a
-numeric *security identity* per unique set of labels, and matches policy on identity. The identity
-travels with the packet (in a VXLAN header field, an IPv6 option, or resolved by a map lookup at the
-destination). This decouples policy from addressing entirely: scaling a Deployment from 3 to 300
-pods changes zero policy entries, because all 300 share one identity. In a pure match-on-header
-model, that is 300 table changes. Given the churn rate in point 3 above, this is arguably the
-biggest single win.
+**Identity-based policy.** Policy is not "match these pod IPs." Cilium assigns a numeric
+**security identity** to a unique label set and matches on that identity. Scaling a Deployment
+from 3 to 300 pods need not rewrite 300 policy entries — they share one identity. At high pod
+churn, that is a large win over pure header-IP tables.
 
-**Socket-level load balancing.** For pod-to-Service traffic, Cilium can attach to the cgroup
-`connect()` hook and rewrite the destination **in the socket layer, once, at connect time** — before
-a packet has ever been built. Compare with kube-proxy in iptables mode, which builds long chains of
-DNAT rules evaluated per packet and creates a conntrack entry per flow (all of which should look
-very familiar after [THEORY08-nat.md](THEORY08-nat.md)). Cilium's version is still DNAT, but it has
-been lifted out of the per-packet path completely: no conntrack entry for the service translation,
-no per-packet rule traversal, and the cost does not grow with the number of Services.
+**Socket-level load balancing.** For pod → Service traffic, Cilium can hook `connect()` and
+rewrite the destination **once, when the socket connects**, before packets exist. Compare
+kube-proxy in iptables mode: long DNAT rule chains per packet plus a conntrack entry per flow
+(see [THEORY08-nat.md](THEORY08-nat.md)). Still DNAT in spirit — but lifted out of the per-packet
+path, so cost does not grow with the number of Services the same way.
 
-### Where Cilium actually sits
+### Where Cilium fits
 
-For the self-check, the mapping is:
+For the self-check:
 
-- **Control plane** — `cilium-agent`, one per node. Watches the Kubernetes API, allocates
-  identities, computes the desired state, then writes eBPF maps and loads/replaces eBPF programs.
-  `cilium-operator` handles cluster-scoped work such as IPAM and identity garbage collection.
-- **Data plane** — the eBPF programs themselves, attached at XDP, tc ingress/egress and the cgroup
-  socket hooks, plus the maps they read. Entirely in-kernel. Keeps forwarding unchanged if the
-  agent dies.
-- **Management plane** — the `cilium` CLI, the Helm configuration, and Hubble for flow
-  observability.
+- **Control plane** — `cilium-agent` on each node: watches the API, allocates identities, computes
+  desired state, loads eBPF programs and writes maps. `cilium-operator` does cluster-wide chores
+  (IPAM, identity GC, …).
+- **Data plane** — the eBPF programs and maps in the kernel. Keep forwarding if the agent dies.
+- **Management plane** — `cilium` CLI, Helm values, Hubble for flow visibility.
 
-One nuance that makes for a better answer than the textbook version: **Cilium is not a centralised
-SDN controller.** There is no single controller programming every node. Each node's agent
-independently computes its own state from a shared source of truth. The *configuration* is
-centralised (the API server); the *control plane* is distributed. It sits somewhere between the
-classical OpenFlow model and traditional distributed routing, and it took the useful half of each —
-a global declarative source of intent, without a central component in the failure path.
+Nuance worth saying out loud: **Cilium is not one central OpenFlow controller programming every
+switch.** Each node's agent computes local state from the shared API server. Configuration intent
+is centralized; the control plane is **distributed**. It takes the useful half of classical SDN
+(declarative global intent) without putting a single controller on the critical path for every
+node.
 
-*Arms you for:* the learning goal on why CNIs like the match-action model, and the self-check on
-where Cilium fits.
+*Arms you for:* why CNIs like match-action; self-check on where Cilium sits.
+
+---
+
+## Mini glossary
+
+Terms this file uses, in one place:
+
+| Term | Meaning |
+| --- | --- |
+| SDN | Separate fast packet forwarding from the software that decides forwarding policy; make that policy programmable. |
+| Data plane | Per-packet path: match and act. |
+| Control plane | Event-driven software that computes what the data plane should contain. |
+| Management plane | Config, CLI, monitoring. |
+| OpenFlow | A protocol/API for a controller to program match-action rules on a switch. |
+| Flow entry / flow rule | One match + priority + instructions (+ timers, counters, cookie). |
+| Flow table | A priority-ordered set of flow entries; switches may have many tables. |
+| OVS | Open vSwitch — software switch that speaks OpenFlow; used in exercise 4. |
+| CNI | Kubernetes plugin interface for container/pod networking. |
+| eBPF | Linux kernel mechanism to run small verified programs at hook points; Cilium's data path. |
+| Proactive vs reactive | Install rules ahead of time vs ask the controller on first packet of a flow. |
 
 ---
 
@@ -322,54 +385,44 @@ where Cilium fits.
 
 All verified reachable. Where a piece is long, the section to actually read is named.
 
+**Start here if the overview above is enough and you want practice**
+
+- [Open vSwitch Advanced Features Tutorial](https://docs.openvswitch.org/en/latest/tutorials/ovs-advanced/)
+  — build a VLAN-aware learning switch stage by stage. Best preparation for exercise 4.
+
 **Flow entries and OVS**
 
 - [ovs-ofctl(8)](https://www.openvswitch.org/support/dist-docs/ovs-ofctl.8.html)
-  — the reference for flow-entry anatomy as you actually type it: priority semantics including the
-  undefined tie behavior, `idle_timeout` / `hard_timeout`, cookies, `check_overlap`,
-  `reset_counts`, and the full action vocabulary. Read the "Flow Syntax" section.
+  — how you actually type rules: priorities, timeouts, cookies, `check_overlap`, actions. Read
+  "Flow Syntax."
 - [ovs-fields(7)](https://man7.org/linux/man-pages/man7/ovs-fields.7.html)
-  — the match half: exact, masked and wildcard matching, field prerequisites, and the history from
-  OpenFlow 1.0's fixed 12-tuple to OXM. Skim the introduction, then use it as a lookup table.
-- [Open vSwitch Advanced Features Tutorial](https://docs.openvswitch.org/en/latest/tutorials/ovs-advanced/)
-  — build a VLAN-aware learning switch stage by stage with `resubmit`, priorities, registers and
-  the `learn` action. This is the best preparation for exercise 4; do it instead of reading about
-  pipelines.
+  — match fields, wildcards, prerequisites. Skim the intro; keep as a lookup table.
 - [OpenFlow in a Day (NANOG tutorial, Wallace)](https://archive.nanog.org/sites/default/files/mon.tutorial.wallace.openflow.31.pdf)
-  — a slide deck, so terser than the docs above, but it lays out the flow-entry tuple and the
-  1.0-to-1.1 shift from actions to instructions and action sets more compactly than anything else.
-  Use it as a supplement, not a primary.
+  — slides: flow-entry tuple and the shift from flat actions to instructions/action sets.
 
 **The SDN split**
 
 - [SDN definition (Open Networking Foundation)](https://opennetworking.org/sdn-definition/)
-  — short and canonical, from the body that standardised OpenFlow. Enough for the self-check.
-- The McKeown et al. 2008 OpenFlow paper is already in README08's optional reading. Sections 1-3
-  are the part worth reading; the rest is a 2008 deployment story.
+  — short and canonical. Enough for the self-check wording.
+- McKeown et al. 2008 OpenFlow paper (optional in README08): sections 1–3 for the original
+  motivation; the rest is a 2008 deployment story.
 
 **Cilium and eBPF**
 
 - [eBPF datapath: introduction (Cilium docs)](https://docs.cilium.io/en/stable/network/ebpf/intro/)
-  — the page that connects most directly to the match-action model. Enumerates the kernel hooks
-  (XDP, tc ingress/egress, socket ops) and the objects layered on them (Prefilter, Endpoint Policy,
-  Service, L7 Policy). Read this one first.
+  — hooks (XDP, tc, socket) and how they map to match-action-ish objects. Read first.
 - [Life of a packet (Cilium docs)](https://docs.cilium.io/en/stable/network/ebpf/lifeofapacket/)
-  — short companion showing three flows with and without socket-layer enforcement. The diagrams
-  tie the datapath objects together.
+  — short companion diagrams.
 - [Kubernetes without kube-proxy (Cilium docs)](https://docs.cilium.io/en/stable/network/kubernetes/kubeproxy-free/)
-  — the authoritative guide to `kubeProxyReplacement`, socket-level load balancing at `connect()`,
-  DSR and Maglev hashing. Read the "socket LoadBalancer" section for the contrast with iptables
-  DNAT.
-- [Life of a packet in Cilium: pod-to-service traffic path and BPF processing logic (Arthur Chiao)](https://arthurchiao.art/blog/cilium-life-of-a-packet-pod-to-service/)
-  — the deepest free walkthrough available: traces a pod-to-Service packet across two nodes hop by
-  hop, inspecting the loaded BPF programs with ordinary Linux tools at each step. Read it after the
-  two Cilium docs pages.
+  — socket-level load balancing vs iptables DNAT; read the "socket LoadBalancer" section.
+- [Life of a packet in Cilium: pod-to-service (Arthur Chiao)](https://arthurchiao.art/blog/cilium-life-of-a-packet-pod-to-service/)
+  — deep hop-by-hop walkthrough; read after the two Cilium doc pages above.
 
 ## Specs, lookup only
 
 | Spec | Look at | For |
 | --- | --- | --- |
-| OpenFlow 1.3 spec | §5.1-5.4 | pipeline processing, flow-entry structure, matching and the table-miss entry |
-| OpenFlow 1.3 spec | §5.10, §5.12 | instructions vs the action set, and the fixed action-set execution order |
-| OpenFlow 1.3 spec | §5.6 | group tables, if you need multipath or multicast semantics |
-| RFC 7426 | §3-4 | the IETF's SDN layer/plane taxonomy, if you want a more careful vocabulary than the vendor version |
+| OpenFlow 1.3 spec | §5.1–5.4 | Pipeline, flow-entry structure, matching, table-miss |
+| OpenFlow 1.3 spec | §5.10, §5.12 | Instructions vs action set; fixed action-set order |
+| OpenFlow 1.3 spec | §5.6 | Group tables (multipath / multicast) if you need them |
+| RFC 7426 | §3–4 | IETF plane/layer vocabulary, if you want more precision than vendor slides |
