@@ -18,7 +18,8 @@ By the end you will be able to:
 2. Each week has a folder `weekNN-topic/` with its own `README.md`. Open the current week's README, follow the reading list, run the lab, do the exercises, write notes in `notes.md`.
 3. `cheatsheets/` are reference cards. Skim them once at the start, return to them when you forget a flag.
 4. `lab/` holds reusable artifacts (netns scripts, docker-compose stacks, kind config, terraform). Each week's lab section tells you which to use.
-5. `capstone/` is the W16 deliverable.
+5. `cli-practice/` is a Docker-based deliberate-practice track for `ip`, `ss`, `tcpdump`, `mtr`, `iperf3`, `iptables`, `nft`, and `conntrack`. Start it after W8 and continue alongside later weeks.
+6. `capstone/` is the W16 deliverable.
 
 ## Quick start
 

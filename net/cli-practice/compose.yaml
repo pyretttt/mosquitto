@@ -1,0 +1,13 @@
+services:
+  lab:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    privileged: true
+    init: true
+    stdin_open: true
+    tty: true
+    working_dir: /workspace/cli-practice
+    volumes:
+      - ../:/workspace
+    command: ["sleep", "infinity"]
