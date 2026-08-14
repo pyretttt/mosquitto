@@ -1,8 +1,13 @@
 # Ten-minute recall drills
 
 Use this page after completing the modules. Prompts intentionally omit
-commands. Type from memory, consult `--help` or a module only after one honest
-attempt.
+commands. Type from memory; consult `--help` or a module only after one
+honest attempt.
+
+If a prompt names an object you cannot picture (a four-tuple, a hook, a
+qdisc), you are missing theory, not a flag. Return to
+[foundations](00-foundations.md) or the module listed in the
+[glossary](GLOSSARY.md), then retry the drill.
 
 Start each session:
 
@@ -10,6 +15,15 @@ Start each session:
 ./scripts/setup-routed.sh
 ./scripts/setup-services.sh
 ```
+
+## Drill 0: foundations (two minutes, no commands required)
+
+On paper:
+
+1. draw the two subnets and mark which addresses are on-link to which;
+2. write why the client ARPs for `10.20.1.1` and not for `10.20.2.10`;
+3. write the three-way handshake in flags (`[S]`, `[S.]`, `[.]`);
+4. name one topic this track refuses to teach, and why that is acceptable.
 
 ## Drill A: `ip`
 
@@ -82,7 +96,8 @@ Alternate `iptables` and `nft`.
 
 ## Four-week rotation
 
-- Week 1: modules in order; repeat that day's drill immediately.
+- Week 1: foundations + debugging method, then modules in order; repeat
+  that day's drill immediately. Foundations may consume two days.
 - Week 2: A+B, C, D, E, F on separate days; solve incidents 1 and 2.
 - Week 3: pair tools randomly; solve incidents 3 and 4.
 - Week 4: one unknown incident, one full topology build by hand, then all

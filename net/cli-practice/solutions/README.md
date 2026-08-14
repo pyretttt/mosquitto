@@ -1,9 +1,16 @@
 # Incident solutions
 
-Read this only after recording your own diagnosis. Handle numbers and ephemeral
-ports vary; discover them from current output.
+Read this only after recording your own diagnosis. Handle numbers and
+ephemeral ports vary; discover them from current output.
+
+Each solution starts with the **pedagogical point**: the misconception the
+incident exists to break. If you got the right fix for the wrong reason,
+redo the evidence steps.
 
 ## Incident 1: return route
+
+**Point:** a path has two lookups. Proving the client's route proves only
+the forward half.
 
 Prove the client route and inspect the reverse decision:
 
@@ -14,8 +21,9 @@ ip netns exec clp-client curl -v --connect-timeout 2 \
   http://10.20.2.10:8080/
 ```
 
-Capture TCP/8080 at the server. The arriving SYN proves the forward path; the
-missing usable reverse lookup identifies the server route as the failure.
+Capture TCP/8080 at the server. The arriving SYN proves the forward path;
+the missing usable reverse lookup identifies the server route as the
+failure.
 
 Restore the endpoint's default route:
 
@@ -30,10 +38,11 @@ Verify:
 ./checks/check-service.sh
 ```
 
-The lesson is that testing only the source host's route proves only half of a
-bidirectional flow.
-
 ## Incident 2: ordered firewall verdicts
+
+**Point:** ping and HTTP are different protocols. A drop on TCP/8080 can
+leave ICMP untouched. Rule order and handles, not a second competing
+table, are the fix.
 
 Confirm listener and flow:
 
@@ -49,19 +58,23 @@ Inspect the active forward chain with counters and handles:
 ip netns exec clp-router nft -a list ruleset
 ```
 
-Generate exactly one request and list again. The TCP/8080 drop rule's counter
-increments before an accepting path can complete. Delete that specific rule by
-its discovered family, table, chain, and handle:
+Generate exactly one request and list again. The TCP/8080 drop rule's
+counter increments before an accepting path can complete. Delete that
+specific rule by its discovered family, table, chain, and handle:
 
 ```bash
 ip netns exec clp-router nft delete rule FAMILY TABLE CHAIN handle HANDLE
 ```
 
 Use the actual scenario family, table, chain, and handle shown by
-`nft -a list ruleset`; do not create a second competing base chain. Verify HTTP
-and confirm unrelated forwarding behavior is unchanged.
+`nft -a list ruleset`; do not create a second competing base chain. Verify
+HTTP and confirm unrelated forwarding behavior is unchanged.
 
 ## Incident 3: egress qdisc
+
+**Point:** "slow" is not a layer. Direction, latency, loss, and capacity
+can be impaired independently, and a Linux qdisc only shapes **egress** on
+one interface.
 
 Establish controlled measurements:
 
@@ -75,8 +88,9 @@ ip netns exec clp-router tc qdisc show dev r-right
 ```
 
 `tc qdisc` output exposes the netem/rate parameters and location. Because a
-qdisc acts on egress, `r-right` impairs router-to-server traffic. Directional
-tests and captures let you distinguish that from an endpoint-wide condition.
+qdisc acts on egress, `r-right` impairs router-to-server traffic.
+Directional tests and captures let you distinguish that from an
+endpoint-wide condition.
 
 Remove only the root qdisc:
 
@@ -84,10 +98,13 @@ Remove only the root qdisc:
 ip netns exec clp-router tc qdisc del dev r-right root
 ```
 
-Repeat the exact durations, directions, stream counts, and UDP offered rate.
-Do not compare unmatched tests.
+Repeat the exact durations, directions, stream counts, and UDP offered
+rate. Do not compare unmatched tests.
 
 ## Incident 4: source NAT
+
+**Point:** connectivity to a host that must not learn your private prefix
+is a translation problem, not a "add a route on the server" problem.
 
 First prove the asymmetry:
 
@@ -96,8 +113,8 @@ ip -n clp-client route get 198.51.100.10
 ip -n clp-server route get 10.30.1.10
 ```
 
-The server must not learn the private route, so translate the private source to
-the router's external address.
+The server must not learn the private route, so translate the private
+source to the router's external address.
 
 ### iptables implementation
 
@@ -132,4 +149,5 @@ ip netns exec clp-router conntrack -L -p tcp --dport 8080
 ```
 
 The inside capture shows `10.30.1.10`; the outside capture shows
-`198.51.100.254`. Conntrack retains the mapping required to translate replies.
+`198.51.100.254`. Conntrack retains the mapping required to translate
+replies.
