@@ -1,28 +1,22 @@
 package main
 
 import (
-	"fmt"
-	"os"
-
-	tea "github.com/charmbracelet/bubbletea"
-
-	"polywhale/internal/config"
-	"polywhale/internal/logging"
-	"polywhale/internal/polymarket"
-	"polywhale/internal/tui"
+	"time"
+	"net/http"
+	"log"
+	"polywhale/handlers"
 )
 
 func main() {
-	memLog, _, err := logging.Setup()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to set up logging: %v\n", err)
-		os.Exit(1)
+	mux := http.NewServeMux()
+	server := http.Server{
+		Addr: "0.0.0.0:8080",
+		Handler: mux,
+		ReadTimeout:  5 * time.Second,
+        WriteTimeout: 10 * time.Second,
 	}
 
-	model := tui.NewModel(config.Get(), polymarket.NewClient(), memLog)
-	program := tea.NewProgram(model, tea.WithAltScreen())
-	if _, err := program.Run(); err != nil {
-		fmt.Fprintf(os.Stderr, "polywhale exited with error: %v\n", err)
-		os.Exit(1)
-	}
+	mux.HandleFunc("/poly/get_user_positions", handlers.GetPositionsInfo)
+	log.Println("Server is running on port 8080")
+	server.ListenAndServe()
 }
