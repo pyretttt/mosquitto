@@ -4,21 +4,20 @@ replicaCount: 1
 image:
   repository: ghcr.io/pyretttt/polywhale-go
   # This sets the pull policy for images.
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
-
 
 service:
   type: ClusterIP
   port: 80
 
-resources: {}
+resources:
   limits:
-    cpu: 200m
+    cpu: 400m
     memory: 128Mi
   requests:
-    cpu: 400m
+    cpu: 200m
     memory: 128Mi
 
 livenessProbe:
