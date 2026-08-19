@@ -33,7 +33,6 @@ func handleError(w http.ResponseWriter, response map[string]any, err error) {
 
 func GetPositionsInfo(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
 	user := r.URL.Query().Get("user")
 	var response map[string]any = make(map[string]any)
 	response["status"] = "Ok"

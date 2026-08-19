@@ -32,7 +32,6 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           platforms: linux/amd64
-          push: true
           context: ./polywhale/go
           push: true
           tags: pyretttt/${{ env.IMAGE_NAME }}:latest
