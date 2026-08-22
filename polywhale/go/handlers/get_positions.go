@@ -4,7 +4,12 @@ import (
 	"encoding/json"
 	"net/http"
 	"errors"
+	"database/sql"
 )
+
+type PolyPositionsHandler struct{
+	Db *sql.DB
+}
 
 type position struct {
 	Title string
@@ -29,7 +34,7 @@ func handleError(w http.ResponseWriter, response map[string]any, err error) {
 	panic(err.Error())
 }
 
-func GetPositionsInfoHandler(w http.ResponseWriter, r *http.Request) {
+func (h *PolyPositionsHandler) GetPositionsInfoHandler(w http.ResponseWriter, r *http.Request) {
 	var response map[string]any = make(map[string]any)
 	w.Header().Set("Content-Type", "application/json")
 	user, ok := r.Context().Value("user").(string)

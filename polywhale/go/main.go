@@ -4,14 +4,36 @@ import (
 	"time"
 	"net/http"
 	"context"
+	"os"
+	"database/sql"
+	"fmt"
+	"log"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	_ "github.com/lib/pq"
 
 	"polywhale/handlers"
 )
 
 func main() {
+	dbHost := os.Getenv("DB_HOST")
+	dbName := os.Getenv("DB_NAME")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbHost == "" || dbName == "" || dbPassword == "" {
+		log.Fatal("DB credentials are wrong")
+		panic("DB credentials are wrong")
+	}
+
+    db, err := sql.Open("postgres", fmt.Sprintf("host=%s dbname=%s password=%s connect_timeout=5 sslmode=disable", dbHost, dbName, ))
+	if err != nil {
+		log.Fatal("Failed to connect to DB")
+		panic("Failed to connect to DB")
+	}
+	defer db.Close()
+
+	polyPositionsHandler := handlers.PolyPositionsHandler{Db: db}
+
 	InitProbeHandlers()
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -43,8 +65,7 @@ func main() {
 				w.Write([]byte("User is required"))
 			})
 		})
-		r.Get("/get_user_positions", handlers.GetPositionsInfoHandler)
-
+		r.Get("/get_user_positions", (&polyPositionsHandler).GetPositionsInfoHandler)
 	})
 
 	r.Mount("/poly", polyRouter)
