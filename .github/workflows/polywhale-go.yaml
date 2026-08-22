@@ -41,6 +41,16 @@ jobs:
           platforms: linux/amd64
           context: ./polywhale/go
           push: true
+          provenance: false
+          sbom: false
           tags: ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.IMAGE_NAME }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Clean old packages
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: 'polywhale-go'
+          package-type: 'container'
+          min-versions-to-keep: 1
+          delete-only-untagged-versions: 'true'
