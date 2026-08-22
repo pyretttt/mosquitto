@@ -20,12 +20,13 @@ func main() {
 	dbHost := os.Getenv("DB_HOST")
 	dbName := os.Getenv("DB_NAME")
 	dbPassword := os.Getenv("DB_PASSWORD")
-	if dbHost == "" || dbName == "" || dbPassword == "" {
+	dbUser := os.Getenv("DB_USER")
+	if dbHost == "" || dbName == "" || dbPassword == "" || dbUser == "" {
 		log.Fatal("DB credentials are wrong")
 		panic("DB credentials are wrong")
 	}
 
-    db, err := sql.Open("postgres", fmt.Sprintf("host=%s dbname=%s password=%s connect_timeout=5 sslmode=disable", dbHost, dbName, ))
+    db, err := sql.Open("postgres", fmt.Sprintf("host=%s user=postgres dbname=%s password=%s connect_timeout=5 sslmode=disable", dbHost, dbUser, dbName, dbPassword))
 	if err != nil {
 		log.Fatal("Failed to connect to DB")
 		panic("Failed to connect to DB")
