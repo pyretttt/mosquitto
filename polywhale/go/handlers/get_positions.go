@@ -1,10 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"errors"
 	"database/sql"
+	"log"
 )
 
 type PolyPositionsHandler struct{
@@ -86,6 +88,8 @@ func (h *PolyPositionsHandler) GetPositionsInfoHandler(w http.ResponseWriter, r 
 		handleError(w, response, err)
 	}
 
+	h.SavePositionsToDB(positions)
+
 	response["positions"] = positions
 
 	jsonData, err := json.Marshal(response)
@@ -94,4 +98,27 @@ func (h *PolyPositionsHandler) GetPositionsInfoHandler(w http.ResponseWriter, r 
 	}
 	w.Write(jsonData)
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *PolyPositionsHandler) SavePositionsToDB(positions []position) {
+	jsonData, err := json.Marshal(positions)
+	if err != nil {
+		log.Fatal(err)
+	}
+	const query = `
+		INSERT INTO user_positions (data)
+		VALUES ($1)
+		RETURNING id, created_at
+	`
+	var id int64
+	var createdAt string
+
+	err = h.Db.QueryRowContext(
+		context.Background(),
+		query,
+		jsonData,
+	).Scan(&id, &createdAt)
+	if err != nil {
+		log.Fatal(err)
+	}
 }

@@ -41,3 +41,10 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          env:
+            - name: DB_HOST
+              value: {{ .Values.db.host }}
+            - name: DB_NAME
+              value: {{ .Values.db.name }}
+            - name: DB_PASSWORD
+              value: {{ .Values.db.password }}

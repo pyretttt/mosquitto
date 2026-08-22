@@ -29,3 +29,8 @@ readinessProbe:
   httpGet:
     path: /ready
     port: 8080
+
+db:
+  host: localhost
+  name: polywhale
+  password: password
