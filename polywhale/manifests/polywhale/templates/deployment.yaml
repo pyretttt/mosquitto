@@ -47,4 +47,7 @@ spec:
             - name: DB_NAME
               value: {{ .Values.db.name }}
             - name: DB_PASSWORD
-              value: {{ .Values.db.password }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.existingSecret }}
+                  key: {{ .Values.db.existingSecretKey }}

@@ -33,4 +33,5 @@ readinessProbe:
 db:
   host: localhost
   name: polywhale
-  password: password
+  existingSecret: password
+  existingSecretKey: password
