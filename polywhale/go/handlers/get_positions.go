@@ -2,8 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
-	"io"
 	"net/http"
 	"errors"
 )
@@ -25,22 +23,25 @@ type position struct {
 
 func handleError(w http.ResponseWriter, response map[string]any, err error) {
 	w.WriteHeader(http.StatusBadRequest)
-	response["status"] = "Failed"
+	response["status"] = responseStatusFail
 	response["error"] = err.Error()
 
 	panic(err.Error())
 }
 
 func GetPositionsInfoHandler(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	user := r.URL.Query().Get("user")
 	var response map[string]any = make(map[string]any)
-	response["status"] = "Ok"
+	w.Header().Set("Content-Type", "application/json")
+	user, ok := r.Context().Value("user").(string)
+	if !ok {
+		handleError(w, response, errors.New("user is required"))
+	}
+
+	response["status"] = responseStatusOk
 
 	defer func() {
 		if r := recover(); r != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			response["status"] = "Failed"
 			jsonData, err := json.Marshal(response)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
@@ -52,18 +53,22 @@ func GetPositionsInfoHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	if len(user) == 0 {
-		handleError(w, response, errors.New("user is required"))
-	}
-
-	req, err := http.NewRequest(
-		"GET",
-		fmt.Sprintf("https://data-api.polymarket.com/positions?sizeThreshold=1&limit=100&sortBy=TOKENS&sortDirection=DESC&user=%s", user),
+	req, err := http.NewRequestWithContext(
+		r.Context(),
+		http.MethodGet,
+		"https://data-api.polymarket.com/positions",
 		nil,
 	)
 	if err != nil {
 		handleError(w, response, err)
 	}
+	q := req.URL.Query()
+	q.Set("sizeThreshold", "1")
+	q.Set("limit", "100")
+	q.Set("sortBy", "TOKENS")
+	q.Set("sortDirection", "DESC")
+	q.Set("user", user)
+	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do(req)
 	if err != nil {
@@ -71,14 +76,8 @@ func GetPositionsInfoHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		handleError(w, response, err)
-	}
-
 	var positions []position
-	err = json.Unmarshal(body, &positions)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&positions); err != nil {
 		handleError(w, response, err)
 	}
 

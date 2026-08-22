@@ -5,6 +5,13 @@ import (
 	"time"
 )
 
+type responseStatus string
+
+const (
+	responseStatusOk responseStatus = "Ok"
+	responseStatusFail responseStatus = "Failed"
+)
+
 var (
 	client = http.Client{
 		Timeout: 5 * time.Second,

@@ -28,6 +28,7 @@ func main() {
 		r.Get("/ready", readyHandler)
 	})
 
+	// Poly routers
 	polyRouter := chi.NewRouter().Group(func(r chi.Router) {
 		r.Use(func(h http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -39,7 +40,7 @@ func main() {
 				}
 
 				w.WriteHeader(http.StatusBadRequest)
-				w.Write([]byte("user is required"))
+				w.Write([]byte("User is required"))
 			})
 		})
 		r.Get("/get_user_positions", handlers.GetPositionsInfoHandler)

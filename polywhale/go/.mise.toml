@@ -1,5 +1,5 @@
 [tools]
-go = "1.26"
+go = "1.27"
 
 [env]
 # Ticks per second for the TUI event loop (same as the Rust version).
